@@ -1,0 +1,81 @@
+/* Keep the original five switches on the first row; contextual controls
+   occupy a second row and inherit the engine's exact button dimensions. */
+#corner{width:260px;max-width:calc(100vw - 32px);flex-wrap:wrap;justify-content:flex-end;z-index:17}
+#activity-controls{display:contents}
+#activity-controls[hidden],#activity-controls [hidden]{display:none!important}
+#corner button{position:relative;flex-shrink:0;touch-action:manipulation}
+#activity-controls button[aria-pressed=true]{background:var(--accent)}
+#corner button:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+#corner button::after{content:attr(aria-label);display:none;position:fixed;top:calc(max(16px,env(safe-area-inset-top)) + 110px);right:16px;z-index:40;max-width:calc(100vw - 28px);width:max-content;padding:7px 10px;border:2px solid var(--line);background:var(--gui);color:var(--ink);font:600 14px/1.5 var(--text);text-align:left;white-space:normal;pointer-events:none;box-shadow:inset 1px 1px var(--gui-light),inset -1px -1px var(--gui-shade)}
+#corner button:focus-visible::after{display:block}
+@media(hover:hover){#corner button:hover::after{display:block}}
+/* The engine continues to update the room icon and accessible name. */
+#corner #prompt{position:relative;inset:auto;padding:0;gap:0;color:var(--ink);background:var(--btn);box-shadow:0 0 0 2px var(--line),inset 2px 2px 0 rgba(255,255,255,.32),inset -2px -3px 0 rgba(0,0,0,.38);animation:none}
+#corner #prompt:hover{background:var(--btn-hover)}
+#corner #prompt kbd,#corner #prompt>span{display:none}
+#corner #prompt .icon{width:32px;height:32px}
+#weatherMenu{top:calc(max(16px,env(safe-area-inset-top)) + 110px);max-height:calc(100dvh - max(16px,env(safe-area-inset-top)) - 126px - env(safe-area-inset-bottom))}
+#activity-ui{position:fixed;right:16px;top:calc(max(16px,env(safe-area-inset-top)) + 110px);z-index:16;width:min(390px,calc(100vw - 32px));max-height:calc(100dvh - max(16px,env(safe-area-inset-top)) - 206px - env(safe-area-inset-bottom));overflow:auto;box-sizing:border-box;padding:16px;background:var(--gui);border:4px solid transparent;border-image:var(--mc-frame) 4 fill / 4px;border-radius:0;box-shadow:4px 4px 0 #0005;color:var(--ink);font:16px/1.6 var(--text)}
+#activity-ui [hidden],#activity-ui[hidden]{display:none!important}
+#activity-ui .activity-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#activity-ui strong{font-size:19px;line-height:1.4}
+#activity-ui .activity-heading>span{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+#activity-ui p{margin:9px 0;font-size:15px}
+#activity-ui .activity-status{font-weight:600;min-height:24px;color:var(--ink-soft)}
+#activity-ui .activity-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#activity-ui button{font:600 15px/1.3 var(--text);min-height:44px;padding:10px 12px;border:0;border-radius:0;background:var(--btn);color:#fff;text-shadow:2px 2px 0 #0006;box-shadow:0 0 0 2px var(--line),inset 2px 2px 0 #ffffff52,inset -2px -3px 0 #0006;cursor:pointer;touch-action:none}
+#activity-ui button:hover{background:var(--btn-hover)}
+#activity-ui button:active{transform:translateY(1px)}
+#activity-ui button:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+#activity-ui .activity-heading>[data-action=collapse]{min-height:36px;padding:6px 9px;font-size:14px;flex-shrink:0}
+#activity-ui .activity-meter{height:18px;position:relative;background:var(--slot);border:2px solid var(--line);border-radius:0;box-shadow:inset 2px 2px 0 var(--slot-shade);overflow:hidden;margin:12px 0}
+#activity-ui .activity-meter i{position:absolute;inset:0 auto 0 0;background:var(--gold);width:0}
+#activity-ui .activity-meter b{position:absolute;left:53%;width:18%;top:0;height:100%;box-sizing:border-box;border:2px solid var(--accent);background:#8ac47799}
+#activity-ui .activity-book{padding:14px;background:var(--field);border:2px solid var(--field-edge);box-shadow:inset 2px 2px 0 var(--gui-shade),inset -2px -2px 0 var(--gui-light);margin:12px 0}
+#activity-ui .activity-book h3{font-size:17px;margin:0 0 8px}
+#activity-ui .activity-book p{font-size:17px;line-height:1.85;margin:0 0 10px}
+#activity-ui .activity-book small{font-size:14px;color:var(--ink-soft)}
+#activity-ui .activity-game{width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;border:2px solid var(--line);box-sizing:border-box;border-radius:0;box-shadow:2px 2px 0 var(--gui-shade);margin-top:8px}
+#activity-ui .activity-pad{display:flex;justify-content:center;gap:8px;margin-top:10px}
+#activity-ui .activity-pad button{min-width:44px;min-height:44px;font-size:18px}
+body.activity-active #prompt,body.reading #activity-ui{display:none!important}
+body.activity-sleep #world:after{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 40% 45%,transparent 25%,#12233480);z-index:1}
+body.reading #activity-controls,body.phone-on #activity-controls{display:none!important}
+@media(max-width:720px),(max-height:520px){
+  #corner{width:232px;max-width:calc(100vw - 24px)}
+  #corner button::after{right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 100px)}
+  #corner #prompt .icon{width:28px;height:28px}
+  #weatherMenu,#activity-ui{right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 100px)}
+  #weatherMenu{max-height:calc(100dvh - max(12px,env(safe-area-inset-top)) - 116px - env(safe-area-inset-bottom))}
+  #activity-ui{width:min(350px,calc(100vw - 24px));padding:12px;max-height:calc(100dvh - max(12px,env(safe-area-inset-top)) - 188px - env(safe-area-inset-bottom))}
+  #activity-ui strong{font-size:18px}
+  #activity-ui .activity-heading>span{display:none}
+}
+@media(max-height:520px){
+  #activity-ui{width:320px;max-height:calc(100dvh - max(12px,env(safe-area-inset-top)) - 116px - env(safe-area-inset-bottom))}
+  body.activity-active #hotbar{visibility:hidden}
+}
+@media(max-height:520px) and (min-width:721px){
+  #activity-ui[data-activity=gaming]{width:380px;padding:10px 12px}
+  #activity-ui[data-activity=gaming] strong{font-size:17px}
+  #activity-ui[data-activity=gaming] .activity-hint{font-size:14px;line-height:1.3;margin:4px 0}
+  #activity-ui[data-activity=gaming] .activity-status{display:none}
+  #activity-ui[data-activity=gaming] .activity-game{display:block;width:192px;height:108px;margin:6px auto}
+  #activity-ui[data-activity=gaming] .activity-buttons,#activity-ui[data-activity=gaming] .activity-pad{display:inline-flex;vertical-align:middle;gap:4px;margin:4px 0 0}
+  #activity-ui[data-activity=gaming] .activity-buttons{margin-right:4px}
+  #activity-ui[data-activity=gaming] button{font-size:14px;padding:8px}
+  #activity-ui[data-activity=gaming] .activity-heading>[data-action=collapse]{min-height:30px;padding:4px 8px}
+}
+
+/* Keep the reader and page controls visible while the chapter can scroll. */
+@media(max-width:720px) and (orientation:portrait){
+  #activity-ui[data-activity=reading]{display:flex;flex-direction:column;max-height:36dvh;overflow:hidden}
+  #activity-ui[data-activity=reading] .activity-heading,#activity-ui[data-activity=reading] .activity-hint,#activity-ui[data-activity=reading] .activity-buttons{flex-shrink:0}
+  #activity-ui[data-activity=reading] .activity-status:empty{display:none}
+  #activity-ui[data-activity=reading] .activity-book{min-height:0;overflow:auto;margin:6px 0;padding:8px 10px}
+  #activity-ui[data-activity=reading] .activity-book h3{font-size:15px;margin-bottom:5px}
+  #activity-ui[data-activity=reading] .activity-book p{font-size:15px;line-height:1.6}
+  #activity-ui[data-activity=reading] .activity-hint{font-size:13px;line-height:1.4;margin:5px 0}
+  #activity-ui[data-activity=reading] .activity-buttons{gap:5px;margin-top:6px}
+  #activity-ui[data-activity=reading] .activity-buttons button{font-size:13px;padding:8px}
+}

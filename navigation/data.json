@@ -1,0 +1,1933 @@
+{
+  "groups": [
+    {
+      "id": "bookmarks-f1",
+      "title": "随手收藏",
+      "kind": "main",
+      "origin": "bookmarks",
+      "icon": "star",
+      "originalFolder": "书签栏",
+      "items": [
+        {
+          "id": "site-1ksrjxd",
+          "name": "文章知网",
+          "url": "https://lib.jingshi2015.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/ac6a34194b0717a5.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "书签栏"
+        },
+        {
+          "id": "site-xkoxeg",
+          "name": "飞机",
+          "url": "https://xn--9kqz23b19z.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/b1556b25e6449897.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "书签栏"
+        },
+        {
+          "id": "site-pzymh9",
+          "name": "宝可梦",
+          "url": "https://web1.52pokemon.cc/login",
+          "description": "",
+          "icon": "assets/bookmark-icons/8d0a5470ed019860.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "书签栏"
+        },
+        {
+          "id": "site-ejzaml",
+          "name": "高工评审",
+          "url": "https://sswe.net.cn/amswq/",
+          "description": "",
+          "icon": "assets/bookmark-icons/6d52b10892839791.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "书签栏"
+        },
+        {
+          "id": "site-7v5wl4",
+          "name": "无限画布",
+          "url": "https://canvas.best/canvas/y4GH44rqgzRcFfC-_HyGJ",
+          "description": "",
+          "icon": "assets/bookmark-icons/0e748fdecb0997e9.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "书签栏"
+        }
+      ]
+    },
+    {
+      "id": "bookmarks-f2",
+      "title": "行业指数",
+      "kind": "main",
+      "origin": "bookmarks",
+      "icon": "grid",
+      "originalFolder": "行业指数",
+      "items": [
+        {
+          "id": "site-1jzpuzc",
+          "name": "QDII 型基金申购限额监控",
+          "url": "https://pmtools.com.cn/qdii",
+          "description": "",
+          "icon": "assets/bookmark-icons/3f5d70573c28a14f.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        },
+        {
+          "id": "site-k2h6x8",
+          "name": "纳指开门日报",
+          "url": "https://nasdaq.jaelchen.cn/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        },
+        {
+          "id": "site-1ix5jj2",
+          "name": "标普开门日报",
+          "url": "https://sp500.jaelchen.cn/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        },
+        {
+          "id": "site-1fplqij",
+          "name": "跨境额度日报",
+          "url": "https://anxinletech.com/instrument-qdii.html",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        },
+        {
+          "id": "site-1orzkx3",
+          "name": "申购额度查询",
+          "url": "https://www.wise-etf.com/today/qdii-limits?category=nasdaq_passive",
+          "description": "",
+          "icon": "assets/bookmark-icons/6cebfcad9bd753f1.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        },
+        {
+          "id": "site-1o80sad",
+          "name": "原油50以下",
+          "url": "https://finance.sina.com.cn/futures/quotes/OIL.shtml",
+          "description": "",
+          "icon": "assets/bookmark-icons/6356fe6e8d6eb6f3.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        },
+        {
+          "id": "site-19ct3vq",
+          "name": "国债三十 2.3清仓",
+          "url": "https://yield.chinabond.com.cn/cbweb-pbc-web/pbc/more?locale=cn_ZH",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        },
+        {
+          "id": "site-1ira1u5",
+          "name": "酒-收复前低才入",
+          "url": "https://www.csindex.com.cn/#/indices/family/detail?indexCode=399997",
+          "description": "",
+          "icon": "assets/bookmark-icons/ec4b4f2d203690d2.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        },
+        {
+          "id": "site-khknnj",
+          "name": "CPI与PPI",
+          "url": "https://data.eastmoney.com/cjsj/cpi.html",
+          "description": "",
+          "icon": "assets/bookmark-icons/83d32bd8eabb3675.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "行业指数"
+        }
+      ]
+    },
+    {
+      "id": "bookmarks-f3",
+      "title": "音乐",
+      "kind": "main",
+      "origin": "bookmarks",
+      "icon": "voice",
+      "originalFolder": "音乐",
+      "items": [
+        {
+          "id": "site-10rhayp",
+          "name": "网易云音乐无损解析",
+          "url": "https://wyapi.toubiec.cn/",
+          "description": "",
+          "icon": "assets/bookmark-icons/6cebfcad9bd753f1.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "音乐"
+        },
+        {
+          "id": "site-11r6my9",
+          "name": "Hi歌曲音乐网",
+          "url": "https://higequ.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/b67a0946c52bac3b.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "音乐"
+        },
+        {
+          "id": "site-peu03n",
+          "name": "导航与音乐",
+          "url": "https://ios.25pan.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/d4ab82d6bb6d5f3f.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "音乐"
+        },
+        {
+          "id": "site-oc2ugl",
+          "name": "音乐解锁",
+          "url": "https://unlock-music.znnu.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/7af14241f32d1ec2.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "音乐"
+        },
+        {
+          "id": "site-uu9upl",
+          "name": "music-api",
+          "url": "https://music.ors.de5.net/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "音乐"
+        },
+        {
+          "id": "site-1ypukbr",
+          "name": "ChKSz API - 免费稳定的多平台音乐 API 服务",
+          "url": "https://api.chksz.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/dffea7756e67e5e4.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "音乐"
+        }
+      ]
+    },
+    {
+      "id": "bookmarks-f4",
+      "title": "壁纸",
+      "kind": "main",
+      "origin": "bookmarks",
+      "icon": "image",
+      "originalFolder": "壁纸",
+      "items": [
+        {
+          "id": "site-49wdag",
+          "name": "哲风壁纸",
+          "url": "https://haowallpaper.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "壁纸"
+        },
+        {
+          "id": "site-17tu412",
+          "name": "恋风壁纸",
+          "url": "https://www.luvbree.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "壁纸"
+        }
+      ]
+    },
+    {
+      "id": "bookmarks-f5",
+      "title": "API 与中转站",
+      "kind": "main",
+      "origin": "bookmarks",
+      "icon": "cloud",
+      "originalFolder": "中转站",
+      "items": [
+        {
+          "id": "site-c2b7gg",
+          "name": "帅API",
+          "url": "https://api.shuaiapi.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/74d79de976d70ae6.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-zrzyjk",
+          "name": "奇遇API",
+          "url": "https://www.superqiyu.org/wallet",
+          "description": "",
+          "icon": "assets/bookmark-icons/e4ed1942a2a1b1e0.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-1m9uubd",
+          "name": "Xiaomi MiMo 开放平台",
+          "url": "https://platform.xiaomimimo.com/token-plan",
+          "description": "",
+          "icon": "assets/bookmark-icons/ee0ac0092be943bc.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-1pxguiy",
+          "name": "AnyRouter",
+          "url": "https://anyrouter.top/console",
+          "description": "",
+          "icon": "assets/bookmark-icons/2fb141105bc60313.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-owbi72",
+          "name": "咕嘎咕嘎",
+          "url": "https://ai.xmiaom.com/profile",
+          "description": "",
+          "icon": "assets/bookmark-icons/14de84eafc989a68.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-9on49y",
+          "name": "视频 MiniMax-H3",
+          "url": "https://veda.hanxiao.run/",
+          "description": "",
+          "icon": "assets/bookmark-icons/e911991c0560e0b7.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-1nlqan8",
+          "name": "公益站导航",
+          "url": "https://ldoh.105117.xyz/",
+          "description": "",
+          "icon": "assets/bookmark-icons/6d4dec346a8847b1.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-189qz3k",
+          "name": "DeepSeek 开放平台",
+          "url": "https://platform.deepseek.com/transactions",
+          "description": "",
+          "icon": "assets/bookmark-icons/f43166c1184fabe7.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-xfeswc",
+          "name": "AI / LLM 模型图标库 · LobeHub",
+          "url": "https://lobehub.com/zh/icons",
+          "description": "",
+          "icon": "assets/bookmark-icons/53851d9bb0fa2a6b.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "中转站"
+        }
+      ]
+    },
+    {
+      "id": "bookmarks-f6",
+      "title": "AI 生图 · Image 2",
+      "kind": "main",
+      "origin": "bookmarks",
+      "icon": "image",
+      "originalFolder": "Image 2",
+      "items": [
+        {
+          "id": "site-gwxppl",
+          "name": "Orbitix AI",
+          "url": "https://new.orbitix.site/pricing",
+          "description": "",
+          "icon": "assets/bookmark-icons/6eaed4e78f5318a7.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-3lsh98",
+          "name": "Octiva Api",
+          "url": "https://api.osodm.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/6eaed4e78f5318a7.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "收费4K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-1w2c115",
+          "name": "ZIKL生图站",
+          "url": "https://img.mzfe.de/keys",
+          "description": "",
+          "icon": "assets/bookmark-icons/6eaed4e78f5318a7.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "收费4K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-szgufj",
+          "name": "97api",
+          "url": "https://www.97api.com/dashboard",
+          "description": "",
+          "icon": "assets/bookmark-icons/d3ec64bdffbfc7ff.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "收费4K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-7dmffz",
+          "name": "Draw Studio",
+          "url": "https://keydraw.97api.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-1qc6gyg",
+          "name": "噜皮生图",
+          "url": "https://image.mlgb7.com/#/studio",
+          "description": "",
+          "icon": "assets/bookmark-icons/3e6bacfbc3fde1c3.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-2pst8j",
+          "name": "ImageGate 图片1K",
+          "url": "http://47.120.76.171:8888/imagegate/portal",
+          "description": "",
+          "icon": "assets/bookmark-icons/aba89b43a0eb134f.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-bsqmej",
+          "name": "哗啦哗啦 · AI 生图广场",
+          "url": "https://img.xmiaom.com/generate",
+          "description": "",
+          "icon": "assets/bookmark-icons/507c8fcbeebe024d.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-eeqey4",
+          "name": "IMGGEN ATELIER · 生图工作室",
+          "url": "https://uu.zauxpbp.cn/",
+          "description": "",
+          "icon": "assets/bookmark-icons/15c5c68d7676c7c6.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-1hs8xkl",
+          "name": "皮皮智绘 · PC 沉浸创作站",
+          "url": "https://img.pipiwangcom.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/ab966a98fb92a5af.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-35ixgx",
+          "name": "丸子生图",
+          "url": "https://wanzij.cc.cd/#/studio",
+          "description": "",
+          "icon": "assets/bookmark-icons/eb4fb4c0f639d205.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-l63t04",
+          "name": "瞎几把画",
+          "url": "https://xjbh.lol/#/studio",
+          "description": "",
+          "icon": "assets/bookmark-icons/e6fb7fbbfc1b0565.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-atuigt",
+          "name": "Image Playground",
+          "url": "https://image.oaichat.cc/",
+          "description": "",
+          "icon": "assets/bookmark-icons/add3b05d051efd33.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-1xdzcpw",
+          "name": "智画创 · WisArt",
+          "url": "https://wisart.kuaileshifu.com/#/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-18s1hno",
+          "name": "QhatGPT",
+          "url": "https://tu.qq1000.com/login/",
+          "description": "",
+          "icon": "assets/bookmark-icons/d3d05ed09fe99c92.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-18a5vpo",
+          "name": "海报生成",
+          "url": "https://hbsc.930320.xyz/#/templates",
+          "description": "",
+          "icon": "assets/bookmark-icons/a3f2a9fa0acbf45f.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-hmmoq4",
+          "name": "SceneMint",
+          "url": "https://image.sunls.de/",
+          "description": "",
+          "icon": "assets/bookmark-icons/2308c4342303e003.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-1hf9zey",
+          "name": "kmage · AI 视觉工作台",
+          "url": "https://image.dddd.zone/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "免费1K",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-5pr7hj",
+          "name": "无限画布",
+          "url": "https://canvas.695269.xyz/",
+          "description": "",
+          "icon": "assets/bookmark-icons/6119d1c75d48d9ba.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "官方工具",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-1lvgzt2",
+          "name": "Platform Home Page - OpenAI API",
+          "url": "https://platform.openai.com/home",
+          "description": "",
+          "icon": "assets/bookmark-icons/51b2216d4d0ee562.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "官方工具",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-nphia",
+          "name": "验证 OpenAI 生成的图像 | OpenAI",
+          "url": "https://openai.com/zh-Hans-CN/research/verify/",
+          "description": "",
+          "icon": "assets/bookmark-icons/55efd5bc1f59969b.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "官方工具",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-1agtj86",
+          "name": "image-2 API 的图片生成与编辑工具",
+          "url": "https://github.com/CookSleep/gpt_image_playground",
+          "description": "",
+          "icon": "assets/bookmark-icons/3ca8226edfcd1056.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "官方工具",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-1sm065g",
+          "name": "Real-CUGAN WebGPU 超分工具",
+          "url": "https://real-cugan.webgpu.me/",
+          "description": "",
+          "icon": "assets/bookmark-icons/e1587d04ee998213.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "官方工具",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-trmu5d",
+          "name": "Color Hunt 配色",
+          "url": "https://colorhunt.co/",
+          "description": "",
+          "icon": "assets/bookmark-icons/de82b5a37fa3370f.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "官方工具",
+          "bookmarkFolder": "Image 2"
+        },
+        {
+          "id": "site-9pvihv",
+          "name": "流光AI · 对话 - 流光AI",
+          "url": "https://liuguang.ai/chat",
+          "description": "",
+          "icon": "assets/bookmark-icons/d2b05f15373a94d9.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "section": "官方工具",
+          "bookmarkFolder": "Image 2"
+        }
+      ]
+    },
+    {
+      "id": "bookmarks-f7",
+      "title": "L 站收藏",
+      "kind": "main",
+      "origin": "bookmarks",
+      "icon": "code",
+      "originalFolder": "L 站",
+      "items": [
+        {
+          "id": "site-g096bl",
+          "name": "代理工具汇总",
+          "url": "https://linux.do/t/topic/375351",
+          "description": "",
+          "icon": "assets/bookmark-icons/1c9d363d6e17f08f.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-11x1k64",
+          "name": "LinuxDo商家评价平台",
+          "url": "https://rate.linux.do/",
+          "description": "",
+          "icon": "assets/bookmark-icons/119acd666bfd0ae6.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-r3qcz0",
+          "name": "站点积分兑换中心",
+          "url": "https://ldcstore.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/f614d57e4a285e25.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-1oejvkv",
+          "name": "网盘解析",
+          "url": "https://linkcoin.tuever.eu.org/#/",
+          "description": "",
+          "icon": "assets/bookmark-icons/449a0dd68d7253ed.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-1oknukp",
+          "name": "LandPPT",
+          "url": "https://cloud.landppt.com/scenarios",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-16dof83",
+          "name": "在线接码（免费）",
+          "url": "https://linux.do/t/topic/1845356",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-qti362",
+          "name": "纯净影视站汇总",
+          "url": "https://linux.do/t/topic/1756783",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-3756m",
+          "name": "Skills",
+          "url": "http://linuxdo-awesome-skills.tencents.ltd/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-187vukk",
+          "name": "MimoTTS",
+          "url": "https://tts.cngov.cc.cd/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-18hcz8d",
+          "name": "CPA教程",
+          "url": "https://linux.do/t/topic/1682612",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-pbg26n",
+          "name": "Easy-Vibe 教程",
+          "url": "https://datawhalechina.github.io/easy-vibe/zh-cn/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-16n1e2c",
+          "name": "咸鱼黑话",
+          "url": "https://www.novthys.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-19ype75",
+          "name": "L站邮箱",
+          "url": "https://webmail.linux.do/sso/login?url=/webmail/?homepage",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-1iep3pi",
+          "name": "Linuxdo EDU MAIL",
+          "url": "https://linuxdo.edu.kg/inbox",
+          "description": "",
+          "icon": "assets/bookmark-icons/6f2b2bf9595e0f6e.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-1t5878u",
+          "name": "iLovePDF",
+          "url": "https://www.ilovepdf.com/zh-cn",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-1xizv5n",
+          "name": "如何写一个好的skill",
+          "url": "https://linux.do/t/topic/1923706",
+          "description": "",
+          "icon": "assets/bookmark-icons/1c9d363d6e17f08f.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-11pv5h5",
+          "name": "VibeHub",
+          "url": "https://vibe-hub.org/",
+          "description": "",
+          "icon": "assets/bookmark-icons/a80dec08903a2a09.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-1uph2ir",
+          "name": "WPS政府版/安装版/绿色版/单文件版（全网最全）",
+          "url": "https://www.yuque.com/xiaoshuai-09eym/bhsttx/zx3av2#Iespd",
+          "description": "",
+          "icon": "assets/bookmark-icons/e61154860ef26696.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-1e4595s",
+          "name": "135编辑器免费模板库",
+          "url": "http://185.45.193.154/",
+          "description": "",
+          "icon": "assets/bookmark-icons/0b34322c80a5cae8.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-mp5b4d",
+          "name": "135模板提取助手",
+          "url": "http://185.45.193.154/123/",
+          "description": "",
+          "icon": "assets/bookmark-icons/0b34322c80a5cae8.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-16mzccw",
+          "name": "PPT思路分享",
+          "url": "https://linux.do/t/topic/1782304",
+          "description": "",
+          "icon": "assets/bookmark-icons/1c9d363d6e17f08f.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        },
+        {
+          "id": "site-y63mqa",
+          "name": "翻墙应用商店",
+          "url": "https://huarun.win/",
+          "description": "",
+          "icon": "assets/bookmark-icons/27b40cfe7cb1baaa.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
+        }
+      ]
+    },
+    {
+      "id": "bookmarks-f8",
+      "title": "公益平台",
+      "kind": "main",
+      "origin": "bookmarks",
+      "icon": "heart",
+      "originalFolder": "公益平台",
+      "items": [
+        {
+          "id": "site-hjvm8o",
+          "name": "阿里巴巴公益开放平台",
+          "url": "https://open.alibabafoundation.com/open/workbench/employee/home",
+          "description": "",
+          "icon": "assets/bookmark-icons/d157d0c8229d7d71.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "公益平台"
+        },
+        {
+          "id": "site-dtqc8",
+          "name": "腾讯技术公益",
+          "url": "https://techforgood.qq.com/",
+          "description": "",
+          "icon": "assets/bookmark-icons/5ced65ec560a34ce.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "公益平台"
+        },
+        {
+          "id": "site-d1b7by",
+          "name": "字节跳动公益引擎平台",
+          "url": "https://welfare.bytedance.com/tools",
+          "description": "",
+          "icon": "assets/bookmark-icons/304f5b13cdb6ca92.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "公益平台"
+        }
+      ]
+    },
+    {
+      "id": "common-sites",
+      "title": "常用网址",
+      "kind": "main",
+      "items": [
+        {
+          "id": "site-1tj7a38",
+          "name": "Deepseek",
+          "url": "https://chat.deepseek.com/",
+          "description": "杭州深度求索人工智能基础技术研究有限公司",
+          "icon": "uploads/ds.jpg",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1rg9kkr",
+          "name": "ChatGPT",
+          "url": "https://chatgpt.com/",
+          "description": "多模态全能AI助手。",
+          "icon": "uploads/chatgpt.ico",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1351hxs",
+          "name": "豆包",
+          "url": "https://www.doubao.com/chat/",
+          "description": "字节跳动旗下 AI 智能助手。",
+          "icon": "uploads/db.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1dx2srv",
+          "name": "秒搜网盘",
+          "url": "https://miaosou.fun/",
+          "description": "免费强大的网盘的搜索引擎。",
+          "icon": "uploads/ms.ico",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-semthd",
+          "name": "QQ邮箱",
+          "url": "https://mail.qq.com/",
+          "description": "QQ邮箱,为亿万用户提供高效稳定便捷的电子邮件服务。",
+          "icon": "uploads/qq.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-9ruonp",
+          "name": "微信公众平台",
+          "url": "https://mp.weixin.qq.com/",
+          "description": "给个人、企业和组织提供业务服务与用户管理能力的全新服务平台。",
+          "icon": "uploads/wxgz.jpg",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-129j19k",
+          "name": "可画",
+          "url": "https://www.canva.cn/",
+          "description": "在线设计协作平台Canva提供了海量的设计模板。",
+          "icon": "uploads/kh.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1iulbtu",
+          "name": "稿定",
+          "url": "https://www.gaoding.com/",
+          "description": "让更多人和企业轻松掌控设计，创造价值。",
+          "icon": "uploads/gd.png",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "star"
+    },
+    {
+      "id": "common-tools",
+      "title": "常用工具",
+      "kind": "main",
+      "items": [
+        {
+          "id": "site-128t1m9",
+          "name": "草料二维码",
+          "url": "https://cli.im/",
+          "description": "一站式二维码生成工具,可搭建二维码信息系统。",
+          "icon": "uploads/cl.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-ehvyby",
+          "name": "腾讯视频",
+          "url": "https://v.qq.com/channel/cartoon",
+          "description": "腾讯视频致力于打造中国领先的在线视频媒体平台。",
+          "icon": "uploads/tx.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1j585c8",
+          "name": "我要自学网",
+          "url": "https://www.51zxw.net/",
+          "description": "由来自培训职业老师创立的视频教学网,享受一站式的软件学习体验。",
+          "icon": "uploads/zx.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1inm435",
+          "name": "秀米",
+          "url": "https://xiumi.us/",
+          "description": "一款专业强大的微信公众平台在线编辑排版工具。",
+          "icon": "uploads/xm.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-38puz2",
+          "name": "微信表情开放平台",
+          "url": "https://sticker.weixin.qq.com/cgi-bin/mmemoticonwebnode-bin/pages/home",
+          "description": "微信表情，亿万人都在看。",
+          "icon": "uploads/wxgz.jpg",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "grid"
+    },
+    {
+      "id": "software-news",
+      "title": "软件资讯",
+      "kind": "main",
+      "items": [
+        {
+          "id": "site-5sphno",
+          "name": "LINUX DO",
+          "url": "https://linux.do/",
+          "description": "新的理想型社区。",
+          "icon": "uploads/linux.webp",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-98pgyg",
+          "name": "v2EX",
+          "url": "https://www.v2ex.com/",
+          "description": "面向程序员、极客人群的分享交流社区。",
+          "icon": "uploads/V2.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-94w9za",
+          "name": "虫部落快搜",
+          "url": "https://search.chongbuluo.com/",
+          "description": "聚合国内外综合搜索、垂直搜索和 AI搜索。精准搜索,便捷交互!",
+          "icon": "uploads/cbl.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1izi96l",
+          "name": "吾爱破解",
+          "url": "https://www.52pojie.cn/",
+          "description": "论坛聚焦软件安全、编程开发等技术领域,打造技术爱好者交流平台。",
+          "icon": "uploads/wapj.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1uecxuj",
+          "name": "远景资源区",
+          "url": "https://bbs.pcbeta.com/forum-521-1.html",
+          "description": "前沿科技与智慧生态的极客社区。",
+          "icon": "uploads/yj.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1fykw85",
+          "name": "小众软件",
+          "url": "https://www.appinn.com/",
+          "description": "分享小众有趣的软件，软件爱好者的必备网站。",
+          "icon": "uploads/xzrj.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1sx4z1e",
+          "name": "少数派",
+          "url": "https://sspai.com/",
+          "description": "高效工作,品质生活 少数派致力于数字产品的筛选与挖掘。",
+          "icon": "uploads/ssp.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1ghsn7u",
+          "name": "乐软博客",
+          "url": "https://www.isharepc.com/",
+          "description": "致力于搜集与分享各种软件资源。",
+          "icon": "uploads/lrbk.png",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "code"
+    },
+    {
+      "id": "charity",
+      "title": "公益慈善",
+      "kind": "main",
+      "items": [
+        {
+          "id": "site-1463knj",
+          "name": "资源整合",
+          "url": "https://www.kdocs.cn/l/ca6zfETArLKx",
+          "description": "一个面向社工行业资源整合汇总的信息发布平台。",
+          "icon": "uploads/zyzh.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-u5x50i",
+          "name": "知网",
+          "url": "https://www.cnki.net/",
+          "description": "行业知识创新、学习和应用的交流合作平台。",
+          "icon": "uploads/zw.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-dhj6mu",
+          "name": "社工经验",
+          "url": "https://www.kdocs.cn/view/l/cdRVmpmvTBaH",
+          "description": "整合全网社工服务经验，梳理一线服务心得。",
+          "icon": "uploads/shjy.jpg",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1krsjaz",
+          "name": "中国社会工作网",
+          "url": "https://shgz.mca.gov.cn/",
+          "description": "中华人民共和国民政部指定官方网站，集社工登记、继续教育等功能。",
+          "icon": "uploads/sh.jpeg",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-16032tf",
+          "name": "社会组织政务服务",
+          "url": "https://chinanpo.mca.gov.cn/",
+          "description": "全国社会组织信用信息公示平台。",
+          "icon": "uploads/shzw.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-ep89iz",
+          "name": "社工投稿",
+          "url": "https://tg.shehuiwang.cn/swtg/login.action",
+          "description": "中国社会报社投稿平台。",
+          "icon": "uploads/sgtg.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-d8yns",
+          "name": "慈善中国",
+          "url": "https://cszg.mca.gov.cn/",
+          "description": "全国慈善信息公开平台。",
+          "icon": "uploads/cszg.jpeg",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-16v1fqy",
+          "name": "全国养老服务信息平台",
+          "url": "https://yanglao.mca.gov.cn/",
+          "description": "提供养老政策资讯、服务查询、在线办理、养老地图、养老人才服务。",
+          "icon": "uploads/ylcs.png",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "heart"
+    },
+    {
+      "id": "office",
+      "title": "办公软件",
+      "kind": "main",
+      "items": [
+        {
+          "id": "site-itmziq",
+          "name": "秘塔写作猫",
+          "url": "https://xiezuocat.com/",
+          "description": "上海秘塔网络科技有限公司产品,提供错别字检查、AI写作服务。",
+          "icon": "uploads/mt.jpg",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-15rr13w",
+          "name": "问卷星",
+          "url": "https://www.wjx.cn/",
+          "description": "问卷调查、考试、评估、表单、测评和投票的数据收集分析管理平台。",
+          "icon": "uploads/wjx.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1m9g41g",
+          "name": "金数据",
+          "url": "https://jinshuju.net/",
+          "description": "人人可用的数据平台。",
+          "icon": "uploads/jsj.png",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-15likgd",
+          "name": "文叔叔",
+          "url": "https://www.wenshushu.cn/",
+          "description": "一款可以将任意文件，简单、安全、极速传给你朋友的工具。",
+          "icon": "uploads/wss.png",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "briefcase"
+    },
+    {
+      "id": "books",
+      "title": "图书下载",
+      "kind": "main",
+      "items": [
+        {
+          "id": "site-1271uk5",
+          "name": "Z-Library",
+          "url": "https://zh.wikipedia.org/wiki/Z-Library",
+          "description": "全球最大的免费的电子图书馆。",
+          "icon": "uploads/library.png",
+          "collections": [
+            "original"
+          ],
+          "aliases": [
+            "Z-Library - 维基百科，自由的百科全书",
+            "阅读收藏"
+          ]
+        },
+        {
+          "id": "site-59wclb",
+          "name": "安娜档案馆",
+          "url": "https://zh.wikipedia.org/wiki/%E5%AE%89%E5%A8%9C%E7%9A%84%E6%AA%94%E6%A1%88",
+          "description": "整合Z-Library、Library Genesis等资源，提供海量书籍和论文获取。",
+          "icon": "uploads/anna.jpg",
+          "collections": [
+            "original"
+          ],
+          "aliases": [
+            "安娜的档案 - 维基百科，自由的百科全书",
+            "阅读收藏"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "book"
+    },
+    {
+      "id": "design",
+      "title": "图片设计",
+      "kind": "more",
+      "items": [
+        {
+          "id": "site-1mlo6tm",
+          "name": "觅元素",
+          "url": "https://www.51yuansu.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-11l41cj",
+          "name": "觅知网",
+          "url": "https://www.51miz.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1u1qs0e",
+          "name": "包图网",
+          "url": "https://ibaotu.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-pfof83",
+          "name": "创客贴",
+          "url": "https://www.chuangkit.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-4qwuez",
+          "name": "Process On",
+          "url": "https://www.processon.com/diagrams",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-ognsq0",
+          "name": "字客网",
+          "url": "https://www.fontke.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1d4r0iw",
+          "name": "矢量图标",
+          "url": "http://www.iconfont.cn/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1jlyujz",
+          "name": "前端素材8网",
+          "url": "https://v.sucai8.cn/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1rord75",
+          "name": "阿里DataV地图下载",
+          "url": "https://datav.aliyun.com/portal/school/atlas/area_selector",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-17mmf9h",
+          "name": "51PPT",
+          "url": "http://www.51pptmoban.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-qk0z1l",
+          "name": "优品PPT",
+          "url": "http://www.ypppt.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1xwg8t7",
+          "name": "第一PPT",
+          "url": "http://www.1ppt.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "image"
+    },
+    {
+      "id": "ai",
+      "title": "人工智能",
+      "kind": "more",
+      "items": [
+        {
+          "id": "site-qm12nr",
+          "name": "谷歌AI Studio",
+          "url": "https://aistudio.google.com/?hl=zh-cn",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-kh7uly",
+          "name": "阿里AI公益小蜜",
+          "url": "https://open.alibabafoundation.com/aigongyi",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-kmxy0z",
+          "name": "千问",
+          "url": "https://chat.qwenlm.ai/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1pp22cj",
+          "name": "通义听悟",
+          "url": "https://tingwu.aliyun.com/home",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1ihknmr",
+          "name": "厦门市图书馆检索",
+          "url": "https://interweb.xmlib.net:8821/opac/index",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-al7dyd",
+          "name": "全国图书馆参考咨询联盟 文献传递",
+          "url": "http://www.ucdrs.superlib.net/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-11fa2fx",
+          "name": "付费教程购买 梦想课堂",
+          "url": "https://www.520mx.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "voice"
+    },
+    {
+      "id": "network",
+      "title": "科学上网",
+      "kind": "more",
+      "items": [
+        {
+          "id": "site-1hcoq7z",
+          "name": "Github",
+          "url": "https://github.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-14dbeo1",
+          "name": "宝可梦星云",
+          "url": "https://love.52pokemon.cc/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-8nrr2h",
+          "name": "飞机场",
+          "url": "https://guatizi.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1wauie6",
+          "name": "clash-verge",
+          "url": "https://github.com/clash-verge-rev/clash-verge-rev",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-174xwet",
+          "name": "超级简历",
+          "url": "https://www.wondercv.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-mec340",
+          "name": "天巡机票比价",
+          "url": "https://www.tianxun.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1ilwzz0",
+          "name": "天若Ocr",
+          "url": "https://ocr.tianruo.net/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-rvmx5p",
+          "name": "Notion市集",
+          "url": "https://www.notion.com/zh-cn/templates/category",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "cloud"
+    },
+    {
+      "id": "software",
+      "title": "破解软件",
+      "kind": "more",
+      "items": [
+        {
+          "id": "site-ojv0xp",
+          "name": "CyberMania",
+          "url": "https://www.cybermania.ws/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-m16u5",
+          "name": "歌曲宝",
+          "url": "https://www.gequbao.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-t8otlj",
+          "name": "节点检测",
+          "url": "https://ping0.cc/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-44m50y",
+          "name": "Adobe Camera Raw",
+          "url": "https://helpx.adobe.com/camera-raw/kb/camera-raw-plug-in-installer.html",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-f4wftf",
+          "name": "软件社",
+          "url": "https://www.rjshe.com/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-7tomt8",
+          "name": "MSDN",
+          "url": "https://next.itellyou.cn/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-17ip13i",
+          "name": "Adobe genp",
+          "url": "https://github.com/TheMythologist/GenP",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-8xbq3z",
+          "name": "Creative Cloud",
+          "url": "https://helpx.adobe.com/cn/download-install/apps/download-install-apps/creative-cloud-apps/download-creative-cloud-desktop-app-from-web.html",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "folder"
+    },
+    {
+      "id": "activation",
+      "title": "激活密钥",
+      "kind": "more",
+      "items": [
+        {
+          "id": "site-1yjkb7b",
+          "name": "Microsoft Activation Scripts",
+          "url": "https://massgrave.dev/",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
+          "id": "site-1srv3xf",
+          "name": "密钥博客",
+          "url": "http://webact.185.hk/sharedkey.php",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        }
+      ],
+      "origin": "original",
+      "icon": "key"
+    }
+  ],
+  "quickLinks": [
+    {
+      "id": "site-1kbacf0",
+      "name": "今日热榜",
+      "url": "https://tophub.today/",
+      "description": "",
+      "icon": "",
+      "collections": [
+        "original"
+      ]
+    },
+    {
+      "id": "site-1aq5ki3",
+      "name": "448刷步数",
+      "url": "https://bs.yanwan.store/run4/",
+      "description": "",
+      "icon": "",
+      "collections": [
+        "original"
+      ]
+    },
+    {
+      "id": "site-1mo8j1y",
+      "name": "Greasy Fork",
+      "url": "https://greasyfork.org/zh-CN",
+      "description": "",
+      "icon": "",
+      "collections": [
+        "original"
+      ]
+    },
+    {
+      "id": "site-1sxiifq",
+      "name": "爱壹帆",
+      "url": "https://www.iyf.tv/",
+      "description": "",
+      "icon": "",
+      "collections": [
+        "original"
+      ]
+    },
+    {
+      "id": "site-17f21sl",
+      "name": "彩云天气",
+      "url": "https://caiyunai.com/h5/",
+      "description": "",
+      "icon": "",
+      "collections": [
+        "original"
+      ]
+    }
+  ],
+  "engines": [
+    {
+      "id": "search_1",
+      "name": "Baidu",
+      "action": "https://www.baidu.com/baidu",
+      "param": "wd",
+      "placeholder": "百度一下 你就知道"
+    },
+    {
+      "id": "search_2",
+      "name": "Bing",
+      "action": "https://www.bing.com/search",
+      "param": "q",
+      "placeholder": "必应一下 你也知道"
+    },
+    {
+      "id": "search_3",
+      "name": "秘塔搜索",
+      "action": "https://metaso.cn/",
+      "param": "q",
+      "placeholder": "AI一下 基本知道"
+    },
+    {
+      "id": "search_4",
+      "name": "Google",
+      "action": "https://www.google.com/search",
+      "param": "q",
+      "placeholder": "谷歌一下 知道更多"
+    },
+    {
+      "id": "search_5",
+      "name": "豆瓣搜书",
+      "action": "https://search.douban.com/book/subject_search",
+      "param": "search_text",
+      "placeholder": "每天读书 豆瓣搜书"
+    },
+    {
+      "id": "search_6",
+      "name": "Translate",
+      "action": "https://translate.google.com/",
+      "param": "text",
+      "placeholder": "翻译一下 读懂英文",
+      "extra": {
+        "hl": "zh-CN"
+      }
+    }
+  ],
+  "bookmarkImport": {
+    "date": "2026-10-26",
+    "records": 86,
+    "bookmarks": 83,
+    "separators": 3,
+    "added": 81,
+    "merged": 2
+  }
+}

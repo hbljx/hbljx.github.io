@@ -1,0 +1,15 @@
+/* Motion is bounded, optional, and never covers controls. */
+.pixel-scroll-progress{position:fixed;inset:0 0 auto;z-index:80;height:2px;pointer-events:none;background:var(--mint);transform:scaleX(var(--scroll-progress,0));transform-origin:left}
+html[data-motion=on] .hero-scene{animation:scene-breathe 16s ease-in-out infinite alternate}
+@keyframes scene-breathe{from{opacity:.82}to{opacity:1}}
+html[data-motion=on] .pinned-card:hover{transform:translateY(-2px)}
+html[data-motion=on] .directory-card:hover{transform:translateY(-2px)}
+.pixel-click-particle,.pixel-trail-particle,.pixel-firework-particle,.pixel-click-ring{position:fixed;z-index:90;pointer-events:none;user-select:none;animation:none!important;transition:none!important;contain:layout style;will-change:transform,opacity}
+.pixel-click-particle,.pixel-trail-particle,.pixel-firework-particle{width:5px;height:5px;background:var(--particle-color,var(--mint))}.pixel-trail-particle{z-index:3;width:3px;height:3px}.pixel-firework-particle{width:7px;height:7px}.pixel-click-ring{width:14px;height:14px;border:1px solid var(--mint)}
+html.is-page-hidden .hero-scene{animation-play-state:paused!important}
+html[data-motion=off] .hero-scene{animation:none!important}
+html[data-motion=off] .pixel-trail-particle,html[data-motion=off] .pixel-click-particle,html[data-motion=off] .pixel-firework-particle,html[data-motion=off] .pixel-click-ring,.no-js .pixel-scroll-progress{display:none!important}
+html[data-motion=off] .pinned-card,html[data-motion=off] .directory-card{transform:none!important;transition:none!important}
+html[data-theme=light] .hero-scene{animation:none!important;opacity:1}
+@media(hover:none){.pixel-trail-particle{display:none}.pin-actions{opacity:1;pointer-events:auto}}
+@media(prefers-reduced-motion:reduce){.hero-scene{animation:none!important}.pixel-trail-particle,.pixel-click-particle,.pixel-firework-particle,.pixel-click-ring{display:none!important}.pinned-card,.directory-card{transform:none!important;transition:none!important}}

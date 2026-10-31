@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-31",
+  "checks": [
+    "All 158 original links preserved, .nojekyll included",
+    "3D startup, directory, search and AI room under /",
+    "3D startup, directory, search and AI room under /example-repo/",
+    "Embedded mobile directory under a GitHub project subpath",
+    "390px mobile: 16px website names, 14px descriptions, single-column cards, no overflow",
+    "320px mobile: 16px website names, 14px descriptions, single-column cards, no overflow"
+  ],
+  "consoleErrors": [],
+  "local404s": [],
+  "desktopFonts": {
+    "body": "16px",
+    ".site-name": "17px",
+    ".site-description": "14px",
+    ".card-actions button:not(.star)": "14px",
+    "#zone-nav button": "15px"
+  },
+  "mobileFonts": {
+    "viewport": 390,
+    "width": 390,
+    "oneColumn": true,
+    "name": "16px",
+    "desc": "14px",
+    "search": "16px"
+  }
+}

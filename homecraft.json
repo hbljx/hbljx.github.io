@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "Li+ 像素导航",
+  "url": "",
+  "logo": "assets/li.png",
+  "intro": "好用的网址，都在这里。",
+  "lang": [
+    "zh"
+  ],
+  "homecraft": true
+}

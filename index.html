@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7fb2e8">
+<!-- The world draws its own day and night. -->
+<meta name="color-scheme" content="only light">
+<meta name="darkreader-lock">
+<title>Li+ 像素导航</title>
+<meta name="description" content="Li+ 的 3D 导航之家。158 个网址，19 个分类，走进我的世界，把好用的留在手边。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Li+ 像素导航">
+<meta property="og:description" content="好用的网址，都在这里。">
+<meta property="og:image" content="assets/li.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/li.png">
+<link rel="stylesheet" href="engine/style.css">
+<script type="importmap">{"imports":{
+  "three":"./vendor/three/three.module.min.js",
+  "@engine/":"./engine/",
+  "@world/":"./world/",
+  "@world/build.js":"./world/build.js?v=20261031-panels",
+  "@world/layout.js":"./world/layout.js?v=20261031-controls",
+  "./world/layout.js":"./world/layout.js?v=20261031-controls",
+  "./world/furnish.js":"./world/furnish.js?v=20261031-life",
+  "./world/car.js":"./world/car.js?v=20261031-life",
+  "./world/activities.js":"./world/activities.js?v=20261031-panels",
+  "./world/outer.js":"./world/outer.js?v=20261031-life",
+  "./world/mountain.js":"./world/mountain.js?v=20261031-life",
+  "./engine/ui/sound.js":"./engine/ui/sound.js?v=20261031-life",
+  "./engine/world/rig.js":"./engine/world/rig.js?v=20261031-controls",
+  "./engine/input.js":"./engine/input.js?v=20261031-controls",
+  "./engine/world/player.js":"./engine/world/player.js?v=20261031-life",
+  "./engine/world/fx.js":"./engine/world/fx.js?v=20261031-life",
+  "@config":"./home.config.js?v=20261031-window-portal"
+}}</script>
+<link rel="stylesheet" href="navigation/world-ui.css?v=20261031-f-toggle">
+<link rel="stylesheet" href="navigation/activities.css?v=20261031-panels">
+</head>
+<body>
+<main id="world" aria-label="Li+ 像素导航"></main>
+<div id="loading"><div class="bar"><i></i></div></div>
+
+<section id="pages"><h1 class="plain-title">Li+ 像素导航</h1>
+  <article class="page" data-station="blog" data-icon="blog" data-embed="directory.html?zone=blog"><h2>全部网址</h2><p>导航手册。<a href="directory.html?zone=blog">打开网址目录</a></p></article>
+  <article class="page" data-station="about" data-icon="about" data-embed="directory.html?zone=about"><h2>日常客厅</h2><p>随手收藏与常用入口。<a href="directory.html?zone=about">打开网址目录</a></p></article>
+  <article class="page" data-station="works" data-icon="works" data-embed="directory.html?zone=works"><h2>AI 工作台</h2><p>对话、创作与开发。<a href="directory.html?zone=works">打开网址目录</a></p></article>
+  <article class="page" data-station="writing" data-icon="writing" data-embed="directory.html?zone=writing"><h2>灵感书房</h2><p>图书、壁纸与设计。<a href="directory.html?zone=writing">打开网址目录</a></p></article>
+  <article class="page" data-station="coffee" data-icon="coffee" data-embed="directory.html?zone=coffee"><h2>音乐咖啡吧</h2><p>让灵感有个好伴奏。<a href="directory.html?zone=coffee">打开网址目录</a></p></article>
+  <article class="page" data-station="lab" data-icon="lab" data-embed="directory.html?zone=lab"><h2>工具车库</h2><p>办公、软件与网络工具。<a href="directory.html?zone=lab">打开网址目录</a></p></article>
+  <article class="page" data-station="court" data-icon="court" data-embed="directory.html?zone=court"><h2>行情观测站</h2><p>行业指数与数据入口。<a href="directory.html?zone=court">打开网址目录</a></p></article>
+  <article class="page" data-station="pool" data-icon="pool" data-embed="directory.html?zone=pool"><h2>社区花园</h2><p>社区收藏与公益。<a href="directory.html?zone=pool">打开网址目录</a></p></article>
+<article class="page" data-station="mailbox"><h2>欢迎来到 Li+ 的家</h2><div class="li-help"><p>把好用的网址，留在这个小世界里。</p><p>点击底部快捷栏打开分类，或在房间里走近物件按 F。WASD 或左右键点击地面移动；Shift 跑步，R 切换走路 / 跑步；拖动视角，空格跳跃。F 再按一次关闭目录。走近物件按 E 开始互动，再按 E 或 Esc 退出，Q 坐下 / 起身。</p><p>篮球场可蓄力投篮；二楼可以睡觉、看书；客厅可以看电视；车库可开车；咖啡吧可以喝咖啡；AI 工作台可以打游戏。海边栈道末端可垂钓；厨房可做饭；健身区跑步机可跑步；所有椅凳、沙发和床沿都可坐下。首次互动提示在 2 秒后关闭，平时使用右下角操作按钮。手机可点地面移动和切换跑步。音效由本地合成，右上角声音开关可随时静音。</p><a href="directory.html" target="_blank" rel="noopener">打开独立目录 ↗</a></div></article></section>
+
+<!-- file:// cannot load the world modules. -->
+<script>
+if (location.protocol === 'file:') {
+  const zh = /^zh/i.test(navigator.language), note = document.createElement('aside');
+  note.id = 'startupNotice';
+  note.innerHTML = zh
+    ? '<h2>请用本地服务器打开</h2><p>直接双击打开时，浏览器不会加载 3D 世界。在这个文件夹里运行 <code>python3 tools/serve.py</code>（Windows 用 <code>python tools/serve.py</code>），它会找一个空闲端口并自动打开页面。地址也会打印在终端里。</p>'
+    : '<h2>Open it through a local server</h2><p>Browsers don’t load the 3D world from a double-clicked file. In this folder, run <code>python3 tools/serve.py</code> (on Windows, <code>python tools/serve.py</code>). It picks a free port and opens the page. The address is also printed in the terminal.</p>';
+  document.getElementById('pages').before(note);
+  document.getElementById('loading')?.remove();
+  document.body.classList.add('plain');
+}
+</script>
+<noscript><style>#world,#hud,#loading{display:none}#pages{display:block}</style></noscript>
+<script type="module" src="engine/main.js?v=20261031-panels"></script>
+<div id="li-brand" hidden><b>LI+</b><span>像素导航</span></div>
+<script type="module" src="navigation/world-ui.js?v=20261031-controls"></script>
+</body>
+</html>

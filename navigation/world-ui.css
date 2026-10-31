@@ -1,0 +1,48 @@
+#li-brand{position:fixed;left:24px;top:27px;z-index:14;display:flex;gap:10px;align-items:center;color:white;text-shadow:2px 2px #243927;font-family:system-ui}
+#li-brand b{font-size:27px;color:#ffdf8e}
+#li-brand span{font-size:13px}
+#li-brand[hidden]{display:none}
+body.reading #li-brand{visibility:hidden}
+/* Hide these during startup; world-ui.js removes the generated elements. */
+#portalButton,#minimap .badge.credit{display:none!important}
+.li-help{background:#f5efde;color:#324232;padding:30px;line-height:1.9}
+.li-help a{color:#466d36;text-decoration:underline}
+@media(max-width:650px){
+  #li-brand{top:20px;left:18px}
+  #li-brand span{display:none}
+  #li-brand b{font-size:23px}
+  #hotbar{max-width:calc(100vw - 16px);gap:2px}
+  #hotbar button{width:39px;height:43px}
+  #hotbar button img{width:26px;height:26px}
+}
+
+
+/* Embedded directories need a definite dialog height, including the about
+   station whose template profile card otherwise uses height: fit-content. */
+dialog#panel[data-kind="embed"] {
+  --directory-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  inset: calc(16px + env(safe-area-inset-top)) 0 calc(16px + env(safe-area-inset-bottom));
+  margin: auto;
+  width: min(1440px, calc(100vw - 40px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  max-width: none;
+  height: var(--directory-height);
+  max-height: var(--directory-height);
+}
+dialog#panel[data-kind="embed"] .body {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  overflow: hidden;
+}
+dialog#panel[data-kind="embed"] header { padding-left: 0; }
+body.reading:has(#panel[data-kind="embed"][open]) #hotbar { visibility: hidden; }
+@media (max-width: 720px), (max-height: 520px) {
+  dialog#panel[data-kind="embed"] {
+    --directory-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    inset: calc(8px + env(safe-area-inset-top)) 0 calc(8px + env(safe-area-inset-bottom));
+    width: calc(100vw - 12px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  }
+  dialog#panel[data-kind="embed"] header { height: 52px; padding-bottom: 6px; gap: 8px; }
+  dialog#panel[data-kind="embed"] h2 { font-size: 18px; }
+}
