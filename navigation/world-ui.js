@@ -4,10 +4,6 @@ const ready=setInterval(()=>{
     clearInterval(ready);brand.hidden=false;
     document.querySelector('#portalButton')?.remove();
     document.querySelector('#minimap .badge.credit')?.remove();
-    // Nearby room prompts share the same icon toolbar as character controls.
-    const corner = document.querySelector('#corner');
-    const prompt = document.querySelector('#prompt');
-    if (corner && prompt) corner.append(prompt);
   }
   else if(window.__homeStartupError){clearInterval(ready);}
 },250);
