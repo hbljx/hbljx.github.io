@@ -454,8 +454,8 @@ export function furnish({ layer }) {
   foot(15.5, -6.5, 4.85, 2.25); hot('lab', 15.5, 0, -6.5, 5.2, 1.8, 3);
   animated.carObstacle = obstacles[obstacles.length - 1];
   animated.carObstacle.dynamic = true;
-  animated.motorcycle = createMotorcycle(20.5, -8.3); planes.push(animated.motorcycle);
-  foot(20.5, -8.3, 2.5, 1.04);
+  animated.motorcycle = createMotorcycle(14.5, 1); planes.push(animated.motorcycle);
+  foot(14.5, 1, 2.5, 1.04);
   animated.motorcycleObstacle = obstacles[obstacles.length - 1];
   animated.motorcycleObstacle.dynamic = true;
   B.box(19.2, 0, -11.4, 0.8, 1.8, 0.9, L.steel);

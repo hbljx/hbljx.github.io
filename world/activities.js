@@ -13,7 +13,7 @@ export const ACTIVITY_SPOTS = [
   { id: 'reading', title: '灵感书房 · 看书', at: [-7.3, -6.7], floor: 4, radius: 2, anchor: [-8.8, 4, -6.85], yaw: 0, view: [-6.1, 7, -5], look: [-8.8, 5, -6.6] },
   { id: 'tv', title: '日常客厅 · 看电视', at: [1, -.3], floor: 0, radius: 3, anchor: [2.95, 0, -3.1], yaw: -Math.PI / 2, view: [9, 5, 2], look: [1.4, 1.1, -3.2] },
   { id: 'driving', title: '工具车库 · 开车', at: [15.5, -4.5], floor: 0, radius: 1.1 },
-  { id: 'motorcycle', title: '工具车库 · 骑摩托车', at: [20.5, -7.15], floor: 0, radius: 1.25 },
+  { id: 'motorcycle', title: '工具车库 · 骑摩托车', at: [14.5, -.15], floor: 0, radius: 1.25 },
   { id: 'coffee', title: '音乐咖啡吧 · 喝咖啡', at: [8, 13.3], floor: 0, radius: 2.1, anchor: [8.7, 0, 13.65], yaw: 0, view: [11.5, 3.6, 15.5], look: [8.5, 1.1, 13.65] },
   { id: 'gaming', title: 'AI 工作台 · 打游戏', at: [1.2, -8.3], floor: 0, radius: 2.1, anchor: [2.1, 0, -9.55], yaw: Math.PI, view: [-1, 3.2, -6.7], look: [2.1, 1.1, -10.35] },
 ];
@@ -53,7 +53,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   const limbs = [avatar.armL, avatar.armR, avatar.legL, avatar.legR];
   const vehicles = {
     driving: { mesh: world.animated.car, obstacle: world.animated.carObstacle, halfLength: 2.45, halfWidth: 1.12, home: [15.5, -6.5], distance: 0 },
-    motorcycle: { mesh: world.animated.motorcycle, obstacle: world.animated.motorcycleObstacle, halfLength: 1.25, halfWidth: .52, home: [20.5, -8.3], distance: 0 },
+    motorcycle: { mesh: world.animated.motorcycle, obstacle: world.animated.motorcycleObstacle, halfLength: 1.25, halfWidth: .52, home: [14.5, 1], distance: 0 },
   };
   for (const vehicle of Object.values(vehicles)) {
     vehicle.samples = [];
