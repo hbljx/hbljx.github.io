@@ -723,6 +723,7 @@ async function boot() {
   const flyButton = $('#flyButton');
   let flyIcon = null;
   function syncFlyButton() {
+    if (extras.activities?.syncMovement) { extras.activities.syncMovement(); return; }
     const name = player.swimming ? 'dive' : 'fly';
     if (flyIcon !== name) {
       flyIcon = name;
@@ -734,6 +735,7 @@ async function boot() {
   syncFlyButton();
   function toggleFly() { extras.stop?.(); rig.skipIntro(); player.toggleFly(); closePage(); syncFlyButton(); }
   flyButton.addEventListener('click', () => {
+    if (extras.activities?.cycleMovement && !player.swimming) { closePage(); extras.activities.cycleMovement(); return; }
     extras.stop?.();
     rig.skipIntro(); closePage();
     if (player.swimming) player.toggleDive(); else player.toggleFly();

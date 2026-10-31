@@ -5,6 +5,7 @@ import { BoxBatch } from '@engine/world/blocks.js';
 import { canvasTexture } from '@engine/world/textures.js';
 import * as P from './paint.js';
 import { createCar } from './car.js';
+import { createMotorcycle } from './motorcycle.js';
 import { buildFloorPlants } from './plants.js';
 import { HOUSE, COURT, RIM, VERTEC, LOFT, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, ROOF_GLASS } from './layout.js';
 
@@ -453,6 +454,10 @@ export function furnish({ layer }) {
   foot(15.5, -6.5, 4.85, 2.25); hot('lab', 15.5, 0, -6.5, 5.2, 1.8, 3);
   animated.carObstacle = obstacles[obstacles.length - 1];
   animated.carObstacle.dynamic = true;
+  animated.motorcycle = createMotorcycle(20.5, -8.3); planes.push(animated.motorcycle);
+  foot(20.5, -8.3, 2.5, 1.04);
+  animated.motorcycleObstacle = obstacles[obstacles.length - 1];
+  animated.motorcycleObstacle.dynamic = true;
   B.box(19.2, 0, -11.4, 0.8, 1.8, 0.9, L.steel);
   plane(0.65, 1.65, paint(32, 62, P.paintRack), 19.2, 0.95, -10.94, 0, true);
   foot(19.2, -11.4, 0.9, 1);

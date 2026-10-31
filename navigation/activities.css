@@ -75,10 +75,23 @@ body.reading #activity-controls,body.phone-on #activity-controls{display:none!im
   #activity-ui[data-activity=reading] .activity-buttons button{font-size:13px;padding:8px}
 }
 
-/* Up to eight controls fit even on narrow phones; every icon keeps the same size. */
-@media(max-width:380px){
-  #corner{--corner-size:clamp(28px,calc((100vw - 45px) / 8),34px);--corner-icon:24px;gap:3px}
+/* Reserve the left end of the same row for the brand, including narrow phones. */
+@media(max-width:720px),(max-height:520px){
+  #li-brand{left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));height:40px;align-items:center}
+  #li-brand span{display:none}
+  #li-brand b{font-size:23px;line-height:1}
+  #minimap{bottom:calc(92px + env(safe-area-inset-bottom))}
+  #flightPad .lift{right:calc(max(12px,env(safe-area-inset-right)) + 148px);bottom:calc(92px + env(safe-area-inset-bottom))}
+  body.xp-on #minimap{bottom:calc(120px + env(safe-area-inset-bottom))}
+  #hotbar{left:50%;transform:translateX(-50%);max-width:calc(100vw - 24px);box-sizing:border-box}
+  #hotbar button{min-width:0;flex-shrink:1}
 }
 @media(max-width:480px){
-  #li-brand{top:calc(max(12px,env(safe-area-inset-top)) + 52px)}
+  :root{--phone-control-size:clamp(28px,calc((100vw - 96px) / 7),40px)}
+  #corner{--corner-size:var(--phone-control-size);--corner-icon:24px;gap:3px;max-width:calc(100vw - 76px)}
+  #li-brand{height:var(--phone-control-size)}
+}
+@media(max-width:720px) and (orientation:portrait){
+  #flightPad .lift{right:max(12px,env(safe-area-inset-right));bottom:calc(236px + env(safe-area-inset-bottom))}
+  body.xp-on #flightPad .lift{bottom:calc(264px + env(safe-area-inset-bottom))}
 }
