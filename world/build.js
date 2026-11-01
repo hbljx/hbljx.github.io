@@ -31,6 +31,7 @@ export function build({ grid, layer, materials, stage }) {
   // Clear the three trees inside the new outside stair's footprint.
   const forest = buildForest(grid, layer, FOREST.filter(([x, z]) => !(x >= -32 && x <= -22 && z >= -15 && z <= -3)));
   const furn = furnish({ layer });
+  furn.planes.push(third.skylights);
   const mergeBatch = (into, from) => {
     for (const kind of Object.keys(into.items)) into.items[kind].push(...from.items[kind]);
   };
@@ -49,7 +50,7 @@ export function build({ grid, layer, materials, stage }) {
   const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
   const carrier = buildCarrier(layer, furn.batches.static);
   const planeObstacle=aircraftObstacle(furn.animated.airplane);
-  third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);
+  third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh);
   return {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
@@ -93,8 +94,10 @@ export function setup(app) {
       world.outer.update(dt, stage.camera);
       activities.update(dt);
       household.update(dt);
+      world.carrier.updateCabin(app.player,stage.camera);
       const cutaway = world.hidden.has('roof');
-      world.setHidden('aircraft', cutaway && world.animated.airplane.position.y < 14);
+      const plane=world.animated.airplane.position;
+      world.setHidden('aircraft', cutaway && plane.y < 14 && plane.x>-21&&plane.x<25&&plane.z>-13&&plane.z<17);
       world.setHidden('thirdRoomRoof', cutaway);
     },
   };

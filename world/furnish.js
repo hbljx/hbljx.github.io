@@ -7,7 +7,7 @@ import * as P from './paint.js';
 import { createCar } from './car.js';
 import { createMotorcycle } from './motorcycle.js';
 import { buildFloorPlants } from './plants.js';
-import { HOUSE, COURT, RIM, VERTEC, LOFT, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, ROOF_GLASS } from './layout.js';
+import { HOUSE, COURT, RIM, VERTEC, LOFT, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR } from './layout.js';
 
 const L = {
   // Two interior wood finishes: the existing floor and the wall-panel timber.
@@ -76,13 +76,7 @@ export function furnish({ layer }) {
     roof.box(2, HOUSE.height - 0.4, z, HOUSE.x1 - HOUSE.x0, 0.3, 0.3, L.wood);
     for (const x of [-12, 3, 17]) pendant(x, z, 6.5);
   }
-  // Flush slim mullions keep the large roof fields readable without dividing
-  // the view into opaque metre-wide strips or catching feet on raised joints.
-  for (const p of ROOF_GLASS) {
-    const width = p.x1 - p.x0, depth = p.z1 - p.z0, count = Math.ceil(width / 4.8);
-    for (let i = 0; i <= count; i++) roof.box(p.x0 + width * i / count, HOUSE.height + .94, (p.z0 + p.z1) / 2, .065, .065, depth, L.steel);
-    for (const z of [p.z0, p.z1]) roof.box((p.x0 + p.x1) / 2, HOUSE.height + .94, z, width, .065, .065, L.steel);
-  }
+  // The third-floor module owns the replacement skylight and its frame.
   // Flush facade panes belong to the inner wall line; the open wood leaves
   // start outside it. The grid retains its cells for collision and lighting.
   for (const [x, width, bottom, height] of [[-11, 18, 0, 9], [13.5, 21, 0, 9], [.5, 5, 3, 6]]) {

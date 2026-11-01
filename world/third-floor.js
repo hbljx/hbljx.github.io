@@ -7,6 +7,7 @@ export function buildThirdFloor({ grid, layer }) {
   const wood = { tex: 'wood_panel' }, floor = { tex: 'greige_floor' }, dark = { tex: 'black_metal' },
     glass = { tex: 'glass', glass: true }, cushion = { tex: 'paint', tint: 0x587565 }, china = { tex: 'paint', tint: 0xece1c6 };
   const barriers = [], slabs = [], stairPoints = [], hit = new THREE.Vector3();
+  const glassVertices=[];
   let planeObstacle=()=>false;
   const foot = { x: -19.4, y: 4, z: -5.25 }, exit = { x: -19.4, y: 11, z: -5.25 };
   const room = { x0: -18, x1: -4, z0: -9, z1: 6 };
@@ -15,12 +16,15 @@ export function buildThirdFloor({ grid, layer }) {
   const roomRoof = new THREE.Box3(new THREE.Vector3(room.x0-.3,14.7,room.z0-.3),new THREE.Vector3(room.x1+.3,14.94,room.z1+.3));
   const overRoomRoof = (x,z,pad=0) => x>=roomRoof.min.x-pad&&x<=roomRoof.max.x+pad&&z>=roomRoof.min.z-pad&&z<=roomRoof.max.z+pad;
   const obstacle = (x, z, w, d) => barriers.push({ x0: x-w/2, x1: x+w/2, z0: z-d/2, z1: z+d/2 });
-  // The new floor covers the old skylights; keep a solid ceiling underneath it.
+  // Replace the old skylights completely, keeping one opening in the new deck.
   for(let x=-20;x<24;x++)for(let z=-12;z<16;z++)grid.set(x,10,z,x>=-2&&x<6&&z>=-5&&z<9?null:'roof','roof');
   function skylight(batch,x0,x1,z0,z1,y,h,look,hole){
     const [a,b,c,d]=hole;
     for(const [l,r,n,s]of [[x0,a,z0,z1],[b,x1,z0,z1],[a,b,z0,c],[a,b,d,z1]])batch.box((l+r)/2,y,(n+s)/2,r-l,h,s-n,look);
-    batch.box((a+b)/2,y+h-.045,(c+d)/2,b-a,.045,d-c,glass);
+    const top=y+h;
+    // A single two-sided plane avoids overlapping transparent surfaces. The
+    // frame and walking support remain independent of the visible glass.
+    glassVertices.push(a,top,c,a,top,d,b,top,d,a,top,c,b,top,d,b,top,c);
     for(const x of [a,b])batch.box(x,y+h-.055,(c+d)/2,.085,.055,d-c,dark);
     for(const z of [c,d])batch.box((a+b)/2,y+h-.055,z,b-a,.055,.085,dark);
   }
@@ -173,5 +177,10 @@ export function buildThirdFloor({ grid, layer }) {
       return best;
     },
   };
-  return {source,batches:{thirdFloor:B,thirdRoomRoof:ceiling,thirdStairs:stairs}};
+  const paneGeometry=new THREE.BufferGeometry();
+  paneGeometry.setAttribute('position',new THREE.Float32BufferAttribute(glassVertices,3));paneGeometry.computeVertexNormals();
+  const paneMaterial=new THREE.MeshLambertMaterial({color:0xa8d2df,transparent:true,opacity:.22,depthWrite:false,side:THREE.DoubleSide});
+  paneMaterial.forceSinglePass=true;
+  const skylights=new THREE.Mesh(paneGeometry,paneMaterial);skylights.name='roof-skylights';skylights.userData.group='roof';skylights.renderOrder=4;
+  return {source,skylights,batches:{thirdFloor:B,thirdRoomRoof:ceiling,thirdStairs:stairs}};
 }

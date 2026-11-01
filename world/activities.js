@@ -10,7 +10,7 @@ import { createCruise } from './carrier.js';
 
 export const ACTIVITY_SPOTS = [
   ...LIFE_SPOTS,
-  { id: 'carrier', title: '001号航母 · 海上巡航', at: [35, 8], floor: 0, radius: 2 },
+  { id: 'carrier', title: '航母驾驶舱 · 海上巡航', at: [68.65, 13.1], floor: 3.4, radius: 1.6 },
   { id: 'tea', title: '三楼茶室 · 泡茶', at: [-11, 2], floor: 11, radius: 1.5, anchor: [-11, 11, .45], yaw: Math.PI, view: [-6.3, 13.8, 3.8], look: [-11, 12, -1.5] },
   { id: 'airplane', title: '领地飞机 · 驾驶飞机', at: [12, 4.2], floor: 11, radius: 1.6 },
   { id: 'basketball', title: '篮球场 · 投篮', at: [-12, 4], floor: 0, radius: 3, view: [-8, 6, 14], look: [-13.5, 1.5, 4] },
@@ -38,7 +38,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     <div class="activity-meter" hidden aria-label="投篮力度，绿色区域命中"><i></i><b></b></div>
     <section class="activity-book" hidden><h3></h3><p></p><small></small></section>
     <canvas class="activity-game" width="320" height="180" hidden aria-label="接住金块，避开红块"></canvas>
-    <div class="activity-buttons"><button type="button" data-action="toggle"></button><button type="button" data-action="primary" hidden></button><button type="button" data-action="secondary" hidden></button><button type="button" data-action="summit" hidden>山顶降落 L</button></div>
+    <div class="activity-buttons"><button type="button" data-action="toggle"></button><button type="button" data-action="primary" hidden></button><button type="button" data-action="secondary" hidden></button><button type="button" data-action="summit" hidden>山顶降落 L</button><button type="button" data-action="carrier-land" hidden>降落航母 H</button></div>
     <div class="activity-pad" hidden><button type="button" data-key="a" aria-label="向左">←</button><button type="button" data-key="w" aria-label="前进">↑</button><button type="button" data-key="s" aria-label="倒车">↓</button><button type="button" data-key="d" aria-label="向右">→</button><button type="button" data-key=" " aria-label="刹车">刹车</button><button type="button" data-key="c" aria-label="降低高度" hidden>降低</button></div>`;
   document.body.append(ui);
   const controls = document.createElement('div'); controls.id = 'activity-controls'; controls.hidden = true;
@@ -52,6 +52,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   const $ = s => ui.querySelector(s), title = $('strong'), hint = $('.activity-hint'), status = $('.activity-status');
   const toggle = $('[data-action="toggle"]'), primary = $('[data-action="primary"]'), secondary = $('[data-action="secondary"]');
   const summit = $('[data-action="summit"]');
+  const carrierLand = $('[data-action="carrier-land"]');
   const meter = $('.activity-meter'), fill = meter.querySelector('i'), book = $('.activity-book'), canvas = $('.activity-game'), pad = $('.activity-pad');
   const visuals = createActivityVisuals(stage.scene, avatar, canvas);
   const lifeVisuals = createLifeVisuals(stage.scene, avatar), seats = getSeats(world);
@@ -75,6 +76,26 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   let runMode = false, collapsed = false, controlsReady = false, stepDistance = 0, lastX = player.pos.x, lastZ = player.pos.z, lastMode = player.mode, breathClock = 0;
   let firstPerson = false, saved = null, pageIndex = 0, flip = 0, sip = 0, sips = 0;
   let tvChannel = 0, tvTime = 0, tvPaused = false, carSpeed = 0, carHeading = Math.PI / 2, driveDistance = 0, notice = '';
+  let ambient=null,ambientTime=0,ambientClock=0;
+  function setAmbientActivity(id){
+    ambient=id;
+    // These screens are under the solid roof; skip their hidden outside view.
+    const visible=world.hidden.has('roof')||stage.camera.position.y<10.9;
+    visuals.tv.mesh.visible=active?.id==='tv'||visible&&id==='tv';
+    visuals.monitor.mesh.visible=active?.id==='gaming'||visible&&id==='gaming';
+  }
+  function ambientScreens(dt){
+    ambientTime+=dt;ambientClock+=dt;
+    if(!ambient||ambientClock<=.1||active?.id===ambient)return;
+    ambientClock=0;
+    if(ambient==='tv')paintTV(visuals.tv,ambientTime,0,false);
+    else{
+      const c=canvas.getContext('2d');c.fillStyle='#152d43';c.fillRect(0,0,320,180);
+      c.fillStyle='#e8c777';for(let i=0;i<5;i++)c.fillRect(30+i*60,(ambientTime*28+i*39)%160,12,12);
+      c.fillStyle='#76ae9b';c.fillRect(140+Math.sin(ambientTime)*100,157,35,10);
+      visuals.monitor.texture.needsUpdate=true;
+    }
+  }
   const shot = { charging: false, power: 0, flight: false, t: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, scored: false, willScore: false, attempts: 0, points: 0 };
   const game = { x: 160, time: 30, score: 0, lives: 3, over: false, objects: Array.from({ length: 4 }, (_, i) => ({ x: 30 + i * 75, y: -40 - i * 45, speed: 40 + i * 6, bad: i === 2 })) };
   function fitActivityPanel() {
@@ -158,7 +179,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     rig.recenter(player, true);
     if (isDriving()) rig.set(carHeading + Math.PI, .3, spot.id === 'motorcycle' ? 5 : 6.8);
     if (spot.id === 'airplane') rig.set(flight.heading + Math.PI, .34, innerWidth < 720 && innerHeight > innerWidth ? 18 : 12);
-    if (spot.id === 'carrier') rig.set(world.carrier.mesh.rotation.y + .65, .62, innerWidth < 720 && innerHeight > innerWidth ? 65 : 54);
+    if (spot.id === 'carrier') rig.set(world.carrier.mesh.rotation.y + .65, .62, innerWidth < 720 && innerHeight > innerWidth ? 86 : 72);
     frameActivity();
     visuals.book.visible = visuals.page.visible = spot.id === 'reading';
     visuals.mug.visible = spot.id === 'coffee' || spot.id === 'tea'; visuals.tv.mesh.visible = spot.id === 'tv'; visuals.monitor.mesh.visible = spot.id === 'gaming';
@@ -237,6 +258,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (k === 'e') { if (!e.repeat) { if (active) stop(); else start(); } return true; }
     if (!active) return false;
     if (active.id==='airplane' && k==='l') { if(!e.repeat){flight.landAt('summit');refreshUI();} return true; }
+    if (active.id==='airplane' && k==='h') { if(!e.repeat){flight.landAt('carrier');refreshUI();} return true; }
     if (k === 'escape') { stop(); return true; }
     if (k === 'f') { stop(true); return false; }
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k) || (active.id === 'airplane' && k === 'c')) {
@@ -293,6 +315,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   primary.addEventListener('pointercancel', () => { shot.charging = false; });
   secondary.addEventListener('click', () => { secondaryAction(); secondary.blur(); });
   summit.addEventListener('click',()=>{flight.landAt('summit');refreshUI();summit.blur();});
+  carrierLand.addEventListener('click',()=>{flight.landAt('carrier');refreshUI();carrierLand.blur();});
   for (const b of pad.children) {
     b.addEventListener('pointerdown', e => { b.setPointerCapture(e.pointerId); keys.add(b.dataset.key); e.preventDefault(); });
     for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(name, () => keys.delete(b.dataset.key));
@@ -317,13 +340,14 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (!s) return;
     ui.dataset.activity = active?.id || '';
     title.textContent = s.title; toggle.textContent = active ? '结束互动 E' : '开始互动 E';
-    primary.hidden = secondary.hidden = summit.hidden = meter.hidden = book.hidden = canvas.hidden = pad.hidden = true;
+    toggle.hidden=false;
+    primary.hidden = secondary.hidden = summit.hidden = carrierLand.hidden = meter.hidden = book.hidden = canvas.hidden = pad.hidden = true;
     hint.textContent = '走近后按 E 体验 · F 打开网址目录'; status.textContent = '';
     if (!active) return;
     hint.textContent = 'E / Esc 或点击地面结束 · 拖拽转动视角';
     switch (s.id) {
       case 'tea': primary.hidden = false; primary.textContent = '泡茶品茗 空格'; hint.textContent = '坐在茶桌旁，按空格泡一杯茶 · 拖拽欣赏三楼景色'; break;
-      case 'airplane': pad.hidden = primary.hidden = secondary.hidden = summit.hidden = false; primary.textContent = '起飞'; secondary.textContent = '回三楼 R'; toggle.textContent = '下机 E'; hint.textContent = 'W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶降落'; break;
+      case 'airplane': pad.hidden = primary.hidden = secondary.hidden = summit.hidden = carrierLand.hidden = false; primary.textContent = '起飞'; secondary.textContent = '回三楼 R'; toggle.textContent = '下机 E'; hint.textContent = 'W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶 · H 降落航母'; break;
       case 'carrier': pad.hidden = secondary.hidden = false; secondary.textContent = '自动返港 R'; toggle.textContent = '停船离舵 E'; hint.textContent = 'W/S 前进倒航 · A/D 转向 · 空格刹车 · R 返港 · 拖拽转动视角'; break;
       case 'basketball': primary.hidden = meter.hidden = false; primary.textContent = '按住蓄力 / 松手投篮'; hint.textContent = '按住空格蓄力，绿色区松手投篮 · E 退出'; break;
       case 'sleep': toggle.textContent = '起床 E'; break;
@@ -351,8 +375,9 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (id === 'airplane') {
       const f = flight.status(), label = {parked:`${f.airportName} · 已停稳`,takeoff:'正在起飞',flying:'巡视领地',returning:`飞往${f.destinationName}`,landing:`降落${f.destinationName}`}[f.phase];
       status.textContent = `${label} · ${Math.round(f.y)} 米${planeExitPending?' · 停稳后下机':''}`;
-      primary.hidden = !flight.parked; secondary.hidden = summit.hidden = flight.parked;
-      toggle.textContent = flight.parked ? '下机 E' : '降落下机 E';
+      primary.hidden = !flight.parked; secondary.hidden = summit.hidden = carrierLand.hidden = flight.parked;
+      toggle.hidden=!flight.parked;toggle.textContent='下机 E';
+      hint.textContent=flight.parked?'点击起飞 · E 下机 · 拖拽转动视角':'W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶 · H 降落航母';
     } else if (id === 'carrier') { const c=cruise.status();status.textContent=`${c.message} · ${Math.round(Math.abs(c.speed)*3.6)} km/h · 航程 ${Math.round(c.distance)} 米`; }
     else if (id === 'tea') status.textContent = `${sip>0?'沏茶品茗中':'茶香正好'} · 已泡 ${teaCups} 杯`;
     else if (id === 'basketball') status.textContent = `${shot.points} 分 / ${shot.attempts} 次投篮${notice ? ' · ' + notice : ''}`;
@@ -458,7 +483,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     avatar.body.position.set(0, 0, 0); avatar.body.rotation.set(0, 0, 0); avatar.head.rotation.set(0, 0, 0);
     for (const limb of limbs) limb.rotation.set(0, 0, 0);
     const id = active.id;
-    if (id === 'carrier') { const helm=world.carrier.toWorld(4.6,7.3,6.4);avatar.root.position.set(helm.x,helm.y,helm.z);avatar.armL.rotation.x = avatar.armR.rotation.x = -.65; return; }
+    if (id === 'carrier') { const helm=world.carrier.helm();avatar.root.position.set(helm.x,helm.y,helm.z);avatar.armL.rotation.x = avatar.armR.rotation.x = -.65; return; }
     if (active.kind === 'seat' || id === 'tea' || id === 'airplane' || id === 'reading' || id === 'tv' || id === 'gaming' || id === 'driving') {
       avatar.root.position.y = active.kind === 'seat' ? active.seatHeight - .5625 : player.y + (id === 'airplane' ? .92 : id === 'tea' ? .0675 : id === 'driving' ? -.12 : id === 'tv' ? -.0025 : .0075);
       avatar.legL.rotation.x = avatar.legR.rotation.x = -Math.PI / 2;
@@ -531,10 +556,12 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       controlsReady = true; controls.hidden = false;
     }
     time += dt; uiClock += dt; screenClock += dt;
+    flight.syncParked();
+    ambientScreens(dt);
     if (!active) { walkingSounds(); if (uiClock > .15) { uiClock = 0; const seat = nearest(seats), next = nearest() || seat; if (near !== next || nearSeat !== seat) { near = next; nearSeat = seat; refreshUI(); } } return; }
     if (document.querySelector('dialog[open]')) { stop(true); return; }
     if (isDriving()) drive(dt);
-    if (active.id === 'carrier') cruise.update(dt, keys);
+    if (active.id === 'carrier') {cruise.update(dt, keys);flight.syncParked();}
     if (active.id === 'airplane') {
       flight.update(dt, keys);
       if (planeExitPending && flight.parked) { stop(); return; }
@@ -553,7 +580,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     return { x: v.mesh.position.x, z: v.mesh.position.z, speed: selected ? carSpeed : 0, heading: v.mesh.rotation.y + Math.PI / 2, distance: v.distance };
   }
   return {
-    start, stop, keyDown, keyUp, update, cycleMovement, syncMovement, spots: allSpots, seats, flight, cruise,
+    start, stop, keyDown, keyUp, update, cycleMovement, syncMovement, setAmbientActivity, spots: allSpots, seats, flight, cruise,
     pause() { clearKeys(); sound.loop(null); },
     get running() { return runMode; },
     get active() { return !!active; }, get current() { return active?.id || null; },

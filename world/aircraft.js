@@ -92,7 +92,7 @@ export function createAirplane() {
 export function createFlight({ mesh, world, player, stage, sound }) {
   let phase = 'parked', heading = AIRFIELD.heading, speed = 0, distance = 0, bank = 0;
   const home = AIRFIELD;
-  const fields = [home, world.mountain.airfield];
+  const fields = [home, world.mountain.airfield, world.carrier.airfield];
   let parkedAt=home,destination=null,launchHeight=18,approachHeight=65;
   const footprint = [[0, 0], [-4, 0], [4, 0], [0, -4], [0, 4]];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -105,13 +105,17 @@ export function createFlight({ mesh, world, player, stage, sound }) {
     return Math.max(18, height + 4);
   }
   function anchor() { player.anchor(mesh.position.x, mesh.position.y, mesh.position.z, heading); }
+  function syncParked(){
+    if(phase!=='parked'||parkedAt.id!=='carrier')return;
+    heading=parkedAt.heading;mesh.position.set(parkedAt.x,parkedAt.y,parkedAt.z);mesh.rotation.set(0,heading,0);mesh.updateMatrixWorld(true);
+  }
   function park(at = destination || parkedAt) {
     parkedAt=at; destination=null;
     phase = 'parked'; speed = bank = 0; heading = at.heading;
     mesh.position.set(at.x, at.y, at.z); mesh.rotation.set(0, heading, 0); mesh.userData.parked=true;
-    mesh.castShadow = true; stage.renderer.shadowMap.needsUpdate = true; sound.loop(null);
+    mesh.castShadow = at.id!=='carrier'; stage.renderer.shadowMap.needsUpdate = true; sound.loop(null);
   }
-  function start() { mesh.userData.canopy.rotation.x=0;mesh.castShadow = false; stage.renderer.shadowMap.needsUpdate = true; anchor(); }
+  function start() { syncParked();mesh.userData.canopy.rotation.x=0;mesh.castShadow = false; stage.renderer.shadowMap.needsUpdate = true; anchor(); }
   function leave(){mesh.userData.canopy.rotation.x=-Math.PI/3;}
   function takeoff() { if (phase === 'parked') { launchHeight=Math.max(parkedAt.y+7,clearance(parkedAt.x,parkedAt.z)); phase = 'takeoff'; mesh.userData.parked=false; mesh.castShadow = false; stage.renderer.shadowMap.needsUpdate = true; } }
   function landAt(id) {
@@ -144,10 +148,11 @@ export function createFlight({ mesh, world, player, stage, sound }) {
       const floor = clearance(x, z);
       const lift = Number(keys.has(' ')) - Number(keys.has('control') || keys.has('c'));
       p.y = clamp(p.y + (p.y < floor ? 6 : lift * 5) * dt, Math.min(p.y, floor), 78);
-      if (p.y >= floor - .05 && x > -48 && x < 50 && z > -84 && z < 44) { p.x = x; p.z = z; distance += speed * dt; }
+      if (p.y >= floor - .05 && x > -170 && x < 170 && z > -185 && z < 170) { p.x = x; p.z = z; distance += speed * dt; }
       else if (p.y >= floor - .05) heading += dt;
-      // Descending over either marked pad also engages the landing approach.
-      if(keys.has('c'))for(const field of fields)if(Math.hypot(p.x-field.x,p.z-field.z)<3 && p.y<=field.y+10){landAt(field.id);break;}
+      // Sea-level decks are below the free-flight safety floor, so allow the
+      // marked landing approach to take over from that safe height as well.
+      if(keys.has('c'))for(const field of fields)if(Math.hypot(p.x-field.x,p.z-field.z)<3 && p.y<=Math.max(field.y+10,clearance(field.x,field.z)+2)){landAt(field.id);break;}
     } else if (phase === 'returning') {
       // Distant approaches clear the mountains; nearby pads need only a short alignment.
       bank *= Math.exp(-dt * 4);
@@ -159,11 +164,12 @@ export function createFlight({ mesh, world, player, stage, sound }) {
         else { p.x = destination.x; p.z = destination.z; phase = 'landing'; speed = 0; }
       }
     } else if (phase === 'landing') {
-      heading = destination.heading; p.y = Math.max(destination.y, p.y - dt * 8); if (p.y <= destination.y) park();
+      heading = destination.heading;p.x=destination.x;p.z=destination.z;p.y = Math.max(destination.y, p.y - dt * 8); if (p.y <= destination.y) park();
     }
+    syncParked();
     mesh.rotation.set(0, heading, bank);
     if (phase !== 'parked') mesh.userData.propeller.rotation.z += dt * 38;
     anchor(); sound.loop(phase === 'parked' ? null : 'engine', speed / 16);
   }
-  return { start, leave, park, takeoff, returnHome, landAt, landNearest, exitPosition, update, get parked() { return phase === 'parked'; }, get heading() { return heading; }, get bank() { return bank; }, status: () => ({ phase, speed, distance, airport:parkedAt.id, airportName:parkedAt.name, destination:destination?.id || null, destinationName:destination?.name || null, x: mesh.position.x, y: mesh.position.y, z: mesh.position.z }) };
+  return { start, leave, park, takeoff, returnHome, landAt, landNearest, exitPosition, update, syncParked, get parked() { return phase === 'parked'; }, get heading() { return heading; }, get bank() { return bank; }, status: () => ({ phase, speed, distance, airport:parkedAt.id, airportName:parkedAt.name, destination:destination?.id || null, destinationName:destination?.name || null, x: mesh.position.x, y: mesh.position.y, z: mesh.position.z }) };
 }
