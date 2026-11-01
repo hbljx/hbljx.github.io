@@ -220,13 +220,17 @@ export function furnish({ layer }) {
     if (i % 2 === 0) bake('stair-tread', stairX, y + .12, z + run / 2, .28, 2.2, [0, -1, 1]);
   }
   const length = Math.hypot(STAIRS.z1 - STAIRS.z0, LOFT.y), slope = Math.atan2(LOFT.y, STAIRS.z1 - STAIRS.z0);
-  // A rail on the open west side; the east side is the panelled TV wall.
-  for (const x of [STAIRS.x0 + 0.1]) {
-    B.box(x, LOFT.y / 2 + 0.93, stairZ, 0.065, 0.065, length, L.steel, { rx: slope });
-    for (const t of [0.04, 0.27, 0.5, 0.73, 0.96]) {
+  // Both sides continue all the way to the second-floor landing. The east
+  // handrail sits above the stepped TV-wall cap rather than disappearing into it.
+  for (const x of [STAIRS.x0 + 0.1,STAIRS.x1-.1]) {
+    const railHeight=x>stairX?1.22:1;
+    B.box(x, LOFT.y / 2 + railHeight-.0325, stairZ, 0.065, 0.065, length, L.steel, { rx: slope });
+    if(x<stairX)B.box(x,LOFT.y/2+.47,stairZ,.06,.06,length,L.steel,{rx:slope});
+    for (let n=0;n<=8;n++) {
+      const t=n/8;
       const z = STAIRS.z1 - t * (STAIRS.z1 - STAIRS.z0);
       const y = (STAIRS.z1 - z) * LOFT.y / (STAIRS.z1 - STAIRS.z0);
-      B.box(x, y, z, 0.06, 0.95, 0.06, L.steel);
+      B.box(x, y, z, 0.065, railHeight+.035, 0.065, L.steel);
     }
   }
   B.box(SECRET.x1 + 1.06, LOFT.y + 1.35, SECRET.door + 0.5, 0.14, 0.32, 0.09, L.paint(0xb3261e));

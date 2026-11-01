@@ -12,7 +12,7 @@ import { atlasPlanes } from './atlas-planes.js';
 import { ISLAND, FOREST, COURT, RIM } from './layout.js';
 import { createActivities } from './activities.js';
 import { buildThirdFloor } from './third-floor.js';
-import { createAirplane } from './aircraft.js';
+import { createAirplane, aircraftObstacle } from './aircraft.js';
 
 export function build({ grid, layer, materials, stage }) {
   // Flat glass panes need one two-sided pass rather than separate front/back
@@ -44,6 +44,8 @@ export function build({ grid, layer, materials, stage }) {
   // The pier and sailboat, the mountain and the roof's outside stair are
   // ground of their own, outside the block grid.
   const outer = buildOuter(layer, materials), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
+  const planeObstacle=aircraftObstacle(furn.animated.airplane);
+  third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group);
   return {
     batches: { ...furn.batches, thirdRoomRoof: third.batches.thirdRoomRoof }, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
@@ -72,7 +74,7 @@ function drawMap(ctx, X, Z, PPM) {
 
 // The sailboat and keyboard/touch activities share one update loop.
 export function setup(app) {
-  const { stage, world, player } = app;
+  const { stage, world } = app;
   const activities = createActivities(app);
   return {
     activities,
@@ -86,8 +88,8 @@ export function setup(app) {
       world.outer.update(dt, stage.camera);
       activities.update(dt);
       const cutaway = world.hidden.has('roof');
-      world.setHidden('thirdFloor', cutaway);
-      world.setHidden('thirdRoomRoof', cutaway || (player.y > 10.5 && player.y < 14.7 && world.thirdFloor.insideRoom(player.pos.x, player.pos.z)));
+      world.setHidden('aircraft', cutaway && world.animated.airplane.position.y < 14);
+      world.setHidden('thirdRoomRoof', cutaway);
     },
   };
 }

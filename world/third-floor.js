@@ -7,6 +7,7 @@ export function buildThirdFloor({ grid, layer }) {
   const wood = { tex: 'wood_panel' }, floor = { tex: 'greige_floor' }, dark = { tex: 'black_metal' },
     glass = { tex: 'glass', glass: true }, cushion = { tex: 'paint', tint: 0x587565 }, china = { tex: 'paint', tint: 0xece1c6 };
   const barriers = [], slabs = [], stairPoints = [], hit = new THREE.Vector3();
+  let planeObstacle=()=>false;
   const foot = { x: -19.4, y: 4, z: -5.25 }, exit = { x: -19.4, y: 11, z: -5.25 };
   const room = { x0: -18, x1: -4, z0: -9, z1: 6 };
   const insideRoom = (x, z) => x > room.x0 && x < room.x1 && z > room.z0 && z < room.z1;
@@ -53,7 +54,6 @@ export function buildThirdFloor({ grid, layer }) {
     return makeSeat(`tea-${i}`, '三楼茶室 · 茶椅', x,11,z,11.63,yaw,[x+Math.cos(yaw)*1.05,z-Math.sin(yaw)*1.05],1.2);
   });
   // Open-air parking apron and runway markings on the eastern half.
-  obstacle(12,0,7.4,6.4);
   B.box(12,11.065,0,9,.015,19,{tex:'paint',tint:0x576267});
   for(const x of [7.6,16.4])B.box(x,11.085,0,.10,.01,19,china);
   for(let z=-8;z<=8;z+=2)B.box(12,11.09,z,.14,.01,.85,china);
@@ -61,11 +61,13 @@ export function buildThirdFloor({ grid, layer }) {
   // A two-flight outside stair links the existing second-floor landing to level three.
   for(let y=4;y<7;y++)for(let z=-6;z<-4;z++)grid.set(-21,y,z,null,'wallW');
   for(let z=-6;z<-4;z++)grid.set(-21,11,z,null,'roof');
-  function slab(x0,x1,z0,z1,y) {
-    stairs.box((x0+x1)/2,y-.14,(z0+z1)/2,x1-x0,.14,z1-z0,floor);
+  function slab(x0,x1,z0,z1,y,drawEnd=x1) {
+    stairs.box((x0+drawEnd)/2,y-.14,(z0+z1)/2,drawEnd-x0,.14,z1-z0,floor);
     slabs.push({x0,x1,z0,z1,y,box:new THREE.Box3(new THREE.Vector3(x0,y-.14,z0),new THREE.Vector3(x1,y,z1))});
   }
-  slab(-28,-19.2,-6,-4,4); slab(-28,-22.5,-14,-12,7.5); slab(-24.5,-19.2,-6,-4,11);
+  // Landing surfaces meet the existing floors edge to edge; overlapping the
+  // loft/roof at exactly the same height caused the two flickering patches.
+  slab(-28,-19.2,-6,-4,4,-20); slab(-28,-22.5,-14,-12,7.5); slab(-24.5,-19.2,-6,-4,11,-21);
   stairPoints.push(foot,{x:-27,y:4,z:-5.25});
   for(let i=0;i<14;i++){
     const z=-6-(i+.5)*6/14,y=4+(i+1)*.25;
@@ -77,18 +79,29 @@ export function buildThirdFloor({ grid, layer }) {
     slab(-24.5,-22.5,z-3/14,z+3/14,y);stairPoints.push({x:-23.5,y,z});
   }
   stairPoints.push({x:-23.5,y:11,z:-5.25},exit);
-  for(const {x,y,z} of stairPoints)for(const dx of [-.9,.9]){
-    if(x===foot.x||x===exit.x)continue;
-    stairs.box(x+dx,y,z,.05,.95,.05,dark);
+  const posts=new Set();
+  function guard(x0,y0,z0,x1,y1,z1,steps=Math.ceil(Math.hypot(x1-x0,z1-z0)/1.1)){
+    const dx=x1-x0,dy=y1-y0,dz=z1-z0,horizontal=Math.hypot(dx,dz);
+    for(const lift of [.5,1])stairs.box((x0+x1)/2,(y0+y1)/2+lift-.0375,(z0+z1)/2,.075,.075,Math.hypot(horizontal,dy),dark,{rx:-Math.atan2(dy,horizontal),ry:Math.atan2(dx,dz),order:'YXZ'});
+    for(let i=0;i<=steps;i++){
+      const t=i/steps,x=x0+dx*t,y=y0+dy*t,z=z0+dz*t,key=[x,y,z].map(n=>n.toFixed(3)).join(',');
+      if(posts.has(key))continue;posts.add(key);stairs.box(x,y,z,.075,1.04,.075,dark);
+    }
   }
-  for(const x of [-27.95,-26.05,-24.45,-22.55]){
-    const first=x<-25;
-    stairs.box(x,first?6.55:10.05,-9,.06,.06,Math.hypot(6,3.5),dark,{rx:first?Math.atan2(3.5,6):-Math.atan2(3.5,6)});
-  }
+  // Continuous rails around all exposed landing edges; only the doorways and
+  // the two stair mouths stay open. Sloped rails join the same corner posts.
+  guard(-27.96,4,-4.04,-20.04,4,-4.04);guard(-27.96,4,-4.04,-27.96,4,-6);
+  guard(-26.04,4,-6,-20.04,4,-6);
+  for(const x of [-27.96,-26.04])guard(x,4,-6,x,7.5,-12,14);
+  guard(-27.96,7.5,-12,-27.96,7.5,-13.96);guard(-27.96,7.5,-13.96,-22.54,7.5,-13.96);
+  guard(-22.54,7.5,-13.96,-22.54,7.5,-12);guard(-26.04,7.5,-12,-24.46,7.5,-12);
+  for(const x of [-24.46,-22.54])guard(x,7.5,-12,x,11,-6,14);
+  guard(-24.46,11,-6,-24.46,11,-4.04);guard(-24.46,11,-4.04,-20.96,11,-4.04);
+  guard(-22.54,11,-6,-20.96,11,-6);
   const pointAt=(x,y,z)=>({x,y,z,route:'third-stair',index:nearestIndex(x,y,z)});
   function nearestIndex(x,y,z){let best=0,d=Infinity;stairPoints.forEach((p,i)=>{const q=(p.x-x)**2+(p.z-z)**2+4*(p.y-y)**2;if(q<d){best=i;d=q;}});return best;}
   function obstructed(x,z,y){
-    return y>=10.75&&y<14.7&&barriers.some(o=>x>o.x0-.04&&x<o.x1+.04&&z>o.z0-.04&&z<o.z1+.04);
+    return planeObstacle(x,z,y) || y>=10.75&&y<14.7&&barriers.some(o=>x>o.x0-.04&&x<o.x1+.04&&z>o.z0-.04&&z<o.z1+.04);
   }
   const valid=(x,z)=>x>=-19.5&&x<=23.5&&z>=-11.5&&z<=15.5&&[-.35,0,.35].every(dx=>[-.35,0,.35].every(dz=>!obstructed(x+dx,z+dz,11)));
   function roofRoute(ax,az,bx,bz){
@@ -123,7 +136,7 @@ export function buildThirdFloor({ grid, layer }) {
     return tagged;
   }
   const source={
-    foot,exit,room,seats,route,roofRoute,insideRoom,
+    foot,exit,room,seats,route,roofRoute,insideRoom,setPlaneObstacle(fn){planeObstacle=fn;},
     flightHeight(x,z){return insideRoom(x,z)?14.94:x>=-21&&x<=25&&z>=-13&&z<=17?12:0;},
     levels(x,z,out){
       if(x>=-20&&x<=24&&z>=-12&&z<=16)out.push({y:11,site:'roof'});

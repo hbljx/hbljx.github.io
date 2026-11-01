@@ -20,12 +20,12 @@ import { makeSeat } from './seats.js';
 export const MOUNTAIN = { x: 5, z: -54, r: 29, h: 27 };
 const PLATEAU = 4, POW = 1.25;
 const SHOULDERS = [{ x: 23, z: -61.5, r: 15, h: 13 }, { x: -13, z: -62.5, r: 14, h: 11 }];
-const BASE = -3, WIDTH = 2.2, RISER = .17, RADIUS = .3, BODY = 1.8, SUMMIT = 3.3, SKIRT = 1.1;
+const BASE = -3, WIDTH = 2.2, RISER = .17, RADIUS = .3, BODY = 1.8, SUMMIT = 5.8, SKIRT = 1.1;
 const TRAILHEAD = { x: 5, z: -22.6 };
 // Where the stairs turn: degrees from south towards east, metres from the
 // centre. Close pairs make the switchbacks; the rest wind round the peak.
 const TURNS = [[0, 26.8], [33, 24.6], [36, 21.8], [-2, 20.3], [-38, 18.8], [-42, 16], [4, 14.6], [36, 12.6],
-  [72, 11.3], [112, 10.3], [152, 9.3], [-168, 8.3], [-128, 7.3], [-88, 6.4], [-48, 5.6], [-12, 5]];
+  [72, 11.3], [112, 10.3], [152, 9.3], [-168, 8.3], [-128, 7.3]];
 // A stream down the west flank: degrees as above, metres from the centre to
 // its spring and to the pool below the fall.
 const STREAM = { a: -60, spring: 11.2, pool: 17.6, radius: 2.3 };
@@ -119,6 +119,8 @@ export function buildMountain(layer, materials) {
   const root = new THREE.Group(); root.name = 'mountain';
   const seats = [];
   const M = MOUNTAIN, half = WIDTH / 2, { V, flights } = layStairs(), landings = V.slice(1), top = V.at(-1), ty = top.y;
+  let planeObstacle=()=>false;
+  const airfield={id:'summit',name:'后山山顶',x:top.x,y:ty,z:top.z,heading:Math.PI,exit:{x:top.x+4.6,y:ty,z:top.z+1}};
 
   // ---------- Stairs: route points and lookups ----------
   // Route points a quarter metre apart along the middle, for walking routes.
@@ -591,6 +593,8 @@ export function buildMountain(layer, materials) {
       const p = ring[k], q = ring[(k + 1) % ring.length];
       if (onChord(v, p) && onChord(v, q)) continue;
       const mx = (p[0] + q[0]) / 2, mz = (p[1] + q[1]) / 2, dx = mx - v.x, dz = mz - v.z, l = Math.hypot(dx, dz) || 1;
+      // Keep the enlarged platform's kerb open where the glass walkway joins it.
+      if(v===top && mz<walk.z1+.4 && Math.abs(mx-top.x)<half+.3)continue;
       if (groundAt(mx + dx / l * .55, mz + dz / l * .55) > v.y - .6) continue;
       const x = mx + dx / l * .1, z = mz + dz / l * .1;
       box(x, v.y - .55, z, .2, .77, Math.hypot(q[0] - p[0], q[1] - p[1]) + .06, KERB, { ry: Math.atan2(q[0] - p[0], q[1] - p[1]) });
@@ -631,9 +635,18 @@ export function buildMountain(layer, materials) {
     solid(sx, vz, .46, .36, fy, 1.3);
   }
   // A seat at the platform's west side and two lights where the stairs arrive.
-  bench(top.x - 2.1, ty, top.z - .3, Math.PI / 2,
-    'mountain-summit', '后山 · 山顶长凳', [top.x - .9, top.z - .3], Math.PI / 2);
-  for (const a of [-1, 1]) bollard(top.x + a * 1.95, ty, top.z + 2.35);
+  // Mark a clear parking pad and keep furniture outside the wings and boarding paths.
+  box(top.x,ty+.006,top.z,8.4,.018,7.3,{tex:'paint',tint:0x5c6866},{shadow:false});
+  const markPaint={tex:'paint',tint:0xe6d49b};
+  for(const a of [-1,1])for(const b of [-1,1]){
+    box(top.x+a*3.95,ty+.03,top.z+b*3.4,.12,.015,.65,markPaint,{shadow:false});
+    box(top.x+a*3.65,ty+.03,top.z+b*3.65,.7,.015,.12,markPaint,{shadow:false});
+  }
+  for(const x of [-.5,.5])box(top.x+x,ty+.03,top.z,.12,.015,1.5,markPaint,{shadow:false});
+  box(top.x,ty+.03,top.z,1.1,.015,.12,markPaint,{shadow:false});
+  bench(top.x - 3.5, ty, top.z - 4.2, .7,
+    'mountain-summit', '后山 · 山顶长凳', [top.x - 2.4, top.z - 4.3], .7);
+  for (const a of [-1, 1]) bollard(top.x + a * 1.9, ty, top.z + 5.15);
   // Nothing grows up through the walkway.
   for (let z = walk.z0 - 2; z <= walk.z1 + .5; z++) for (let x = walk.x0 - 2.5; x <= walk.x1 + 2.5; x++) { const c = cellOf(x, z); if (c >= 0) taken[c] = 1; }
 
@@ -771,10 +784,12 @@ export function buildMountain(layer, materials) {
   }
   const solidsNear = (x, z) => solidIndex.get(slot(Math.floor(x / 2), Math.floor(z / 2)));
   function obstructed(x, z, feet) {
+    if(planeObstacle(x,z,feet))return true;
     const list = solidsNear(x, z);
     return !!list && list.some(b => x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1 && b.y0 < feet + BODY && b.y1 > feet + .05);
   }
   function collides(x, feet, z) {
+    if(planeObstacle(x,z,feet))return true;
     for (const [ox, oz] of [[0, 0], [RADIUS, RADIUS], [RADIUS, -RADIUS], [-RADIUS, RADIUS], [-RADIUS, -RADIUS]]) {
       if (heightAt(x + ox, z + oz) > feet + .02) return true;
       found.length = 0; stairsAt(x + ox, z + oz, found);
@@ -819,15 +834,44 @@ export function buildMountain(layer, materials) {
     pts.forEach((q, n) => { const d = (q.x - x) ** 2 + (q.z - z) ** 2 + 4 * (q.y - y) ** 2; if (d < distance) { distance = d; best = n; } });
     return best;
   }
-  function route(ax, ay, az, bx, by, bz) {
+  function road(ax, ay, az, bx, by, bz) {
     const i = ay === null ? 0 : nearest(ax, ay, az), j = nearest(bx, by, bz), step = i <= j ? 4 : -4, out = [];
     for (let n = i; step > 0 ? n < j : n > j; n += step) out.push({ x: pts[n].x, z: pts[n].z, y: pts[n].y, route: 'mountain-road', index: n });
     out.push({ x: pts[j].x, z: pts[j].z, y: pts[j].y, route: 'mountain-road', index: j });
     return out;
   }
 
+  // On the summit, walk around the parked aircraft instead of following the
+  // old centreline through its fuselage. The stair route still reaches the same entrance.
+  const onSummit=(x,y,z)=>y>=ty-.65&&(inLanding(top,x,z)||x>=walk.x0&&x<=walk.x1&&z>=walk.z0&&z<=walk.z1);
+  function summitRoute(ax,az,bx,bz){
+    const left=top.x-SUMMIT,north=walk.z0,nx=Math.ceil(SUMMIT*4)+1,nz=Math.ceil((top.z+SUMMIT-north)*2)+1;
+    const floor=(x,z)=>z<=walk.z1&&z>=walk.z0&&x>=walk.x0&&x<=walk.x1?walk.y:ty;
+    const point=k=>({x:left+(k%nx)*.5,z:north+Math.floor(k/nx)*.5});
+    const valid=(x,z)=>[-.32,0,.32].every(dx=>[-.32,0,.32].every(dz=>onSummit(x+dx,ty,z+dz)&&!obstructed(x+dx,z+dz,ty)));
+    function closest(x,z){let best=-1,d=Infinity;for(let k=0;k<nx*nz;k++){const p=point(k),q=(p.x-x)**2+(p.z-z)**2;if(q<d&&valid(p.x,p.z)){best=k;d=q;}}return best;}
+    const start=closest(ax,az),end=closest(bx,bz);if(start<0||end<0)return [];
+    const parent=new Int32Array(nx*nz).fill(-2),queue=[start];parent[start]=-1;
+    for(let i=0;i<queue.length&&parent[end]===-2;i++)for(const n of [queue[i]-1,queue[i]+1,queue[i]-nx,queue[i]+nx]){
+      if(n<0||n>=nx*nz||Math.abs(n%nx-queue[i]%nx)>1||parent[n]!==-2)continue;
+      const p=point(n);if(valid(p.x,p.z)){parent[n]=queue[i];queue.push(n);}
+    }
+    if(parent[end]===-2)return [];
+    const points=[];for(let k=end;k!==-1;k=parent[k]){const p=point(k);points.unshift({...p,y:floor(p.x,p.z)});}
+    const out=points.filter((p,i)=>!i||i===points.length-1||p.x-points[i-1].x!==points[i+1].x-p.x||p.z-points[i-1].z!==points[i+1].z-p.z);
+    if(valid(bx,bz))out.push({x:bx,y:floor(bx,bz),z:bz});return out;
+  }
+  function route(ax,ay,az,bx,by,bz){
+    const from=ay!==null&&onSummit(ax,ay,az),to=onSummit(bx,by,bz),entry=pts[flights.at(-1).p1];
+    if(from&&to)return summitRoute(ax,az,bx,bz);
+    if(to)return [...road(ax,ay,az,entry.x,entry.y,entry.z),...summitRoute(entry.x,entry.z,bx,bz)];
+    if(from)return [...summitRoute(ax,az,entry.x,entry.z),...road(entry.x,entry.y,entry.z,bx,by,bz)];
+    return road(ax,ay,az,bx,by,bz);
+  }
+
   return {
-    group: root, seats, levels, obstructed, collides, pick, viewBlock, heightAt: topAt, route,
+    group: root, seats, levels, obstructed, collides, pick, viewBlock, heightAt: topAt, route, airfield,
+    setPlaneObstacle(fn){planeObstacle=fn;},
     trailhead: { x: pts[0].x, z: pts[0].z },
     spots: () => [{ x: pts[0].x, z: pts[0].z }, { x: top.x, z: top.z + 1.5 }],
   };
