@@ -10,7 +10,7 @@ const paint = tint => ({ tex: 'paint', tint });
 const WHITE = paint(0xf1efe9), CHARCOAL = paint(0x2f3438);
 const WARM = { tex: 'paint', tint: 0xffd8a0, emissive: 0.85 };
 
-export function buildOuter(layer, materials) {
+export function buildOuter(layer, materials, staticBatch = null) {
   const root = new THREE.Group(); root.name = 'shore';
   const ground = [];
   let B = null, boat = null;
@@ -18,6 +18,10 @@ export function buildOuter(layer, materials) {
   const flat = (site, x, z, w, d, y) => ground.push({ site, x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, y });
   function cluster(name, build) {
     B = new BoxBatch(layer); build();
+    if (staticBatch) {
+      for (const kind of Object.keys(B.items)) staticBatch.items[kind].push(...B.items[kind]);
+      return;
+    }
     const group = new THREE.Group(); group.name = name;
     for (const m of B.build(materials)) group.add(m);
     root.add(group);

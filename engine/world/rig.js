@@ -27,6 +27,7 @@ export function createRig(camera, world) {
   const HOME_VIEW = portrait ? [0, 0.4, 8.5] : [0, 0.035, 8];
   let [yaw, pitch, distance] = HOME_VIEW;
   let yawGoal = yaw, pitchGoal = pitch, distanceGoal = distance;
+  let maxDistance = 34;
   let intro = null;
   // A held shot (the mountain from over the roof): the camera glides there,
   // stays until any input, then glides back behind the player.
@@ -67,7 +68,7 @@ export function createRig(camera, world) {
       return;
     }
     if (firstPerson) { if (f > 1.03) setFirstPerson(false); return; }
-    distanceGoal = THREE.MathUtils.clamp(distanceGoal * f, 3.2, 34);
+    distanceGoal = THREE.MathUtils.clamp(distanceGoal * f, 3.2, maxDistance);
   }
 
   // Entering first person looks where the player faces; leaving puts the camera behind them.
@@ -279,7 +280,7 @@ export function createRig(camera, world) {
     get introActive() { return !!intro; },
     get showcaseActive() { return !!show && show.back < 0; },
     get distance() { return distance; },
-    reset() { [yawGoal, pitchGoal, distanceGoal] = HOME_VIEW; },
-    set(y, p, d) { yaw = yawGoal = y; pitch = pitchGoal = p; distance = distanceGoal = d; },
+    reset() { [yawGoal, pitchGoal, distanceGoal] = HOME_VIEW; maxDistance = 34; },
+    set(y, p, d) { yaw = yawGoal = y; pitch = pitchGoal = p; distance = distanceGoal = d; maxDistance = Math.max(34, d); },
   };
 }

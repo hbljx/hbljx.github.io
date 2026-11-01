@@ -635,6 +635,17 @@ async function boot() {
     const ceiling = targetY === null ? (!player.island && nav.canStand(x, z) ? nav.heightAt(x, z) + .7 : Infinity) : targetY + .7;
     const surface = world.ground.topAt(x, z, ceiling);
     const isle = surface?.site ? surface : null;
+    // A moored carrier connects to the east shore by its boarding pier. At sea,
+    // its own deck remains walkable; disconnected destinations use flight.
+    const carrier = world.carrier, onCarrier = player.island === 'carrier', toCarrier = isle?.site === 'carrier';
+    if (carrier && !player.flying && (onCarrier || toCarrier) &&
+        (onCarrier && toCarrier || carrier.docked() && (!player.island || onCarrier) && (!isle || toCarrier))) {
+      const end = toCarrier ? { x, z, y: isle.y } : carrier.foot;
+      const points = carrier.route(player.pos.x, player.y, player.pos.z, end.x, end.y, end.z);
+      const accepted = points.length > 0 ? player.follow(points, onCarrier ? null : carrier.foot, toCarrier ? null : () => player.goTo(x, z)) : player.flyTo(x, z);
+      marker.show(x, end.y, z, accepted ? 0x85c9ff : 0xeab66a);
+      return accepted;
+    }
     // The new third floor connects to the second-floor landing by its own stair.
     const third = world.thirdFloor, thirdStair = site => site === 'third-stairs';
     const thirdRoof = site => site === 'roof';

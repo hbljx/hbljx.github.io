@@ -16,8 +16,15 @@ export function buildThirdFloor({ grid, layer }) {
   const overRoomRoof = (x,z,pad=0) => x>=roomRoof.min.x-pad&&x<=roomRoof.max.x+pad&&z>=roomRoof.min.z-pad&&z<=roomRoof.max.z+pad;
   const obstacle = (x, z, w, d) => barriers.push({ x0: x-w/2, x1: x+w/2, z0: z-d/2, z1: z+d/2 });
   // The new floor covers the old skylights; keep a solid ceiling underneath it.
-  for(let x=-20;x<24;x++)for(let z=-12;z<16;z++)grid.set(x,10,z,'roof','roof');
-  B.box(2, 10.98, 2, 44, .08, 28, floor);
+  for(let x=-20;x<24;x++)for(let z=-12;z<16;z++)grid.set(x,10,z,x>=-2&&x<6&&z>=-5&&z<9?null:'roof','roof');
+  function skylight(batch,x0,x1,z0,z1,y,h,look,hole){
+    const [a,b,c,d]=hole;
+    for(const [l,r,n,s]of [[x0,a,z0,z1],[b,x1,z0,z1],[a,b,z0,c],[a,b,d,z1]])batch.box((l+r)/2,y,(n+s)/2,r-l,h,s-n,look);
+    batch.box((a+b)/2,y+h-.045,(c+d)/2,b-a,.045,d-c,glass);
+    for(const x of [a,b])batch.box(x,y+h-.055,(c+d)/2,.085,.055,d-c,dark);
+    for(const z of [c,d])batch.box((a+b)/2,y+h-.055,z,b-a,.055,.085,dark);
+  }
+  skylight(B,-20,24,-12,16,10.98,.08,floor,[-2,6,-5,9]);
   // Glazed tea pavilion: solid low panels, broad windows and a usable double doorway.
   function wall(x, z, w, d) {
     B.box(x, 11, z, w, .72, d, wood); B.box(x, 14.45, z, w, .25, d, dark);
@@ -37,9 +44,8 @@ export function buildThirdFloor({ grid, layer }) {
     B.box(x, 11.45, 5.78, .78, 2.2, .04, glass);
     B.box(x + (x < -11 ? .35 : -.35), 12.2, 5.7, .06, .42, .06, china);
   }
-  const roofCenter=roomRoof.getCenter(new THREE.Vector3()),roofSize=roomRoof.getSize(new THREE.Vector3());
-  ceiling.box(roofCenter.x,roomRoof.min.y,roofCenter.z,roofSize.x,roofSize.y,roofSize.z,dark);
-  for (const x of [-16, -11, -6]) ceiling.box(x, 14.60, -1.5, .12, .1, 14.6, wood);
+  skylight(ceiling,roomRoof.min.x,roomRoof.max.x,roomRoof.min.z,roomRoof.max.z,14.7,.24,dark,[-15,-7,-6,3]);
+  for (const x of [-16, -6]) ceiling.box(x, 14.60, -1.5, .12, .1, 14.6, wood);
   // Tea table, tray, kettle, cups and four armchairs.
   B.box(-11, 11.77, -1.5, 3.5, .16, 1.7, wood); obstacle(-11, -1.5, 3.5, 1.7);
   for (const x of [-12.35, -9.65]) for (const z of [-2.05, -.95]) B.box(x, 11, z, .14, .77, .14, dark);
@@ -152,7 +158,7 @@ export function buildThirdFloor({ grid, layer }) {
       for(const s of slabs)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'third-stairs',tread:true,route:'third-stair',index:nearestIndex(x,s.y,z)});
     },
     obstructed,
-    collides(x,y,z){return obstructed(x,z,y)||overRoomRoof(x,z,.3)&&y<roomRoof.max.y-.02&&y+1.8>roomRoof.min.y;},
+    collides(x,y,z){return obstructed(x,z,y)||overRoomRoof(x,z,.3)&&y<roomRoof.max.y-.02&&y+1.8>roomRoof.min.y||x>=-2.3&&x<=6.3&&z>=-5.3&&z<=9.3&&y<10.98&&y+1.8>10.98;},
     pick(ray){
       let best=null;
       // Only the upper face is a destination; looking up inside the room must
@@ -160,6 +166,8 @@ export function buildThirdFloor({ grid, layer }) {
       if(ray.direction.y<0){
         const t=(roomRoof.max.y-ray.origin.y)/ray.direction.y;
         if(t>=0){ray.at(t,hit);if(overRoomRoof(hit.x,hit.z))best={t,point:hit.clone(),site:'tea-roof'};}
+        const lower=(11-ray.origin.y)/ray.direction.y;
+        if(lower>=0&&(!best||lower<best.t)){ray.at(lower,hit);if(hit.x>=-2&&hit.x<=6&&hit.z>=-5&&hit.z<=9)best={t:lower,point:hit.clone(),site:'roof'};}
       }
       for(const s of slabs){if(ray.intersectBox(s.box,hit)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:new THREE.Vector3(hit.x,s.y,hit.z),site:'third-stairs'};}}
       return best;

@@ -13,6 +13,8 @@ import { ISLAND, FOREST, COURT, RIM } from './layout.js';
 import { createActivities } from './activities.js';
 import { buildThirdFloor } from './third-floor.js';
 import { createAirplane, aircraftObstacle } from './aircraft.js';
+import { buildCarrier } from './carrier.js';
+import { createHousehold } from './household.js';
 
 export function build({ grid, layer, materials, stage }) {
   // Flat glass panes need one two-sided pass rather than separate front/back
@@ -40,18 +42,20 @@ export function build({ grid, layer, materials, stage }) {
   mergeBatch(furn.batches.static, third.batches.thirdStairs);
   // The third-floor shell shares the existing roof's cutaway visibility.
   mergeBatch(furn.batches.roof, third.batches.thirdFloor);
+  mergeBatch(furn.batches.roof, third.batches.thirdRoomRoof);
   furn.animated.airplane = createAirplane(); furn.planes.push(furn.animated.airplane);
   // The pier and sailboat, the mountain and the roof's outside stair are
   // ground of their own, outside the block grid.
-  const outer = buildOuter(layer, materials), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
+  const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
+  const carrier = buildCarrier(layer, furn.batches.static);
   const planeObstacle=aircraftObstacle(furn.animated.airplane);
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);
-  stage.scene.add(outer.group, mountain.group, roofAccess.group);
+  stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh);
   return {
-    batches: { ...furn.batches, thirdRoomRoof: third.batches.thirdRoomRoof }, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
+    batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
-    sites: [outer, mountain, furn.stairs, third.source], sitesAfter: [roofAccess],
-    named: { outer, mountain, roofAccess, thirdFloor: third.source, drawMap },
+    sites: [outer, mountain, furn.stairs, third.source, carrier], sitesAfter: [roofAccess],
+    named: { outer, mountain, roofAccess, carrier, thirdFloor: third.source, drawMap },
   };
 }
 
@@ -76,17 +80,19 @@ function drawMap(ctx, X, Z, PPM) {
 export function setup(app) {
   const { stage, world } = app;
   const activities = createActivities(app);
+  const household = createHousehold(app,activities);
   return {
-    activities,
-    get locked() { return activities.active; },
+    activities,household,
+    get locked() { return activities.active || household.sleeping; },
     get running() { return activities.running; },
-    keyDown: e => activities.keyDown(e),
+    keyDown: e => { if(household.sleeping||household.walking){household.wakeMale();if(['e','escape'].includes(e.key.toLowerCase()))return true;}return activities.keyDown(e); },
     keyUp: e => activities.keyUp(e),
-    stop: (force = true) => activities.stop(force),
+    stop: (force = true) => { household.wakeMale();return activities.stop(force); },
     pause: () => activities.pause(),
     update(dt) {
       world.outer.update(dt, stage.camera);
       activities.update(dt);
+      household.update(dt);
       const cutaway = world.hidden.has('roof');
       world.setHidden('aircraft', cutaway && world.animated.airplane.position.y < 14);
       world.setHidden('thirdRoomRoof', cutaway);

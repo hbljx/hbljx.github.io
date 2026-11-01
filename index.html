@@ -20,19 +20,21 @@
   "three":"./vendor/three/three.module.min.js",
   "@engine/":"./engine/",
   "@world/":"./world/",
-  "@world/build.js":"./world/build.js?v=20261101-stair-canopy",
+  "@world/build.js":"./world/build.js?v=20261101-household-final",
   "@world/layout.js":"./world/layout.js?v=20261031-controls",
   "./world/layout.js":"./world/layout.js?v=20261031-controls",
   "./world/furnish.js":"./world/furnish.js?v=20261101-stair-canopy",
   "./world/seats.js":"./world/seats.js?v=20261101-third-floor",
-  "./world/third-floor.js":"./world/third-floor.js?v=20261101-walkable-tea-roof",
+  "./world/third-floor.js":"./world/third-floor.js?v=20261101-glass-roofs-final",
   "./world/aircraft.js":"./world/aircraft.js?v=20261101-stair-canopy",
   "./world/car.js":"./world/car.js?v=20261031-life",
-  "./world/activities.js":"./world/activities.js?v=20261101-stair-canopy",
-  "./world/outer.js":"./world/outer.js?v=20261031-life",
+  "./world/activities.js":"./world/activities.js?v=20261101-household-final",
+  "./world/carrier.js":"./world/carrier.js?v=20261101-flat-deck-final",
+  "./world/household.js":"./world/household.js?v=20261101-household-final",
+  "./world/outer.js":"./world/outer.js?v=20261101-carrier",
   "./world/mountain.js":"./world/mountain.js?v=20261101-summit-airport",
   "./engine/ui/sound.js":"./engine/ui/sound.js?v=20261031-life",
-  "./engine/world/rig.js":"./engine/world/rig.js?v=20261031-controls",
+  "./engine/world/rig.js":"./engine/world/rig.js?v=20261101-carrier",
   "./engine/input.js":"./engine/input.js?v=20261031-controls",
   "./engine/world/player.js":"./engine/world/player.js?v=20261031-life",
   "./engine/world/fx.js":"./engine/world/fx.js?v=20261031-life",
@@ -54,7 +56,7 @@
   <article class="page" data-station="lab" data-icon="lab" data-embed="directory.html?zone=lab"><h2>工具车库</h2><p>办公、软件与网络工具。<a href="directory.html?zone=lab">打开网址目录</a></p></article>
   <article class="page" data-station="court" data-icon="court" data-embed="directory.html?zone=court"><h2>行情观测站</h2><p>行业指数与数据入口。<a href="directory.html?zone=court">打开网址目录</a></p></article>
   <article class="page" data-station="pool" data-icon="pool" data-embed="directory.html?zone=pool"><h2>社区花园</h2><p>社区收藏与公益。<a href="directory.html?zone=pool">打开网址目录</a></p></article>
-<article class="page" data-station="mailbox"><h2>欢迎来到 Li+ 的家</h2><div class="li-help"><p>把好用的网址，留在这个小世界里。</p><p>点击底部快捷栏打开分类，或在房间里走近物件按 F。WASD 或左右键点击地面移动；Shift 跑步，R 切换走路 / 跑步；拖动视角，空格跳跃。F 再按一次关闭目录。走近物件按 E 开始互动，再按 E 或 Esc 退出，Q 坐下 / 起身。</p><p>篮球场可蓄力投篮；二楼可以睡觉、看书；客厅可以看电视；车库可开车；咖啡吧可以喝咖啡；AI 工作台可以打游戏。海边栈道末端可垂钓；厨房可做饭；健身区跑步机可跑步；所有椅凳、沙发和床沿都可坐下。首次互动提示在 2 秒后关闭，平时使用右下角操作按钮。手机可点地面移动和切换跑步。音效由本地合成，右上角声音开关可随时静音。</p><a href="directory.html" target="_blank" rel="noopener">打开独立目录 ↗</a></div></article></section>
+<article class="page" data-station="mailbox"><h2>欢迎来到 Li+ 的家</h2><div class="li-help"><p>把好用的网址，留在这个小世界里。</p><p>点击底部快捷栏打开分类，或在房间里走近物件按 F。WASD 或左右键点击地面移动；Shift 跑步，R 切换走路 / 跑步 / 飞行；拖动视角，空格跳跃。F 再按一次关闭目录。走近物件按 E 开始互动，再按 E 或 Esc 退出，Q 坐下 / 起身。</p><p>篮球场可蓄力投篮；二楼可以睡觉、看书；客厅可以看电视；车库可开车、骑摩托车；三楼飞机可飞行巡航、降落后山；海岸的 001 号航母可出海巡航，R 自动返港；咖啡吧可以喝咖啡；AI 工作台可以打游戏。海边栈道末端可垂钓；厨房可做饭；健身区跑步机可跑步；所有椅凳、沙发和床沿都可坐下。操作按钮位于右上角，手机也可点地面移动。角色原地静止 5 分钟后，两人会先后走到二楼床上盖被休息；北京时间 22:00—07:00 为睡眠时间。点击地面可唤醒男性角色。音效由本地合成，右上角声音开关可随时静音。</p><a href="directory.html" target="_blank" rel="noopener">打开独立目录 ↗</a></div></article></section>
 
 <!-- file:// cannot load the world modules. -->
 <script>
@@ -70,7 +72,7 @@ if (location.protocol === 'file:') {
 }
 </script>
 <noscript><style>#world,#hud,#loading{display:none}#pages{display:block}</style></noscript>
-<script type="module" src="engine/main.js?v=20261101-third-floor"></script>
+<script type="module" src="engine/main.js?v=20261101-carrier"></script>
 <div id="li-brand" hidden><b>LI+</b><span>像素导航</span></div>
 <script type="module" src="navigation/world-ui.js?v=20261101-third-floor"></script>
 </body>
