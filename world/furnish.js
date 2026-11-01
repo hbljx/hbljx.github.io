@@ -23,6 +23,7 @@ export function furnish({ layer }) {
   const B = new BoxBatch(layer), roof = new BoxBatch(layer);
   const batches = { static: B, roof, wallN: new BoxBatch(layer), wallS: new BoxBatch(layer), wallE: new BoxBatch(layer), wallW: new BoxBatch(layer) };
   const obstacles = [], lights = [], lighting = [], hotspots = [], planes = [], animated = {}, surfaces = {};
+  const stairTreads = [], stairHit = new THREE.Vector3();
   const bake = (id, x, y, z, power, radius, direction = null) => lighting.push({ id, position: [x, y, z], power, radius, direction });
   const foot = (x, z, w, d, level = 0) => obstacles.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, level });
   const hot = (id, x, y, z, w, h, d) => hotspots.push({ id, box: new THREE.Box3(new THREE.Vector3(x - w / 2, y, z - d / 2), new THREE.Vector3(x + w / 2, y + h, z + d / 2)) });
@@ -209,6 +210,11 @@ export function furnish({ layer }) {
     const z = STAIRS.z1 - (i + 0.5) * run, y = (i + 1) * LOFT.y / steps;
     B.box(stairX, 0, z, stairWidth - .05, y - 0.06, run, L.steel);
     B.box(stairX, y - 0.06, z, stairWidth, 0.06, run, L.floor);
+    // Picking must follow the visible steps, which are not part of the voxel grid.
+    stairTreads.push(new THREE.Box3(
+      new THREE.Vector3(stairX - stairWidth / 2, 0, z - run / 2),
+      new THREE.Vector3(stairX + stairWidth / 2, y, z + run / 2),
+    ));
     // Recessed into each riser: the tread edge reads without a glaring rail.
     B.box(stairX, y - .12, z + run / 2 + .012, stairWidth - .4, .035, .025, L.light(0xffdba6, .45));
     if (i % 2 === 0) bake('stair-tread', stairX, y + .12, z + run / 2, .28, 2.2, [0, -1, 1]);
@@ -555,7 +561,26 @@ export function furnish({ layer }) {
   B.box(5,1.18,19.3,.55,.06,.4,L.paint(0x476745));
   hot('mailbox',5,0,19.3,.9,1.4,.7);
   foot(5,19.3,.9,.7);
-  return { batches, obstacles, lights, lighting, hotspots, planes, animated, surfaces };
+  const stairs = {
+    // The navigation grid already owns stair heights and routes. This source
+    // only selects the step under the cursor, including its vertical riser.
+    levels() {},
+    pick(ray) {
+      let nearest = null, distance = Infinity;
+      for (const tread of stairTreads) {
+        if (!ray.intersectBox(tread, stairHit)) continue;
+        const t = stairHit.distanceTo(ray.origin);
+        if (t < distance) { nearest = tread; distance = t; }
+      }
+      if (!nearest) return null;
+      const point = ray.at(distance, new THREE.Vector3());
+      point.x = Math.max(nearest.min.x + .01, Math.min(nearest.max.x - .01, point.x));
+      point.z = Math.max(nearest.min.z + .01, Math.min(nearest.max.z - .01, point.z));
+      point.y = nearest.max.y;
+      return { t: distance, point, site: 'stairs' };
+    },
+  };
+  return { batches, obstacles, lights, lighting, hotspots, planes, animated, surfaces, stairs };
 }
 
 function ergonomicChair(B, x, z, ry) {

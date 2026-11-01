@@ -60,7 +60,7 @@ export const zones = [
     "icon": "lab",
     "label": "办公、软件与网络工具",
     "groups": [
-      "common-tools",
+      "common-sites",
       "office",
       "software-news",
       "network",

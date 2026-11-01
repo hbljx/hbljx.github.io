@@ -36,5 +36,5 @@ export const SEATS = [
 // Mountain furniture is placed from procedural terrain heights, so its seat
 // coordinates are recorded when the matching bench geometry is created.
 export function getSeats(world) {
-  return [...SEATS, ...(world.mountain?.seats || [])];
+  return [...SEATS, ...(world.mountain?.seats || []), ...(world.thirdFloor?.seats || [])];
 }

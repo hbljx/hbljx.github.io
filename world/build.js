@@ -11,6 +11,8 @@ import { createStainless } from './stainless.js';
 import { atlasPlanes } from './atlas-planes.js';
 import { ISLAND, FOREST, COURT, RIM } from './layout.js';
 import { createActivities } from './activities.js';
+import { buildThirdFloor } from './third-floor.js';
+import { createAirplane } from './aircraft.js';
 
 export function build({ grid, layer, materials, stage }) {
   // Flat glass panes need one two-sided pass rather than separate front/back
@@ -23,17 +25,31 @@ export function build({ grid, layer, materials, stage }) {
   buildIsland(grid, ISLAND, { surfaceAt });
   buildPool(grid);
   buildShell(grid);
-  const forest = buildForest(grid, layer, FOREST);
+  const third = buildThirdFloor({ grid, layer });
+  // Clear the three trees inside the new outside stair's footprint.
+  const forest = buildForest(grid, layer, FOREST.filter(([x, z]) => !(x >= -32 && x <= -22 && z >= -15 && z <= -3)));
   const furn = furnish({ layer });
+  const mergeBatch = (into, from) => {
+    for (const kind of Object.keys(into.items)) into.items[kind].push(...from.items[kind]);
+  };
+  // Facade furniture already stays visible during cutaways. Batch those frames
+  // and panes together with the other permanent furniture and outside stair.
+  for (const name of ['wallN', 'wallS', 'wallE', 'wallW']) {
+    mergeBatch(furn.batches.static, furn.batches[name]); delete furn.batches[name];
+  }
+  mergeBatch(furn.batches.static, third.batches.thirdStairs);
+  // The third-floor shell shares the existing roof's cutaway visibility.
+  mergeBatch(furn.batches.roof, third.batches.thirdFloor);
+  furn.animated.airplane = createAirplane(); furn.planes.push(furn.animated.airplane);
   // The pier and sailboat, the mountain and the roof's outside stair are
   // ground of their own, outside the block grid.
   const outer = buildOuter(layer, materials), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
   stage.scene.add(outer.group, mountain.group, roofAccess.group);
   return {
-    batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
+    batches: { ...furn.batches, thirdRoomRoof: third.batches.thirdRoomRoof }, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
-    sites: [outer, mountain], sitesAfter: [roofAccess],
-    named: { outer, mountain, roofAccess, drawMap },
+    sites: [outer, mountain, furn.stairs, third.source], sitesAfter: [roofAccess],
+    named: { outer, mountain, roofAccess, thirdFloor: third.source, drawMap },
   };
 }
 
@@ -56,7 +72,7 @@ function drawMap(ctx, X, Z, PPM) {
 
 // The sailboat and keyboard/touch activities share one update loop.
 export function setup(app) {
-  const { stage, world } = app;
+  const { stage, world, player } = app;
   const activities = createActivities(app);
   return {
     activities,
@@ -69,6 +85,9 @@ export function setup(app) {
     update(dt) {
       world.outer.update(dt, stage.camera);
       activities.update(dt);
+      const cutaway = world.hidden.has('roof');
+      world.setHidden('thirdFloor', cutaway);
+      world.setHidden('thirdRoomRoof', cutaway || (player.y > 10.5 && player.y < 14.7 && world.thirdFloor.insideRoom(player.pos.x, player.pos.z)));
     },
   };
 }

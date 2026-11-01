@@ -607,14 +607,14 @@ async function boot() {
     if (water) return navigate(water.x, water.z, POOL.water);
     if (island?.site === 'roof-ladder') {
       const target = player.island === 'roof' ? world.roofAccess.foot : world.roofAccess.exit;
-      return navigate(target.x, target.z, target.y);
+      return navigate(target.x, target.z, target.y, true);
     }
     if (island) return navigate(island.point.x, island.point.z, island.point.y);
     if (block && block.normal[1] === 1) navigate(block.x, block.z, block.y);
   }
 
   // Walk if the place is reachable on foot from here; otherwise fly there.
-  function navigate(x, z, targetY = null) {
+  function navigate(x, z, targetY = null, useRoofLadder = false) {
     closePage(); minimap.toggleBig(false); input.clear(); rig.skipIntro();
     // The pool: swim there; from the deck walk to its side and dive in, from
     // anywhere else fly over and drop in. Swimming, a place on land is
@@ -635,6 +635,20 @@ async function boot() {
     const ceiling = targetY === null ? (!player.island && nav.canStand(x, z) ? nav.heightAt(x, z) + .7 : Infinity) : targetY + .7;
     const surface = world.ground.topAt(x, z, ceiling);
     const isle = surface?.site ? surface : null;
+    // The new third floor connects to the second-floor landing by its own stair.
+    const third = world.thirdFloor, thirdStair = site => site === 'third-stairs';
+    const thirdRoof = site => site === 'roof';
+    if (third && !useRoofLadder && !player.flying &&
+        (thirdStair(isle?.site) || thirdStair(player.island) || thirdRoof(isle?.site) || thirdRoof(player.island)) &&
+        (!isle || thirdStair(isle.site) || thirdRoof(isle.site)) &&
+        (!player.island || thirdStair(player.island) || thirdRoof(player.island))) {
+      const toY = isle?.y ?? nav.heightAt(x, z);
+      const points = third.route(player.pos.x, player.y, player.pos.z, x, toY, z);
+      const onUpper = thirdRoof(player.island) || thirdStair(player.island);
+      const accepted = points.length > 0 && player.follow(points, onUpper ? null : third.foot, isle ? null : () => player.goTo(x, z));
+      marker.show(x, toY, z, accepted ? 0x85c9ff : 0xeab66a);
+      return accepted;
+    }
     const roofSite = site => site === 'roof' || site === 'roof-ladder';
     if (world.roofAccess && !player.flying && (!player.island || roofSite(player.island)) && (roofSite(isle?.site) || (roofSite(player.island) && !isle))) {
       const access = world.roofAccess, toY = isle?.y ?? nav.heightAt(x, z);

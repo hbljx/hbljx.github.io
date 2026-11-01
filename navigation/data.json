@@ -1079,16 +1079,7 @@
           "collections": [
             "original"
           ]
-        }
-      ],
-      "origin": "original",
-      "icon": "star"
-    },
-    {
-      "id": "common-tools",
-      "title": "常用工具",
-      "kind": "main",
-      "items": [
+        },
         {
           "id": "site-128t1m9",
           "name": "草料二维码",
@@ -1141,7 +1132,7 @@
         }
       ],
       "origin": "original",
-      "icon": "grid"
+      "icon": "star"
     },
     {
       "id": "software-news",

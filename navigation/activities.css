@@ -32,7 +32,7 @@
 #activity-ui .activity-book p{font-size:17px;line-height:1.85;margin:0 0 10px}
 #activity-ui .activity-book small{font-size:14px;color:var(--ink-soft)}
 #activity-ui .activity-game{width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;border:2px solid var(--line);box-sizing:border-box;border-radius:0;box-shadow:2px 2px 0 var(--gui-shade);margin-top:8px}
-#activity-ui .activity-pad{display:flex;justify-content:center;gap:8px;margin-top:10px}
+#activity-ui .activity-pad{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 #activity-ui .activity-pad button{min-width:44px;min-height:44px;font-size:18px}
 body.activity-active #prompt,body.reading #activity-ui{display:none!important}
 body.activity-sleep #world:after{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 40% 45%,transparent 25%,#12233480);z-index:1}
@@ -64,6 +64,13 @@ body.reading #activity-controls,body.phone-on #activity-controls{display:none!im
 
 /* Keep the reader and page controls visible while the chapter can scroll. */
 @media(max-width:720px) and (orientation:portrait){
+  #activity-ui[data-activity=airplane] strong{font-size:16px}
+  #activity-ui[data-activity=airplane] .activity-hint{font-size:12px;line-height:1.4;margin:5px 0}
+  #activity-ui[data-activity=airplane] .activity-status{font-size:13px;line-height:1.4;min-height:18px;margin:5px 0}
+  #activity-ui[data-activity=airplane] .activity-buttons{gap:5px;margin-top:7px}
+  #activity-ui[data-activity=airplane] .activity-buttons button{font-size:13px;padding:7px;min-height:40px}
+  #activity-ui[data-activity=airplane] .activity-pad{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:8px}
+  #activity-ui[data-activity=airplane] .activity-pad button{min-width:0;padding:4px 1px;font-size:15px}
   #activity-ui[data-activity=reading]{display:flex;flex-direction:column;max-height:36dvh;overflow:hidden}
   #activity-ui[data-activity=reading] .activity-heading,#activity-ui[data-activity=reading] .activity-hint,#activity-ui[data-activity=reading] .activity-buttons{flex-shrink:0}
   #activity-ui[data-activity=reading] .activity-status:empty{display:none}

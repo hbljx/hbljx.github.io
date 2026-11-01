@@ -1,4 +1,4 @@
-import { zones } from './zones.js';
+import { zones } from './zones.js?v=20261101-directory-merge';
 // The store is bundled here so the current directory does not depend on legacy files.
 /* Local navigation data. No network access and no HTML evaluation. */
 const NavigationStore = (() => {
@@ -50,11 +50,22 @@ const NavigationStore = (() => {
     function normalizeData(value) {
       if (!isRecord(value) || !Array.isArray(value.groups) || !Array.isArray(value.quickLinks)) fail("请选择由本站导出的 JSON 备份文件。");
       const incomingGroups = new Map();
+      let legacyTools = null;
       for (const group of value.groups) {
+        // Older browser saves and exported backups still contain both categories.
+        if (isRecord(group) && group.id === 'common-tools') {
+          if (legacyTools || !Array.isArray(group.items)) fail("备份文件中的分类与当前网站不匹配。");
+          legacyTools = group;
+          continue;
+        }
         if (!isRecord(group) || !groupIds.has(group.id) || incomingGroups.has(group.id) || !Array.isArray(group.items)) fail("备份文件中的分类与当前网站不匹配。");
         incomingGroups.set(group.id, group);
       }
       if (incomingGroups.size !== groupIds.size) fail("备份文件缺少分类，请使用完整备份。");
+      if (legacyTools) {
+        const common = incomingGroups.get('common-sites');
+        incomingGroups.set('common-sites', { ...common, items: [...common.items, ...legacyTools.items] });
+      }
       const usedUrls = new Set(), usedIds = new Set();
       let count = 0;
       function normalizeItem(item) {
@@ -192,11 +203,11 @@ const params=new URLSearchParams(location.search);
 let zone=zones.find(z=>z.id===params.get('zone'))||zones[0],groupId='all',filter='all',editingId=null,store,base,data;
 let storage;try{storage=localStorage;}catch{}
 const readArray=key=>{try{const v=JSON.parse(storage?.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
-const STAR='li-homecraft-stars-v1',RECENT='li-homecraft-recent-v1';
-let stars=new Set(readArray(STAR)),recent=readArray(RECENT),toastTimer;
+const STAR='li-homecraft-stars-v1';
+let stars=new Set(readArray(STAR)),toastTimer;
 function toast(message){$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,4000);}
 function writeArray(key,value){try{if(!storage)throw new Error();storage.setItem(key,JSON.stringify(value));return true;}catch{toast('浏览器暂时无法保存，请导出备份。');return false;}}
-const groupPriority=new Map(['common-sites','common-tools','software-news'].map((id,index)=>[id,index]));
+const groupPriority=new Map(['common-sites','software-news'].map((id,index)=>[id,index]));
 const allGroups=()=>[{id:'quickLinks',title:'快捷入口',items:data.quickLinks},...data.groups]
   .sort((a,b)=>(groupPriority.get(a.id)??groupPriority.size)-(groupPriority.get(b.id)??groupPriority.size));
 const entries=()=>allGroups().flatMap(g=>g.items.map(item=>({...item,groupId:g.id,groupTitle:g.title})));
@@ -213,7 +224,6 @@ function render(){
   const sideCount=available.reduce((n,g)=>n+g.items.length,0);
   $('#group-nav').innerHTML=`<button type="button" data-group="all" aria-current="${groupId==='all'&&filter==='all'}">${zone.id==='blog'?'全部网址':'本区全部'}<span>${sideCount}</span></button>`+available.map(g=>`<button type="button" data-group="${g.id}" aria-current="${groupId===g.id&&filter==='all'}">${esc(g.title)}<span>${g.items.length}</span></button>`).join('');
   $('#favorites-filter').setAttribute('aria-pressed',filter==='stars');
-  $('#recent-filter').setAttribute('aria-pressed',filter==='recent');
   $('#favorites-filter').textContent=`${filter==='stars'?'★':'☆'} 星标收藏 · ${entries().filter(i=>stars.has(i.id)).length}`;
   const raw=$('#query').value.trim().toLocaleLowerCase();
   const local=$('#search-mode').value==='local',q=local?raw:'';
@@ -222,10 +232,10 @@ function render(){
   $('#query').setAttribute('aria-label',local?'搜索本站网址':`使用${engine?.id==='search_1'?'百度':engine?.name||'搜索引擎'}搜索`);
   $('#search-tip').textContent=local?'输入即筛选 · Enter 搜索':'Enter 在新标签页搜索';
   $('#clear-search').hidden=!raw;
-  let groups=filter==='all'?available.filter(g=>groupId==='all'||groupId===g.id):[{id:filter,title:filter==='stars'?'星标收藏':'最近打开',items:entries().filter(i=>filter==='stars'?stars.has(i.id):recent.includes(i.id)).sort((a,b)=>filter==='recent'?recent.indexOf(a.id)-recent.indexOf(b.id):0)}];
+  let groups=filter==='all'?available.filter(g=>groupId==='all'||groupId===g.id):[{id:'stars',title:'星标收藏',items:entries().filter(i=>stars.has(i.id))}];
   groups=groups.map(g=>({...g,items:g.items.filter(i=>!q||[i.name,i.url,i.description,i.section,i.bookmarkFolder,g.title,i.groupTitle,...(i.aliases||[])].join(' ').toLocaleLowerCase().includes(q))})).filter(g=>g.items.length);
   const count=groups.reduce((n,g)=>n+g.items.length,0);
-  $('#result-title').textContent=filter==='stars'?'星标收藏':filter==='recent'?'最近打开':groupId==='all'?zone.name:(allGroups().find(g=>g.id===groupId)?.title||zone.name);
+  $('#result-title').textContent=filter==='stars'?'星标收藏':groupId==='all'?zone.name:(allGroups().find(g=>g.id===groupId)?.title||zone.name);
   $('#result-eyebrow').textContent=q?'SEARCH RESULTS':'YOUR COLLECTION';
   $('#result-count').textContent=`${count} 个网址`;
   $('#cards').innerHTML=groups.map(g=>{
@@ -236,7 +246,7 @@ function render(){
     }).join('');
   }).join('');
   $('#empty').hidden=count>0;
-  $('#empty-hint').textContent=filter==='stars'&&!q?'点击网址卡片下的 ☆，把常用网站放在这里。':filter==='recent'&&!q?'从目录打开网址后，会在这里留下记录。':'换个关键词，或切换到全部网址试试。';
+  $('#empty-hint').textContent=filter==='stars'&&!q?'点击网址卡片下的 ☆，把常用网站放在这里。':'换个关键词，或切换到全部网址试试。';
   document.querySelectorAll('.site-mark img').forEach(img=>img.addEventListener('error',()=>{img.parentElement.textContent=img.closest('.site-card').querySelector('.site-name').textContent.slice(0,1);},{once:true}));
 }
 function card(i){
@@ -244,7 +254,6 @@ function card(i){
   const icon=/^(assets|uploads|style)\/[A-Za-z0-9_./-]+$/.test(i.icon||'')&&!i.icon.includes('..')?`navigation/icons/${i.icon.split('/').at(-1)}`:'';
   return `<article class="site-card" data-id="${i.id}"><a class="site-main" href="${esc(i.url)}" target="_blank" rel="noopener noreferrer" data-visit="${i.id}" title="${esc(i.name)} · 在新标签页打开"><span class="site-mark">${icon?`<img src="${esc(icon)}" loading="lazy" alt="">`:esc(i.name.slice(0,1))}</span><span class="site-text"><strong class="site-name">${esc(i.name)}</strong><span class="site-description">${esc(i.description||domain(i.url))}</span></span></a><div class="card-actions"><button type="button" class="star" data-star="${i.id}" aria-label="${stars.has(i.id)?'取消星标':'添加星标'}：${esc(i.name)}" aria-pressed="${stars.has(i.id)}">${stars.has(i.id)?'★':'☆'}</button><button type="button" data-preview="${i.id}" aria-label="预览：${esc(i.name)}">预览</button><button type="button" data-edit="${i.id}" aria-label="编辑：${esc(i.name)}">编辑</button></div></article>`;
 }
-function record(id){recent=[id,...recent.filter(x=>x!==id)].slice(0,24);writeArray(RECENT,recent);}
 function closeDirectory(){
   if(inFrame){window.parent.postMessage({type:'li-nav-close'},location.origin);return;}
   window.close();
@@ -254,7 +263,6 @@ function closeDirectory(){
 function visitLink(event){
   const link=event.target.closest?.('a[data-visit]');
   if(!link||event.defaultPrevented)return;
-  record(link.dataset.visit);
   // Let the native link open its destination before removing the hosting iframe/tab.
   setTimeout(closeDirectory,0);
 }
@@ -286,7 +294,6 @@ $('#search-form').addEventListener('submit',e=>{e.preventDefault();const q=$('#q
 $('#clear-search').addEventListener('click',()=>{$('#query').value='';render();$('#query').focus();});
 $('#show-all').addEventListener('click',()=>applyZone('blog'));
 $('#favorites-filter').addEventListener('click',()=>{filter=filter==='stars'?'all':'stars';render();});
-$('#recent-filter').addEventListener('click',()=>{filter=filter==='recent'?'all':'recent';render();});
 $('#add-site').addEventListener('click',()=>openEditor());
 $('#editor-form').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget;try{store.save({id:editingId||undefined,name:f.elements.name.value,url:f.elements.url.value,groupId:f.elements.groupId.value,section:f.elements.section.value,description:f.elements.description.value,collections:[...(f.elements.original.checked?['original']:[]),...(f.elements.bookmarks.checked?['bookmarks']:[])]});$('#editor').close();refreshData();toast('网址已保存');}catch(error){$('#editor-error').textContent=error.message;}});
 $('#delete-site').addEventListener('click',()=>{$('#confirm-text').textContent=entries().find(i=>i.id===editingId)?.name||'';$('#confirm').showModal();});
@@ -295,7 +302,7 @@ $('#undo').addEventListener('click',()=>{try{store.undo();refreshData();toast('�
 $('#export').addEventListener('click',()=>{const backup={...store.getData(),liPlusFavorites:[...stars]};if(inFrame){window.parent.postMessage({type:'li-nav-export',backup},location.origin);}else{const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Li-plus-navigation-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}toast('已导出网址和星标备份');});
 $('#import').addEventListener('click',()=>$('#import-file').click());
 $('#import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>8*1024*1024)throw new Error('备份文件过大，请使用本站导出的 JSON。');const incoming=JSON.parse(await file.text());store.importData(incoming);if(Array.isArray(incoming.liPlusFavorites)){stars=new Set(incoming.liPlusFavorites.filter(id=>typeof id==='string'));writeArray(STAR,[...stars]);}refreshData();toast('备份已导入，可撤销网址变更');}catch(error){toast(error.message);}finally{e.target.value='';}});
-window.addEventListener('storage',event=>{if(event.key===NavigationStore.STORAGE_KEY){store=NavigationStore.create(base,storage);refreshData();}if(event.key===STAR){stars=new Set(readArray(STAR));render();}if(event.key===RECENT){recent=readArray(RECENT);render();}});
+window.addEventListener('storage',event=>{if(event.key===NavigationStore.STORAGE_KEY){store=NavigationStore.create(base,storage);refreshData();}if(event.key===STAR){stars=new Set(readArray(STAR));render();}});
 window.addEventListener('keydown',event=>{
   if(event.defaultPrevented||event.isComposing||document.querySelector('dialog[open]'))return;
   const typing=event.target?.closest?.('input,textarea,select')||event.target?.isContentEditable;
@@ -305,7 +312,7 @@ window.addEventListener('keydown',event=>{
   closeDirectory();
 });
 try{
-  const response=await fetch('navigation/data.json');if(!response.ok)throw new Error('网址数据未能加载，请刷新重试。');base=await response.json();
+  const response=await fetch('navigation/data.json?v=20261101-directory-merge');if(!response.ok)throw new Error('网址数据未能加载，请刷新重试。');base=await response.json();
   store=NavigationStore.create(base,storage);data=store.getData();
   $('#search-mode').innerHTML='<option value="local">本站网址</option>'+data.engines.map(e=>`<option value="${esc(e.id)}">${esc(e.id==='search_1'?'百度':e.name)}</option>`).join('');
   $('#search-mode').value=data.engines.some(e=>e.id==='search_1')?'search_1':'local';
