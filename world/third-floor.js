@@ -11,6 +11,9 @@ export function buildThirdFloor({ grid, layer }) {
   const foot = { x: -19.4, y: 4, z: -5.25 }, exit = { x: -19.4, y: 11, z: -5.25 };
   const room = { x0: -18, x1: -4, z0: -9, z1: 6 };
   const insideRoom = (x, z) => x > room.x0 && x < room.x1 && z > room.z0 && z < room.z1;
+  // One set of bounds for the visible roof, its walking surface and collision.
+  const roomRoof = new THREE.Box3(new THREE.Vector3(room.x0-.3,14.7,room.z0-.3),new THREE.Vector3(room.x1+.3,14.94,room.z1+.3));
+  const overRoomRoof = (x,z,pad=0) => x>=roomRoof.min.x-pad&&x<=roomRoof.max.x+pad&&z>=roomRoof.min.z-pad&&z<=roomRoof.max.z+pad;
   const obstacle = (x, z, w, d) => barriers.push({ x0: x-w/2, x1: x+w/2, z0: z-d/2, z1: z+d/2 });
   // The new floor covers the old skylights; keep a solid ceiling underneath it.
   for(let x=-20;x<24;x++)for(let z=-12;z<16;z++)grid.set(x,10,z,'roof','roof');
@@ -34,7 +37,8 @@ export function buildThirdFloor({ grid, layer }) {
     B.box(x, 11.45, 5.78, .78, 2.2, .04, glass);
     B.box(x + (x < -11 ? .35 : -.35), 12.2, 5.7, .06, .42, .06, china);
   }
-  ceiling.box(-11, 14.7, -1.5, 14.6, .24, 15.6, dark);
+  const roofCenter=roomRoof.getCenter(new THREE.Vector3()),roofSize=roomRoof.getSize(new THREE.Vector3());
+  ceiling.box(roofCenter.x,roomRoof.min.y,roofCenter.z,roofSize.x,roofSize.y,roofSize.z,dark);
   for (const x of [-16, -11, -6]) ceiling.box(x, 14.60, -1.5, .12, .1, 14.6, wood);
   // Tea table, tray, kettle, cups and four armchairs.
   B.box(-11, 11.77, -1.5, 3.5, .16, 1.7, wood); obstacle(-11, -1.5, 3.5, 1.7);
@@ -60,14 +64,17 @@ export function buildThirdFloor({ grid, layer }) {
   for(const z of [-8.3,8.3])for(const x of [9,10,11,13,14,15])B.box(x,11.09,z,.48,.01,.9,china);
   // A two-flight outside stair links the existing second-floor landing to level three.
   for(let y=4;y<7;y++)for(let z=-6;z<-4;z++)grid.set(-21,y,z,null,'wallW');
+  // Keep the exposed sill as permanent floor, including when the west wall is
+  // cut away. The landing must stop at its outer edge, not overlap its top.
+  for(let z=-6;z<-4;z++)grid.set(-21,3,z,'loft');
   for(let z=-6;z<-4;z++)grid.set(-21,11,z,null,'roof');
   function slab(x0,x1,z0,z1,y,drawEnd=x1) {
     stairs.box((x0+drawEnd)/2,y-.14,(z0+z1)/2,drawEnd-x0,.14,z1-z0,floor);
     slabs.push({x0,x1,z0,z1,y,box:new THREE.Box3(new THREE.Vector3(x0,y-.14,z0),new THREE.Vector3(x1,y,z1))});
   }
-  // Landing surfaces meet the existing floors edge to edge; overlapping the
-  // loft/roof at exactly the same height caused the two flickering patches.
-  slab(-28,-19.2,-6,-4,4,-20); slab(-28,-22.5,-14,-12,7.5); slab(-24.5,-19.2,-6,-4,11,-21);
+  // Draw edge to edge with the sill/roof; collision support still extends into
+  // the building so crossing the doorway remains continuous.
+  slab(-28,-19.2,-6,-4,4,-21); slab(-28,-22.5,-14,-12,7.5); slab(-24.5,-19.2,-6,-4,11,-21);
   stairPoints.push(foot,{x:-27,y:4,z:-5.25});
   for(let i=0;i<14;i++){
     const z=-6-(i+.5)*6/14,y=4+(i+1)*.25;
@@ -137,14 +144,24 @@ export function buildThirdFloor({ grid, layer }) {
   }
   const source={
     foot,exit,room,seats,route,roofRoute,insideRoom,setPlaneObstacle(fn){planeObstacle=fn;},
-    flightHeight(x,z){return insideRoom(x,z)?14.94:x>=-21&&x<=25&&z>=-13&&z<=17?12:0;},
+    flightHeight(x,z){return overRoomRoof(x,z)?roomRoof.max.y:x>=-21&&x<=25&&z>=-13&&z<=17?12:0;},
     levels(x,z,out){
+      // A separate site keeps rooftop clicks from routing through the tea room.
+      if(overRoomRoof(x,z))out.push({y:roomRoof.max.y,site:'tea-roof'});
       if(x>=-20&&x<=24&&z>=-12&&z<=16)out.push({y:11,site:'roof'});
       for(const s of slabs)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'third-stairs',tread:true,route:'third-stair',index:nearestIndex(x,s.y,z)});
     },
-    obstructed,collides:(x,y,z)=>obstructed(x,z,y),
+    obstructed,
+    collides(x,y,z){return obstructed(x,z,y)||overRoomRoof(x,z,.3)&&y<roomRoof.max.y-.02&&y+1.8>roomRoof.min.y;},
     pick(ray){
-      let best=null;for(const s of slabs){if(ray.intersectBox(s.box,hit)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:new THREE.Vector3(hit.x,s.y,hit.z),site:'third-stairs'};}}
+      let best=null;
+      // Only the upper face is a destination; looking up inside the room must
+      // not turn a ceiling click into a flight onto the roof.
+      if(ray.direction.y<0){
+        const t=(roomRoof.max.y-ray.origin.y)/ray.direction.y;
+        if(t>=0){ray.at(t,hit);if(overRoomRoof(hit.x,hit.z))best={t,point:hit.clone(),site:'tea-roof'};}
+      }
+      for(const s of slabs){if(ray.intersectBox(s.box,hit)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:new THREE.Vector3(hit.x,s.y,hit.z),site:'third-stairs'};}}
       return best;
     },
   };
