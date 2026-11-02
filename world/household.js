@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createPlayer } from '@engine/world/player.js';
 import { createFemaleRoutine } from './female-routine.js';
 import { createSharedQuilt } from './quilt.js';
+import { createNpcNavigator } from './npc-navigation.js';
 
 const BED={x:-9.8,y:4,z:-9.3},IDLE={x:0,z:0,run:false},FIVE_MINUTES=300000;
 const hours=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',hourCycle:'h23'});
@@ -23,12 +24,21 @@ function createWoman(){
   }
   const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial(),parts.length+64);mesh.receiveShadow=true;body.add(mesh);
   parts.forEach((p,i)=>mesh.setColorAt(i,new THREE.Color(p.color)));
-  const dummy=new THREE.Object3D(),m=new THREE.Matrix4(),rot=new THREE.Matrix4(),inverse=new THREE.Matrix4(),color=new THREE.Color();let phase=0;
+  const dummy=new THREE.Object3D(),m=new THREE.Matrix4(),rot=new THREE.Matrix4(),inverse=new THREE.Matrix4(),color=new THREE.Color();let phase=0,swimsuit=false;
+  function setSwimsuit(on){
+    if(swimsuit===on)return;swimsuit=on;
+    for(let i=0;i<parts.length;i++){const p=parts[i],hex=on?(p.color===pants||p.color===shirt&&p.limb?skin:p.color===shirt?0x49a9d1:p.color):p.color;mesh.setColorAt(i,color.setHex(hex));}
+    mesh.instanceColor.needsUpdate=true;
+  }
   function update(dt,pose={}){
     phase+=dt*9;const stride=Math.min(1,pose.speed||0)*.6;mesh.count=parts.length;
-    for(let i=0;i<parts.length;i++){const p=parts[i];dummy.position.set(p.x,p.y,p.z);dummy.scale.set(p.w,p.h,p.d);dummy.rotation.set(0,0,0);dummy.updateMatrix();m.copy(dummy.matrix);
+    const swim=pose.swim;
+    if(swim){body.rotation.set(swim.pitch,swim.roll,0);body.position.set(0,1-Math.cos(swim.pitch),-Math.sin(swim.pitch));}
+    else {body.rotation.set(0,0,0);body.position.set(0,0,0);}
+    for(let i=0;i<parts.length;i++){const p=parts[i];dummy.position.set(p.x,p.y,p.z);dummy.scale.set(p.w,p.h,p.d);if(swimsuit&&p.color===0xe2d7c5)dummy.scale.set(0,0,0);dummy.rotation.set(0,0,0);dummy.updateMatrix();m.copy(dummy.matrix);
       if(p.limb){const leg=Math.abs(p.limb)===1,pivot=leg?.67:1.32;let angle=Math.sin(phase+(p.limb>0?0:Math.PI))*stride*(leg?1:-1);
         if(pose.activity)angle=leg?(pose.seated?-Math.PI/2:0):(p.limb>0?pose.right:pose.left);
+        if(swim)angle=leg?Math.sin(phase*1.5+(p.limb>0?0:Math.PI))*.3:-1.5+Math.sin(phase*.65+(p.limb>0?0:Math.PI))*1.3;
         rot.makeTranslation(0,-pivot,0);m.premultiply(rot);rot.makeRotationX(angle);m.premultiply(rot);rot.makeTranslation(0,pivot,0);m.premultiply(rot);}
       mesh.setMatrixAt(i,m);
     }mesh.instanceMatrix.needsUpdate=true;
@@ -38,15 +48,16 @@ function createWoman(){
   function beginProps(){root.updateMatrixWorld(true);inverse.copy(body.matrixWorld).invert();}
   function prop(x,y,z,w,h,d,hex,world=false,rx=0,ry=0){dummy.position.set(x,y,z);dummy.scale.set(w,h,d);dummy.rotation.set(rx,ry,0);dummy.updateMatrix();m.copy(dummy.matrix);if(world)m.premultiply(inverse);mesh.setMatrixAt(mesh.count,m);mesh.setColorAt(mesh.count++,color.setHex(hex));}
   function endProps(){mesh.instanceMatrix.needsUpdate=mesh.instanceColor.needsUpdate=true;}
-  update(0);return{root,body,hand,blob,update,beginProps,prop,endProps};
+  update(0);return{root,body,hand,blob,update,beginProps,prop,endProps,setSwimsuit,get outfit(){return swimsuit?'swimsuit':'casual';}};
 }
 
 export function createHousehold({stage,world,player,avatar,nav,rig},activities){
   const femaleAvatar=createWoman(),woman=createPlayer({avatar:femaleAvatar,nav,grid:world.grid,ground:world.ground});
   stage.scene.add(femaleAvatar.root);woman.restore(-1.5,0,5.8,Math.PI);
-  const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities});
+  const navigateWoman=createNpcNavigator(woman,world,nav);
+  const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities,world,navigate:navigateWoman});
   const quilts=createSharedQuilt();stage.scene.add(quilts);
-  let maleSleep=false,femaleSleep=false,going=false,femaleGoing=false,reason=null,sleepControl=false;
+  let maleSleep=false,femaleSleep=false,going=false,femaleGoing=false,reason=null,sleepControl=false,femaleWakeAt=0,wasManualSleep=false;
   const wakeButton=document.querySelector('[data-control="interact"]');
   wakeButton.addEventListener('click',e=>{if(maleSleep){e.stopImmediatePropagation();wakeMale();}},{capture:true});
   let lastMove=Date.now(),lastNight=false,nightDismissed=false,clock=0,last={x:player.pos.x,y:player.y,z:player.pos.z},routeClock=0;
@@ -61,16 +72,18 @@ export function createHousehold({stage,world,player,avatar,nav,rig},activities){
   function sleepingPose(a,x){a.root.position.set(x,4.78,-8.55);a.root.rotation.set(0,0,0);if(a===avatar)for(const limb of maleLimbs)limb?.rotation.set(0,0,0);a.body.rotation.set(-Math.PI/2,0,0);a.body.position.set(0,Math.sin(clock*1.3)*.008,0);}
   function wakeMale(){
     lastMove=Date.now();nightDismissed=true;
+    if(maleSleep||going||activities.current==='sleep')scheduleWomanWake();
     if(!maleSleep&&!going)return false;
     going=false;player.cancel();
     if(maleSleep){maleSleep=false;avatar.body.rotation.set(0,0,0);avatar.body.position.set(0,0,0);avatar.update(0,{speed:0,fly:-1});player.restore(BED.x,4,BED.z,0);rig.recenter(player,true);}
     covers();return true;
   }
-  function wakeWoman(){femaleSleep=femaleGoing=false;femaleAvatar.body.rotation.set(0,0,0);femaleAvatar.body.position.set(0,0,0);woman.restore(BED.x,4,BED.z,0);routine.resume();}
+  function scheduleWomanWake(){if((femaleSleep||femaleGoing)&&!femaleWakeAt)femaleWakeAt=Date.now()+5000;nightDismissed=true;}
+  function wakeWoman(){const inBed=femaleSleep;femaleWakeAt=0;femaleSleep=femaleGoing=false;woman.cancel();femaleAvatar.body.rotation.set(0,0,0);femaleAvatar.body.position.set(0,0,0);if(inBed)woman.restore(BED.x,4,BED.z,0);routine.resume();}
   function begin(cause){
     if(going||maleSleep)return false;
     if(activities.active&&!activities.stop(false))return false;
-    reason=cause;going=true;femaleGoing=!femaleSleep;routine.pause();routeClock=1;
+    reason=cause;femaleWakeAt=0;going=true;femaleGoing=!femaleSleep;routine.pause();routeClock=1;
     const h=window.__home;const ok=h?.navigate(BED.x,BED.z,4);
     if(!ok){going=false;return false;}return true;
   }
@@ -78,19 +91,17 @@ export function createHousehold({stage,world,player,avatar,nav,rig},activities){
     if(femaleSleep||!femaleGoing)return;
     const target=BED;
     if(Math.hypot(woman.pos.x-target.x,woman.pos.z-target.z)<.3)return;
-    // Reuse the same ground controller: doors, furniture and stairs remain solid.
-    if(nav.canStand(woman.pos.x,woman.pos.z,woman.y)&&nav.canStand(target.x,target.z)){woman.goTo(target.x,target.z);return;}
-    if(woman.island==='roof'||woman.island==='third-stairs'){
-      const end=target.y>=10.8?target:world.thirdFloor.foot,points=world.thirdFloor.route(woman.pos.x,woman.y,woman.pos.z,end.x,end.y,end.z);
-      woman.follow(points,null,target.y<10.8?()=>woman.goTo(target.x,target.z):null);return;
-    }
-    if(Math.abs(woman.y-target.y)<.7&&world.ground.canStand(target.x,target.z,target.y))woman.follow([target]);
-    else if(femaleGoing&&!woman.travelling)woman.flyTo(BED.x,BED.z);
+    if(!woman.travelling)navigateWoman(target.x,target.y,target.z);
   }
   const recordInput=e=>{if(e.isTrusted&&going)wakeMale();};
   addEventListener('keydown',recordInput);addEventListener('pointerdown',recordInput);
   function update(dt){
     clock+=dt;routeClock+=dt;const now=Date.now();
+    const manualSleep=activities.current==='sleep';
+    if(wasManualSleep&&!manualSleep)scheduleWomanWake();
+    if(manualSleep&&!wasManualSleep)femaleWakeAt=0;
+    wasManualSleep=manualSleep;
+    if(femaleWakeAt&&now>=femaleWakeAt&&!maleSleep&&!manualSleep)wakeWoman();
     if(Math.abs(now-clockAt)>=1000){clockAt=now;clockDate.setTime(now);const hour=Number(hours.format(clockDate));night=hour>=22||hour<7;}
     if(!night&&lastNight){wakeMale();nightDismissed=false;if(femaleSleep||femaleGoing)wakeWoman();}
     if(night&&!lastNight)nightDismissed=false;lastNight=night;
@@ -99,7 +110,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig},activities){
     last.x=player.pos.x;last.y=player.y;last.z=player.pos.z;
     // Bedtime waits for the visitor to finish driving or another interaction.
     if(!maleSleep&&(night&&!nightDismissed||now-lastMove>=FIVE_MINUTES)&&!going&&!activities.active&&!rig.introActive){begin(night?'night':'idle');}
-    if((night||activities.current==='sleep')&&!femaleSleep&&!femaleGoing){routine.pause();femaleGoing=true;routeClock=1;}
+    if((night&&!nightDismissed||manualSleep)&&!femaleSleep&&!femaleGoing&&!femaleWakeAt){routine.pause();femaleGoing=true;routeClock=1;}
     if(going&&atBed(player)){player.cancel();maleSleep=true;going=false;player.anchor(-11.24,4,-9.3,0);avatar.update(0,{speed:0,fly:-1});rig.recenter(player,true);rig.showcase(innerWidth<720&&innerHeight>innerWidth?[-3,11,3]:[-6.5,8.7,-4.9],[-12,4.9,-9.3],{interactive:true});}
     if(routeClock>.6){routeClock=0;guideWoman();}
     if(!femaleSleep){
@@ -110,5 +121,5 @@ export function createHousehold({stage,world,player,avatar,nav,rig},activities){
     if(femaleSleep)sleepingPose(femaleAvatar,-12.76);
     covers();
   }
-  return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,get sleeping(){return maleSleep;},get walking(){return going;},status:()=>({male:maleSleep?'sleeping':going?'going-to-bed':'awake',female:femaleSleep?'sleeping':femaleGoing?'going-to-bed':'awake',femaleActivity:routine.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
+  return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,get sleeping(){return maleSleep;},get walking(){return going;},status:()=>({male:maleSleep?'sleeping':going?'going-to-bed':'awake',female:femaleSleep?'sleeping':femaleGoing?'going-to-bed':'awake',femaleWakeIn:femaleWakeAt?Math.max(0,(femaleWakeAt-Date.now())/1000):null,femaleActivity:routine.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
 }
