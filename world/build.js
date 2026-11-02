@@ -12,6 +12,7 @@ import { atlasPlanes } from './atlas-planes.js';
 import { ISLAND, FOREST, COURT, RIM } from './layout.js';
 import { createActivities } from './activities.js';
 import { buildThirdFloor } from './third-floor.js';
+import { createOceanLife } from './ocean-life.js';
 import { createAircraftFleet } from './aircraft-fleet.js';
 import { buildCarrier } from './carrier.js';
 import { createHousehold } from './household.js';
@@ -49,7 +50,8 @@ export function build({ grid, layer, materials, stage }) {
   // ground of their own, outside the block grid.
   const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
   const carrier = buildCarrier(layer, furn.batches.static);
-  const aircraftFleet=createAircraftFleet(carrier);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
+  const oceanLife=createOceanLife(furn.batches.static);
+  const aircraftFleet=createAircraftFleet(carrier,oceanLife);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh);
@@ -59,7 +61,7 @@ export function build({ grid, layer, materials, stage }) {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
     sites: [outer, mountain, furn.stairs, third.source, carrier], sitesAfter: [roofAccess],
-    named: { outer, mountain, roofAccess, carrier, aircraftFleet, thirdFloor: third.source, drawMap },
+    named: { outer, mountain, roofAccess, carrier, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
   };
 }
 
@@ -83,6 +85,7 @@ function drawMap(ctx, X, Z, PPM) {
 // The sailboat and keyboard/touch activities share one update loop.
 export function setup(app) {
   const { stage, world } = app;
+  world.oceanLife.configureSea(world.coast);
   const activities = createActivities(app);
   const household = createHousehold(app,activities);
   return {
@@ -99,6 +102,7 @@ export function setup(app) {
       household.update(dt);
       world.carrier.updateCabin(app.player,stage.camera);
       const cutaway = world.hidden.has('roof');
+      world.oceanLife.update(dt,world.carrier);
       world.aircraftFleet.update(cutaway);
       world.setHidden('thirdRoomRoof', cutaway);
     },

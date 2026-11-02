@@ -1,16 +1,11 @@
-// A city's weather (home.config.js `weather`), fetched independently of world
-// boot. Current conditions are Open-Meteo model estimates; refresh at most
-// once per 30 minutes. Without a city there is nothing to fetch: Live weather
-// stays clear, and Live time follows the visitor's own clock.
+// Open-Meteo current conditions, requested after browser location consent.
+// Weather never blocks world boot; refresh at most once per 30 minutes.
+// Location failure leaves the temperature empty and offers a retry.
 import { config } from './config.js';
 
 export const WEATHER_CITY = config.weather || null;
-export const WEATHER_URL = WEATHER_CITY && 'https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({
-  latitude: WEATHER_CITY.latitude, longitude: WEATHER_CITY.longitude, timezone: WEATHER_CITY.timezone,
-  current: 'temperature_2m,weather_code,rain,showers,cloud_cover,wind_speed_10m', timeformat: 'unixtime', forecast_days: 1,
-  daily: 'sunrise,sunset',
-});
-const KEY = WEATHER_CITY ? `homecraft-weather-${WEATHER_CITY.latitude},${WEATHER_CITY.longitude}-v1` : null;
+export function weatherUrl(location){return 'https://api.open-meteo.com/v1/forecast?'+new URLSearchParams({latitude:location.latitude,longitude:location.longitude,timezone:'auto',current:'temperature_2m,weather_code,rain,showers,cloud_cover,wind_speed_10m',timeformat:'unixtime',forecast_days:1,daily:'sunrise,sunset'});}
+export const WEATHER_URL = WEATHER_CITY && !WEATHER_CITY.geolocate ? weatherUrl(WEATHER_CITY) : null;
 const INTERVAL = 30 * 60 * 1000, MAX_AGE = 6 * 60 * 60 * 1000;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 
@@ -62,7 +57,7 @@ export const WEATHER_PRESETS = {
 };
 
 // Words shown for the weather are [Chinese, English] pairs (lang.js t).
-const city = WEATHER_CITY?.city || '', cityEn = WEATHER_CITY?.cityEn || city;
+const city = WEATHER_CITY?.geolocate?'当前位置':WEATHER_CITY?.city || '', cityEn = WEATHER_CITY?.cityEn || city;
 export const WEATHER_LABELS = { auto: city ? [`${city}实时`, `${cityEn}, live`] : ['晴天', 'Clear'], clear: ['晴天', 'Clear'], overcast: ['阴天', 'Overcast'], rain: ['下雨', 'Rain'], fog: ['薄雾', 'Mist'], haze: ['雾霾', 'Haze'], snow: ['下雪', 'Snow'], thunder: ['雷雨', 'Storm'] };
 export const TIME_LABELS = { auto: city ? [`${city}时间`, `${cityEn} time`] : ['本地时间', 'Local time'], dawn: ['清晨', 'Dawn'], morning: ['上午', 'Morning'], day: ['白天', 'Day'], dusk: ['黄昏', 'Dusk'], night: ['夜晚', 'Night'] };
 const zone = WEATHER_CITY?.timezone ? { timeZone: WEATHER_CITY.timezone } : {};
@@ -89,55 +84,40 @@ function valid(data) {
     && data.code >= 0 && data.code <= 99 && data.temperature > -80 && data.temperature < 65;
 }
 
-export function createWeather({ onChange, fetcher = fetch, storage, now = Date.now } = {}) {
-  if (!WEATHER_CITY) return {
-    start() { onChange?.({ data: null, status: 'off', condition: null }); }, refresh() {}, dispose() {},
-    get state() { return { data: null, status: 'off', condition: null }; },
-  };
-  if (!storage) try { storage = localStorage; } catch {}
-  let data = null, lastAttempt = -Infinity, pending = null, timer;
-  let status = 'loading';
-  try {
-    const cached = JSON.parse(storage?.getItem(KEY));
-    if (valid(cached) && now() - cached.savedAt >= 0 && now() - cached.savedAt < MAX_AGE && Math.abs(now() - cached.time * 1000) < MAX_AGE) data = cached;
-  } catch {}
-  function emit(next) { status = next; onChange?.({ data, status, condition: data ? weatherCondition(data) : null }); }
-  async function refresh() {
-    if (pending) return pending;
-    if (now() - lastAttempt < INTERVAL) return;
-    if (data && now() - data.savedAt < INTERVAL && now() - data.time * 1000 < MAX_AGE) { lastAttempt = data.savedAt; emit('cached'); return; }
-    lastAttempt = now();
-    const abort = new AbortController();
-    const timeout = setTimeout(() => abort.abort(), 8000);
-    pending = (async () => {
-      try {
-        const response = await fetcher(WEATHER_URL, { signal: abort.signal, credentials: 'omit' });
-        if (!response.ok) throw new Error('Weather response failed');
-        const responseData = await response.json(), current = responseData.current;
-        const next = { temperature: current?.temperature_2m, code: current?.weather_code,
-          rain: current?.rain + current?.showers, cloud: current?.cloud_cover, time: current?.time, savedAt: now() };
-        if (finite(current?.wind_speed_10m)) next.wind = current.wind_speed_10m;
-        const sunrise = responseData.daily?.sunrise?.[0], sunset = responseData.daily?.sunset?.[0];
-        if (finite(sunrise) && finite(sunset) && sunset > sunrise) Object.assign(next, { sunrise, sunset });
-        if (!valid(next) || Math.abs(now() - next.time * 1000) > MAX_AGE) throw new Error('Weather data is stale or incomplete');
-        data = next;
-        try { storage?.setItem(KEY, JSON.stringify(data)); } catch {}
-        emit('live');
-      } catch {
-        if (data && (now() - data.savedAt >= MAX_AGE || now() - data.time * 1000 >= MAX_AGE)) data = null;
-        emit(data ? 'stale' : 'unavailable');
-      } finally { clearTimeout(timeout); pending = null; }
-    })();
-    return pending;
+export function createWeather({onChange,fetcher=fetch,storage,now=Date.now,geolocation=globalThis.navigator?.geolocation}={}){
+  if(!storage)try{storage=localStorage;}catch{}
+  let data=null,status='loading',location=WEATHER_CITY?.geolocate?null:WEATHER_CITY,pending=null,timer,disposed=false,lastAttempt=-Infinity,abort;
+  const emit=next=>{status=next;if(!disposed)onChange?.({data,status,location,condition:data?weatherCondition(data):null});};
+  const locate=()=>new Promise((resolve,reject)=>{
+    if(!geolocation){reject({code:0});return;}
+    geolocation.getCurrentPosition(p=>resolve({latitude:Math.round(p.coords.latitude*1000)/1000,longitude:Math.round(p.coords.longitude*1000)/1000}),reject,{enableHighAccuracy:false,timeout:12000,maximumAge:300000});
+  });
+  async function refresh(){
+    if(disposed||pending||!location||now()-lastAttempt<INTERVAL)return pending;
+    lastAttempt=now();const key=`homecraft-weather-${location.latitude},${location.longitude}-v1`;
+    if(!data)try{const c=JSON.parse(storage?.getItem(key));if(valid(c)&&now()-c.savedAt>=0&&now()-c.savedAt<MAX_AGE&&Math.abs(now()-c.time*1000)<MAX_AGE)data=c;}catch{}
+    if(data&&now()-data.savedAt<INTERVAL){emit('cached');return;}
+    abort=new AbortController();const timeout=setTimeout(()=>abort.abort(),8000);
+    pending=(async()=>{
+      try{
+        const response=await fetcher(weatherUrl(location),{signal:abort.signal,credentials:'omit'});if(!response.ok)throw Error('Weather response failed');
+        const json=await response.json(),c=json.current;
+        const next={temperature:c?.temperature_2m,code:c?.weather_code,rain:(c?.rain??0)+(c?.showers??0),cloud:c?.cloud_cover,wind:c?.wind_speed_10m,time:c?.time,savedAt:now()};
+        if(!valid(next)||Math.abs(now()-next.time*1000)>MAX_AGE)throw Error('Weather data is stale');
+        const sunrise=json.daily?.sunrise?.[0],sunset=json.daily?.sunset?.[0];if(finite(sunrise)&&finite(sunset))Object.assign(next,{sunrise,sunset});
+        if(disposed)return;data=next;try{storage?.setItem(key,JSON.stringify(data));}catch{}emit('live');
+      }catch{if(data&&(now()-data.savedAt>=MAX_AGE||now()-data.time*1000>=MAX_AGE))data=null;emit(data?'stale':'unavailable');}
+      finally{clearTimeout(timeout);pending=null;}
+    })();return pending;
   }
-  const visible = () => { if (!document.hidden) refresh(); };
-  return {
-    start() {
-      emit(data ? 'cached' : 'loading'); refresh();
-      timer = setInterval(visible, INTERVAL); document.addEventListener('visibilitychange', visible);
-    },
-    refresh,
-    dispose() { clearInterval(timer); document.removeEventListener('visibilitychange', visible); },
-    get state() { return { data, status, condition: data ? weatherCondition(data) : null }; },
-  };
+  let locating=false;
+  async function requestLocation(){
+    if(locating||disposed)return;locating=true;if(pending){abort?.abort();await pending;}if(disposed){locating=false;return;}data=null;location=null;emit('locating');
+    try{const next=await locate();if(disposed)return;location=next;lastAttempt=-Infinity;emit('loading');await refresh();}
+    catch(error){emit(error.code===1?'denied':'location-unavailable');}finally{locating=false;}
+  }
+  const visible=()=>{if(!document.hidden)refresh();};
+  return{start(){if(WEATHER_CITY?.geolocate)requestLocation();else if(location){emit('loading');refresh();}else emit('off');timer=setInterval(visible,INTERVAL);document.addEventListener('visibilitychange',visible);},refresh,requestLocation,
+    dispose(){disposed=true;abort?.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);},
+    get state(){return{data,status,location,condition:data?weatherCondition(data):null};}};
 }

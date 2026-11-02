@@ -48,10 +48,10 @@ export function furnish({ layer }) {
   };
   // Broad 3–4 m panes, divided at one mid-height rail on tall walls. The glass
   // stays merged; a few instanced profiles establish its joints and thickness.
-  const glazing = (batch, x, z, width, bottom, height, ry = 0) => batch.at(x, 0, z, ry, () => {
+  const glazing = (batch, x, z, width, bottom, height, ry = 0, sharedEdges = false) => batch.at(x, 0, z, ry, () => {
     const count = Math.ceil(width / 3.8);
-    for (let i = 0; i <= count; i++) batch.box(-width / 2 + width * i / count, bottom, 0, 0.07, height, 0.1, L.steel);
-    for (const y of [bottom, ...(height > 5 ? [bottom + height / 2] : []), bottom + height - 0.07]) batch.box(0, y, 0, width, 0.07, 0.1, L.steel);
+    for (let i = sharedEdges ? 1 : 0; i <= (sharedEdges ? count - 1 : count); i++) batch.box(-width / 2 + width * i / count, bottom, 0, 0.07, height, 0.1, L.steel);
+    for (const y of [bottom, ...(height > 5 ? [bottom + height / 2] : []), bottom + height - 0.07]) for(let i=0;i<count;i++)batch.box(-width/2+width*(i+.5)/count,y,0,width/count-.07,.07,.1,L.steel);
   });
   const openDoor = (batch, x, y, z, width, ry) => batch.at(x, y, z, ry, () => {
     batch.box(width / 2, 0, 0, width, 2.8, 0.12, L.panel);
@@ -82,7 +82,7 @@ export function furnish({ layer }) {
   for (const [x, width, bottom, height] of [[-11, 18, 0, 9], [13.5, 21, 0, 9], [.5, 5, 3, 6]]) {
     batches.wallS.box(x, bottom, HOUSE.z1 + .02, width, height, .055,
       { tex: 'glass', glass: true }, { tag: 'front-glazing' });
-    glazing(batches.wallS, x, HOUSE.z1 + .02, width, bottom, height);
+    glazing(batches.wallS, x, HOUSE.z1 + .02, width, bottom, height, 0, bottom === 3);
   }
   glazing(batches.wallN, -11, -12.02, 18, 6, 3);
   glazing(batches.wallN, 17.5, -12.02, 13, 6, 3);
@@ -101,10 +101,10 @@ export function furnish({ layer }) {
     B.box(1.62, 1.05, 0.09, 0.04, 0.45, 0.04, L.paint(0xa5afb0));
   }); foot(GARAGE.x0 + 0.9, GARAGE.glassDoor.z0, 1.95, 0.14);
   // Visible open doors, with clear entry circulation and no door animation.
-  for (const x of [ENTRANCE.x0, ENTRANCE.x1]) batches.wallS.box(x, 0, 16.15, 0.12, 3, 0.2, L.steel);
-  batches.wallS.box(0.5, 2.9, 16.15, 5.2, 0.1, 0.2, L.steel);
-  openDoor(batches.wallS, ENTRANCE.x0, 0, 16.2, 2.35, -Math.PI / 2);
-  openDoor(batches.wallS, ENTRANCE.x1, 0, 16.2, 2.35, -Math.PI / 2);
+  for (const x of [ENTRANCE.x0, ENTRANCE.x1]) batches.wallS.box(x, 0, 16.21, 0.16, 3, 0.16, L.steel);
+  batches.wallS.box(0.5, 2.9, 16.21, 4.84, 0.1, 0.16, L.steel);
+  openDoor(batches.wallS, ENTRANCE.x0, 0, 16.3, 2.35, -Math.PI / 2);
+  openDoor(batches.wallS, ENTRANCE.x1, 0, 16.3, 2.35, -Math.PI / 2);
   foot(ENTRANCE.x0, 17.35, 0.16, 2.4); foot(ENTRANCE.x1, 17.35, 0.16, 2.4);
   // Two subdued realtime lights support moving characters. All localized
   // architectural/task light is baked, with the same fittings on phones.

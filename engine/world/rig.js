@@ -244,23 +244,7 @@ export function createRig(camera, world) {
   // Lower the shell between the camera and the player.
   function cutaway(player, c) {
     if (!HOUSE) return;
-    const p = player.pos;
-    // Keep the house whole in the aerial view; use the normal interior
-    // cutaway once the camera has descended below the roof.
-    if (intro && c.y >= HOUSE.height - 0.4) {
-      for (const g of ['roof', 'wallS', 'wallN', 'wallE', 'wallW', 'secretTop']) world.setHidden(g, false);
-      return;
-    }
-    // Flying above the roof counts as outside, so the roof stays on.
-    const inside = player.y < HOUSE.height - 0.5 && (inHouse(p.x, p.z) || (p.x >= HOUSE.x0 - 1 && p.x < HOUSE.x1 + 1 && p.z >= HOUSE.z0 - 1 && p.z < HOUSE.z1 + 1 && player.y > 0.5));
-    const camInside = inHouse(c.x, c.z) && c.y < HOUSE.height - 0.4;
-    world.setHidden('roof', inside && !camInside && !world.preserveRoof);
-    world.setHidden('wallS', inside && c.z > HOUSE.z1 + 0.5);
-    world.setHidden('wallN', inside && c.z < HOUSE.z0 - 0.5);
-    world.setHidden('wallE', inside && c.x > HOUSE.x1 + 0.5);
-    world.setHidden('wallW', inside && c.x < HOUSE.x0 - 0.5);
-    const inSecret = !!SECRET && p.x >= SECRET.x0 && p.x < SECRET.x1 && p.z >= SECRET.z0 && p.z < SECRET.z1 && player.y > LOFT.y - 1 && player.y < HOUSE.height - 0.5;
-    world.setHidden('secretTop', inSecret);
+    for(const group of ['roof','wallS','wallN','wallE','wallW','secretTop'])world.setHidden(group,false);
   }
 
   return {

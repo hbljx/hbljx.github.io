@@ -4,7 +4,7 @@ import { ISLAND } from './layout.js';
 
 const HOME={x:64,z:8,heading:0},DECK=3.4;
 const STERN=-32,BOW=33,TURN_RADIUS=36,PORT_CLEARANCE=40;
-const sections=[[STERN,5.9],[-27,7.6],[22,7.6],[29,6.3],[BOW,4.8]];
+const sections=[[STERN,5.9],[-29,9.5],[-21,9.5],[-18,7.6],[22,7.6],[29,6.3],[BOW,4.8]];
 const deckY=()=>DECK;
 const RAMP={x0:-4.4,x1:1.9,z0:23,z1:33,height:2.3};
 const onRamp=(x,z)=>x>=RAMP.x0&&x<=RAMP.x1&&z>=RAMP.z0&&z<=RAMP.z1;
@@ -109,6 +109,9 @@ function carrierMesh(){
     const z=-25-r*.28;box(3.2+(k*4+c)*.28,DECK+.033,z,.23,.035,.23,white);
     box(6.915,4.03-r*.12,-1.5+(k*4+c)*.12,.035,.10,.10,white);
   }})));
+  box(5.2,DECK+.018,-25.5,8.1,.02,7.3,0x606d72);
+  for(const x of [1.15,9.25])box(x,DECK+.045,-25.5,.08,.025,7.3,yellow);
+  for(const z of [-29.15,-21.85])box(5.2,DECK+.045,z,8.1,.025,.08,yellow);
   // Flyable deck aircraft share the fleet renderer.
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setAttribute('cabinMask',new THREE.Float32BufferAttribute(masks,1));geo.computeVertexNormals();geo.computeBoundingSphere();
   const material=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
@@ -141,7 +144,7 @@ export function buildCarrier(layer,staticBatch){
   function toLocal(x,z){const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return{x:dx*c-dz*s,z:dx*s+dz*c};}
   function toWorld(x,z,y=surfaceY(x,z)){const c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return{x:mesh.position.x+x*c+z*s,y,z:mesh.position.z-x*s+z*c};}
   const helm=()=>toWorld(4.65,5.1);
-  const airfield={id:'carrier',name:'航母停机区',get x(){return toWorld(-1.8,-22).x;},get z(){return toWorld(-1.8,-22).z;},y:DECK,get heading(){return mesh.rotation.y;},get exit(){return toWorld(2.6,-22);}};
+  const airfield={id:'carrier',name:'航母 · 舰尾侧方机位',get x(){return toWorld(5.2,-25.5).x;},get z(){return toWorld(5.2,-25.5).z;},y:DECK,get heading(){return mesh.rotation.y;},get exit(){return toWorld(1,-25.5);}};
   function clearDeck(x,z){
     if(!onDeck(x,z,.4)||obstacles.some(o=>x>o.x0-.4&&x<o.x1+.4&&z>o.z0-.4&&z<o.z1+.4))return false;
     const p=toWorld(x,z);if(planeObstacle(p.x,p.z,DECK))return false;

@@ -59,6 +59,13 @@ export function createAvatar(skinUrl, { onFace } = {}) {
     img.onerror = () => console.warn('Skin not found:', skinUrl);
     img.src = skinUrl;
   }
+  let eyesClosed=false,awakeFace=null;
+  function setEyesClosed(closed){
+    if(eyesClosed===closed)return;eyesClosed=closed;
+    if(closed){awakeFace=ctx.getImageData(8,8,8,8);const pixels=awakeFace.data,skinIndex=(3*8+3)*4;ctx.fillStyle=`rgb(${pixels[skinIndex]},${pixels[skinIndex+1]},${pixels[skinIndex+2]})`;ctx.fillRect(9,12,2,1);ctx.fillRect(13,12,2,1);ctx.fillStyle='#654736';ctx.fillRect(9,12.6,2,.4);ctx.fillRect(13,12.6,2,.4);}
+    else if(awakeFace)ctx.putImageData(awakeFace,8,8);
+    texture.needsUpdate=true;
+  }
   const material = new THREE.MeshLambertMaterial({ map: texture, alphaTest: 0.5 });
 
   const root = new THREE.Group();   // position on the floor, yaw
@@ -228,7 +235,7 @@ export function createAvatar(skinUrl, { onFace } = {}) {
   function reach(arm = 'R') { reachT = 0.75; reachArm = arm; }
   function holdPhone(on) { phoneOut = on; handset.visible = on; }
 
-  return { root, body, head, armR, armL, legR, legL, hand, blob, update, wave, reach, holdPhone, material };
+  return { root, body, head, armR, armL, legR, legL, hand, blob, update, setEyesClosed, get eyesClosed(){return eyesClosed;}, wave, reach, holdPhone, material };
 }
 
 // ---------- Pets ----------

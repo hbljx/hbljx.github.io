@@ -17,10 +17,10 @@ import { buildTufts } from '@engine/world/landscape.js';
 import { makeSeat } from './seats.js';
 
 // x, z: centre; r: radius at the foot; h: height of the summit plateau.
-export const MOUNTAIN = { x: 5, z: -54, r: 29, h: 27 };
-const PLATEAU = 4, POW = 1.25;
+export const MOUNTAIN = { x: 5, z: -68.6, r: 46, h: 27 };
+const PLATEAU = 12, POW = 1.25;
 const SHOULDERS = [{ x: 23, z: -61.5, r: 15, h: 13 }, { x: -13, z: -62.5, r: 14, h: 11 }];
-const BASE = -3, WIDTH = 2.2, RISER = .17, RADIUS = .3, BODY = 1.8, SUMMIT = 5.8, SKIRT = 1.1;
+const BASE = -3, WIDTH = 2.2, RISER = .17, RADIUS = .3, BODY = 1.8, SUMMIT = 12, SKIRT = 1.1;
 const TRAILHEAD = { x: 5, z: -22.6 };
 // Where the stairs turn: degrees from south towards east, metres from the
 // centre. Close pairs make the switchbacks; the rest wind round the peak.
@@ -59,7 +59,7 @@ function natural(x, z) {
 // meets it flush and the outgoing first step rises from its edge.
 function layStairs() {
   const M = MOUNTAIN, half = WIDTH / 2;
-  const V = [{ ...TRAILHEAD }, ...TURNS.map(([a, d]) => polar(a, d)), { x: M.x, z: M.z }], last = V.length - 1;
+  const V = [{ ...TRAILHEAD }, ...TURNS.map(([a, d]) => polar(a, 12+(d-5.8)*34/23.2)), { x: M.x, z: M.z }], last = V.length - 1;
   const towards = (a, b) => { const l = Math.hypot(b.x - a.x, b.z - a.z); return { x: (b.x - a.x) / l, z: (b.z - a.z) / l }; };
   V.forEach((v, i) => {
     v.kind = 'landing'; v.T = natural(v.x, v.z); v.e = 0;
@@ -120,9 +120,7 @@ export function buildMountain(layer, materials) {
   const seats = [];
   const M = MOUNTAIN, half = WIDTH / 2, { V, flights } = layStairs(), landings = V.slice(1), top = V.at(-1), ty = top.y;
   let planeObstacle=()=>false;
-  const apron={x0:top.x+4,x1:top.x+24,z0:top.z-10,z1:top.z+10};
-  const onApron=(x,z)=>x>=apron.x0&&x<=apron.x1&&z>=apron.z0&&z<=apron.z1;
-  const airfield={id:'summit',name:'后山山顶',x:top.x,y:ty,z:top.z,heading:Math.PI,exit:{x:top.x+4.6,y:ty,z:top.z+1}};
+  const airfield={id:'summit',name:'后山山顶',x:top.x,y:ty,z:top.z,heading:Math.PI,exit:{x:top.x,y:ty,z:top.z+9.5}};
 
   // ---------- Stairs: route points and lookups ----------
   // Route points a quarter metre apart along the middle, for walking routes.
@@ -173,7 +171,6 @@ export function buildMountain(layer, materials) {
   // The steps, landing or walkway under a point: its top, how deep it is,
   // and its route index.
   function stairsAt(x, z, out) {
-    if(onApron(x,z))out.push({y:ty,depth:.5,n:top.p,distance:0});
     const list = tight.get(slot(Math.floor(x / 2), Math.floor(z / 2)));
     if (!list) return;
     let found = false;
@@ -596,7 +593,6 @@ export function buildMountain(layer, materials) {
       const p = ring[k], q = ring[(k + 1) % ring.length];
       if (onChord(v, p) && onChord(v, q)) continue;
       const mx = (p[0] + q[0]) / 2, mz = (p[1] + q[1]) / 2, dx = mx - v.x, dz = mz - v.z, l = Math.hypot(dx, dz) || 1;
-      if(v===top&&mx>top.x+3.8&&Math.abs(mz-top.z)<4.3)continue;
       // Keep the enlarged platform's kerb open where the glass walkway joins it.
       if(v===top && mz<walk.z1+.4 && Math.abs(mx-top.x)<half+.3)continue;
       if (groundAt(mx + dx / l * .55, mz + dz / l * .55) > v.y - .6) continue;
@@ -640,16 +636,14 @@ export function buildMountain(layer, materials) {
   }
   // A seat at the platform's west side and two lights where the stairs arrive.
   // Mark a clear parking pad and keep furniture outside the wings and boarding paths.
-  box(top.x+14,ty-.5,top.z,20,.5,20,{tex:'concrete'});
-  for(const x of [top.x+5,top.x+23])for(const z of [top.z-9,top.z+9]){const base=heightAt(x,z)-.3;box(x,base,z,.45,ty-.5-base,.45,STEEL);}
   const markPaint={tex:'paint',tint:0xe6d49b};
-  for(const dx of [9,19])for(const dz of [-5,5]){
-    box(top.x+dx,ty+.006,top.z+dz,8.6,.018,7.2,{tex:'paint',tint:0x5c6866},{shadow:false});
-    for(const side of [-1,1])box(top.x+dx+side*4.1,ty+.03,top.z+dz,.1,.015,6.8,markPaint,{shadow:false});
+  for(const dx of [-5,5])for(const dz of [-4,4]){
+    box(top.x+dx,ty+.006,top.z+dz,8.2,.018,6.8,{tex:'paint',tint:0x5c6866},{shadow:false});
+    for(const side of [-1,1])box(top.x+dx+side*3.9,ty+.03,top.z+dz,.1,.015,6.8,markPaint,{shadow:false});
     box(top.x+dx,ty+.03,top.z+dz,1.2,.015,.12,markPaint,{shadow:false});
   }
-  bench(top.x-3.5,ty,top.z-4.2,.7,'mountain-summit','后山 · 山顶长凳',[top.x-2.4,top.z-4.2],.7);
-  for(const a of [-1,1])bollard(top.x+a*1.9,ty,top.z+5.15);
+  bench(top.x-3.5,ty,top.z-10,.7,'mountain-summit','后山 · 山顶长凳',[top.x-2.4,top.z-10],.7);
+  for(const a of [-1,1])bollard(top.x+a*1.9,ty,top.z+10.5);
   // Nothing grows up through the walkway.
   for (let z = walk.z0 - 2; z <= walk.z1 + .5; z++) for (let x = walk.x0 - 2.5; x <= walk.x1 + 2.5; x++) { const c = cellOf(x, z); if (c >= 0) taken[c] = 1; }
 
@@ -846,9 +840,9 @@ export function buildMountain(layer, materials) {
 
   // On the summit, walk around the parked aircraft instead of following the
   // old centreline through its fuselage. The stair route still reaches the same entrance.
-  const onSummit=(x,y,z)=>y>=ty-.65&&(onApron(x,z)||inLanding(top,x,z)||x>=walk.x0&&x<=walk.x1&&z>=walk.z0&&z<=walk.z1);
+  const onSummit=(x,y,z)=>y>=ty-.65&&(inLanding(top,x,z)||x>=walk.x0&&x<=walk.x1&&z>=walk.z0&&z<=walk.z1);
   function summitRoute(ax,az,bx,bz){
-    const left=top.x-SUMMIT,north=Math.min(walk.z0,apron.z0),nx=Math.ceil((apron.x1-left)*2)+1,nz=Math.ceil((apron.z1-north)*2)+1;
+    const left=top.x-SUMMIT,north=walk.z0,nx=Math.ceil(SUMMIT*4)+1,nz=Math.ceil((top.z+SUMMIT-north)*2)+1;
     const floor=(x,z)=>z<=walk.z1&&z>=walk.z0&&x>=walk.x0&&x<=walk.x1?walk.y:ty;
     const point=k=>({x:left+(k%nx)*.5,z:north+Math.floor(k/nx)*.5});
     const valid=(x,z)=>[-.32,0,.32].every(dx=>[-.32,0,.32].every(dz=>onSummit(x+dx,ty,z+dz)&&!obstructed(x+dx,z+dz,ty)));
@@ -873,6 +867,7 @@ export function buildMountain(layer, materials) {
   }
 
   return {
+    mapShape:{x:M.x,z:M.z,r:M.r,summit:SUMMIT,path:pts.filter((_,i)=>i%16===0)},
     group: root, seats, levels, obstructed, collides, pick, viewBlock, heightAt: topAt, route, airfield,
     setPlaneObstacle(fn){planeObstacle=fn;},
     trailhead: { x: pts[0].x, z: pts[0].z },

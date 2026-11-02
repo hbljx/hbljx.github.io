@@ -103,7 +103,7 @@ export function createAirplane() {
 }
 
 export function createFlight({ mesh, world, player, stage, sound }) {
-  let phase = 'parked', heading = AIRFIELD.heading, speed = 0, distance = 0, bank = 0,pitch=0,launchMode='vertical',launchRun=0;
+  let phase = 'parked', heading = AIRFIELD.heading, speed = 0, distance = 0, bank = 0,pitch=0,launchMode='vertical',launchRun=0,hovering=false;
   const home = AIRFIELD;
   const carrierField=world.aircraftFleet.fieldFor(mesh),fields = [home, world.mountain.airfield, carrierField];
   let parkedAt=mesh.name==='airplane'?home:carrierField,destination=null,launchHeight=18,approachHeight=65,taxi=null,notice='';
@@ -137,7 +137,7 @@ export function createFlight({ mesh, world, player, stage, sound }) {
     if(phase!=='parked'||!['vertical','catapult','ski-jump'].includes(mode)||mode!=='vertical'&&parkedAt.id!=='carrier')return false;
     syncParked();taxi=mode==='vertical'?null:world.aircraftFleet.taxiRoute(mesh);
     if(mode!=='vertical'&&!taxi){notice='起飞通道有飞机停放，请先移开，或选择垂直起飞';return false;}
-    launchMode=mode;launchRun=0;pitch=bank=speed=0;notice='';
+    launchMode=mode;launchRun=0,hovering=false;pitch=bank=speed=0;notice='';
     launchHeight=Math.max(parkedAt.y+7,clearance(parkedAt.x,parkedAt.z));phase=mode==='vertical'?'takeoff':taxi.length?'taxi':'deck-roll';
     mesh.userData.parked=false;mesh.castShadow=false;stage.renderer.shadowMap.needsUpdate=true;return true;
   }
@@ -145,7 +145,7 @@ export function createFlight({ mesh, world, player, stage, sound }) {
     const candidate=fields.find(f=>f.id===id),field=candidate&&world.aircraftFleet.resolveField(mesh,id,candidate);
     if(candidate&&!field){notice=`${candidate.name}已占用，请选择其他停机区`;return false;}
     if(!field || phase==='parked' || destination===field)return;
-    notice='';destination=field;phase='returning';
+    hovering=false;notice='';destination=field;phase='returning';
     approachHeight=Math.hypot(mesh.position.x-field.x,mesh.position.z-field.z)<5?Math.max(mesh.position.y,field.y+8):65;
   }
   function returnHome() { landAt('home'); }
@@ -185,14 +185,15 @@ export function createFlight({ mesh, world, player, stage, sound }) {
       if(p.y>=terrainHeight(x,z,true)+2.5&&x>-170&&x<170&&z>-185&&z<170){p.x=x;p.z=z;distance+=speed*dt;}
       if(p.y>=clearance(p.x,p.z)){phase='flying';speed=Math.min(16,speed);}
     } else if (phase === 'flying') {
+      if(hovering){speed=0;bank=pitch=0;mesh.rotation.set(0,heading,0);mesh.userData.propeller.rotation.z+=dt*18;anchor();sound.loop('engine',.2);return;}
       pitch*=Math.exp(-dt*3);
       const turn = Number(keys.has('a') || keys.has('arrowleft')) - Number(keys.has('d') || keys.has('arrowright'));
       heading += turn * dt * .72; bank += (-turn * .22 - bank) * Math.min(1, dt * 4);
-      const target = keys.has('w') || keys.has('arrowup') ? 16 : keys.has('s') || keys.has('arrowdown') ? 4 : 8;
+      const target = hovering?0:keys.has('w') || keys.has('arrowup') ? 16 : keys.has('s') || keys.has('arrowdown') ? 4 : 8;
       speed += clamp(target - speed, -dt * 5, dt * 5);
       const x = p.x + Math.sin(heading) * speed * dt, z = p.z + Math.cos(heading) * speed * dt;
       const floor = clearance(x, z);
-      const lift = Number(keys.has(' ')) - Number(keys.has('control') || keys.has('c'));
+      const lift = hovering?0:Number(keys.has(' ')) - Number(keys.has('control') || keys.has('c'));
       p.y = clamp(p.y + (p.y < floor ? 6 : lift * 5) * dt, Math.min(p.y, floor), 78);
       if (p.y >= floor - .05 && x > -170 && x < 170 && z > -185 && z < 170) { p.x = x; p.z = z; distance += speed * dt; }
       else if (p.y >= floor - .05) heading += dt;
@@ -218,8 +219,9 @@ export function createFlight({ mesh, world, player, stage, sound }) {
     if (phase !== 'parked') mesh.userData.propeller.rotation.z += dt * 38;
     anchor(); sound.loop(phase === 'parked' ? null : 'engine', speed / 16);
   }
-  return { start, leave, park, takeoff, returnHome, landAt, landNearest, exitPosition, update, syncParked,
+  function toggleHover(){if(phase!=='flying')return false;hovering=!hovering;if(hovering)speed=bank=pitch=0;return hovering;}
+  return { start, leave, park, takeoff, toggleHover, returnHome, landAt, landNearest, exitPosition, update, syncParked,
     placePilot(root){root.position.fromArray(mesh.userData.seat||[0,.92,0]).applyEuler(mesh.rotation).add(mesh.position);root.rotation.copy(mesh.rotation);},
     get parked() { return phase === 'parked'; }, get heading() { return heading; }, get bank() { return bank; },
-    status: () => ({ phase, speed, distance, launchMode,pitch,notice,aircraftId:mesh.name,aircraftName:mesh.userData.label,airport:parkedAt.id, airportName:parkedAt.name, destination:destination?.id || null, destinationName:destination?.name || null, x: mesh.position.x, y: mesh.position.y, z: mesh.position.z }) };
+    status: () => ({ phase, hovering, speed, distance, launchMode,pitch,notice,aircraftId:mesh.name,aircraftName:mesh.userData.label,airport:parkedAt.id, airportName:parkedAt.name, destination:destination?.id || null, destinationName:destination?.name || null, x: mesh.position.x, y: mesh.position.y, z: mesh.position.z }) };
 }

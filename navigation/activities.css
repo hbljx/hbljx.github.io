@@ -110,3 +110,8 @@ body.reading #activity-controls,body.phone-on #activity-controls{display:none!im
 #corner #moodButton b:empty{display:none}
 #minimap .map-legend{position:absolute;left:4px;bottom:28px;z-index:2;display:flex;flex-direction:column;gap:3px;font:600 10px/1.4 system-ui;color:white;pointer-events:none}
 #minimap .map-legend span{background:#142b3bd9;padding:2px 5px;border-radius:3px}
+
+#bigmap .map-legend{position:absolute;left:24px;bottom:24px;display:flex;gap:12px;padding:8px;color:#fff;background:#172737e8;font:600 13px system-ui;pointer-events:none}
+#corner #moodButton b{right:-8px;bottom:-6px;padding:0;min-width:0;background:none;border:0;outline:0;box-shadow:none;text-shadow:none;color:#fff;font:700 13px/1.2 system-ui}
+
+#bigmap .map-legend{left:max(calc((100vw - 1100px)/2 + 12px),calc(4vw + 12px));bottom:calc(8vh + 12px);max-width:calc(92vw - 24px);flex-wrap:wrap;box-sizing:border-box;gap:8px;font-size:12px}

@@ -199,9 +199,9 @@ async function boot() {
     document.querySelector('meta[name="theme-color"]').content = background;
     if (!pool.submerged) document.body.style.background = background;
     // Weather symbol plus live temperature; clear skies also reflect day/night.
-    const live = data ? `${t(...condition.description)} ${Math.round(data.temperature)}°C` : status === 'off' ? t(...WEATHER_LABELS.clear) : status === 'loading' ? t('获取天气中', 'Getting the weather') : t('天气暂不可用', 'Weather unavailable');
+    const live = data ? `${t(...condition.description)} ${Math.round(data.temperature)}°C` : status === 'off' ? t(...WEATHER_LABELS.clear) : status === 'locating' ? '正在请求定位' : status === 'denied' ? '未获定位权限，请允许定位后重试' : status === 'location-unavailable' ? '定位暂不可用，请重试' : status === 'loading' ? t('获取天气中', 'Getting the weather') : t('天气暂不可用', 'Weather unavailable');
     const now = `${weatherMode === 'auto' ? live : t(...WEATHER_LABELS[weatherMode])} · ${t(...TIME_LABELS[mood])}`;
-    $('#moodButton b').textContent = data ? `${Math.round(data.temperature)}°` : '';
+    $('#moodButton b').textContent = data ? `${Math.round(data.temperature)}℃` : '';
     $('#moodButton').title = now;
     $('#moodButton').setAttribute('aria-label', t(`天气与时段：${now}`, `Weather and time: ${now}`));
     const line = weatherMenu?.querySelector('.now');
@@ -212,6 +212,7 @@ async function boot() {
     }
   }
   const weather = createWeather({ onChange(state) { weatherState = state; applyWeather(); } });
+  const locateButton=document.createElement('button');locateButton.type='button';locateButton.textContent='重新获取位置';locateButton.id='weatherLocate';locateButton.addEventListener('click',()=>weather.requestLocation());weatherMenu?.querySelector('.actions')?.append(locateButton);
   // Without a weather city there is no data source to credit.
   if (!config.weather) weatherMenu?.querySelector('a[href*="open-meteo"]')?.closest('p')?.remove();
   function toggleWeatherMenu(open = weatherMenu?.hidden, restoreFocus = false) {
@@ -725,6 +726,8 @@ async function boot() {
   const minimap = createMinimap({
     root: $('#minimap'), bigRoot: $('#bigmap'), grid: world.grid, obstacles: world.obstacles, decorate: world.drawMap,
     getPlayer: () => ({ x: player.pos.x, z: player.pos.z, heading: player.heading }),
+    getLandscape: () => world.mountain.mapShape,
+    getResidents: () => {const w=extras.household?.woman;return w?[{x:w.pos.x,z:w.pos.z}]:[];},
     getYaw: () => rig.yaw,
     getRoute: () => player.path,
     onPick: navigate,

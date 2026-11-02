@@ -27,7 +27,7 @@ function createWoman(){
   part(.12,1.18,.135,.1,.13,.025,outfits.female.accent);
   const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial(),parts.length+64);mesh.receiveShadow=true;body.add(mesh);
   parts.forEach((p,i)=>mesh.setColorAt(i,new THREE.Color(p.color)));
-  const dummy=new THREE.Object3D(),m=new THREE.Matrix4(),rot=new THREE.Matrix4(),inverse=new THREE.Matrix4(),color=new THREE.Color();let phase=0,swimsuit=false;
+  const dummy=new THREE.Object3D(),m=new THREE.Matrix4(),rot=new THREE.Matrix4(),inverse=new THREE.Matrix4(),color=new THREE.Color();let phase=0,swimsuit=false,eyesClosed=false;
   function setSwimsuit(on){
     if(swimsuit===on)return;swimsuit=on;
     for(let i=0;i<parts.length;i++){const p=parts[i],hex=on?(p.color===pants||p.color===shirt&&p.limb?skin:p.color===shirt?0x49a9d1:p.color):p.color;mesh.setColorAt(i,color.setHex(hex));}
@@ -38,7 +38,7 @@ function createWoman(){
     const swim=pose.swim;
     if(swim){body.rotation.set(swim.pitch,swim.roll,0);body.position.set(0,1-Math.cos(swim.pitch),-Math.sin(swim.pitch));}
     else {body.rotation.set(0,0,0);body.position.set(0,0,0);}
-    for(let i=0;i<parts.length;i++){const p=parts[i];dummy.position.set(p.x,p.y,p.z);dummy.scale.set(p.w,p.h,p.d);if(swimsuit&&p.color===0xe2d7c5)dummy.scale.set(0,0,0);dummy.rotation.set(0,0,0);dummy.updateMatrix();m.copy(dummy.matrix);
+    for(let i=0;i<parts.length;i++){const p=parts[i];dummy.position.set(p.x,p.y,p.z);dummy.scale.set(p.w,(eyesClosed&&p.color===0x28232a) ? .012 : p.h,p.d);if(swimsuit&&p.color===0xe2d7c5)dummy.scale.set(0,0,0);dummy.rotation.set(0,0,0);dummy.updateMatrix();m.copy(dummy.matrix);
       if(p.limb){const leg=Math.abs(p.limb)===1,pivot=leg?.67:1.32;let angle=Math.sin(phase+(p.limb>0?0:Math.PI))*stride*(leg?1:-1);
         if(pose.activity)angle=leg?(pose.seated?-Math.PI/2:0):(p.limb>0?pose.right:pose.left);
         if(swim)angle=leg?Math.sin(phase*1.5+(p.limb>0?0:Math.PI))*.3:-1.5+Math.sin(phase*.65+(p.limb>0?0:Math.PI))*1.3;
@@ -51,14 +51,14 @@ function createWoman(){
   function beginProps(){root.updateMatrixWorld(true);inverse.copy(body.matrixWorld).invert();}
   function prop(x,y,z,w,h,d,hex,world=false,rx=0,ry=0){dummy.position.set(x,y,z);dummy.scale.set(w,h,d);dummy.rotation.set(rx,ry,0);dummy.updateMatrix();m.copy(dummy.matrix);if(world)m.premultiply(inverse);mesh.setMatrixAt(mesh.count,m);mesh.setColorAt(mesh.count++,color.setHex(hex));}
   function endProps(){mesh.instanceMatrix.needsUpdate=mesh.instanceColor.needsUpdate=true;}
-  update(0);return{root,body,hand,blob,update,beginProps,prop,endProps,setSwimsuit,get outfit(){return swimsuit?'swimsuit':'casual';}};
+  update(0);return{root,body,hand,blob,update,beginProps,prop,endProps,setSwimsuit,setEyesClosed(on){if(eyesClosed===on)return;eyesClosed=on;for(let i=0;i<parts.length;i++)if(parts[i].color===0x28232a){mesh.getMatrixAt(i,m);const k=on ? .012/.045 : .045/.012;for(let j=4;j<7;j++)m.elements[j]*=k;mesh.setMatrixAt(i,m);}mesh.instanceMatrix.needsUpdate=true;},get eyesClosed(){return eyesClosed;},get outfit(){return swimsuit?'swimsuit':'casual';}};
 }
 
 export function createHousehold({stage,world,player,avatar,nav,rig},activities){
   const femaleAvatar=createWoman(),woman=createPlayer({avatar:femaleAvatar,nav,grid:world.grid,ground:world.ground});
   stage.scene.add(femaleAvatar.root);woman.restore(-1.5,0,5.8,Math.PI);
   const navigateWoman=createNpcNavigator(woman,world,nav);
-  const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities,world,navigate:navigateWoman});
+  const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities,world,nav,stage,navigate:navigateWoman});
   const quilts=createSharedQuilt();stage.scene.add(quilts);
   let maleSleep=false,femaleSleep=false,going=false,femaleGoing=false,reason=null,sleepControl=false,femaleWakeAt=0,wasManualSleep=false;
   const wakeButton=document.querySelector('[data-control="interact"]');
@@ -67,7 +67,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig},activities){
   const clockDate=new Date(),maleLimbs=[avatar.legL,avatar.legR,avatar.armL,avatar.armR,avatar.head];let clockAt=0,night=false;
   const atBed=p=>Math.abs(p.y-4)<.25&&Math.hypot(p.pos.x-BED.x,p.pos.z-BED.z)<.5;
   function covers(){
-    const male=maleSleep||activities.current==='sleep';world.preserveRoof=male||femaleSleep;const state=(male?1:0)+(femaleSleep?2:0);quilts.visible=state!==0;
+    const male=maleSleep||activities.current==='sleep';world.preserveRoof=male||femaleSleep;avatar.setEyesClosed(male);femaleAvatar.setEyesClosed(femaleSleep);const state=(male?1:0)+(femaleSleep?2:0);quilts.visible=state!==0;
     if(maleSleep){wakeButton.hidden=false;if(wakeButton.getAttribute('aria-label')!=='起床 · E')wakeButton.setAttribute('aria-label','起床 · E');}
     else if(sleepControl){const nearby=activities.spots.find(s=>s.id===activities.status().nearby);wakeButton.hidden=!nearby;wakeButton.setAttribute('aria-label',`${nearby?.title.split(' · ').at(-1)||'互动'} · E`);}
     sleepControl=maleSleep;
