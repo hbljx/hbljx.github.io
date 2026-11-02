@@ -2,10 +2,11 @@
 // (towards the pool and the default camera), y is up. The ground is y = 0.
 
 // The south shore ends at the pool; its last sea-facing cell is submerged.
-export const ISLAND = { x0: -36, x1: 38, z0: -26, z1: 31 };
+export const ISLAND = { x0: -36, x1: 38, z0: -42, z1: 31 };
 
-// House interior; the walls occupy the ring of cells just outside it.
-export const HOUSE = { x0: -20, x1: 24, z0: -12, z1: 16, height: 10 };
+// 56 x 44 m = 2,464 m², twice the original 44 x 28 m footprint.
+// The walls occupy the ring of cells just outside the interior.
+export const HOUSE = { x0: -26, x1: 30, z0: -28, z1: 16, height: 10 };
 
 // Half court with the hoop on the west wall, seen side-on from the pool.
 export const COURT = { x0: -19, x1: -7, z0: -2.5, z1: 10.5 };
@@ -17,24 +18,25 @@ export const RIM = { x: -19.28, y: 3.05, z: (COURT.z0 + COURT.z1) / 2, r: 0.31 }
 export const VERTEC = { x: -5.6, z: 15.05, yaw: Math.PI / 2 };
 
 // A full-floor master suite, reached by a broad stair along its east edge.
-export const LOFT = { x0: -20, x1: -3, z0: -12, z1: -4, y: 4 };
+export const LOFT = { x0: -26, x1: -3, z0: -16, z1: -4, y: 4 };
 // A broad straight stair beside the court, rising north into the mezzanine.
 // Eight metres of run for four metres of rise replaces the old 45-degree ladder.
 export const STAIRS = { x0: -6.8, x1: -3, z0: -4, z1: 4 };
-// Four large flush glass fields around a broad cross-shaped roof promenade.
+// Walkable glazing fills the centre and the free roof areas around the tea room.
 export const ROOF_GLASS = [
-  { x0: -18, x1: 0, z0: -11, z1: 1 },
-  { x0: 3, x1: 23, z0: -11, z1: 1 },
-  { x0: -18, x1: 0, z0: 4, z1: 15 },
-  { x0: 3, x1: 23, z0: 4, z1: 15 },
+  { x0: -2, x1: 20, z0: -27, z1: 15 },
+  { x0: -25, x1: -3, z0: -27, z1: -16 },
+  { x0: -25, x1: -3, z0: 7, z1: 15 },
 ];
+export const ROOF_ROOM = { x0: -24, x1: -4, z0: -15, z1: 6 };
+export const ROOF_PARKING = { x: 25, zs: [-21, -11, -1, 9] };
 // A compact vertical ladder against the east wall, opening through the roof rim.
-export const ROOF_LADDER = { x: 25.65, z: 14.5, top: 11, gate0: 13, gate1: 16 };
+export const ROOF_LADDER = { x: HOUSE.x1+1.65, z: 14.5, top: HOUSE.height+1, gate0: 13, gate1: 16 };
 // The room behind the bookshelves: interior x ∈ [-20, -17), z ∈ [-12, -9);
 // its east wall (x = -17) holds a two-block door at z = -10.
 export const SECRET = { x0: -20, x1: -17, z0: -12, z1: -9, door: -10 };
 
-export const GARAGE = { x0: 11, x1: 20, z0: -12, z1: 3, door: { z0: -9, z1: -4 }, glassDoor: { z0: -3, z1: -1 } };
+export const GARAGE = { x0: 11, x1: 30, z0: -28, z1: 3, door: { z0: -9, z1: -4 }, glassDoor: { z0: -3, z1: -1 } };
 // The water stands just below the deck; the floor (`bed`) is deep enough to dive to.
 export const POOL = { x0: -13, x1: 3, z0: 24, z1: 30, water: -0.22, bed: -3 };
 // The pool ladder on the house side: its rails straddle x0..x1 and its rungs
@@ -42,8 +44,8 @@ export const POOL = { x0: -13, x1: 3, z0: 24, z1: 30, water: -0.22, bed: -3 };
 export const POOL_LADDER = { x0: 0.35, x1: 1.1, z: POOL.z0 + 0.3 };
 // Lamps low in the pool's house-side wall (x of each, at y below the surface).
 export const POOL_LAMPS = { xs: [-10, -6, -2], y: -1.21 };
-export const TERRACE = { x0: -21, x1: 25, z0: 17, z1: 21 };
-export const DRIVEWAY = { x0: 25, x1: 38, z0: -10, z1: -3 };
+export const TERRACE = { x0: -27, x1: 31, z0: 17, z1: 21 };
+export const DRIVEWAY = { x0: 31, x1: 38, z0: -10, z1: -3 };
 export const ENTRANCE = { x0: -2, x1: 3 };
 // The mailbox on the terrace, clear of the right front door's open leaf; its
 // door faces the beach (yaw 0 = towards +z).
@@ -72,8 +74,8 @@ export const STATIONS = [
   { id: 'pool', name: '社区花园', en: 'Community garden', at: [-5, 22.6], look: [-5, 27] },
   // The foot of the mountain path at the north point. No page of its own: the
   // camera rises over the roof to show the whole mountain until a key is pressed.
-  { id: 'mountain', name: '后山', en: 'Mountain', at: [5, -21.7], look: [5, -54], page: false,
-    show: [[5, 40, 12], [5, 14, -47]], showPortrait: [[5, 68, 36], [5, 15, -49]] },
+  { id: 'mountain', name: '后山', en: 'Mountain', at: [5, -37.7], look: [5, -70], page: false,
+    show: [[5, 40, 12], [5, 14, -63]], showPortrait: [[5, 68, 36], [5, 15, -65]] },
   // On the terrace; the phone's mail card opens it too.
   { id: 'mailbox', name: '小屋指南', en: 'Guide', icon: 'mail', at: [WELCOME.x, WELCOME.z + 1.2], look: [WELCOME.x, WELCOME.z] },
   // In front of the portal: walk in, click it, or press F here, to visit other worlds.
@@ -107,16 +109,16 @@ export const FOREST = [
 ];
 
 // The baked lamp light covers the house (min corner, size in metres, texels).
-export const LIGHT_VOLUME = { min: [-22, -1, -14], extent: [48, 12, 40], size: [48, 16, 40] };
+export const LIGHT_VOLUME = { min: [-28, -1, -30], extent: [60, 12, 48], size: [60, 16, 48] };
 // The weather's shelter map covers the island, the mountain and the pier.
-export const SHELTER = { x0: -64, z0: -80, w: 128, d: 128 };
+export const SHELTER = { x0: -64, z0: -144, w: 144, d: 192 };
 // Flying out of the house goes through the front doors.
 export const DOORWAY = [{ x: 0.5, y: 1, z: 15 }, { x: 0.5, y: 1.2, z: 18 }];
 export const EXIT = { x: 0.5, z: 18.6 };
 // The opening shot starts high over the whole island (a portrait screen stands
 // further back so the house and the mountain still fit) and looks at `look`.
 // Keep the opening camera on the spawn axis, facing straight north.
-export const INTRO = { pos: [SPAWN.x, 40, 84], portrait: [SPAWN.x, 64, 135], look: [SPAWN.x, 0, 2] };
+export const INTRO = { pos: [SPAWN.x, 47, 92], portrait: [SPAWN.x, 76, 149], look: [SPAWN.x, 0, -6] };
 
 // The cat stays indoors and naps on the sofa; the dog roams the terrace and
 // comes in by the front door. Routes round the sofa and through the doorway

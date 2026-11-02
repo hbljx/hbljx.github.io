@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { HOUSE, ROOF_PARKING } from './layout.js';
 import { AIRFIELD,createAirplane,aircraftObstacle } from './aircraft.js';
 import { createNavalAircraft } from './naval-aircraft.js';
 
@@ -55,7 +56,7 @@ export function createAircraftFleet(carrier,oceanLife){
     carrier.mesh.updateMatrixWorld(true);
     for(let i=0;i<planes.length;i++){
       const p=planes[i],v=p.position;p.updateMatrixWorld(true);angles[i]=p.userData.propeller.rotation.z;
-      visible[i]=cutaway&&v.y<14&&v.x>-21&&v.x<25&&v.z>-13&&v.z<17?0:1;
+      visible[i]=cutaway&&v.y<14&&v.x>HOUSE.x0-1&&v.x<HOUSE.x1+1&&v.z>HOUSE.z0-1&&v.z<HOUSE.z1+1?0:1;
       shadow[i]=visible[i]&&p.castShadow?1:0;
     }
   }
@@ -70,7 +71,7 @@ export function createAircraftFleet(carrier,oceanLife){
   function resolveField(plane,id,field){
     if(id==='carrier'){const berth=fields.get(plane);return fits(plane,berth.x,berth.y,berth.z,berth.heading)?berth:null;}
     if(id==='home'){
-      for(const [x,z]of [[19,0],[19,-8],[19,8]])if(fits(plane,x,11,z,Math.PI))return{...AIRFIELD,x,z,exit:{x:x+(x>16?-1:1)*(plane.userData.halfSpan+.8),y:11,z:z+1}};
+      for(const [x,z]of ROOF_PARKING.zs.map(z=>[ROOF_PARKING.x,z]))if(fits(plane,x,11,z,Math.PI))return{...AIRFIELD,x,z,exit:{x:x+(x>16?-1:1)*(plane.userData.halfSpan+.8),y:11,z:z+1}};
       return null;
     }
     if(id==='summit'){

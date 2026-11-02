@@ -1,4 +1,4 @@
-import { RIM } from './layout.js';
+import { RIM, HOUSE, BACKDOOR, GARAGE } from './layout.js';
 
 const IDLE={x:0,z:0,run:false};
 const ROUTINE=['cooking','tv','gaming','basketball','coffee','reading','fishing','treadmill'];
@@ -58,9 +58,12 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     if(target.id==='motorcycle-view'){
       bike.userData.rider='female';bike.castShadow=false;
       Object.assign(bikeObstacle,{x0:1e6,x1:1e6+1,z0:1e6,z1:1e6+1});nav.rebuild();stage.renderer.shadowMap.needsUpdate=true;
-      const doorInside={x:14,z:-10.2},doorOutside={x:14,z:-14.5};
-      const toDoor=nav.findPath(garage,doorInside),fromDoor=nav.findPath(doorOutside,trail);
-      const road=toDoor&&fromDoor?[...toDoor,doorOutside,...fromDoor]:null,end=world.mountain.airfield.exit;
+      const doorX=(BACKDOOR.x0+BACKDOOR.x1)/2,doorInside={x:doorX,z:HOUSE.z0+1.8},doorOutside={x:doorX,z:HOUSE.z0-2.5};
+      // Use the expanded east aisle: a pedestrian shortcut beside the car is
+      // too narrow for the motorcycle's wheelbase when it turns.
+      const side={x:GARAGE.x1-4,z:garage.z},rear={x:side.x,z:HOUSE.z0+5};
+      const legs=[nav.findPath(garage,side),nav.findPath(side,rear),nav.findPath(rear,doorInside),nav.findPath(doorOutside,trail)];
+      const road=legs.every(p=>p?.length)?[...legs[0],...legs[1],...legs[2],doorOutside,...legs[3]]:null,end=world.mountain.airfield.exit;
       const mountain=world.mountain.route(trail.x,null,trail.z,end.x,end.y,end.z);
       if(!road?.length||!mountain.length){parkBike();leave();return;}
       const points=[garage,...road.map(p=>({...p,y:nav.heightAt(p.x,p.z)})),...mountain];

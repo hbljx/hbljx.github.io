@@ -17,11 +17,11 @@ import { buildTufts } from '@engine/world/landscape.js';
 import { makeSeat } from './seats.js';
 
 // x, z: centre; r: radius at the foot; h: height of the summit plateau.
-export const MOUNTAIN = { x: 5, z: -68.6, r: 46, h: 27 };
+export const MOUNTAIN = { x: 5, z: -84.6, r: 46, h: 27 };
 const PLATEAU = 12, POW = 1.25;
-const SHOULDERS = [{ x: 23, z: -61.5, r: 15, h: 13 }, { x: -13, z: -62.5, r: 14, h: 11 }];
+const SHOULDERS = [{ x: 23, z: MOUNTAIN.z+7.1, r: 15, h: 13 }, { x: -13, z: MOUNTAIN.z+6.1, r: 14, h: 11 }];
 const BASE = -3, WIDTH = 2.2, RISER = .17, RADIUS = .3, BODY = 1.8, SUMMIT = 12, SKIRT = 1.1;
-const TRAILHEAD = { x: 5, z: -22.6 };
+const TRAILHEAD = { x: MOUNTAIN.x, z: MOUNTAIN.z+MOUNTAIN.r };
 // Where the stairs turn: degrees from south towards east, metres from the
 // centre. Close pairs make the switchbacks; the rest wind round the peak.
 const TURNS = [[0, 26.8], [33, 24.6], [36, 21.8], [-2, 20.3], [-38, 18.8], [-42, 16], [4, 14.6], [36, 12.6],

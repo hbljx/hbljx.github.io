@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
 import { makeSeat } from './seats.js';
+import { HOUSE, ROOF_ROOM, ROOF_GLASS, ROOF_PARKING } from './layout.js';
 
 export function buildThirdFloor({ grid, layer }) {
   const B = new BoxBatch(layer), ceiling = new BoxBatch(layer), stairs = new BoxBatch(layer);
@@ -10,48 +11,57 @@ export function buildThirdFloor({ grid, layer }) {
   const glassVertices=[];
   let planeObstacle=()=>false;
   const foot = { x: -19.4, y: 4, z: -5.25 }, exit = { x: -19.4, y: 11, z: -5.25 };
-  const room = { x0: -18, x1: -4, z0: -9, z1: 6 };
+  const room = ROOF_ROOM;
+  const onDeck=(x,z,pad=0)=>x>=HOUSE.x0-pad&&x<=HOUSE.x1+pad&&z>=HOUSE.z0-pad&&z<=HOUSE.z1+pad;
+  const inGlass=(x,z,pad=0)=>ROOF_GLASS.some(r=>x>=r.x0-pad&&x<=r.x1+pad&&z>=r.z0-pad&&z<=r.z1+pad);
   const insideRoom = (x, z) => x > room.x0 && x < room.x1 && z > room.z0 && z < room.z1;
   // One set of bounds for the visible roof, its walking surface and collision.
   const roomRoof = new THREE.Box3(new THREE.Vector3(room.x0-.3,14.7,room.z0-.3),new THREE.Vector3(room.x1+.3,14.94,room.z1+.3));
   const overRoomRoof = (x,z,pad=0) => x>=roomRoof.min.x-pad&&x<=roomRoof.max.x+pad&&z>=roomRoof.min.z-pad&&z<=roomRoof.max.z+pad;
   const obstacle = (x, z, w, d) => barriers.push({ x0: x-w/2, x1: x+w/2, z0: z-d/2, z1: z+d/2 });
-  // Replace the old skylights completely, keeping one opening in the new deck.
-  for(let x=-20;x<24;x++)for(let z=-12;z<16;z++)grid.set(x,10,z,x>=-2&&x<14&&z>=-11&&z<15?null:'roof','roof');
-  function skylight(batch,x0,x1,z0,z1,y,h,look,hole){
-    const [a,b,c,d]=hole;
-    for(const [l,r,n,s]of [[x0,a,z0,z1],[b,x1,z0,z1],[a,b,z0,c],[a,b,d,z1]])batch.box((l+r)/2,y,(n+s)/2,r-l,h,s-n,look);
-    const top=y+h;
-    // A single two-sided plane avoids overlapping transparent surfaces. The
-    // frame and walking support remain independent of the visible glass.
-    const inset=.045,paneY=top-.008;
+  // The floor grid, visible glazing and walking surface share the same bounds.
+  for(let x=HOUSE.x0;x<HOUSE.x1;x++)for(let z=HOUSE.z0;z<HOUSE.z1;z++)grid.set(x,10,z,inGlass(x+.5,z+.5)?null:'roof','roof');
+  function pane(batch,hole,top){
+    const [a,b,c,d]=hole,inset=.045,paneY=top-.008;
     glassVertices.push(a+inset,paneY,c+inset,a+inset,paneY,d-inset,b-inset,paneY,d-inset,a+inset,paneY,c+inset,b-inset,paneY,d-inset,b-inset,paneY,c+inset);
-    // Raised frame caps cannot compete with the flush floor/roof faces.
     for(const x of [a,b])batch.box(x,top-.043,(c+d)/2,.085,.055,d-c,dark);
     for(const z of [c,d])batch.box((a+b)/2,top-.043,z,b-a-.085,.055,.085,dark);
   }
-  skylight(B,-20,24,-12,16,10.98,.08,floor,[-2,14,-11,15]);
-  // Glazed tea pavilion: solid low panels, broad windows and a usable double doorway.
-  function wall(x, z, w, d) {
-    B.box(x, 11, z, w, .72, d, wood); B.box(x, 14.45, z, w, .25, d, dark);
-    B.box(x, 11.72, z, w, 2.73, d * .8, glass); obstacle(x, z, w, d);
+  function skylight(batch,x0,x1,z0,z1,y,h,look,hole){
+    const [a,b,c,d]=hole;
+    for(const [l,r,n,s]of [[x0,a,z0,z1],[b,x1,z0,z1],[a,b,z0,c],[a,b,d,z1]])batch.box((l+r)/2,y,(n+s)/2,r-l,h,s-n,look);
+    pane(batch,hole,y+h);
   }
-  wall(-11, -9, 14, .18);
-  for (const x of [-18, -4]) {
-    B.box(x, 11, -1.5, .18, .72, 15, wood); B.box(x, 11.72, -1.5, .10, 2.73, 15, glass);
-    B.box(x, 14.45, -1.5, .18, .25, 15, dark); obstacle(x, -1.5, .18, 15);
-    for (const z of [-9, -5, -1, 3, 6]) B.box(x, 11, z, .2, 3.7, .12, dark);
+  const xs=[...new Set([HOUSE.x0,HOUSE.x1,...ROOF_GLASS.flatMap(r=>[r.x0,r.x1])])].sort((a,b)=>a-b);
+  const zs=[...new Set([HOUSE.z0,HOUSE.z1,...ROOF_GLASS.flatMap(r=>[r.z0,r.z1])])].sort((a,b)=>a-b);
+  for(let i=0;i<xs.length-1;i++)for(let j=0;j<zs.length-1;j++){
+    const x=(xs[i]+xs[i+1])/2,z=(zs[j]+zs[j+1])/2;
+    if(!inGlass(x,z))B.box(x,10.98,z,xs[i+1]-xs[i],.08,zs[j+1]-zs[j],floor);
   }
-  wall(-15, 6, 6, .18); wall(-7, 6, 6, .18);
-  for (const x of [-18, -14, -12, -10, -7, -4]) B.box(x, 11, 6, .12, 3.7, .22, dark);
+  for(const r of ROOF_GLASS)pane(B,[r.x0,r.x1,r.z0,r.z1],11.06);
+  // A 20 x 21 m tea pavilion doubles its former 14 x 15 m footprint.
+  function wall(x,z,w,d){
+    B.box(x,11,z,w,.18,d,wood);B.box(x,14.45,z,w,.25,d,dark);
+    B.box(x,11.18,z,w,3.27,d*.8,glass);obstacle(x,z,w,d);
+  }
+  wall((room.x0+room.x1)/2,room.z0,room.x1-room.x0,.18);
+  for(const x of [room.x0,room.x1]){
+    B.box(x,11,(room.z0+room.z1)/2,.18,.18,room.z1-room.z0,wood);
+    B.box(x,11.18,(room.z0+room.z1)/2,.10,3.27,room.z1-room.z0,glass);
+    B.box(x,14.45,(room.z0+room.z1)/2,.18,.25,room.z1-room.z0,dark);
+    obstacle(x,(room.z0+room.z1)/2,.18,room.z1-room.z0);
+    for(let z=room.z0;z<=room.z1;z+=3.5)B.box(x,11,z,.16,3.7,.10,dark);
+  }
+  wall((room.x0-12)/2,6,-12-room.x0,.18);wall((-10+room.x1)/2,6,room.x1+10,.18);
+  for(const x of [room.x0,-20,-16,-12,-10,-7,room.x1])B.box(x,11,6,.10,3.7,.18,dark);
   // Open wooden door leaves sit beside the two-metre opening.
   for (const x of [-12.55, -9.45]) {
     B.box(x, 11, 5.86, 1.02, 3.1, .13, wood);
     B.box(x, 11.45, 5.78, .78, 2.2, .04, glass);
     B.box(x + (x < -11 ? .35 : -.35), 12.2, 5.7, .06, .42, .06, china);
   }
-  skylight(ceiling,roomRoof.min.x,roomRoof.max.x,roomRoof.min.z,roomRoof.max.z,14.7,.24,dark,[-17,-5,-8,5]);
-  for (const x of [-17.6, -4.4]) ceiling.box(x, 14.60, -1.5, .12, .1, 14.6, wood);
+  skylight(ceiling,roomRoof.min.x,roomRoof.max.x,roomRoof.min.z,roomRoof.max.z,14.7,.24,dark,[room.x0+1,room.x1-1,room.z0+1,room.z1-1]);
+  for (const x of [room.x0+.4,room.x1-.4]) ceiling.box(x,14.60,(room.z0+room.z1)/2,.12,.1,room.z1-room.z0-.4,wood);
   // Tea table, tray, kettle, cups and four armchairs.
   B.box(-11, 11.77, -1.5, 3.5, .16, 1.7, wood); obstacle(-11, -1.5, 3.5, 1.7);
   for (const x of [-12.35, -9.65]) for (const z of [-2.05, -.95]) B.box(x, 11, z, .14, .77, .14, dark);
@@ -69,21 +79,24 @@ export function buildThirdFloor({ grid, layer }) {
     obstacle(x,z,.95,.95);
     return makeSeat(`tea-${i}`, '三楼茶室 · 茶椅', x,11,z,11.63,yaw,[x+Math.cos(yaw)*1.05,z-Math.sin(yaw)*1.05],1.2);
   });
-  // Open-air parking apron and runway markings on the eastern half.
-  B.box(19,11.065,2,9,.015,27,{tex:'paint',tint:0x576267});
-  for(const x of [14.6,23.4])B.box(x,11.085,2,.10,.01,27,china);
-  for(const z of [-8,0,8]){
-    for(const x of [15,23])B.box(x,11.09,z,.10,.01,6.8,china);
-    for(const dz of [-3.4,3.4])B.box(19,11.09,z+dz,8,.01,.10,china);
-    B.box(19,11.09,z,.12,.01,1.5,china);
+  // Four separate berths stay at the eastern edge, clear of the skylights.
+  const apronX=ROOF_PARKING.x,apronZ=(HOUSE.z0+HOUSE.z1)/2,apronDepth=HOUSE.z1-HOUSE.z0-2;
+  B.box(apronX,11.065,apronZ,9,.015,apronDepth,{tex:'paint',tint:0x576267});
+  for(const x of [apronX-4.4,apronX+4.4])B.box(x,11.085,apronZ,.10,.01,apronDepth,china);
+  for(const z of ROOF_PARKING.zs){
+    for(const x of [apronX-4,apronX+4])B.box(x,11.09,z,.10,.01,8.8,china);
+    for(const dz of [-4.4,4.4])B.box(apronX,11.09,z+dz,8,.01,.10,china);
+    B.box(apronX,11.09,z,.12,.01,1.5,china);
   }
   // A two-flight outside stair links the existing second-floor landing to level three.
-  for(let y=4;y<7;y++)for(let z=-6;z<-4;z++)grid.set(-21,y,z,null,'wallW');
+  for(let y=4;y<7;y++)for(let z=-6;z<-4;z++)grid.set(HOUSE.x0-1,y,z,null,'wallW');
   // Keep the exposed sill as permanent floor, including when the west wall is
   // cut away. The landing must stop at its outer edge, not overlap its top.
-  for(let z=-6;z<-4;z++)grid.set(-21,3,z,'loft');
-  for(let z=-6;z<-4;z++)grid.set(-21,11,z,null,'roof');
+  for(let z=-6;z<-4;z++)grid.set(HOUSE.x0-1,3,z,'loft');
+  for(let z=-6;z<-4;z++)grid.set(HOUSE.x0-1,11,z,null,'roof');
+  const stairShift=HOUSE.x0+20;
   function slab(x0,x1,z0,z1,y,drawEnd=x1) {
+    x0+=stairShift;x1+=stairShift;drawEnd+=stairShift;
     stairs.box((x0+drawEnd)/2,y-.14,(z0+z1)/2,drawEnd-x0,.14,z1-z0,floor);
     slabs.push({x0,x1,z0,z1,y,box:new THREE.Box3(new THREE.Vector3(x0,y-.14,z0),new THREE.Vector3(x1,y,z1))});
   }
@@ -103,6 +116,7 @@ export function buildThirdFloor({ grid, layer }) {
   stairPoints.push({x:-23.5,y:11,z:-5.25},exit);
   const posts=new Set();
   function guard(x0,y0,z0,x1,y1,z1,steps=Math.ceil(Math.hypot(x1-x0,z1-z0)/1.1)){
+    x0+=stairShift;x1+=stairShift;
     const dx=x1-x0,dy=y1-y0,dz=z1-z0,horizontal=Math.hypot(dx,dz);
     for(const lift of [.5,1])stairs.box((x0+x1)/2,(y0+y1)/2+lift-.0375,(z0+z1)/2,.075,.075,Math.hypot(horizontal,dy),dark,{rx:-Math.atan2(dy,horizontal),ry:Math.atan2(dx,dz),order:'YXZ'});
     for(let i=0;i<=steps;i++){
@@ -120,15 +134,16 @@ export function buildThirdFloor({ grid, layer }) {
   for(const x of [-24.46,-22.54])guard(x,7.5,-12,x,11,-6,14);
   guard(-24.46,11,-6,-24.46,11,-4.04);guard(-24.46,11,-4.04,-20.96,11,-4.04);
   guard(-22.54,11,-6,-20.96,11,-6);
+  for(const p of stairPoints)p.x+=stairShift;
   const pointAt=(x,y,z)=>({x,y,z,route:'third-stair',index:nearestIndex(x,y,z)});
   function nearestIndex(x,y,z){let best=0,d=Infinity;stairPoints.forEach((p,i)=>{const q=(p.x-x)**2+(p.z-z)**2+4*(p.y-y)**2;if(q<d){best=i;d=q;}});return best;}
   function obstructed(x,z,y){
     return planeObstacle(x,z,y) || y>=10.75&&y<14.7&&barriers.some(o=>x>o.x0-.04&&x<o.x1+.04&&z>o.z0-.04&&z<o.z1+.04);
   }
-  const valid=(x,z)=>x>=-19.5&&x<=23.5&&z>=-11.5&&z<=15.5&&[-.35,0,.35].every(dx=>[-.35,0,.35].every(dz=>!obstructed(x+dx,z+dz,11)));
+  const valid=(x,z)=>x>=HOUSE.x0+.5&&x<=HOUSE.x1-.5&&z>=HOUSE.z0+.5&&z<=HOUSE.z1-.5&&[-.35,0,.35].every(dx=>[-.35,0,.35].every(dz=>!obstructed(x+dx,z+dz,11)));
   function roofRoute(ax,az,bx,bz){
-    const nx=87,nz=55;
-    const pos=k=>({x:-19.5+(k%nx)/2,y:11,z:-11.5+Math.floor(k/nx)/2});
+    const nx=(HOUSE.x1-HOUSE.x0-1)*2+1,nz=(HOUSE.z1-HOUSE.z0-1)*2+1;
+    const pos=k=>({x:HOUSE.x0+.5+(k%nx)/2,y:11,z:HOUSE.z0+.5+Math.floor(k/nx)/2});
     function nearest(x,z){let best=-1,d=Infinity;for(let k=0;k<nx*nz;k++){const p=pos(k),q=(p.x-x)**2+(p.z-z)**2;if(q<d&&valid(p.x,p.z)){best=k;d=q;}}return best;}
     const start=nearest(ax,az),end=nearest(bx,bz),parents=new Int32Array(nx*nz).fill(-2),queue=[start];parents[start]=-1;
     for(let i=0;i<queue.length&&parents[end]===-2;i++){
@@ -144,7 +159,7 @@ export function buildThirdFloor({ grid, layer }) {
     if(valid(bx,bz))out.push({x:bx,y:11,z:bz});return out;
   }
   function route(ax,ay,az,bx,by,bz){
-    const onRoof=(x,y,z)=>y>=10.8&&x>=-20&&x<=24&&z>=-12&&z<=16;
+    const onRoof=(x,y,z)=>y>=10.8&&onDeck(x,z);
     const onStair=(x,y,z)=>slabs.some(s=>Math.abs(y-s.y)<.35&&x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1);
     const fromRoof=onRoof(ax,ay,az),toRoof=onRoof(bx,by,bz),toStair=onStair(bx,by,bz);
     if(fromRoof&&toRoof)return roofRoute(ax,az,bx,bz);
@@ -159,15 +174,15 @@ export function buildThirdFloor({ grid, layer }) {
   }
   const source={
     foot,exit,room,seats,route,roofRoute,insideRoom,setPlaneObstacle(fn){planeObstacle=fn;},
-    flightHeight(x,z){return overRoomRoof(x,z)?roomRoof.max.y:x>=-21&&x<=25&&z>=-13&&z<=17?12:0;},
+    flightHeight(x,z){return overRoomRoof(x,z)?roomRoof.max.y:onDeck(x,z,1)?12:0;},
     levels(x,z,out){
       // A separate site keeps rooftop clicks from routing through the tea room.
       if(overRoomRoof(x,z))out.push({y:roomRoof.max.y,site:'tea-roof'});
-      if(x>=-20&&x<=24&&z>=-12&&z<=16)out.push({y:11,site:'roof'});
+      if(onDeck(x,z))out.push({y:11,site:'roof'});
       for(const s of slabs)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'third-stairs',tread:true,route:'third-stair',index:nearestIndex(x,s.y,z)});
     },
     obstructed,
-    collides(x,y,z){return obstructed(x,z,y)||overRoomRoof(x,z,.3)&&y<roomRoof.max.y-.02&&y+1.8>roomRoof.min.y||x>=-2.3&&x<=14.3&&z>=-11.3&&z<=15.3&&y<10.98&&y+1.8>10.98;},
+    collides(x,y,z){return obstructed(x,z,y)||overRoomRoof(x,z,.3)&&y<roomRoof.max.y-.02&&y+1.8>roomRoof.min.y||inGlass(x,z,.3)&&y<10.98&&y+1.8>10.98;},
     pick(ray){
       let best=null;
       // Only the upper face is a destination; looking up inside the room must
@@ -176,7 +191,7 @@ export function buildThirdFloor({ grid, layer }) {
         const t=(roomRoof.max.y-ray.origin.y)/ray.direction.y;
         if(t>=0){ray.at(t,hit);if(overRoomRoof(hit.x,hit.z))best={t,point:hit.clone(),site:'tea-roof'};}
         const lower=(11-ray.origin.y)/ray.direction.y;
-        if(lower>=0&&(!best||lower<best.t)){ray.at(lower,hit);if(hit.x>=-2&&hit.x<=14&&hit.z>=-11&&hit.z<=15)best={t:lower,point:hit.clone(),site:'roof'};}
+        if(lower>=0&&(!best||lower<best.t)){ray.at(lower,hit);if(inGlass(hit.x,hit.z))best={t:lower,point:hit.clone(),site:'roof'};}
       }
       for(const s of slabs){if(ray.intersectBox(s.box,hit)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:new THREE.Vector3(hit.x,s.y,hit.z),site:'third-stairs'};}}
       return best;

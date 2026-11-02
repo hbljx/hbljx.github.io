@@ -9,7 +9,7 @@ import { buildMountain } from './mountain.js';
 import { buildRoofAccess } from './roof-access.js';
 import { createStainless } from './stainless.js';
 import { atlasPlanes } from './atlas-planes.js';
-import { ISLAND, FOREST, COURT, RIM } from './layout.js';
+import { ISLAND, HOUSE, FOREST, COURT, RIM } from './layout.js';
 import { createActivities } from './activities.js';
 import { buildThirdFloor } from './third-floor.js';
 import { createOceanLife } from './ocean-life.js';
@@ -31,7 +31,7 @@ export function build({ grid, layer, materials, stage }) {
   buildShell(grid);
   const third = buildThirdFloor({ grid, layer });
   // Clear the three trees inside the new outside stair's footprint.
-  const forest = buildForest(grid, layer, FOREST.filter(([x, z]) => !(x >= -32 && x <= -22 && z >= -15 && z <= -3)));
+  const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));
   const furn = furnish({ layer });
   furn.planes.push(third.skylights);
   const mergeBatch = (into, from) => {

@@ -295,7 +295,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   function keyUp(e) { keys.delete(e.key.toLowerCase()); if (e.key === ' ') releaseShot(); }
   function syncMovement() {
     const mode = player.swimming ? 'dive' : player.flying ? 'fly' : runMode ? 'run' : 'walk';
-    const label = mode === 'fly' ? '飞行中 · 点击 / R 切换走路' : mode === 'run' ? '跑步 · 点击 / R 起飞' : mode === 'dive' ? '游泳 · 点击潜水 / 上浮 · R 起飞' : '走路 · 点击 / R 切换跑步';
+    const label = mode === 'fly' ? '飞行' : mode === 'run' ? '跑步' : mode === 'dive' ? '游泳' : '走路';
     if (mode === 'walk' || mode === 'run') setActivityControl(movementButton, mode, label);
     else if (movementButton.dataset.icon !== mode) {
       movementButton.dataset.icon = mode;

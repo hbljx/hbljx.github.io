@@ -33,9 +33,6 @@ export function defineHouseBlocks(grid) {
     : z === GARAGE.z1 ? 5 : x === GARAGE.x0 - 1 ? 0 : -1;
   grid.define('glass', { kind: 'glass', tex: { all: 'glass' }, merge: true,
     skipFace: (f, x, y, z) => {
-      // The save-room ceiling meets the inner window plane. Its opaque edge
-      // already fills that strip, so do not draw another pane over it.
-      if(y===LOFT.y+3 && (z===HOUSE.z0-1&&x>=SECRET.x0&&x<SECRET.x1+1 || x===HOUSE.x0-1&&z>=LOFT.z0&&z<SECRET.z1+1))return true;
       const keep = paneFace(x, y, z); return keep >= 0 && f !== keep;
     } });
   // Keep the facade's collision cells; furnish draws thin panes at the inner
@@ -104,10 +101,16 @@ export function buildShell(grid) {
   grid.fill(LOFT.x0, LOFT.y - 1, LOFT.z0, LOFT.x1, LOFT.y, LOFT.z1, 'loft');
   // The save room keeps its existing collision/door identity, with quiet wood
   // panels. A single curated bookcase is built as furniture beside the desk.
-  grid.fill(SECRET.x1, LOFT.y, LOFT.z0, SECRET.x1 + 1, LOFT.y + 3, SECRET.z1 + 1, 'bookshelf');
+  grid.fill(SECRET.x1, LOFT.y, SECRET.z0, SECRET.x1 + 1, LOFT.y + 3, SECRET.z1 + 1, 'bookshelf');
   grid.fill(SECRET.x0, LOFT.y, SECRET.z1, SECRET.x1, LOFT.y + 3, SECRET.z1 + 1, 'bookshelf');
-  grid.fill(SECRET.x0, LOFT.y + 3, LOFT.z0, SECRET.x1 + 1, LOFT.y + 4, SECRET.z1 + 1, 'loft', 'secretTop');
+  grid.fill(SECRET.x0, LOFT.y + 3, SECRET.z0, SECRET.x1 + 1, LOFT.y + 4, SECRET.z1 + 1, 'loft', 'secretTop');
   for (let y = LOFT.y; y < LOFT.y + 2; y++) grid.set(SECRET.x1, y, SECRET.door, 'bookshelf', 'secretDoor');
+  // Standalone feature walls support the existing court and studio as the
+  // outer glazed envelope expands around them.
+  grid.fill(-21,0,-3,-20,7,7,'wall');
+  grid.fill(-2,0,-13,10,4,-12,'wall');
+  grid.fill(SECRET.x0-1,LOFT.y,SECRET.z0,SECRET.x0,LOFT.y+3,SECRET.z1,'brick');
+  grid.fill(SECRET.x0,LOFT.y,SECRET.z0-1,SECRET.x1,LOFT.y+3,SECRET.z0,'brick');
   // The garage: a steel-framed glass wall to the west with a door in it, and a
   // low brick wall to the south that carries the TV of the games corner.
   for (let y = 0; y < height; y++) {
@@ -119,29 +122,15 @@ export function buildShell(grid) {
   }
 }
 
-// Clerestory windows run high along the back and sides.
-const clerestory = (i, y) => y >= 6 && y < 9;
-
-function northWall(x, y) {
-  if (x >= -2 && x < GARAGE.x0) return true; // the workbench wall stays solid
-  return !clerestory(x, y);
+// The expanded envelope uses full-height glazing with slim batched frames.
+function northWall(x,y){return x===HOUSE.x0-1||x===HOUSE.x1;}
+function westWall(z,y){return false;}
+function eastWall(z,y){
+  if(z>=GARAGE.door.z0&&z<GARAGE.door.z1&&y<4)return null;
+  return 'glass';
 }
-
-function westWall(z, y) {
-  if (z >= -3 && z < 7) return true; // behind the hoop and scoreboard
-  return !clerestory(z, y);
-}
-
-function eastWall(z, y) {
-  const { z0, z1 } = GARAGE.door;
-  if (z >= z0 && z < z1 && y < 4) return null; // garage door, rolled up
-  if (z >= GARAGE.z1 + 1 && y >= 1 && y < HOUSE.height - 1) return 'glass';
-  return clerestory(z, y) ? 'glass' : 'wall';
-}
-
-function southWall(x, y) {
-  // One broad window on either side of the entrance, with perimeter framing.
-  if (y === HOUSE.height - 1 || x === HOUSE.x0 - 1 || x === HOUSE.x1) return 'wall';
-  if (x >= ENTRANCE.x0 && x < ENTRANCE.x1 && y < 3) return null;
+function southWall(x,y){
+  if(x===HOUSE.x0-1||x===HOUSE.x1)return 'wall';
+  if(x>=ENTRANCE.x0&&x<ENTRANCE.x1&&y<3)return null;
   return 'front_glass';
 }

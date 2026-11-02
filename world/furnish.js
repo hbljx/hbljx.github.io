@@ -60,13 +60,13 @@ export function furnish({ layer }) {
   });
 
   // Slim black structure frames the warm wood walls and uninterrupted glazing.
-  for (const x of [-19.5, 10, 23.5]) {
+  for (const x of [HOUSE.x0+.5, 10, HOUSE.x1-.5]) {
     B.box(x, 0, HOUSE.z0 + 0.5, 0.35, HOUSE.height, 0.35, L.steel);
     foot(x, HOUSE.z0 + 0.5, 0.4, 0.4);
   }
   for (const z of [1, 12]) {
-    B.box(23.5, 0, z, 0.35, HOUSE.height, 0.35, L.steel);
-    foot(23.5, z, 0.4, 0.4);
+    B.box(HOUSE.x1-.5, 0, z, 0.35, HOUSE.height, 0.35, L.steel);
+    foot(HOUSE.x1-.5, z, 0.4, 0.4);
   }
   for (const [x, z] of [[10, 0], [-3, 11], [10, 11]]) {
     B.box(x, 0, z, 0.38, HOUSE.height, 0.38, L.steel);
@@ -79,20 +79,20 @@ export function furnish({ layer }) {
   // The third-floor module owns the replacement skylight and its frame.
   // Flush facade panes belong to the inner wall line; the open wood leaves
   // start outside it. The grid retains its cells for collision and lighting.
-  for (const [x, width, bottom, height] of [[-11, 18, 0, 9], [13.5, 21, 0, 9], [.5, 5, 3, 6]]) {
+  for (const [x, width, bottom, height] of [[(HOUSE.x0+ENTRANCE.x0)/2,ENTRANCE.x0-HOUSE.x0,0,10],[(ENTRANCE.x1+HOUSE.x1)/2,HOUSE.x1-ENTRANCE.x1,0,10],[.5,5,3,7]]) {
     batches.wallS.box(x, bottom, HOUSE.z1 + .02, width, height, .055,
       { tex: 'glass', glass: true }, { tag: 'front-glazing' });
     glazing(batches.wallS, x, HOUSE.z1 + .02, width, bottom, height, 0, bottom === 3);
   }
-  glazing(batches.wallN, -11, -12.02, 18, 6, 3);
-  glazing(batches.wallN, 17.5, -12.02, 13, 6, 3);
-  glazing(batches.wallW, -20.02, -7.5, 9, 6, 3, Math.PI / 2);
-  glazing(batches.wallW, -20.02, 11.5, 9, 6, 3, Math.PI / 2);
-  glazing(batches.wallE, 24.02, 10, 12, 1, 8, Math.PI / 2);
-  glazing(B, GARAGE.x0 - 0.02, -7.5, 9, 0, 10, Math.PI / 2);
-  glazing(B, GARAGE.x0 - 0.02, 1, 4, 0, 10, Math.PI / 2);
-  glazing(B, GARAGE.x0 - 0.02, -2, 2, 3, 7, Math.PI / 2);
-  glazing(B, 15, GARAGE.z1 + 0.02, 10, 3, 7);
+  for(const [a,b] of [[HOUSE.x0,BACKDOOR.x0],[BACKDOOR.x1,HOUSE.x1]])glazing(batches.wallN,(a+b)/2,HOUSE.z0-.02,b-a,0,10);
+  glazing(batches.wallN,14,HOUSE.z0-.02,2,3,7,0,true);
+  for(const [a,b] of [[HOUSE.z0,-6],[-4,HOUSE.z1]])glazing(batches.wallW,HOUSE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
+  glazing(batches.wallW,HOUSE.x0-.02,-5,2,7,3,Math.PI/2,true);
+  for(const [a,b] of [[HOUSE.z0,GARAGE.door.z0],[GARAGE.door.z1,HOUSE.z1]])glazing(batches.wallE,HOUSE.x1+.02,(a+b)/2,b-a,0,10,Math.PI/2);
+  glazing(batches.wallE,HOUSE.x1+.02,-6.5,5,4,6,Math.PI/2,true);
+  for(const [a,b] of [[GARAGE.z0,GARAGE.glassDoor.z0],[GARAGE.glassDoor.z1,GARAGE.z1]])glazing(B,GARAGE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
+  glazing(B,GARAGE.x0-.02,-2,2,3,7,Math.PI/2,true);
+  glazing(B,(GARAGE.x0-1+GARAGE.x1)/2,GARAGE.z1+.02,GARAGE.x1-GARAGE.x0+1,3,7);
   // Garage access is an actual open, framed glass door.
   B.at(GARAGE.x0 - 0.02, 0, GARAGE.glassDoor.z0, 0, () => {
     B.box(0.92, 0.1, 0, 1.77, 2.6, 0.055, { tex: 'glass', glass: true });
@@ -472,8 +472,14 @@ export function furnish({ layer }) {
 
   // Full-floor master suite: sleeping zone, dressing wall and a small bench.
   // The glass front and a wood door folded against it preserve a broad entry.
-  B.box(-13, LOFT.y + .35, -4.14, 14, 2.65, .055, { tex: 'glass', glass: true });
-  glazing(B, -13, -4.14, 14, LOFT.y, 3);
+  B.box((LOFT.x0-6)/2, LOFT.y + .35, -4.14, -6-LOFT.x0, 2.65, .055, { tex: 'glass', glass: true });
+  glazing(B,(LOFT.x0-6)/2,-4.14,-6-LOFT.x0,LOFT.y,3);
+  foot((LOFT.x0-6)/2,-4.14,-6-LOFT.x0,.1,1);
+  // Glass guards enclose the enlarged upper bedroom above the rear gallery.
+  B.box((LOFT.x0+LOFT.x1)/2,LOFT.y,LOFT.z0+.06,LOFT.x1-LOFT.x0,1.1,.07,{tex:'glass',glass:true});
+  B.box(LOFT.x1-.06,LOFT.y,(LOFT.z0+LOFT.z1)/2,.07,1.1,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
+  foot((LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,.12,1);
+  foot(LOFT.x1-.06,(LOFT.z0+LOFT.z1)/2,.12,LOFT.z1-LOFT.z0,1);
   for (const x of [-6, -3]) B.box(x, LOFT.y, -4.1, .07, 2.9, .1, L.steel);
   B.box(-4.5, LOFT.y + 2.83, -4.1, 3, .07, .1, L.steel);
   openDoor(B, -6, LOFT.y, -4.02, 2.75, Math.PI);
@@ -520,6 +526,15 @@ export function furnish({ layer }) {
   for (let i = 0; i < 3; i++) B.box(-9.25, LOFT.y + .86 + i * .055, -5.65, .4, .055, .28, L.paint([0x597262, 0xb38b55, 0x748899][i]));
   hot('writing', -8.8, LOFT.y, -5.65, 2, 1.4, 1);
 
+  // Reading/display space in the new north gallery; keep the back-door lane clear.
+  B.box(-15,0,-26.5,13,.48,1.1,L.wood);foot(-15,-26.5,13.1,1.2);
+  B.box(-15,.48,-26.5,12.8,.1,1.02,L.paint(0x587565));
+  for(const x of [-24,-5]){
+    B.box(x,0,-25,1.2,.65,1.2,L.paint(0x676e66));
+    B.box(x,.65,-25,.16,1.7,.16,L.wood);
+    B.box(x,1.25,-25,1.15,.9,1.1,L.paint(0x59815d));foot(x,-25,1.3,1.3);
+  }
+  for(const x of [-15,4,23])pendant(x,-22,6.5);
   // A quiet terrace and still pool outside. No games corner, string lights,
   // solar array or lawn lettering.
   table(-13, 19, 2.8, 1.1);

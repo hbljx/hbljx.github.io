@@ -1,6 +1,7 @@
 import * as THREE from 'three';
+import { ROOF_PARKING } from './layout.js';
 
-export const AIRFIELD = { id: 'home', name: '三楼停机区', x: 19, y: 11, z: 0, heading: Math.PI, exit: { x: 14.5, y: 11, z: 2 } };
+export const AIRFIELD = { id: 'home', name: '三楼停机区', x: ROOF_PARKING.x, y: 11, z: ROOF_PARKING.zs[2], heading: Math.PI, exit: { x: ROOF_PARKING.x-4.5, y: 11, z: ROOF_PARKING.zs[2]+2 } };
 
 // Both boarding and collision follow the plane, including when parked on the mountain.
 export function distanceToAirplane(mesh, x, z) {

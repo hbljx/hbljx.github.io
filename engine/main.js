@@ -201,9 +201,11 @@ async function boot() {
     // Weather symbol plus live temperature; clear skies also reflect day/night.
     const live = data ? `${t(...condition.description)} ${Math.round(data.temperature)}°C` : status === 'off' ? t(...WEATHER_LABELS.clear) : status === 'locating' ? '正在请求定位' : status === 'denied' ? '未获定位权限，请允许定位后重试' : status === 'location-unavailable' ? '定位暂不可用，请重试' : status === 'loading' ? t('获取天气中', 'Getting the weather') : t('天气暂不可用', 'Weather unavailable');
     const now = `${weatherMode === 'auto' ? live : t(...WEATHER_LABELS[weatherMode])} · ${t(...TIME_LABELS[mood])}`;
+    const buttonWeather=weatherMode==='auto'?(condition?t(...condition.description):status==='off'?t(...WEATHER_LABELS.clear):t('天气未知','Weather unknown')):t(...WEATHER_LABELS[weatherMode]);
+    const buttonLabel=`${buttonWeather} · ${t(...TIME_LABELS[mood])}`;
     $('#moodButton b').textContent = data ? `${Math.round(data.temperature)}℃` : '';
-    $('#moodButton').title = now;
-    $('#moodButton').setAttribute('aria-label', t(`天气与时段：${now}`, `Weather and time: ${now}`));
+    $('#moodButton').title = buttonLabel;
+    $('#moodButton').setAttribute('aria-label', buttonLabel);
     const line = weatherMenu?.querySelector('.now');
     if (line) line.textContent = now;
     for (const b of weatherMenu?.querySelectorAll('[data-weather], [data-time]') || []) {
