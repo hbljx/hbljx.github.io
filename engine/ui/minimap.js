@@ -72,8 +72,6 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   const landmarks=[{id:'fishing',name:'钓鱼台',en:'Fishing deck',at:[-45.3,2],symbol:'⚑'},{id:'harbor',name:'航母停泊港',en:'Carrier harbor',at:[56.8,8],symbol:'⚓'}];
   const symbolCanvas=s=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.fillStyle='#ffe6a1';g.font='26px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(s,16,16);return c;};
   const blips = [...STATIONS.map(s => ({ s, img: icon(s.id).canvas })),...landmarks.map(s=>({s,img:symbolCanvas(s.symbol)}))];
-  const legend=document.createElement('div');legend.className='map-legend';legend.innerHTML='<span style="color:#ed77bf">● 女主实时位置</span>';
-  for(const s of landmarks){const label=document.createElement('span');label.textContent=`${s.symbol} ${s.name}`;legend.append(label);}bigRoot.append(legend);
 
   function fit() {
     const r = canvas.getBoundingClientRect();
@@ -256,7 +254,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     for(const resident of getResidents()){
       const [x,y]=P(resident.x,resident.z);bctx.fillStyle='#ed77bf';bctx.strokeStyle='#fff';bctx.lineWidth=2*dpr;
       bctx.beginPath();bctx.arc(x,y,6*dpr,0,Math.PI*2);bctx.fill();bctx.stroke();
-      bctx.fillStyle='#172737';bctx.fillRect(x+9*dpr,y-10*dpr,78*dpr,20*dpr);bctx.fillStyle='#fff';bctx.fillText('女主 · 实时',x+13*dpr,y);
+      bctx.fillStyle='#172737';bctx.fillRect(x+9*dpr,y-10*dpr,40*dpr,20*dpr);bctx.fillStyle='#fff';bctx.fillText('女主',x+13*dpr,y);
     }
     const [px, py] = P(p.x, p.z);
     bctx.save();
