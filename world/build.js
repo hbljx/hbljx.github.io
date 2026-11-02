@@ -15,6 +15,7 @@ import { buildThirdFloor } from './third-floor.js';
 import { createAirplane, aircraftObstacle } from './aircraft.js';
 import { buildCarrier } from './carrier.js';
 import { createHousehold } from './household.js';
+import { flattenGlazing, flattenBatchGlazing } from './glazing.js';
 
 export function build({ grid, layer, materials, stage }) {
   // Flat glass panes need one two-sided pass rather than separate front/back
@@ -52,6 +53,8 @@ export function build({ grid, layer, materials, stage }) {
   const planeObstacle=aircraftObstacle(furn.animated.airplane);
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh);
+  for(const batch of Object.values(furn.batches))flattenBatchGlazing(batch);
+  for(const group of [outer.group,mountain.group,roofAccess.group])group.traverse(mesh=>flattenGlazing(mesh,materials.boxGlass));
   return {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,

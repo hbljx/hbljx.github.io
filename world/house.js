@@ -32,7 +32,12 @@ export function defineHouseBlocks(grid) {
     : x === HOUSE.x0 - 1 ? 0 : x === HOUSE.x1 ? 1 : z === HOUSE.z0 - 1 ? 4
     : z === GARAGE.z1 ? 5 : x === GARAGE.x0 - 1 ? 0 : -1;
   grid.define('glass', { kind: 'glass', tex: { all: 'glass' }, merge: true,
-    skipFace: (f, x, y, z) => { const keep = paneFace(x, y, z); return keep >= 0 && f !== keep; } });
+    skipFace: (f, x, y, z) => {
+      // The save-room ceiling meets the inner window plane. Its opaque edge
+      // already fills that strip, so do not draw another pane over it.
+      if(y===LOFT.y+3 && (z===HOUSE.z0-1&&x>=SECRET.x0&&x<SECRET.x1+1 || x===HOUSE.x0-1&&z>=LOFT.z0&&z<SECRET.z1+1))return true;
+      const keep = paneFace(x, y, z); return keep >= 0 && f !== keep;
+    } });
   // Keep the facade's collision cells; furnish draws thin panes at the inner
   // wall line so the metre-deep voxel shell cannot slice through open doors.
   grid.define('front_glass', { kind: 'glass', tex: { all: 'glass' }, skipFace: () => true });

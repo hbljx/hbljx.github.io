@@ -24,9 +24,11 @@ export function buildThirdFloor({ grid, layer }) {
     const top=y+h;
     // A single two-sided plane avoids overlapping transparent surfaces. The
     // frame and walking support remain independent of the visible glass.
-    glassVertices.push(a,top,c,a,top,d,b,top,d,a,top,c,b,top,d,b,top,c);
-    for(const x of [a,b])batch.box(x,y+h-.055,(c+d)/2,.085,.055,d-c,dark);
-    for(const z of [c,d])batch.box((a+b)/2,y+h-.055,z,b-a,.055,.085,dark);
+    const inset=.045,paneY=top-.008;
+    glassVertices.push(a+inset,paneY,c+inset,a+inset,paneY,d-inset,b-inset,paneY,d-inset,a+inset,paneY,c+inset,b-inset,paneY,d-inset,b-inset,paneY,c+inset);
+    // Raised frame caps cannot compete with the flush floor/roof faces.
+    for(const x of [a,b])batch.box(x,top-.043,(c+d)/2,.085,.055,d-c,dark);
+    for(const z of [c,d])batch.box((a+b)/2,top-.043,z,b-a-.085,.055,.085,dark);
   }
   skylight(B,-20,24,-12,16,10.98,.08,floor,[-2,6,-5,9]);
   // Glazed tea pavilion: solid low panels, broad windows and a usable double doorway.

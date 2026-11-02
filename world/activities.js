@@ -231,6 +231,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   function primaryAction() {
     if (life.primary()) return;
     if (active?.id === 'airplane') { flight.takeoff(); refreshUI(); }
+    else if (active?.id === 'carrier') { keys.clear(); cruise.togglePatrol(); refreshUI(); }
     else if (active?.id === 'tea' && sip <= 0) { sip = 2.2; teaCups++; sound.effect('coffee'); updateStatus(); }
     else if (active?.id === 'reading') readingPage(1);
     else if (active?.id === 'coffee' && sip <= 0) { sip = 1.8; sips++; sound.effect('coffee'); updateStatus(); }
@@ -240,7 +241,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   function secondaryAction() {
     if (life.secondary()) return;
     if (active?.id === 'airplane') { flight.returnHome(); refreshUI(); }
-    else if (active?.id === 'carrier') { cruise.returnHome(); refreshUI(); }
+    else if (active?.id === 'carrier') { keys.clear(); cruise.returnHome(); refreshUI(); }
     else if (active?.id === 'reading') readingPage(-1);
     else if (active?.id === 'tv') { tvPaused = !tvPaused; sound.effect('click'); sound.loop(null); paintTV(visuals.tv, tvTime, tvChannel, tvPaused); refreshUI(); }
     else if (isDriving()) {
@@ -259,18 +260,22 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (!active) return false;
     if (active.id==='airplane' && k==='l') { if(!e.repeat){flight.landAt('summit');refreshUI();} return true; }
     if (active.id==='airplane' && k==='h') { if(!e.repeat){flight.landAt('carrier');refreshUI();} return true; }
+    if (active.id==='carrier' && k==='p') { if(!e.repeat)primaryAction(); return true; }
     if (k === 'escape') { stop(); return true; }
     if (k === 'f') { stop(true); return false; }
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k) || (active.id === 'airplane' && k === 'c')) {
+      if(active.id==='carrier' && cruise.automatic && e.repeat)return true;
+      if(active.id==='carrier')cruise.takeOver();
       keys.add(k);
       if (!e.repeat && active.id === 'reading' && (k === 'arrowleft' || k === 'arrowright')) readingPage(k === 'arrowleft' ? -1 : 1);
       return true;
     }
     if (k === ' ') {
+      if(active.id==='carrier'){if(cruise.automatic&&e.repeat)return true;cruise.takeOver();}
       keys.add(k);
       if (!e.repeat) {
         if (active.id === 'basketball' && !shot.flight) { shot.charging = true; shot.power = 0; }
-        else primaryAction();
+        else if(active.id!=='carrier')primaryAction();
       }
       return true;
     }
@@ -317,7 +322,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   summit.addEventListener('click',()=>{flight.landAt('summit');refreshUI();summit.blur();});
   carrierLand.addEventListener('click',()=>{flight.landAt('carrier');refreshUI();carrierLand.blur();});
   for (const b of pad.children) {
-    b.addEventListener('pointerdown', e => { b.setPointerCapture(e.pointerId); keys.add(b.dataset.key); e.preventDefault(); });
+    b.addEventListener('pointerdown', e => { b.setPointerCapture(e.pointerId); if(active?.id==='carrier')cruise.takeOver(); keys.add(b.dataset.key); e.preventDefault(); });
     for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(name, () => keys.delete(b.dataset.key));
   }
   const clearKeys = () => { keys.clear(); shot.charging = false; carSpeed = 0; cruise.pause(); };
@@ -348,7 +353,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     switch (s.id) {
       case 'tea': primary.hidden = false; primary.textContent = '泡茶品茗 空格'; hint.textContent = '坐在茶桌旁，按空格泡一杯茶 · 拖拽欣赏三楼景色'; break;
       case 'airplane': pad.hidden = primary.hidden = secondary.hidden = summit.hidden = carrierLand.hidden = false; primary.textContent = '起飞'; secondary.textContent = '回三楼 R'; toggle.textContent = '下机 E'; hint.textContent = 'W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶 · H 降落航母'; break;
-      case 'carrier': pad.hidden = secondary.hidden = false; secondary.textContent = '自动返港 R'; toggle.textContent = '停船离舵 E'; hint.textContent = 'W/S 前进倒航 · A/D 转向 · 空格刹车 · R 返港 · 拖拽转动视角'; break;
+      case 'carrier': pad.hidden = primary.hidden = secondary.hidden = false; secondary.textContent = '自动返港 R'; toggle.textContent = '停船离舵 E'; hint.textContent = 'P 自动巡航 · R 返港 · W/S 前进倒航 · A/D 转向 · 空格刹车'; break;
       case 'basketball': primary.hidden = meter.hidden = false; primary.textContent = '按住蓄力 / 松手投篮'; hint.textContent = '按住空格蓄力，绿色区松手投篮 · E 退出'; break;
       case 'sleep': toggle.textContent = '起床 E'; break;
       case 'reading': book.hidden = primary.hidden = secondary.hidden = false; primary.textContent = '下一页 →'; secondary.textContent = '上一页 ←'; book.querySelector('h3').textContent = BOOK[pageIndex][0]; book.querySelector('p').textContent = BOOK[pageIndex][1]; book.querySelector('small').textContent = `${pageIndex + 1} / ${BOOK.length} 页 · ← → 或空格翻页`; break;
@@ -378,7 +383,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       primary.hidden = !flight.parked; secondary.hidden = summit.hidden = carrierLand.hidden = flight.parked;
       toggle.hidden=!flight.parked;toggle.textContent='下机 E';
       hint.textContent=flight.parked?'点击起飞 · E 下机 · 拖拽转动视角':'W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶 · H 降落航母';
-    } else if (id === 'carrier') { const c=cruise.status();status.textContent=`${c.message} · ${Math.round(Math.abs(c.speed)*3.6)} km/h · 航程 ${Math.round(c.distance)} 米`; }
+    } else if (id === 'carrier') { const c=cruise.status();primary.textContent=c.patrolling?'暂停巡航 P':'自动巡航 P';status.textContent=`${c.message} · ${Math.round(Math.abs(c.speed)*3.6)} km/h · 航程 ${Math.round(c.distance)} 米`; }
     else if (id === 'tea') status.textContent = `${sip>0?'沏茶品茗中':'茶香正好'} · 已泡 ${teaCups} 杯`;
     else if (id === 'basketball') status.textContent = `${shot.points} 分 / ${shot.attempts} 次投篮${notice ? ' · ' + notice : ''}`;
     else if (id === 'sleep') status.textContent = `正在休息 · ${Math.floor(time - entered)} 秒 · 按 E 起床`;

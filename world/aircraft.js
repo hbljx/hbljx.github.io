@@ -75,13 +75,26 @@ export function createAirplane() {
   box(0, 1.82, -.9, .78, .55, .12, navy);
   box(0, 1.93, -2.6, .13, 1.6, .85, navy);
   box(0, 1.45, -2.65, 2.55, .11, .75, gold);
+  const propellerStart=positions.length/3;
+  box(0,1.25,2.7,.13,2.05,.1,black);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); g.computeBoundingSphere();
+  const propellerParts=new Float32Array(positions.length/3);propellerParts.fill(1,propellerStart);
+  g.setAttribute('propellerPart',new THREE.BufferAttribute(propellerParts,1));
   const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
   mesh.name = 'airplane'; mesh.userData.group = 'aircraft'; mesh.userData.parked = true; mesh.castShadow = mesh.receiveShadow = true;
-  const propeller = new THREE.Mesh(new THREE.BoxGeometry(.13, 2.05, .1), new THREE.MeshLambertMaterial({ color: black }));
+  // The propeller rotates in the body's shader, saving one draw call for the
+  // new transparent wheelhouse without changing flight controls or animation.
+  const propeller = new THREE.Object3D(),propellerAngle={value:0};
+  mesh.material.onBeforeCompile=shader=>{
+    shader.uniforms.uPropellerAngle=propellerAngle;
+    shader.vertexShader='attribute float propellerPart; uniform float uPropellerAngle;\n'+shader.vertexShader
+      .replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nmat2 propTurn=mat2(cos(uPropellerAngle),sin(uPropellerAngle),-sin(uPropellerAngle),cos(uPropellerAngle));\nif(propellerPart>.5)objectNormal.xy=propTurn*objectNormal.xy;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\nif(propellerPart>.5)transformed.xy=propTurn*(transformed.xy-vec2(0.,1.25))+vec2(0.,1.25);');
+  };
+  mesh.onBeforeRender=()=>{propellerAngle.value=propeller.rotation.z;};
   propeller.position.set(0, 1.25, 2.7); mesh.add(propeller);
   const canopy=createCanopy();mesh.add(canopy);mesh.userData.canopy=canopy;
   mesh.position.set(AIRFIELD.x, AIRFIELD.y, AIRFIELD.z); mesh.rotation.y = AIRFIELD.heading;
@@ -112,6 +125,7 @@ export function createFlight({ mesh, world, player, stage, sound }) {
   function park(at = destination || parkedAt) {
     parkedAt=at; destination=null;
     phase = 'parked'; speed = bank = 0; heading = at.heading;
+    mesh.userData.propeller.rotation.z=0;
     mesh.position.set(at.x, at.y, at.z); mesh.rotation.set(0, heading, 0); mesh.userData.parked=true;
     mesh.castShadow = at.id!=='carrier'; stage.renderer.shadowMap.needsUpdate = true; sound.loop(null);
   }
