@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createPlayer } from '@engine/world/player.js';
 import { createFemaleRoutine } from './female-routine.js';
+import { createSharedQuilt } from './quilt.js';
 
 const BED={x:-9.8,y:4,z:-9.3},IDLE={x:0,z:0,run:false},FIVE_MINUTES=300000;
 const hours=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',hourCycle:'h23'});
@@ -44,17 +45,15 @@ export function createHousehold({stage,world,player,avatar,nav,rig},activities){
   const femaleAvatar=createWoman(),woman=createPlayer({avatar:femaleAvatar,nav,grid:world.grid,ground:world.ground});
   stage.scene.add(femaleAvatar.root);woman.restore(-1.5,0,5.8,Math.PI);
   const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities});
-  const quilts=new THREE.InstancedMesh(new THREE.BoxGeometry(1.35,.12,1.4),new THREE.MeshLambertMaterial({color:0xc8bba9}),2);
-  quilts.name='sleeping-quilts';quilts.receiveShadow=true;stage.scene.add(quilts);
-  const dummy=new THREE.Object3D();let maleSleep=false,femaleSleep=false,going=false,femaleGoing=false,reason=null,sleepControl=false;
+  const quilts=createSharedQuilt();stage.scene.add(quilts);
+  let maleSleep=false,femaleSleep=false,going=false,femaleGoing=false,reason=null,sleepControl=false;
   const wakeButton=document.querySelector('[data-control="interact"]');
   wakeButton.addEventListener('click',e=>{if(maleSleep){e.stopImmediatePropagation();wakeMale();}},{capture:true});
   let lastMove=Date.now(),lastNight=false,nightDismissed=false,clock=0,last={x:player.pos.x,y:player.y,z:player.pos.z},routeClock=0;
-  const clockDate=new Date(),maleLimbs=[avatar.legL,avatar.legR,avatar.armL,avatar.armR,avatar.head];let clockAt=0,night=false,coverState=-1;
+  const clockDate=new Date(),maleLimbs=[avatar.legL,avatar.legR,avatar.armL,avatar.armR,avatar.head];let clockAt=0,night=false;
   const atBed=p=>Math.abs(p.y-4)<.25&&Math.hypot(p.pos.x-BED.x,p.pos.z-BED.z)<.5;
   function covers(){
     const male=maleSleep||activities.current==='sleep',state=(male?1:0)+(femaleSleep?2:0);quilts.visible=state!==0;
-    if(coverState!==state){coverState=state;for(let i=0;i<2;i++){dummy.position.set(i?-12.76:-11.24,4.97,-8.98);dummy.scale.setScalar((i?femaleSleep:male)?1:0);dummy.updateMatrix();quilts.setMatrixAt(i,dummy.matrix);}quilts.instanceMatrix.needsUpdate=true;quilts.computeBoundingSphere();}
     if(maleSleep){wakeButton.hidden=false;if(wakeButton.getAttribute('aria-label')!=='起床 · E')wakeButton.setAttribute('aria-label','起床 · E');}
     else if(sleepControl){const nearby=activities.spots.find(s=>s.id===activities.status().nearby);wakeButton.hidden=!nearby;wakeButton.setAttribute('aria-label',`${nearby?.title.split(' · ').at(-1)||'互动'} · E`);}
     sleepControl=maleSleep;

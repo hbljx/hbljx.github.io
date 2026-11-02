@@ -12,7 +12,7 @@ import { atlasPlanes } from './atlas-planes.js';
 import { ISLAND, FOREST, COURT, RIM } from './layout.js';
 import { createActivities } from './activities.js';
 import { buildThirdFloor } from './third-floor.js';
-import { createAirplane, aircraftObstacle } from './aircraft.js';
+import { createAircraftFleet } from './aircraft-fleet.js';
 import { buildCarrier } from './carrier.js';
 import { createHousehold } from './household.js';
 import { flattenGlazing, flattenBatchGlazing } from './glazing.js';
@@ -45,12 +45,12 @@ export function build({ grid, layer, materials, stage }) {
   // The third-floor shell shares the existing roof's cutaway visibility.
   mergeBatch(furn.batches.roof, third.batches.thirdFloor);
   mergeBatch(furn.batches.roof, third.batches.thirdRoomRoof);
-  furn.animated.airplane = createAirplane(); furn.planes.push(furn.animated.airplane);
   // The pier and sailboat, the mountain and the roof's outside stair are
   // ground of their own, outside the block grid.
   const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
   const carrier = buildCarrier(layer, furn.batches.static);
-  const planeObstacle=aircraftObstacle(furn.animated.airplane);
+  const aircraftFleet=createAircraftFleet(carrier);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
+  const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh);
   for(const batch of Object.values(furn.batches))flattenBatchGlazing(batch);
@@ -59,7 +59,7 @@ export function build({ grid, layer, materials, stage }) {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
     sites: [outer, mountain, furn.stairs, third.source, carrier], sitesAfter: [roofAccess],
-    named: { outer, mountain, roofAccess, carrier, thirdFloor: third.source, drawMap },
+    named: { outer, mountain, roofAccess, carrier, aircraftFleet, thirdFloor: third.source, drawMap },
   };
 }
 
@@ -99,8 +99,7 @@ export function setup(app) {
       household.update(dt);
       world.carrier.updateCabin(app.player,stage.camera);
       const cutaway = world.hidden.has('roof');
-      const plane=world.animated.airplane.position;
-      world.setHidden('aircraft', cutaway && plane.y < 14 && plane.x>-21&&plane.x<25&&plane.z>-13&&plane.z<17);
+      world.aircraftFleet.update(cutaway);
       world.setHidden('thirdRoomRoof', cutaway);
     },
   };

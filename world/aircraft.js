@@ -5,18 +5,18 @@ export const AIRFIELD = { id: 'home', name: '三楼停机区', x: 12, y: 11, z: 
 // Both boarding and collision follow the plane, including when parked on the mountain.
 export function distanceToAirplane(mesh, x, z) {
   const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);
-  return Math.hypot(Math.max(0,Math.abs(dx*c-dz*s)-3.7),Math.max(0,Math.abs(dx*s+dz*c)-3.2));
+  return Math.hypot(Math.max(0,Math.abs(dx*c-dz*s)-(mesh.userData.halfSpan||3.7)),Math.max(0,Math.abs(dx*s+dz*c)-(mesh.userData.halfLength||3.2)));
 }
 export function aircraftObstacle(mesh) {
   return (x,z,feet)=>{
     if(!mesh.userData.parked || Math.abs(feet-mesh.position.y)>=1.8)return false;
     const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);
     const side=Math.abs(dx*c-dz*s),along=dx*s+dz*c;
-    return side<.75&&along>-3.2&&along<2.85 || side<3.7&&Math.abs(along+.35)<.85 || side<1.3&&Math.abs(along+2.65)<.45;
+    return side<.75&&along>-(mesh.userData.halfLength||3.2)&&along<(mesh.userData.halfLength||2.85) || side<(mesh.userData.halfSpan||3.7)&&Math.abs(along+.35)<.85 || side<1.3&&Math.abs(along+2.65)<.45;
   };
 }
 
-function createCanopy() {
+export function createCanopy() {
   const positions=[],normals=[],colors=[],pivot=new THREE.Vector3(0,1.55,-1.2),tint=new THREE.Color();
   function append(g,hex,alpha){
     tint.setHex(hex);g.translate(-pivot.x,-pivot.y,-pivot.z);
@@ -103,20 +103,21 @@ export function createAirplane() {
 }
 
 export function createFlight({ mesh, world, player, stage, sound }) {
-  let phase = 'parked', heading = AIRFIELD.heading, speed = 0, distance = 0, bank = 0;
+  let phase = 'parked', heading = AIRFIELD.heading, speed = 0, distance = 0, bank = 0,pitch=0,launchMode='vertical',launchRun=0;
   const home = AIRFIELD;
-  const fields = [home, world.mountain.airfield, world.carrier.airfield];
-  let parkedAt=home,destination=null,launchHeight=18,approachHeight=65;
+  const carrierField=world.aircraftFleet.fieldFor(mesh),fields = [home, world.mountain.airfield, carrierField];
+  let parkedAt=mesh.name==='airplane'?home:carrierField,destination=null,launchHeight=18,approachHeight=65,taxi=null,notice='';
   const footprint = [[0, 0], [-4, 0], [4, 0], [0, -4], [0, 4]];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  function clearance(x, z) {
+  function terrainHeight(x, z,ignoreCarrier=false) {
     let height = 0;
     for (const [dx, dz] of footprint) {
       const surface = world.ground.topAt(x + dx, z + dz);
-      height = Math.max(height, surface?.y || 0, world.thirdFloor.flightHeight(x + dx, z + dz));
+      height = Math.max(height, ignoreCarrier&&surface?.site==='carrier'?0:surface?.y||0, world.thirdFloor.flightHeight(x + dx, z + dz));
     }
-    return Math.max(18, height + 4);
+    return height;
   }
+  const clearance=(x,z)=>Math.max(18,terrainHeight(x,z)+4);
   function anchor() { player.anchor(mesh.position.x, mesh.position.y, mesh.position.z, heading); }
   function syncParked(){
     if(phase!=='parked'||parkedAt.id!=='carrier')return;
@@ -124,25 +125,35 @@ export function createFlight({ mesh, world, player, stage, sound }) {
   }
   function park(at = destination || parkedAt) {
     parkedAt=at; destination=null;
-    phase = 'parked'; speed = bank = 0; heading = at.heading;
+    phase = 'parked'; speed = bank = pitch = 0; heading = at.heading;
+    notice='';taxi=null;
     mesh.userData.propeller.rotation.z=0;
     mesh.position.set(at.x, at.y, at.z); mesh.rotation.set(0, heading, 0); mesh.userData.parked=true;
     mesh.castShadow = at.id!=='carrier'; stage.renderer.shadowMap.needsUpdate = true; sound.loop(null);
   }
   function start() { syncParked();mesh.userData.canopy.rotation.x=0;mesh.castShadow = false; stage.renderer.shadowMap.needsUpdate = true; anchor(); }
-  function leave(){mesh.userData.canopy.rotation.x=-Math.PI/3;}
-  function takeoff() { if (phase === 'parked') { launchHeight=Math.max(parkedAt.y+7,clearance(parkedAt.x,parkedAt.z)); phase = 'takeoff'; mesh.userData.parked=false; mesh.castShadow = false; stage.renderer.shadowMap.needsUpdate = true; } }
+  function leave(){mesh.userData.canopy.rotation.x=mesh.userData.canopyOpen??-Math.PI/3;}
+  function takeoff(mode='vertical') {
+    if(phase!=='parked'||!['vertical','catapult','ski-jump'].includes(mode)||mode!=='vertical'&&parkedAt.id!=='carrier')return false;
+    syncParked();taxi=mode==='vertical'?null:world.aircraftFleet.taxiRoute(mesh);
+    if(mode!=='vertical'&&!taxi){notice='起飞通道有飞机停放，请先移开，或选择垂直起飞';return false;}
+    launchMode=mode;launchRun=0;pitch=bank=speed=0;notice='';
+    launchHeight=Math.max(parkedAt.y+7,clearance(parkedAt.x,parkedAt.z));phase=mode==='vertical'?'takeoff':taxi.length?'taxi':'deck-roll';
+    mesh.userData.parked=false;mesh.castShadow=false;stage.renderer.shadowMap.needsUpdate=true;return true;
+  }
   function landAt(id) {
-    const field=fields.find(f=>f.id===id);
+    const candidate=fields.find(f=>f.id===id),field=candidate&&world.aircraftFleet.resolveField(mesh,id,candidate);
+    if(candidate&&!field){notice=`${candidate.name}已占用，请选择其他停机区`;return false;}
     if(!field || phase==='parked' || destination===field)return;
-    destination=field;phase='returning';
+    notice='';destination=field;phase='returning';
     approachHeight=Math.hypot(mesh.position.x-field.x,mesh.position.z-field.z)<5?Math.max(mesh.position.y,field.y+8):65;
   }
   function returnHome() { landAt('home'); }
   function landNearest() {
     if(destination || phase==='parked')return;
     const p=mesh.position;
-    landAt(fields.reduce((a,b)=>Math.hypot(p.x-a.x,p.z-a.z)<Math.hypot(p.x-b.x,p.z-b.z)?a:b).id);
+    const available=fields.filter(field=>world.aircraftFleet.resolveField(mesh,field.id,field));
+    if(available.length)landAt(available.reduce((a,b)=>Math.hypot(p.x-a.x,p.z-a.z)<Math.hypot(p.x-b.x,p.z-b.z)?a:b).id);
   }
   function exitPosition() {
     const p=parkedAt.exit;
@@ -153,7 +164,28 @@ export function createFlight({ mesh, world, player, stage, sound }) {
     const p = mesh.position;
     if (phase === 'takeoff') {
       p.y = Math.min(launchHeight, p.y + dt * 3); if (p.y >= launchHeight) { phase = 'flying'; speed = 8; }
+    } else if(phase==='taxi'){
+      const point=taxi[0],dx=point.x-p.x,dz=point.z-p.z,d=Math.hypot(dx,dz),step=Math.min(d,dt*4);
+      if(d>.001){p.x+=dx/d*step;p.z+=dz/d*step;distance+=step;}
+      const local=world.carrier.toLocal(p.x,p.z);p.y=world.carrier.toWorld(local.x,local.z).y;heading=world.carrier.mesh.rotation.y;
+      if(d<=step+.001){taxi.shift();if(!taxi.length){taxi=null;phase='deck-roll';}}
+    } else if(phase==='deck-roll'){
+      const catapult=launchMode==='catapult',end=catapult?34:55;
+      speed=Math.min(catapult?28:20,speed+dt*(catapult?24:5.5));
+      const step=Math.min(end-launchRun,speed*dt);launchRun+=step;distance+=step;
+      const localZ=-22+launchRun,point=world.carrier.toWorld(-1.8,localZ);
+      p.set(point.x,point.y,point.z);heading=world.carrier.mesh.rotation.y;
+      pitch=!catapult&&localZ>=world.carrier.ramp.z0?Math.atan2(world.carrier.ramp.height,10):0;
+      if(launchRun>=end)phase='launch-climb';
+    } else if(phase==='launch-climb'){
+      const targetPitch=launchMode==='catapult'?.3:.36;pitch+=(targetPitch-pitch)*Math.min(1,dt*4);
+      p.y=Math.min(78,p.y+dt*9);
+      const x=p.x+Math.sin(heading)*speed*dt,z=p.z+Math.cos(heading)*speed*dt;
+      // Clear nearby land before moving horizontally when the bow faces shore.
+      if(p.y>=terrainHeight(x,z,true)+2.5&&x>-170&&x<170&&z>-185&&z<170){p.x=x;p.z=z;distance+=speed*dt;}
+      if(p.y>=clearance(p.x,p.z)){phase='flying';speed=Math.min(16,speed);}
     } else if (phase === 'flying') {
+      pitch*=Math.exp(-dt*3);
       const turn = Number(keys.has('a') || keys.has('arrowleft')) - Number(keys.has('d') || keys.has('arrowright'));
       heading += turn * dt * .72; bank += (-turn * .22 - bank) * Math.min(1, dt * 4);
       const target = keys.has('w') || keys.has('arrowup') ? 16 : keys.has('s') || keys.has('arrowdown') ? 4 : 8;
@@ -170,6 +202,7 @@ export function createFlight({ mesh, world, player, stage, sound }) {
     } else if (phase === 'returning') {
       // Distant approaches clear the mountains; nearby pads need only a short alignment.
       bank *= Math.exp(-dt * 4);
+      pitch *= Math.exp(-dt * 4);
       if (p.y < approachHeight) p.y = Math.min(approachHeight, p.y + dt * 8);
       else {
         const dx = destination.x - p.x, dz = destination.z - p.z, d = Math.hypot(dx, dz), step = Math.min(d, dt * 20);
@@ -178,12 +211,15 @@ export function createFlight({ mesh, world, player, stage, sound }) {
         else { p.x = destination.x; p.z = destination.z; phase = 'landing'; speed = 0; }
       }
     } else if (phase === 'landing') {
-      heading = destination.heading;p.x=destination.x;p.z=destination.z;p.y = Math.max(destination.y, p.y - dt * 8); if (p.y <= destination.y) park();
+      pitch=0;heading = destination.heading;p.x=destination.x;p.z=destination.z;p.y = Math.max(destination.y, p.y - dt * 8); if (p.y <= destination.y) park();
     }
     syncParked();
-    mesh.rotation.set(0, heading, bank);
+    mesh.rotation.set(-pitch, heading, bank,'YXZ');
     if (phase !== 'parked') mesh.userData.propeller.rotation.z += dt * 38;
     anchor(); sound.loop(phase === 'parked' ? null : 'engine', speed / 16);
   }
-  return { start, leave, park, takeoff, returnHome, landAt, landNearest, exitPosition, update, syncParked, get parked() { return phase === 'parked'; }, get heading() { return heading; }, get bank() { return bank; }, status: () => ({ phase, speed, distance, airport:parkedAt.id, airportName:parkedAt.name, destination:destination?.id || null, destinationName:destination?.name || null, x: mesh.position.x, y: mesh.position.y, z: mesh.position.z }) };
+  return { start, leave, park, takeoff, returnHome, landAt, landNearest, exitPosition, update, syncParked,
+    placePilot(root){root.position.fromArray(mesh.userData.seat||[0,.92,0]).applyEuler(mesh.rotation).add(mesh.position);root.rotation.copy(mesh.rotation);},
+    get parked() { return phase === 'parked'; }, get heading() { return heading; }, get bank() { return bank; },
+    status: () => ({ phase, speed, distance, launchMode,pitch,notice,aircraftId:mesh.name,aircraftName:mesh.userData.label,airport:parkedAt.id, airportName:parkedAt.name, destination:destination?.id || null, destinationName:destination?.name || null, x: mesh.position.x, y: mesh.position.y, z: mesh.position.z }) };
 }

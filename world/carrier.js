@@ -6,6 +6,15 @@ const HOME={x:64,z:8,heading:0},DECK=3.4;
 const STERN=-32,BOW=33,TURN_RADIUS=36,PORT_CLEARANCE=40;
 const sections=[[STERN,5.9],[-27,7.6],[22,7.6],[29,6.3],[BOW,4.8]];
 const deckY=()=>DECK;
+const RAMP={x0:-4.4,x1:1.9,z0:23,z1:33,height:2.3};
+const onRamp=(x,z)=>x>=RAMP.x0&&x<=RAMP.x1&&z>=RAMP.z0&&z<=RAMP.z1;
+const surfaceY=(x,z)=>DECK+(onRamp(x,z)?(z-RAMP.z0)/(RAMP.z1-RAMP.z0)*RAMP.height:0);
+const deckAircraft=[
+  {id:'fighter-1',kind:'fighter',x:5.2,z:-15,w:3.7,d:5.8},
+  {id:'fighter-2',kind:'fighter',x:5.2,z:-7.5,w:3.7,d:5.8},
+  {id:'early-warning',kind:'awacs',x:5.1,z:15,w:4.6,d:6.4},
+  {id:'fighter-3',kind:'fighter',x:5.2,z:24,w:3.7,d:5.8},
+];
 function widthAt(z){
   if(z<sections[0][0]||z>sections.at(-1)[0])return 0;
   for(let i=1;i<sections.length;i++){const a=sections[i-1],b=sections[i];if(z<=b[0])return a[1]+(b[1]-a[1])*(z-a[0])/(b[0]-a[0]);}
@@ -15,7 +24,7 @@ const cabinWalls=[
   {x0:2.4,x1:2.62,z0:-3.5,z1:-2.4},{x0:2.4,x1:2.62,z0:.4,z1:8.4},
   {x0:6.68,x1:6.9,z0:-3.5,z1:8.4},{x0:2.4,x1:6.9,z0:-3.5,z1:-3.28},{x0:2.4,x1:6.9,z0:8.18,z1:8.4},
 ];
-const obstacles=[...cabinWalls,{x0:3.05,x1:6.25,z0:6.3,z1:7.1},...[-12,-6].map(z=>({x0:-6.5,x1:-3.3,z0:z-2,z1:z+2})),...[7,12,16].map(z=>({x0:-6.1,x1:-4.3,z0:z-1.3,z1:z+1.3}))];
+const obstacles=[...cabinWalls,{x0:3.05,x1:6.25,z0:6.3,z1:7.1}];
 const onDeck=(x,z,pad=0)=>z>=STERN+pad&&z<=BOW-pad&&Math.abs(x)<=widthAt(z)-pad;
 const inCabin=(x,z)=>x>2.62&&x<6.68&&z>-3.28&&z<8.18;
 const turnAngle=a=>Math.atan2(Math.sin(a),Math.cos(a));
@@ -40,9 +49,18 @@ function carrierMesh(){
     for(const s of [-1,1])quad([s*wa,ya-.24,za],[s*wa,ya,za],[s*wb,yb,zb],[s*wb,yb-.24,zb],light);
   }
   box(0,DECK-.12,STERN-.075,11.8,.24,.15,light);
+  // A separate bow ramp leaves the aft landing pad and catapult lane flat.
+  quad([RAMP.x0,DECK,RAMP.z0],[RAMP.x0,DECK+RAMP.height,RAMP.z1],[RAMP.x1,DECK+RAMP.height,RAMP.z1],[RAMP.x1,DECK,RAMP.z0],deck);
+  for(const x of [RAMP.x0,RAMP.x1])quad([x,DECK,RAMP.z0],[x,DECK,RAMP.z1],[x,DECK+RAMP.height,RAMP.z1],[x,DECK,RAMP.z0],gray);
+  quad([RAMP.x0,DECK,RAMP.z1],[RAMP.x1,DECK,RAMP.z1],[RAMP.x1,DECK+RAMP.height,RAMP.z1],[RAMP.x0,DECK+RAMP.height,RAMP.z1],gray);
   // Runway centre, angled landing lane and edge stripes sit clear of the deck.
-  for(let z=STERN+2;z<BOW-2;z+=2.5)box(-1.8,DECK+.022,z,.15,.025,1.25,white);
-  for(const x of [-3.8,.2])for(let z=STERN+2;z<BOW-2;z+=1)box(x,DECK+.018,z,.09,.025,1.01,yellow);
+  for(let z=STERN+2;z<RAMP.z0-.7;z+=2.5)box(-1.8,DECK+.022,z,.15,.025,1.25,white);
+  for(const x of [-3.8,.2])for(let z=STERN+2;z<RAMP.z0-.6;z+=1)box(x,DECK+.018,z,.09,.025,1.01,yellow);
+  const slope=Math.atan2(RAMP.height,RAMP.z1-RAMP.z0);
+  for(const x of [-3.8,.2])box(x,DECK+RAMP.height/2+.035,28,.09,.025,Math.hypot(10,RAMP.height),yellow,-slope);
+  for(let z=24;z<33;z+=2)box(-1.8,surfaceY(-1.8,z)+.035,z,.15,.025,1.1,white,-slope);
+  for(const x of [-2.1,-1.5])box(x,DECK+.055,-5,.08,.05,34,light);
+  box(-1.8,DECK+.10,-22,.7,.12,.45,yellow);
   for(const side of [-1,1])for(let z=-18;z<11;z+=.9){const x=-1+(z+18)*.105+side*2.15;if(x>2.3&&x<7&&z>-4&&z<9)continue;box(x,DECK+.027,z,.12,.025,.92,white,0,-.105);}
   for(const z of [-16,14,24]){box(5.8,DECK+.018,z,2.3,.02,3.7,0x606d72);for(const x of [4.65,6.95])box(x,DECK+.035,z,.06,.02,3.7,yellow);}
   for(const side of [-1,1])for(let z=STERN+3;z<BOW-3;z+=2.8){box(side*(widthAt(z)*.9),1.45,z,.04,.8,1.6,0x36464e);box(side*(widthAt(z)*.91),1.96,z,.18,.12,2,light);}
@@ -88,19 +106,10 @@ function carrierMesh(){
   cabinMask=0;
   const glyphs={'0':['111','101','101','101','111'],'1':['010','110','010','010','111']};
   [...'001'].forEach((n,k)=>glyphs[n].forEach((row,r)=>[...row].forEach((v,c)=>{if(v==='1'){
-    const z=29.8-r*.34;box(.7+(k*4+c)*.34,DECK+.033,z,.29,.035,.29,white);
+    const z=-25-r*.28;box(3.2+(k*4+c)*.28,DECK+.033,z,.23,.035,.23,white);
     box(6.915,4.03-r*.12,-1.5+(k*4+c)*.12,.035,.10,.10,white);
   }})));
-  // Two folded-wing deck aircraft, built into the same draw call.
-  for(const z of [-12,-6]){
-    box(-4.9,3.9,z,.55,.65,3.5,light);box(-4.9,3.88,z+1.95,.3,.35,.5,light);
-    box(-4.9,3.94,z-.15,2.9,.12,.9,gray);box(-4.9,4.3,z+.65,.38,.3,.75,0x294a5b);
-    for(const x of [-6.15,-3.65])box(x,4.5,z-.4,.12,1.15,.8,gray);
-    box(-4.9,4.5,z-1.4,.12,1.1,.7,gray);box(-4.9,3.87,z-1.3,1.6,.12,.5,light);
-    for(const x of [-5.2,-4.6])box(x,3.52,z-.6,.16,.24,.25,dark);
-  }
-  // Additional parked aircraft give the long deck the reference's populated edge.
-  for(const z of [7,12,16]){box(-5.2,3.72,z,.4,.3,2.4,light);box(-5.2,3.78,z-.2,1.7,.08,.65,gray);box(-5.2,4.04,z+.4,.25,.22,.48,0x294a5b);box(-5.2,4.1,z-.9,.08,.65,.4,light);}
+  // Flyable deck aircraft share the fleet renderer.
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setAttribute('cabinMask',new THREE.Float32BufferAttribute(masks,1));geo.computeVertexNormals();geo.computeBoundingSphere();
   const material=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
   const cabinView={value:0};
@@ -128,7 +137,7 @@ export function buildCarrier(layer,staticBatch){
   // Static pier pieces share the furniture batch; the entire moving ship is one draw.
   for(const kind of Object.keys(B.items))staticBatch.items[kind].push(...B.items[kind]);
   function toLocal(x,z){const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return{x:dx*c-dz*s,z:dx*s+dz*c};}
-  function toWorld(x,z,y=deckY(z)){const c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return{x:mesh.position.x+x*c+z*s,y,z:mesh.position.z-x*s+z*c};}
+  function toWorld(x,z,y=surfaceY(x,z)){const c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return{x:mesh.position.x+x*c+z*s,y,z:mesh.position.z-x*s+z*c};}
   const helm=()=>toWorld(4.65,5.1);
   const airfield={id:'carrier',name:'航母停机区',get x(){return toWorld(-1.8,-22).x;},get z(){return toWorld(-1.8,-22).z;},y:DECK,get heading(){return mesh.rotation.y;},get exit(){return toWorld(2.6,-22);}};
   function clearDeck(x,z){
@@ -142,7 +151,7 @@ export function buildCarrier(layer,staticBatch){
     const nx=31,nz=(BOW-STERN)*2-1,pos=k=>({x:-7.5+(k%nx)*.5,z:STERN+.5+Math.floor(k/nx)*.5});
     function nearest(x,z){let best=-1,d=Infinity;for(let k=0;k<nx*nz;k++){const p=pos(k),q=(p.x-x)**2+(p.z-z)**2;if(q<d&&clearDeck(p.x,p.z)){d=q;best=k;}}return best;}
     const start=nearest(ax,az),end=nearest(bx,bz),parents=new Int32Array(nx*nz).fill(-2),queue=[start];parents[start]=-1;
-    for(let i=0;i<queue.length&&parents[end]===-2;i++){const k=queue[i];for(const n of [k-1,k+1,k-nx,k+nx]){if(n<0||n>=nx*nz||Math.abs(n%nx-k%nx)>1||parents[n]!==-2)continue;const p=pos(n);if(clearDeck(p.x,p.z)){parents[n]=k;queue.push(n);}}}
+    for(let i=0;i<queue.length&&parents[end]===-2;i++){const k=queue[i],a=pos(k);for(const n of [k-1,k+1,k-nx,k+nx]){if(n<0||n>=nx*nz||Math.abs(n%nx-k%nx)>1||parents[n]!==-2)continue;const p=pos(n);if(clearDeck(p.x,p.z)&&Math.abs(surfaceY(a.x,a.z)-surfaceY(p.x,p.z))<.5){parents[n]=k;queue.push(n);}}}
     if(parents[end]===-2)return[];const points=[];for(let k=end;k!==-1;k=parents[k])points.unshift(pos(k));if(clearDeck(bx,bz))points.push({x:bx,z:bz});return points.map(p=>toWorld(p.x,p.z));
   }
   function route(ax,ay,az,bx,by,bz){
@@ -155,20 +164,22 @@ export function buildCarrier(layer,staticBatch){
     if(toDeck)points.push(...deckRoute(-7.1,0,b.x,b.z));else points.push({x:bx,y:by,z:bz});return points;
   }
   return{
-    mesh,foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,
+    mesh,foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,deckAircraft,ramp:RAMP,
     setPlaneObstacle(fn){planeObstacle=fn;},
     canBoard(player){const p=toLocal(player.pos.x,player.pos.z);return Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z)&&Math.hypot(p.x-4.65,p.z-5.1)<1.6;},
     insideCabin(player){const p=toLocal(player.pos.x,player.pos.z);return Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z);},
     updateCabin(player,camera){const p=toLocal(player.pos.x,player.pos.z),c=toLocal(camera.position.x,camera.position.z),inside=Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z);
       mesh.userData.cabinView.value=inside&&(!inCabin(c.x,c.z)||camera.position.y>6.25)?1:0;
     },
-    levels(x,z,out){for(const s of slabs)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'carrier',tread:true});const p=toLocal(x,z);if(onDeck(p.x,p.z))out.push({y:deckY(p.z),site:'carrier'});},
+    levels(x,z,out){for(const s of slabs)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'carrier',tread:true});const p=toLocal(x,z);if(onDeck(p.x,p.z))out.push({y:surfaceY(p.x,p.z),site:'carrier'});},
     obstructed(x,z,y){const p=toLocal(x,z);return planeObstacle(x,z,y)||y>=DECK-.1&&y<6.3&&obstacles.some(o=>p.x>o.x0-.05&&p.x<o.x1+.05&&p.z>o.z0-.05&&p.z<o.z1+.05)||y>=6.3&&y<8.4&&p.x>2.4&&p.x<6.9&&p.z>-3.4&&p.z<8.4;},
-    collides(x,y,z){const p=toLocal(x,z);return onDeck(p.x,p.z)&&y<deckY(p.z)-.02&&y+1.8>-2.8||this.obstructed(x,z,y);},
+    collides(x,y,z){const p=toLocal(x,z);return onDeck(p.x,p.z)&&y<surfaceY(p.x,p.z)-.02&&y+1.8>-2.8||this.obstructed(x,z,y);},
     pick(ray){
       let best=null;for(const s of slabs)if(ray.intersectBox(s.box,hit)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:new THREE.Vector3(hit.x,s.y,hit.z),site:'carrier'};}
       const o=toLocal(ray.origin.x,ray.origin.z),c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y),dz=ray.direction.x*s+ray.direction.z*c,dx=ray.direction.x*c-ray.direction.z*s;
       if(ray.direction.y<0){const t=(DECK-ray.origin.y)/ray.direction.y,z=o.z+dz*t,x=o.x+dx*t;if(t>=0&&onDeck(x,z)&&(!best||t<best.t))best={t,point:ray.at(t,local).clone(),site:'carrier'};}
+      const slope=RAMP.height/(RAMP.z1-RAMP.z0),denominator=ray.direction.y-slope*dz;
+      if(denominator<0){const t=(DECK+slope*(o.z-RAMP.z0)-ray.origin.y)/denominator,z=o.z+dz*t,x=o.x+dx*t;if(t>=0&&onRamp(x,z)&&onDeck(x,z)&&(!best||t<best.t))best={t,point:ray.at(t,local).clone(),site:'carrier'};}
       return best;
     },
     spots:()=>[helm(),toWorld(0,-22)],

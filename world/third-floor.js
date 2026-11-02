@@ -50,8 +50,8 @@ export function buildThirdFloor({ grid, layer }) {
     B.box(x, 11.45, 5.78, .78, 2.2, .04, glass);
     B.box(x + (x < -11 ? .35 : -.35), 12.2, 5.7, .06, .42, .06, china);
   }
-  skylight(ceiling,roomRoof.min.x,roomRoof.max.x,roomRoof.min.z,roomRoof.max.z,14.7,.24,dark,[-15,-7,-6,3]);
-  for (const x of [-16, -6]) ceiling.box(x, 14.60, -1.5, .12, .1, 14.6, wood);
+  skylight(ceiling,roomRoof.min.x,roomRoof.max.x,roomRoof.min.z,roomRoof.max.z,14.7,.24,dark,[-17,-5,-8,5]);
+  for (const x of [-17.6, -4.4]) ceiling.box(x, 14.60, -1.5, .12, .1, 14.6, wood);
   // Tea table, tray, kettle, cups and four armchairs.
   B.box(-11, 11.77, -1.5, 3.5, .16, 1.7, wood); obstacle(-11, -1.5, 3.5, 1.7);
   for (const x of [-12.35, -9.65]) for (const z of [-2.05, -.95]) B.box(x, 11, z, .14, .77, .14, dark);
