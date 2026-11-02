@@ -124,16 +124,18 @@ function carrierMesh(){
 }
 
 export function buildCarrier(layer,staticBatch){
-  const mesh=carrierMesh(),B=new BoxBatch(layer),steel={tex:'steel',tint:0x89989c},floor={tex:'wood_floor'};
+  const mesh=carrierMesh(),B=new BoxBatch(layer),steel={tex:'steel',tint:0x89989c},floor={tex:'travertine',tint:0xc5c3b5};
   let planeObstacle=()=>false;
   const slabs=[],path=[{x:35,y:0,z:8}],foot={x:35,y:0,z:8},local=new THREE.Vector3(),hit=new THREE.Vector3();
   function slab(x0,x1,y,drawEnd=x1){B.box((x0+drawEnd)/2,y-.18,8,drawEnd-x0,.18,2.8,floor);slabs.push({x0,x1,z0:6.6,z1:9.4,y,box:new THREE.Box3(new THREE.Vector3(x0,y-.18,6.6),new THREE.Vector3(x1,y,9.4))});}
   slab(35,41,.2);path.push({x:40.5,y:.2,z:8});
-  for(let i=0;i<16;i++){const x=41+i*.9,y=.4+i*.2;slab(x,x+.9,y);path.push({x:x+.45,y,z:8});}
+  for(let i=0;i<16;i++){const x=41+i*.9,y=.4+i*.2;slab(x,x+.9,y);B.box(x+.82,y+.012,8,.10,.025,2.65,{tex:'paint',tint:0xd9bc77});for(const dx of [.22,.42,.62])B.box(x+dx,y+.005,8,.025,.012,2.45,{tex:'black_metal'});path.push({x:x+.45,y,z:8});}
   slab(55.4,57.2,DECK,56.38);path.push({x:56.8,y:DECK,z:8});
   for(let x=36;x<=56;x+=2)for(const z of [6.65,9.35]){const y=x<41?.2:Math.min(DECK,.4+Math.floor((x-41)/.9)*.2);B.box(x,-2.3,z,.14,y+3.3,.14,steel);}
   for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],dx=b.x-a.x,dy=b.y-a.y;for(const z of [6.65,9.35])B.box((a.x+b.x)/2,(a.y+b.y)/2+.94,z,Math.hypot(dx,dy),.075,.075,steel,{rz:Math.atan2(dy,dx)});}
   for(const z of [6.6,9.4]){B.box(35.5,.2,z,.12,2.6,.12,steel);B.box(35.5,2.8,z,.35,.25,.35,{tex:'paint',tint:0xe4cb86});}
+  for(let x=38;x<56;x+=3){const y=x<41?.2:Math.min(DECK,.4+Math.floor((x-41)/.9)*.2);for(const z of [6.65,9.35])B.box(x,y+.95,z,.22,.12,.22,{tex:'paint',tint:0xffdf9b,emissive:.65});}
+  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];for(const z of [6.65,9.35])B.box((a.x+b.x)/2,(a.y+b.y)/2+.48,z,Math.hypot(b.x-a.x,b.y-a.y),.055,.055,steel,{rz:Math.atan2(b.y-a.y,b.x-a.x)});}
   // Static pier pieces share the furniture batch; the entire moving ship is one draw.
   for(const kind of Object.keys(B.items))staticBatch.items[kind].push(...B.items[kind]);
   function toLocal(x,z){const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return{x:dx*c-dz*s,z:dx*s+dz*c};}
@@ -168,8 +170,9 @@ export function buildCarrier(layer,staticBatch){
     setPlaneObstacle(fn){planeObstacle=fn;},
     canBoard(player){const p=toLocal(player.pos.x,player.pos.z);return Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z)&&Math.hypot(p.x-4.65,p.z-5.1)<1.6;},
     insideCabin(player){const p=toLocal(player.pos.x,player.pos.z);return Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z);},
-    updateCabin(player,camera){const p=toLocal(player.pos.x,player.pos.z),c=toLocal(camera.position.x,camera.position.z),inside=Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z);
-      mesh.userData.cabinView.value=inside&&(!inCabin(c.x,c.z)||camera.position.y>6.25)?1:0;
+    // Preserve the roof, radar and flag when someone enters the glazed wheelhouse.
+    updateCabin(){
+      mesh.userData.cabinView.value=0;
     },
     levels(x,z,out){for(const s of slabs)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'carrier',tread:true});const p=toLocal(x,z);if(onDeck(p.x,p.z))out.push({y:surfaceY(p.x,p.z),site:'carrier'});},
     obstructed(x,z,y){const p=toLocal(x,z);return planeObstacle(x,z,y)||y>=DECK-.1&&y<6.3&&obstacles.some(o=>p.x>o.x0-.05&&p.x<o.x1+.05&&p.z>o.z0-.05&&p.z<o.z1+.05)||y>=6.3&&y<8.4&&p.x>2.4&&p.x<6.9&&p.z>-3.4&&p.z<8.4;},

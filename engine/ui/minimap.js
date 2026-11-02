@@ -69,7 +69,11 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   const zooms = [2.6, 4, 6.2];
   let zoomIndex = 1;
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
-  const blips = STATIONS.map(s => ({ s, img: icon(s.id).canvas }));
+  const landmarks=[{id:'fishing',name:'钓鱼台',en:'Fishing deck',at:[-45.3,2],symbol:'⚑'},{id:'harbor',name:'航母停泊港',en:'Carrier harbor',at:[56.8,8],symbol:'⚓'}];
+  const symbolCanvas=s=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.fillStyle='#ffe6a1';g.font='26px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(s,16,16);return c;};
+  const blips = [...STATIONS.map(s => ({ s, img: icon(s.id).canvas })),...landmarks.map(s=>({s,img:symbolCanvas(s.symbol)}))];
+  const legend=document.createElement('div');legend.className='map-legend';
+  for(const s of landmarks){const label=document.createElement('span');label.textContent=`${s.symbol} ${s.name}`;legend.append(label);}root.append(legend);
 
   function fit() {
     const r = canvas.getBoundingClientRect();

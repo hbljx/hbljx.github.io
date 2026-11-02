@@ -254,7 +254,7 @@ export function createRig(camera, world) {
     // Flying above the roof counts as outside, so the roof stays on.
     const inside = player.y < HOUSE.height - 0.5 && (inHouse(p.x, p.z) || (p.x >= HOUSE.x0 - 1 && p.x < HOUSE.x1 + 1 && p.z >= HOUSE.z0 - 1 && p.z < HOUSE.z1 + 1 && player.y > 0.5));
     const camInside = inHouse(c.x, c.z) && c.y < HOUSE.height - 0.4;
-    world.setHidden('roof', inside && !camInside);
+    world.setHidden('roof', inside && !camInside && !world.preserveRoof);
     world.setHidden('wallS', inside && c.z > HOUSE.z1 + 0.5);
     world.setHidden('wallN', inside && c.z < HOUSE.z0 - 0.5);
     world.setHidden('wallE', inside && c.x > HOUSE.x1 + 0.5);

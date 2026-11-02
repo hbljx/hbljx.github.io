@@ -3,14 +3,16 @@
 // in a Minecraft skin editor can replace it: set `skin` in home.config.js to a
 // 64×64 PNG and the avatar wears that instead.
 
+import { outfits, shade } from '@world/wardrobe.js';
+const wear=outfits.male;
 const C = {
   skin: '#e8b98f', skinShade: '#d6a47c', skinDeep: '#c79670',
   hair: '#3b2a20', hairHi: '#4f392b',
   eye: '#2a211d', mouth: '#b06f5c', white: '#f4efe9',
-  hoodie: '#4f7a4a', hoodieHi: '#5e8b58', hoodieLo: '#3f6339',
-  string: '#efe6d8',
-  jeans: '#3f5b85', jeansHi: '#4a6895', jeansLo: '#36507a',
-  shoe: '#e6e3dc', shoeHi: '#f4f2ec', sole: '#9a978f',
+  hoodie: shade(wear.shirt,1), hoodieHi: shade(wear.shirt,1.16), hoodieLo: shade(wear.shirt,.8),
+  string: shade(wear.accent,1),
+  jeans: shade(wear.pants,1), jeansHi: shade(wear.pants,1.15), jeansLo: shade(wear.pants,.8),
+  shoe: shade(wear.shoe,1), shoeHi: shade(wear.shoe,1.1), sole: '#9a978f',
 };
 
 // The front of the head, row by row. Also drawn as the Dock's About icon.

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { outfits } from './wardrobe.js';
 import { createPlayer } from '@engine/world/player.js';
 import { createFemaleRoutine } from './female-routine.js';
 import { createSharedQuilt } from './quilt.js';
@@ -10,18 +11,20 @@ const hours=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-di
 // Articulated blocks share one instanced draw, including the face and long hair.
 function createWoman(){
   const root=new THREE.Group(),body=new THREE.Group(),hand=new THREE.Object3D(),blob=new THREE.Object3D();root.name='female-companion';root.add(body);body.add(hand);
-  const parts=[],skin=0xd9aa86,hair=0x3d2925,shirt=0x9a789e,pants=0x3f4d68;
+  const parts=[],skin=0xd9aa86,hair=0x3d2925,shirt=outfits.female.shirt,pants=outfits.female.pants;
   const part=(x,y,z,w,h,d,color,limb=0)=>parts.push({x,y,z,w,h,d,color,limb});
   part(0,1.02,0,.4,.65,.25,shirt);part(0,1.57,0,.44,.44,.43,skin);
   part(0,1.82,-.03,.49,.12,.48,hair);part(0,1.45,-.23,.48,.58,.1,hair);
   for(const x of [-.22,.22])part(x,1.51,0,.075,.49,.45,hair);
-  part(-.11,1.73,.225,.24,.12,.04,hair);part(.16,1.72,.25,.08,.055,.035,0xe6bc6c);
+  part(-.11,1.73,.225,.24,.12,.04,hair);part(.16,1.72,.25,.08,.055,.035,outfits.female.accent);
   for(const x of [-.1,.1]){part(x,1.6,.224,.07,.045,.025,0x28232a);part(x,1.63,.226,.09,.022,.027,hair);}
   part(0,1.47,.225,.09,.025,.025,0xa96364);
   for(const s of [-1,1]){
-    part(s*.105,.34,0,.19,.65,.22,pants,s);part(s*.105,.06,.035,.2,.12,.3,0xe2d7c5,s);
+    part(s*.105,.34,0,.19,.65,.22,pants,s);part(s*.105,.06,.035,.2,.12,.3,outfits.female.shoe,s);
     part(s*.3,1.03,0,.18,.4,.22,shirt,s*2);part(s*.3,.74,0,.17,.2,.21,skin,s*2);
   }
+  part(0,.9,.13,.40,.06,.025,outfits.female.accent);
+  part(.12,1.18,.135,.1,.13,.025,outfits.female.accent);
   const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial(),parts.length+64);mesh.receiveShadow=true;body.add(mesh);
   parts.forEach((p,i)=>mesh.setColorAt(i,new THREE.Color(p.color)));
   const dummy=new THREE.Object3D(),m=new THREE.Matrix4(),rot=new THREE.Matrix4(),inverse=new THREE.Matrix4(),color=new THREE.Color();let phase=0,swimsuit=false;
@@ -64,7 +67,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig},activities){
   const clockDate=new Date(),maleLimbs=[avatar.legL,avatar.legR,avatar.armL,avatar.armR,avatar.head];let clockAt=0,night=false;
   const atBed=p=>Math.abs(p.y-4)<.25&&Math.hypot(p.pos.x-BED.x,p.pos.z-BED.z)<.5;
   function covers(){
-    const male=maleSleep||activities.current==='sleep',state=(male?1:0)+(femaleSleep?2:0);quilts.visible=state!==0;
+    const male=maleSleep||activities.current==='sleep';world.preserveRoof=male||femaleSleep;const state=(male?1:0)+(femaleSleep?2:0);quilts.visible=state!==0;
     if(maleSleep){wakeButton.hidden=false;if(wakeButton.getAttribute('aria-label')!=='起床 · E')wakeButton.setAttribute('aria-label','起床 · E');}
     else if(sleepControl){const nearby=activities.spots.find(s=>s.id===activities.status().nearby);wakeButton.hidden=!nearby;wakeButton.setAttribute('aria-label',`${nearby?.title.split(' · ').at(-1)||'互动'} · E`);}
     sleepControl=maleSleep;

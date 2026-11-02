@@ -42,7 +42,7 @@ export function createAircraftFleet(carrier){
     };
   }
   const bodyMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});poseShader(bodyMaterial,bodyMatrices,visible);
-  const body=new THREE.Mesh(combined(),bodyMaterial);body.name='aircraft-fleet';body.frustumCulled=false;body.castShadow=body.receiveShadow=true;
+  const body=new THREE.Mesh(combined(),bodyMaterial);body.name='aircraft-fleet';body.frustumCulled=false;body.castShadow=true;body.receiveShadow=false;
   body.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking});poseShader(body.customDepthMaterial,bodyMatrices,shadow);
   const canopyMaterial=new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true});poseShader(canopyMaterial,canopyMatrices,visible);
   const canopies=new THREE.Mesh(combined(true),canopyMaterial);canopies.name='fleet-canopies';canopies.frustumCulled=false;canopies.renderOrder=3;
@@ -66,7 +66,14 @@ export function createAircraftFleet(carrier){
   function resolveField(plane,id,field){
     if(id==='carrier')return fields.get(plane);
     if(id==='home'){
-      for(const [x,z]of [[12,0],[19.7,-7.5],[19.7,0],[19.7,7.5],[10,-8],[10,8]])if(fits(plane,x,11,z,Math.PI))return{...AIRFIELD,x,z,exit:{x:x+(x>16?-1:1)*(plane.userData.halfSpan+.8),y:11,z:z+1}};
+      for(const [x,z]of [[19,0],[19,-8],[19,8]])if(fits(plane,x,11,z,Math.PI))return{...AIRFIELD,x,z,exit:{x:x+(x>16?-1:1)*(plane.userData.halfSpan+.8),y:11,z:z+1}};
+      return null;
+    }
+    if(id==='summit'){
+      for(const [dx,dz] of [[9,-5],[19,-5],[9,5],[19,5]]){
+        const x=field.x+dx,z=field.z+dz;
+        if(fits(plane,x,field.y,z,field.heading))return {...field,x,z,exit:{x:x+(dx<14?1:-1)*(plane.userData.halfSpan+.8),y:field.y,z:z+1}};
+      }
       return null;
     }
     return fits(plane,field.x,field.y,field.z,field.heading)?field:null;

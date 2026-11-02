@@ -38,7 +38,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     <div class="activity-meter" hidden aria-label="投篮力度，绿色区域命中"><i></i><b></b></div>
     <section class="activity-book" hidden><h3></h3><p></p><small></small></section>
     <canvas class="activity-game" width="320" height="180" hidden aria-label="接住金块，避开红块"></canvas>
-    <div class="activity-buttons"><button type="button" data-action="toggle"></button><button type="button" data-action="primary" hidden></button><button type="button" data-action="catapult" hidden>弹射起飞 2</button><button type="button" data-action="ski-jump" hidden>滑跃起飞 3</button><button type="button" data-action="secondary" hidden></button><button type="button" data-action="summit" hidden>山顶降落 L</button><button type="button" data-action="carrier-land" hidden>降落航母 H</button></div>
+    <div class="activity-buttons"><button type="button" data-action="toggle"></button><button type="button" data-action="primary" hidden></button><button type="button" data-action="catapult" hidden>弹射起飞</button><button type="button" data-action="ski-jump" hidden>滑跃起飞</button><button type="button" data-action="secondary" hidden></button><button type="button" data-action="summit" hidden>山顶降落 L</button><button type="button" data-action="carrier-land" hidden>降落航母 H</button></div>
     <div class="activity-pad" hidden><button type="button" data-key="a" aria-label="向左">←</button><button type="button" data-key="w" aria-label="前进">↑</button><button type="button" data-key="s" aria-label="倒车">↓</button><button type="button" data-key="d" aria-label="向右">→</button><button type="button" data-key=" " aria-label="刹车">刹车</button><button type="button" data-key="c" aria-label="降低高度" hidden>降低</button></div>`;
   document.body.append(ui);
   const controls = document.createElement('div'); controls.id = 'activity-controls'; controls.hidden = true;
@@ -391,7 +391,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       status.textContent = `${label} · ${Math.round(f.y)} 米${planeExitPending?' · 停稳后下机':''}${f.notice?' · '+f.notice:''}`;
       primary.hidden = !flight.parked; secondary.hidden = summit.hidden = carrierLand.hidden = flight.parked;
       toggle.hidden=!flight.parked;toggle.textContent='下机 E';
-      catapult.hidden=skiJump.hidden=!flight.parked||f.airport!=='carrier';primary.textContent=f.airport==='carrier'?'垂直起飞 1':'起飞';
+      catapult.hidden=skiJump.hidden=!flight.parked||f.airport!=='carrier';primary.textContent=f.airport==='carrier'?'垂直起飞':'起飞';
       hint.textContent=flight.parked?(f.airport==='carrier'?'1 垂直 · 2 弹射 · 3 滑跃 · E 下机 · 拖拽转动视角':'点击起飞 · E 下机 · 拖拽转动视角'):'W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶 · H 降落航母';
     } else if (id === 'carrier') { const c=cruise.status();primary.textContent=c.patrolling?'暂停巡航 P':'自动巡航 P';status.textContent=`${c.message} · ${Math.round(Math.abs(c.speed)*3.6)} km/h · 航程 ${Math.round(c.distance)} 米`; }
     else if (id === 'tea') status.textContent = `${sip>0?'沏茶品茗中':'茶香正好'} · 已泡 ${teaCups} 杯`;

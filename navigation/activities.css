@@ -102,3 +102,11 @@ body.reading #activity-controls,body.phone-on #activity-controls{display:none!im
   #flightPad .lift{right:max(12px,env(safe-area-inset-right));bottom:calc(236px + env(safe-area-inset-bottom))}
   body.xp-on #flightPad .lift{bottom:calc(264px + env(safe-area-inset-bottom))}
 }
+
+#activity-ui[data-activity=airplane] .activity-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#activity-ui[data-activity=airplane] .activity-buttons button{padding:9px 2px;font-size:clamp(11px,3.2vw,14px);white-space:nowrap}
+#activity-ui[data-activity=airplane] .activity-buttons [data-action=secondary]{grid-column:span 2}
+#corner #moodButton b{position:absolute;right:-5px;bottom:-4px;top:auto;min-width:26px;padding:2px 3px;background:#223d50;color:#fff;border:1px solid #bdd7df;font:700 12px/1.2 system-ui;pointer-events:none}
+#corner #moodButton b:empty{display:none}
+#minimap .map-legend{position:absolute;left:4px;bottom:28px;z-index:2;display:flex;flex-direction:column;gap:3px;font:600 10px/1.4 system-ui;color:white;pointer-events:none}
+#minimap .map-legend span{background:#142b3bd9;padding:2px 5px;border-radius:3px}

@@ -201,7 +201,7 @@ async function boot() {
     // Weather symbol plus live temperature; clear skies also reflect day/night.
     const live = data ? `${t(...condition.description)} ${Math.round(data.temperature)}°C` : status === 'off' ? t(...WEATHER_LABELS.clear) : status === 'loading' ? t('获取天气中', 'Getting the weather') : t('天气暂不可用', 'Weather unavailable');
     const now = `${weatherMode === 'auto' ? live : t(...WEATHER_LABELS[weatherMode])} · ${t(...TIME_LABELS[mood])}`;
-    $('#moodButton b').textContent = weatherMode === 'auto' && data ? `${Math.round(data.temperature)}°` : '';
+    $('#moodButton b').textContent = data ? `${Math.round(data.temperature)}°` : '';
     $('#moodButton').title = now;
     $('#moodButton').setAttribute('aria-label', t(`天气与时段：${now}`, `Weather and time: ${now}`));
     const line = weatherMenu?.querySelector('.now');

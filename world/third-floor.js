@@ -17,7 +17,7 @@ export function buildThirdFloor({ grid, layer }) {
   const overRoomRoof = (x,z,pad=0) => x>=roomRoof.min.x-pad&&x<=roomRoof.max.x+pad&&z>=roomRoof.min.z-pad&&z<=roomRoof.max.z+pad;
   const obstacle = (x, z, w, d) => barriers.push({ x0: x-w/2, x1: x+w/2, z0: z-d/2, z1: z+d/2 });
   // Replace the old skylights completely, keeping one opening in the new deck.
-  for(let x=-20;x<24;x++)for(let z=-12;z<16;z++)grid.set(x,10,z,x>=-2&&x<6&&z>=-5&&z<9?null:'roof','roof');
+  for(let x=-20;x<24;x++)for(let z=-12;z<16;z++)grid.set(x,10,z,x>=-2&&x<14&&z>=-11&&z<15?null:'roof','roof');
   function skylight(batch,x0,x1,z0,z1,y,h,look,hole){
     const [a,b,c,d]=hole;
     for(const [l,r,n,s]of [[x0,a,z0,z1],[b,x1,z0,z1],[a,b,z0,c],[a,b,d,z1]])batch.box((l+r)/2,y,(n+s)/2,r-l,h,s-n,look);
@@ -30,7 +30,7 @@ export function buildThirdFloor({ grid, layer }) {
     for(const x of [a,b])batch.box(x,top-.043,(c+d)/2,.085,.055,d-c,dark);
     for(const z of [c,d])batch.box((a+b)/2,top-.043,z,b-a-.085,.055,.085,dark);
   }
-  skylight(B,-20,24,-12,16,10.98,.08,floor,[-2,6,-5,9]);
+  skylight(B,-20,24,-12,16,10.98,.08,floor,[-2,14,-11,15]);
   // Glazed tea pavilion: solid low panels, broad windows and a usable double doorway.
   function wall(x, z, w, d) {
     B.box(x, 11, z, w, .72, d, wood); B.box(x, 14.45, z, w, .25, d, dark);
@@ -70,10 +70,13 @@ export function buildThirdFloor({ grid, layer }) {
     return makeSeat(`tea-${i}`, '三楼茶室 · 茶椅', x,11,z,11.63,yaw,[x+Math.cos(yaw)*1.05,z-Math.sin(yaw)*1.05],1.2);
   });
   // Open-air parking apron and runway markings on the eastern half.
-  B.box(12,11.065,0,9,.015,19,{tex:'paint',tint:0x576267});
-  for(const x of [7.6,16.4])B.box(x,11.085,0,.10,.01,19,china);
-  for(let z=-8;z<=8;z+=2)B.box(12,11.09,z,.14,.01,.85,china);
-  for(const z of [-8.3,8.3])for(const x of [9,10,11,13,14,15])B.box(x,11.09,z,.48,.01,.9,china);
+  B.box(19,11.065,2,9,.015,27,{tex:'paint',tint:0x576267});
+  for(const x of [14.6,23.4])B.box(x,11.085,2,.10,.01,27,china);
+  for(const z of [-8,0,8]){
+    for(const x of [15,23])B.box(x,11.09,z,.10,.01,6.8,china);
+    for(const dz of [-3.4,3.4])B.box(19,11.09,z+dz,8,.01,.10,china);
+    B.box(19,11.09,z,.12,.01,1.5,china);
+  }
   // A two-flight outside stair links the existing second-floor landing to level three.
   for(let y=4;y<7;y++)for(let z=-6;z<-4;z++)grid.set(-21,y,z,null,'wallW');
   // Keep the exposed sill as permanent floor, including when the west wall is
@@ -164,7 +167,7 @@ export function buildThirdFloor({ grid, layer }) {
       for(const s of slabs)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'third-stairs',tread:true,route:'third-stair',index:nearestIndex(x,s.y,z)});
     },
     obstructed,
-    collides(x,y,z){return obstructed(x,z,y)||overRoomRoof(x,z,.3)&&y<roomRoof.max.y-.02&&y+1.8>roomRoof.min.y||x>=-2.3&&x<=6.3&&z>=-5.3&&z<=9.3&&y<10.98&&y+1.8>10.98;},
+    collides(x,y,z){return obstructed(x,z,y)||overRoomRoof(x,z,.3)&&y<roomRoof.max.y-.02&&y+1.8>roomRoof.min.y||x>=-2.3&&x<=14.3&&z>=-11.3&&z<=15.3&&y<10.98&&y+1.8>10.98;},
     pick(ray){
       let best=null;
       // Only the upper face is a destination; looking up inside the room must
@@ -173,7 +176,7 @@ export function buildThirdFloor({ grid, layer }) {
         const t=(roomRoof.max.y-ray.origin.y)/ray.direction.y;
         if(t>=0){ray.at(t,hit);if(overRoomRoof(hit.x,hit.z))best={t,point:hit.clone(),site:'tea-roof'};}
         const lower=(11-ray.origin.y)/ray.direction.y;
-        if(lower>=0&&(!best||lower<best.t)){ray.at(lower,hit);if(hit.x>=-2&&hit.x<=6&&hit.z>=-5&&hit.z<=9)best={t:lower,point:hit.clone(),site:'roof'};}
+        if(lower>=0&&(!best||lower<best.t)){ray.at(lower,hit);if(hit.x>=-2&&hit.x<=14&&hit.z>=-11&&hit.z<=15)best={t:lower,point:hit.clone(),site:'roof'};}
       }
       for(const s of slabs){if(ray.intersectBox(s.box,hit)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:new THREE.Vector3(hit.x,s.y,hit.z),site:'third-stairs'};}}
       return best;
