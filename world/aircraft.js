@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { ROOF_PARKING } from './layout.js';
+import { ROOF_PARKING, MOUNTAIN_SITE } from './layout.js';
+
+const FLIGHT_SOUTH = MOUNTAIN_SITE.z + MOUNTAIN_SITE.r + 40;
 
 export const AIRFIELD = { id: 'home', name: '三楼停机区', x: ROOF_PARKING.x, y: 11, z: ROOF_PARKING.zs[2], heading: Math.PI, exit: { x: ROOF_PARKING.x-4.5, y: 11, z: ROOF_PARKING.zs[2]+2 } };
 
@@ -183,7 +185,7 @@ export function createFlight({ mesh, world, player, stage, sound }) {
       p.y=Math.min(78,p.y+dt*9);
       const x=p.x+Math.sin(heading)*speed*dt,z=p.z+Math.cos(heading)*speed*dt;
       // Clear nearby land before moving horizontally when the bow faces shore.
-      if(p.y>=terrainHeight(x,z,true)+2.5&&x>-170&&x<170&&z>-185&&z<170){p.x=x;p.z=z;distance+=speed*dt;}
+      if(p.y>=terrainHeight(x,z,true)+2.5&&x>-170&&x<170&&z>-185&&z<FLIGHT_SOUTH){p.x=x;p.z=z;distance+=speed*dt;}
       if(p.y>=clearance(p.x,p.z)){phase='flying';speed=Math.min(16,speed);}
     } else if (phase === 'flying') {
       if(hovering){speed=0;bank=pitch=0;mesh.rotation.set(0,heading,0);mesh.userData.propeller.rotation.z+=dt*18;anchor();sound.loop('engine',.2);return;}
@@ -196,7 +198,7 @@ export function createFlight({ mesh, world, player, stage, sound }) {
       const floor = clearance(x, z);
       const lift = hovering?0:Number(keys.has(' ')) - Number(keys.has('control') || keys.has('c'));
       p.y = clamp(p.y + (p.y < floor ? 6 : lift * 5) * dt, Math.min(p.y, floor), 78);
-      if (p.y >= floor - .05 && x > -170 && x < 170 && z > -185 && z < 170) { p.x = x; p.z = z; distance += speed * dt; }
+      if (p.y >= floor - .05 && x > -170 && x < 170 && z > -185 && z < FLIGHT_SOUTH) { p.x = x; p.z = z; distance += speed * dt; }
       else if (p.y >= floor - .05) heading += dt;
       // Sea-level decks are below the free-flight safety floor, so allow the
       // marked landing approach to take over from that safe height as well.

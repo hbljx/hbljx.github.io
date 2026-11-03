@@ -4,7 +4,7 @@ import { createPlayer } from '@engine/world/player.js';
 import { createFemaleRoutine } from './female-routine.js';
 import { createSharedQuilt } from './quilt.js';
 import { createNpcNavigator } from './npc-navigation.js';
-import { LIBRARY, BATH, createShower } from './shared-rooms.js';
+import { LIBRARY, CINEMA, BATH, createShower } from './shared-rooms.js';
 
 const BED={x:-9.8,y:4,z:-9.3},IDLE={x:0,z:0,run:false},FIVE_MINUTES=300000;
 const hours=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',hourCycle:'h23'});
@@ -65,7 +65,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   panel.innerHTML='<strong>睡前时光</strong><p role="status"></p><button type="button">取消 · E</button>';document.body.append(panel);
   const message=panel.querySelector('p'),cancel=panel.querySelector('button');cancel.addEventListener('click',wakeMale);
   let phase='idle',maleSleep=false,femaleSleep=false,reason=null,bathStarted=0,femaleWakeAt=0,bedtimeFirstPerson=false;
-  let reading=false,readArrived=false,routeClock=0,clock=0,lastMove=Date.now(),lastNight=false,nightDismissed=false,sleepControl=false;
+  let reading=false,readArrived=false,watching=false,watchArrived=false,routeClock=0,clock=0,lastMove=Date.now(),lastNight=false,nightDismissed=false,sleepControl=false;
   const wakeButton=document.querySelector('[data-control="interact"]');
   wakeButton.addEventListener('click',e=>{if(phase!=='idle'||maleSleep){e.stopImmediatePropagation();wakeMale();}},{capture:true});
   const last={x:player.pos.x,y:player.y,z:player.pos.z},clockDate=new Date();let clockAt=0,night=false;
@@ -88,6 +88,9 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   function resetBath(){shower.update(0,false);avatar.setBathing(false);femaleAvatar.setSwimsuit(false);sound.loop(null);}
   function leaveReading(){
     if(!reading)return;const wasSeated=readArrived;reading=readArrived=false;woman.cancel();if(wasSeated)woman.restore(LIBRARY.approach.x,0,LIBRARY.approach.z,0);femaleAvatar.update(0,still);routine.resume();
+  }
+  function leaveCinema(){
+    if(!watching)return;const wasSeated=watchArrived;watching=watchArrived=false;woman.cancel();if(wasSeated)woman.restore(CINEMA.approach.x,CINEMA.approach.y,CINEMA.approach.z,0);femaleAvatar.update(0,still);routine.resume();
   }
   function wakeWoman(){
     const inBed=femaleSleep;femaleSleep=false;femaleWakeAt=0;woman.cancel();femaleAvatar.setEyesClosed(false);femaleAvatar.body.rotation.set(0,0,0);femaleAvatar.body.position.set(0,0,0);
@@ -146,6 +149,18 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
     femaleAvatar.prop(0,1.05,.43,.54,.04,.34,0xf4e8ca,false,.2);
     femaleAvatar.prop(0,1.08,.43,.025,.015,.34,0xc3aa76,false,.2);femaleAvatar.endProps();
   }
+  function cinema(dt){
+    if(!watching){routine.pause();watching=true;watchArrived=false;}
+    if(!watchArrived){
+      if(!woman.travelling)navigateWoman(CINEMA.approach.x,CINEMA.approach.y,CINEMA.approach.z);
+      woman.update(dt,IDLE,0);
+      if(reached(woman,CINEMA.approach)){woman.cancel();woman.anchor(...CINEMA.female,Math.PI);watchArrived=true;}
+    }
+    activities.setSharedStatus(watchArrived?'两个人正在一起看电影':'女主正在前来，一起看电影');
+    if(!watchArrived)return;
+    femaleAvatar.root.position.set(...CINEMA.female);femaleAvatar.root.rotation.set(0,Math.PI,0);
+    pose.seated=true;pose.left=pose.right=-.35;femaleAvatar.update(dt,pose);
+  }
   let riding=null,boarding=null;
   function sharedRide(dt){
     const v=activities.ride;
@@ -178,8 +193,9 @@ routeClock+=dt;const now=Date.now();
     last.x=player.pos.x;last.y=player.y;last.z=player.pos.z;
     if(phase==='idle'&&!maleSleep&&!activities.active&&!rig.introActive&&(night&&!nightDismissed||now-lastMove>=FIVE_MINUTES))begin(night?'night':'idle');
     if(activities.current==='library'&&phase==='idle')library(dt);
+    else if(activities.current==='cinema'&&phase==='idle')cinema(dt);
     else{
-      leaveReading();
+      leaveReading();leaveCinema();
       if(phase==='to-bath'||phase==='to-bed'){
         if(routeClock>.75){routeClock=0;guide();}
         if(!femaleSleep)woman.update(dt,IDLE,0);
@@ -203,7 +219,7 @@ routeClock+=dt;const now=Date.now();
   return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,shower,
     get sleeping(){return maleSleep;},get bathing(){return phase==='bathing';},get walking(){return phase!=='idle'&&phase!=='sleeping';},
     status:()=>({phase,male:maleSleep?'sleeping':phase==='idle'?'awake':phase==='to-bath'?'going-to-bath':phase==='to-bed'?'going-to-bed':phase,
-      female:riding?(riding.passengerReady?'riding':'boarding'):femaleSleep?'sleeping':reading?(readArrived?'reading':'going-to-library'):phase==='idle'?'awake':phase,
+      female:riding?(riding.passengerReady?'riding':'boarding'):femaleSleep?'sleeping':reading?(readArrived?'reading':'going-to-library'):watching?(watchArrived?'watching-movie':'going-to-cinema'):phase==='idle'?'awake':phase,
       bathRemaining:phase==='bathing'?Math.max(0,(BATH.duration-(Date.now()-bathStarted))/1000):null,bathDuration:BATH.duration/1000,
       femaleWakeIn:femaleWakeAt?Math.max(0,(femaleWakeAt-Date.now())/1000):null,femaleActivity:routine.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
 }

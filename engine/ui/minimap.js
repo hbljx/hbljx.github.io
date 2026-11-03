@@ -184,7 +184,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       const r = big.getBoundingClientRect();
       big.width = Math.round(r.width * dpr); big.height = Math.round(r.height * dpr);
       const terrain=getLandscape();
-      const bounds={x0:Math.min(-58,ISLAND.x0-8),x1:85,z0:Math.min(ISLAND.z0-8,terrain?terrain.z-terrain.r-8:-125),z1:L.SEA_BRIDGE?182:45};
+      const bounds={x0:Math.min(-58,ISLAND.x0-8,terrain?terrain.x-terrain.r-8:0),x1:Math.max(85,terrain?terrain.x+terrain.r+8:0),z0:Math.min(ISLAND.z0-8,terrain?terrain.z-terrain.r-8:-125),z1:Math.max(L.SEA_BRIDGE?L.SEA_BRIDGE.z1+12:45,terrain?terrain.z+terrain.r+8:45)};
       const fitScale = Math.min(big.width / ((bounds.x1-bounds.x0)*mapXScale), big.height / (bounds.z1-bounds.z0)) * .86;
       view = { cx: (bounds.x0+bounds.x1)/2, cz: (bounds.z0+bounds.z1)/2, scale: fitScale, min: fitScale * 0.9, max: fitScale * 4 };
       drawBig();

@@ -200,7 +200,7 @@ export function createCruise({world,player}){
   const patrol=[[88,76],[-96,76],[-96,-128],[88,-128]];
   const samples=[];for(let z=STERN;z<=BOW;z++)for(const f of [-1,-.5,0,.5,1])samples.push([f*(widthAt(z)*.88+.25),z]);
   const bounds=(x,z)=>Math.abs(x)<=145&&z>=-145&&z<=125;
-  function water(x,z){return !(x>ISLAND.x0-1&&x<ISLAND.x1+1&&z>ISLAND.z0-1&&z<ISLAND.z1+1)&&!(x>-48.5&&x<-31&&z>-.9&&z<7.1)&&!(x>35&&x<56.45&&z>6.4&&z<9.6)&&!(Math.hypot(x-5,z+54)<36&&world.mountain.heightAt(x,z)>-1.6);}
+  function water(x,z){return !(x>ISLAND.x0-1&&x<ISLAND.x1+1&&z>ISLAND.z0-1&&z<ISLAND.z1+1)&&!(x>-48.5&&x<-31&&z>-.9&&z<7.1)&&!(x>35&&x<56.45&&z>6.4&&z<9.6)&&!(world.mountain.heightAt(x,z)>-1.6);}
   function canSail(x,z,yaw){
     if(!bounds(x,z))return false;const c=Math.cos(yaw),s=Math.sin(yaw);
     for(const [lx,lz]of samples)if(!water(x+lx*c+lz*s,z-lx*s+lz*c))return false;
@@ -212,7 +212,8 @@ export function createCruise({world,player}){
       if(Math.hypot(Math.max(x0-x,0,x-x1),Math.max(z0-z,0,z-z1))<TURN_RADIUS)return false;
     }
     // Enclose the peak and both shoulders, including their submerged skirts.
-    return Math.hypot(x-5,z+54)>TURN_RADIUS+36;
+    const mountain=world.mountain.mapShape;
+    return Math.hypot(x-mountain.x,z-mountain.z)>TURN_RADIUS+mountain.r;
   }
   function canTurn(x,z,from,to){
     const angle=turnAngle(to-from),n=Math.max(1,Math.ceil(Math.abs(angle)/.02));

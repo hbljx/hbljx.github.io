@@ -15,9 +15,13 @@ import { rng } from '@engine/world/textures.js';
 import { valueNoise } from '@engine/world/terrain.js';
 import { buildTufts } from '@engine/world/landscape.js';
 import { makeSeat } from './seats.js';
+import { MOUNTAIN_SITE } from './layout.js';
+export { MOUNTAIN_SITE as MOUNTAIN } from './layout.js';
 
 // x, z: centre; r: radius at the foot; h: height of the summit plateau.
-export const MOUNTAIN = { x: 5, z: -84.6, r: 46, h: 27 };
+// Keep the authored terrain in local coordinates so relocating it preserves
+// every tree, stream, stair, seat and summit fitting exactly.
+const MOUNTAIN = { x: 5, z: -84.6, r: 46, h: 27 };
 const PLATEAU = 12, POW = 1.25;
 const SHOULDERS = [{ x: 23, z: MOUNTAIN.z+7.1, r: 15, h: 13 }, { x: -13, z: MOUNTAIN.z+6.1, r: 14, h: 11 }];
 const BASE = -3, WIDTH = 2.2, RISER = .17, RADIUS = .3, BODY = 1.8, SUMMIT = 12, SKIRT = 1.1;
@@ -115,7 +119,7 @@ function treadAt(f, s) {
   return f.y1;
 }
 
-export function buildMountain(layer, materials) {
+function buildLocalMountain(layer, materials) {
   const root = new THREE.Group(); root.name = 'mountain';
   const seats = [];
   const M = MOUNTAIN, half = WIDTH / 2, { V, flights } = layStairs(), landings = V.slice(1), top = V.at(-1), ty = top.y;
@@ -872,5 +876,45 @@ export function buildMountain(layer, materials) {
     setPlaneObstacle(fn){planeObstacle=fn;},
     trailhead: { x: pts[0].x, z: pts[0].z },
     spots: () => [{ x: pts[0].x, z: pts[0].z }, { x: top.x, z: top.z + 1.5 }],
+  };
+}
+
+// A rigid half-turn makes the original south-facing trail face north towards
+// the bridge. Apply the same transform to geometry and all gameplay queries.
+export function buildMountain(layer, materials) {
+  const local = buildLocalMountain(layer, materials);
+  const dx = MOUNTAIN_SITE.x + MOUNTAIN.x, dz = MOUNTAIN_SITE.z + MOUNTAIN.z;
+  const point = p => ({ ...p, x: dx-p.x, z: dz-p.z });
+  const xyz = a => [dx-a[0], a[1], dz-a[2]];
+  const xz = a => [dx-a[0], dz-a[1]];
+  local.group.rotation.y = Math.PI;
+  local.group.position.set(dx, 0, dz);
+  local.group.updateMatrixWorld(true);
+  const rayLocal = new THREE.Ray(), originLocal = new THREE.Vector3(), dirLocal = new THREE.Vector3();
+  return {
+    ...local,
+    mapShape: { ...point(local.mapShape), path: local.mapShape.path.map(point) },
+    trailhead: point(local.trailhead),
+    airfield: { ...point(local.airfield), heading: local.airfield.heading+Math.PI, exit: point(local.airfield.exit) },
+    seats: local.seats.map(s => ({ ...s, at:xz(s.at), anchor:xyz(s.anchor), view:xyz(s.view), look:xyz(s.look), yaw:s.yaw+Math.PI })),
+    spots: () => local.spots().map(point),
+    heightAt: (x,z) => local.heightAt(dx-x,dz-z),
+    levels: (x,z,out) => local.levels(dx-x,dz-z,out),
+    obstructed: (x,z,y) => local.obstructed(dx-x,dz-z,y),
+    collides: (x,y,z) => local.collides(dx-x,y,dz-z),
+    route: (ax,ay,az,bx,by,bz) => local.route(dx-ax,ay,dz-az,dx-bx,by,dz-bz).map(point),
+    setPlaneObstacle(fn) { local.setPlaneObstacle((x,z,y) => fn(dx-x,dz-z,y)); },
+    pick(ray) {
+      rayLocal.origin.set(dx-ray.origin.x,ray.origin.y,dz-ray.origin.z);
+      rayLocal.direction.set(-ray.direction.x,ray.direction.y,-ray.direction.z);
+      const hit=local.pick(rayLocal);
+      if(hit)hit.point.set(dx-hit.point.x,hit.point.y,dz-hit.point.z);
+      return hit;
+    },
+    viewBlock(origin,dir,length) {
+      originLocal.set(dx-origin.x,origin.y,dz-origin.z);
+      dirLocal.set(-dir.x,dir.y,-dir.z);
+      return local.viewBlock(originLocal,dirLocal,length);
+    },
   };
 }

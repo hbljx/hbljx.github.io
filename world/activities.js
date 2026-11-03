@@ -1,5 +1,5 @@
 import { COURT, RIM, ISLAND, POOL, floorAt } from './layout.js';
-import { createActivityVisuals, paintTV } from './activity-visuals.js';
+import { createActivityVisuals, paintTV, paintCinema } from './activity-visuals.js';
 import { getSeats } from './seats.js';
 import { LIFE_SPOTS, createLifeVisuals } from './life-visuals.js';
 import { createLifeActions } from './life-actions.js';
@@ -7,12 +7,13 @@ import { setActivityControl } from '../navigation/activity-icons.js';
 import { icon } from '@engine/ui/icons.js';
 import { distanceToAirplane, createFlight } from './aircraft.js';
 import { createCruise } from './carrier.js';
-import { LIBRARY } from './shared-rooms.js';
+import { LIBRARY, CINEMA } from './shared-rooms.js';
 import { createRoadsterLights } from './roadster.js';
 
 export const ACTIVITY_SPOTS = [
   ...LIFE_SPOTS,
   {id:'library',title:'双人图书馆 · 一起看书',at:LIBRARY.at,floor:0,radius:1.8,anchor:LIBRARY.male,yaw:Math.PI,view:[-16,4.6,-17.8],look:[-20,1.1,-21.5]},
+  {id:'cinema',title:'家庭影院 · 一起看电影',at:CINEMA.at,floor:0,radius:2,anchor:CINEMA.male,yaw:Math.PI,view:[7.4,4.4,-18.65],look:[5,1.7,-24.4]},
   {id:'bath',title:'浴室 · 睡前一起沐浴',at:[-8,-17.4],floor:0,radius:1.8},
   {id:'roadster',title:'劳斯莱斯 · 白色敞篷跑车',at:[24.2,-17],floor:0,radius:1.2},
   { id: 'carrier', title: '航母驾驶舱 · 海上巡航', at: [68.65, 13.1], floor: 3.4, radius: 1.6 },
@@ -87,13 +88,14 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   let active = null, near = null, nearSeat = null, nearTitle = '', time = 0, uiClock = 0, screenClock = 0, entered = 0;
   let runMode = false, collapsed = false, controlsReady = false, stepDistance = 0, lastX = player.pos.x, lastZ = player.pos.z, lastMode = player.mode, breathClock = 0;
   let firstPerson = false, saved = null, pageIndex = 0, flip = 0, sip = 0, sips = 0;
-  let tvChannel = 0, tvTime = 0, tvPaused = false, carSpeed = 0, carHeading = Math.PI / 2, driveDistance = 0, notice = '';
+  let tvChannel = 0, tvTime = 0, tvPaused = false, cinemaTime = 0, carSpeed = 0, carHeading = Math.PI / 2, driveDistance = 0, notice = '';
   let ambient=null,ambientTime=0,ambientClock=0;
   function setAmbientActivity(id){
     ambient=id;
     // These screens are under the solid roof; skip their hidden outside view.
     const visible=world.hidden.has('roof')||stage.camera.position.y<10.9;
     visuals.tv.mesh.visible=active?.id==='tv'||visible&&id==='tv';
+    visuals.cinema.mesh.visible=active?.id==='cinema'||visible&&id==='cinema';
     visuals.monitor.mesh.visible=active?.id==='gaming'||visible&&id==='gaming';
   }
   function ambientScreens(dt){
@@ -101,6 +103,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if(!ambient||ambientClock<=.1||active?.id===ambient)return;
     ambientClock=0;
     if(ambient==='tv')paintTV(visuals.tv,ambientTime,0,false);
+    else if(ambient==='cinema')paintCinema(visuals.cinema,ambientTime);
     else{
       const c=canvas.getContext('2d');c.fillStyle='#152d43';c.fillRect(0,0,320,180);
       c.fillStyle='#e8c777';for(let i=0;i<5;i++)c.fillRect(30+i*60,(ambientTime*28+i*39)%160,12,12);
@@ -205,6 +208,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     frameActivity();
     visuals.book.visible = visuals.page.visible = isReading(spot.id);
     visuals.mug.visible = spot.id === 'coffee' || spot.id === 'tea'; visuals.tv.mesh.visible = spot.id === 'tv'; visuals.monitor.mesh.visible = spot.id === 'gaming';
+    visuals.cinema.mesh.visible = spot.id === 'cinema';
+    if (spot.id === 'cinema') paintCinema(visuals.cinema,cinemaTime);
     if (spot.id === 'gaming') resetGame();
     if (spot.id === 'coffee') { sip = 1.8; sips++; sound.effect('coffee'); }
     if (spot.id === 'tea') sip = 0;
@@ -230,7 +235,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     const wasSeat = active.kind === 'seat';
     active = null; roadsterLights.update(0,false,0); keys.clear(); carSpeed = 0; shot.charging = shot.flight = false;
     life.stop(); lifeVisuals.hide(); sound.effect(wasSeat ? 'stand' : 'stop');
-    for (const p of [visuals.ball, visuals.book, visuals.page, visuals.mug, visuals.tv.mesh, visuals.monitor.mesh]) p.visible = false;
+    for (const p of [visuals.ball, visuals.book, visuals.page, visuals.mug, visuals.tv.mesh, visuals.cinema.mesh, visuals.monitor.mesh]) p.visible = false;
     document.body.classList.remove('activity-active', 'activity-sleep');
     stage.camera.clearViewOffset();
     avatar.body.rotation.set(0, 0, 0); avatar.body.position.set(0, 0, 0); avatar.update(.5, IDLE);
@@ -379,6 +384,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     hint.textContent = 'E / Esc 或点击地面结束 · 拖拽转动视角';
     switch (s.id) {
       case 'tea': primary.hidden = false; primary.textContent = '泡茶品茗 空格'; hint.textContent = '坐在茶桌旁，按空格泡一杯茶 · 拖拽欣赏三楼景色'; break;
+      case 'cinema': hint.textContent = '两人已在沙发上 · 一起观看动画电影'; toggle.textContent = '结束观影 E'; break;
       case 'airplane': pad.hidden = primary.hidden = secondary.hidden = summit.hidden = carrierLand.hidden = false; primary.textContent = '起飞'; secondary.textContent = '回三楼 R'; toggle.textContent = '下机 E'; hint.textContent = 'V 悬停/继续 · W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶 · H 降落航母'; break;
       case 'carrier': pad.hidden = primary.hidden = secondary.hidden = false; secondary.textContent = '自动返港 R'; toggle.textContent = '停船离舵 E'; hint.textContent = 'P 自动巡航 · R 返港 · W/S 前进倒航 · A/D 转向 · 空格刹车'; break;
       case 'basketball': primary.hidden = meter.hidden = false; primary.textContent = '按住蓄力 / 松手投篮'; hint.textContent = '按住空格蓄力，绿色区松手投篮 · E 退出'; break;
@@ -418,7 +424,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     else if (id === 'tea') status.textContent = `${sip>0?'沏茶品茗中':'茶香正好'} · 已泡 ${teaCups} 杯`;
     else if (id === 'basketball') status.textContent = `${shot.points} 分 / ${shot.attempts} 次投篮${notice ? ' · ' + notice : ''}`;
     else if (id === 'sleep') status.textContent = `正在休息 · ${Math.floor(time - entered)} 秒 · 按 E 起床`;
-    else if (id === 'library') status.textContent=sharedStatus;
+    else if (id === 'library' || id === 'cinema') status.textContent=sharedStatus;
     else if (id === 'coffee') status.textContent = `已喝 ${sips} 口 · ${sip > 0 ? '慢慢品尝中' : '稍作休息，再喝一口'}`;
     else if (id === 'tv') status.textContent = `${tvChannel ? '像素体育台' : '海岸旅行台'}${tvPaused ? ' · 已暂停' : ' · 正在播放'}`;
     else if (isDriving()) status.textContent = `${Math.round(Math.abs(carSpeed) * 3.6)} km/h · ${Math.round(driveDistance)} 米 · 双人出游${notice ? ' · ' + notice : ''}`;
@@ -472,7 +478,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       else { carSpeed = 0; notice = '遇到障碍，请反向挪车后转向'; }
     }
     // The mesh faces local +X; Three.js rotates +X toward -Z for positive yaw.
-    car.rotation.set(0,carHeading-Math.PI/2,car.position.z>30&&car.position.z<70&&world.seaBridge.contains(car.position.x,car.position.z)?Math.atan(.15*Math.cos(carHeading)):0); car.updateMatrix();
+    car.rotation.set(0,carHeading-Math.PI/2,world.seaBridge.contains(car.position.x,car.position.z)?Math.atan(world.seaBridge.slope(car.position.z)*Math.cos(carHeading)):0); car.updateMatrix();
     player.anchor(car.position.x, car.position.y, car.position.z, carHeading);
     sound.loop(active.id==='roadster'?'luxury-engine':'engine', Math.abs(carSpeed) / topSpeed);
   }
@@ -523,7 +529,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     for (const limb of limbs) limb.rotation.set(0, 0, 0);
     const id = active.id;
     if (id === 'carrier') { const helm=world.carrier.helm();avatar.root.position.set(helm.x,helm.y,helm.z);avatar.armL.rotation.x = avatar.armR.rotation.x = -.65; return; }
-    if (active.kind === 'seat' || id === 'tea' || id === 'airplane' || isReading(id) || id === 'tv' || id === 'gaming' || id === 'driving' || id === 'roadster') {
+    if (active.kind === 'seat' || id === 'tea' || id === 'airplane' || isReading(id) || id === 'tv' || id === 'cinema' || id === 'gaming' || id === 'driving' || id === 'roadster') {
       avatar.root.position.y = active.kind === 'seat' ? active.seatHeight - .5625 : player.y + (id === 'airplane' ? .92 : id === 'tea' ? .0675 : id === 'driving' ? -.12 : id === 'tv' ? -.0025 : .0075);
       avatar.legL.rotation.x = avatar.legR.rotation.x = -Math.PI / 2;
       avatar.armL.rotation.x = avatar.armR.rotation.x = -.7;
@@ -535,6 +541,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       avatar.armL.rotation.x = avatar.armR.rotation.x = -1.15; avatar.armL.rotation.z = -.2; avatar.armR.rotation.z = .2; avatar.head.rotation.x = .35;
       flip = Math.max(0, flip - dt); visuals.page.rotation.z = -Math.sin(flip / .6 * Math.PI) * 2.5;
     } else if (id === 'tv') avatar.head.rotation.y = Math.sin(time * .8) * .04;
+    else if (id === 'cinema') avatar.head.rotation.y = Math.sin(time * .5) * .025;
     else if (id === 'coffee' || id === 'tea') {
       sip = Math.max(0, sip - dt); const lift = Math.sin(sip / 1.8 * Math.PI);
       avatar.armR.rotation.x = -.9 - lift * 1.3; avatar.armR.rotation.z = .3; avatar.head.rotation.x = -.1 * lift;
@@ -613,9 +620,10 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (active.id === 'gaming') gaming(dt);
     life.update(dt);
     if (active.id === 'tv') { if (!tvPaused) tvTime += dt; sound.loop(tvPaused ? null : 'tv', .5); }
+    if (active.id === 'cinema') cinemaTime += dt;
     if (active.id === 'sleep') { breathClock += dt; if (breathClock > 3) { breathClock = 0; sound.effect('sleep'); } }
     pose(dt);
-    if (screenClock > .1) { screenClock = 0; if (active.id === 'tv') paintTV(visuals.tv, tvTime, tvChannel, tvPaused); if (active.id === 'gaming') drawGame(); }
+    if (screenClock > .1) { screenClock = 0; if (active.id === 'tv') paintTV(visuals.tv, tvTime, tvChannel, tvPaused); if (active.id === 'cinema') paintCinema(visuals.cinema,cinemaTime); if (active.id === 'gaming') drawGame(); }
     if (uiClock > .25) { uiClock = 0; updateStatus(); }
   }
   function vehicleStatus(id) {

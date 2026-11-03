@@ -3,8 +3,8 @@
 export function createNpcNavigator(woman,world,nav){
   const upper=()=>woman.island==='roof'||woman.island==='third-stairs';
   function go(x,y,z){
-    if(woman.island==='sea-bridge'){const b=world.seaBridge;if(b.contains(x,z))return woman.follow(b.route(woman.pos.x,woman.pos.z,x,z));return woman.follow(b.route(woman.pos.x,woman.pos.z,b.foot.x,b.foot.z),null,()=>{woman.teleport(b.foot.x,b.foot.z);go(x,y,z);});}
-    if(world.seaBridge.contains(x,z))return woman.follow(world.seaBridge.route(24,26,x,z),world.seaBridge.foot);
+    const landscape=world.travelLandscape(woman,world,nav,x,z,y,()=>go(x,y,z));
+    if(landscape!==null)return landscape;
     if(woman.swimming)return woman.leavePool(x,z,()=>go(x,y,z));
     // The bottom stair overlaps the house floor. Rejoin the navigation grid
     // there before looking at the site's name, or arrival can requeue itself.

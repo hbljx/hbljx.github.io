@@ -4,6 +4,10 @@ export const LIBRARY = {
   at: [-21.5, -19.25], male: [-21.5, 0, -20.5], female: [-18.5, 0, -20.5],
   approach: {x:-18.5,y:0,z:-19.25},
 };
+export const CINEMA = {
+  at: [7.4, -19.55], male: [4.15, 0, -22.1], female: [5.85, 0, -22.1],
+  approach: { x: 7.4, y: 0, z: -20.15 }, screen: [5, 2.115, -26.04],
+};
 export const BATH = { male:{x:-10.7,y:0,z:-25.5}, female:{x:-7.2,y:0,z:-25.5}, duration:300000 };
 
 // All fixtures join the existing furniture batches; partitions use their real
@@ -57,6 +61,11 @@ export function buildSharedRooms(B, obstacles, lighting) {
   partition(-11,-18.45,4,.16,3.25,stone);
   partition(-5.1,-18.45,3.8,.16,3.25,stone);
   partition(-3.2,-23.05,.16,9.3,3.25,stone);
+  // The cinema shares the bathroom wall and opens to the hall at its south end.
+  partition(11,-23.05,.16,9.3,3.25,stone);
+  partition(3.55,-27.7,13.5,.16,3.25,stone);
+  partition(1.275,-18.4,8.95,.16,3.25,stone);
+  partition(10,-18.4,2,.16,3.25,stone);
   for(const x of [-10.7,-7.2]){
     B.box(x,.03,-25.55,2.8,.035,3.05,ivory);
     B.box(x,0,-26.9,2.8,2.9,.12,{tex:'paint',tint:0x8bada6});
@@ -89,6 +98,47 @@ export function buildSharedRooms(B, obstacles, lighting) {
   B.box(-11.7,.49,-19.8,.65,.52,.18,ivory);foot(-11.7,-19.5,.72,.92);
   B.box(-12.45,.65,-19.5,.08,.22,.24,{tex:'linen'});
   for(let i=0;i<3;i++)B.box(-5.4,.06+i*.13,-19,.75,.11,.42,{tex:'linen'});
+  // Cheerful bath toys and wall accents, kept low-poly and inside the wet area.
+  const bathTints=[0xff8a75,0xffd56a,0x74c9c4];
+  for(let i=0;i<3;i++){
+    const x=-12.1+i*.62;
+    B.box(x,.52,-22.2,.42,.28,.35,{tex:'paint',tint:bathTints[i]});
+    B.box(x,.69,-22.2,.28,.12,.24,{tex:'paint',tint:bathTints[i]});
+    B.box(x-.08,.75,-22.05,.045,.045,.035,{tex:'paint',tint:0x282c30});
+    B.box(x+.08,.75,-22.05,.045,.045,.035,{tex:'paint',tint:0x282c30});
+  }
+  B.box(-12.88,2.35,-23.3,.035,.54,1.1,{tex:'paint',tint:0x78bfc5});
+  B.box(-12.84,2.35,-23.3,.04,.13,.38,{tex:'paint',tint:0xffd56a});
+  B.box(-12.82,2.35,-23.83,.04,.24,.34,{tex:'paint',tint:0xff8a75});
+  B.box(-12.82,2.35,-22.77,.04,.24,.34,{tex:'paint',tint:0xff8a75});
+  B.box(-12.82,2.47,-23.04,.04,.09,.09,{tex:'paint',tint:0xffffff});
+  B.box(-12.79,2.47,-23.04,.04,.045,.045,{tex:'paint',tint:0x26333a});
+  B.box(-9.15,.65,-22.18,.42,.22,.34,{tex:'paint',tint:0xffd447});
+  B.box(-8.98,.82,-22.18,.22,.22,.22,{tex:'paint',tint:0xffd447});
+  B.box(-8.83,.82,-22.05,.16,.08,.12,{tex:'paint',tint:0xff8a38});
+  B.box(-8.95,.87,-22.06,.045,.045,.04,{tex:'paint',tint:0x26333a});
+
+  // Cinema lounge occupies the room east of the bathroom; the south doorway
+  // and a broad central aisle remain clear for walking and camera movement.
+  B.box(4.05,.008,-22.65,13.7,.025,9.2,{tex:'paint',tint:0x26343b});
+  B.box(3.55,0,-27.48,13.5,.12,.36,{tex:'paint',tint:0x12181e});
+  B.box(3.55,3.25,-27.48,13.5,.12,.36,{tex:'paint',tint:0x12181e});
+  B.box(-3.12,0,-23.05,.12,.12,9.3,{tex:'paint',tint:0x12181e});
+  B.box(10.93,0,-23.05,.12,.12,9.3,{tex:'paint',tint:0x12181e});
+  B.box(5,0,-26.25,7.2,.2,.42,{tex:'steel'});
+  B.box(5,.2,-26.25,6.75,4.05,.24,{tex:'paint',tint:0x151b20});
+  B.box(5,.34,-26.08,6.25,3.55,.035,{tex:'paint',tint:0x242d36,emissive:.3});
+  // A wide two-seat sofa faces the screen. Its center gap marks both seats.
+  B.box(5,.12,-22.05,4.25,.24,1.25,{tex:'velvet'});foot(5,-22.05,4.35,1.35);
+  B.box(5,.39,-21.58,4.25,.55,.28,{tex:'velvet'});
+  B.box(2.94,.38,-22.05,.28,.56,1.18,{tex:'velvet'});
+  B.box(7.06,.38,-22.05,.28,.56,1.18,{tex:'velvet'});
+  for(const x of [4.08,5.92])B.box(x,.4,-22.05,1.68,.34,1.05,{tex:'paint',tint:0x526b67});
+  B.box(4.05,0,-25.05,.36,.12,.36,{tex:'paint',tint:0xffc766,emissive:1});
+  B.box(5.95,0,-25.05,.36,.12,.36,{tex:'paint',tint:0x75c7c4,emissive:1});
+  B.box(5,.015,-20.45,3.3,.04,.62,{tex:'paint',tint:0x364246});
+  for(const x of [3.65,6.35]){B.box(x,.05,-20.45,.12,.1,.12,{tex:'paint',tint:0xd4aa63});foot(x,-20.45,.2,.2);}
+  lighting.push({id:'cinema',position:[5,3.2,-23.5],power:2.2,radius:7,direction:null});
   lighting.push({id:'library-reading',position:[-20,3,-22],power:4,radius:8,direction:null},
     {id:'bathroom',position:[-8,3,-23],power:4,radius:7,direction:null});
   return {id:'interior-partitions',levels(){},collides(x,y,z){

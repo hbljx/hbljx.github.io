@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CINEMA } from './shared-rooms.js';
 
 // Tiny merged props use the existing block style and add no lights.
 function boxes(parts) {
@@ -41,8 +42,28 @@ export function createActivityVisuals(scene, avatar, gameCanvas) {
   mug.position.set(0, .2, .055); mug.visible = false; avatar.hand.add(mug);
   const tvCanvas = Object.assign(document.createElement('canvas'), { width: 320, height: 180 });
   const tv = screen(scene, tvCanvas, 3.6, 2, -2.864, 2.05, -3.2, Math.PI / 2);
+  const cinemaCanvas = Object.assign(document.createElement('canvas'), { width: 480, height: 270 });
+  const cinema = screen(scene, cinemaCanvas, 6.15, 3.5, ...CINEMA.screen);
+  cinema.mesh.name = 'cinema-screen';
   const monitor = screen(scene, gameCanvas, 1.47, .55, 2.13, 1.65, -11.128);
-  return { ball, book, page, mug, tv, monitor };
+  return { ball, book, page, mug, tv, cinema, monitor };
+}
+export function paintCinema(cinema,time,paused=false){
+  const c=cinema.ctx,w=480,h=270,t=time*.72;
+  c.fillStyle='#78c9df';c.fillRect(0,0,w,h);
+  c.fillStyle='#fff1a6';c.beginPath();c.arc(378,77,34,0,Math.PI*2);c.fill();
+  c.fillStyle='#f8fbef';
+  for(const [x,y,s] of [[62,60,1],[210,42,.7],[284,92,.55]]){c.beginPath();c.arc(x,y,17*s,Math.PI,Math.PI*2);c.arc(x+20*s,y-8*s,22*s,Math.PI,Math.PI*2);c.arc(x+43*s,y,16*s,Math.PI,Math.PI*2);c.fillRect(x,y-1,43*s,17*s);c.fill();}
+  c.fillStyle='#438b72';c.beginPath();c.moveTo(0,170);c.lineTo(80,120);c.lineTo(142,169);c.lineTo(216,112);c.lineTo(305,173);c.lineTo(385,126);c.lineTo(480,177);c.lineTo(480,221);c.lineTo(0,221);c.fill();
+  c.fillStyle='#268fa8';c.fillRect(0,174,w,96);
+  c.fillStyle='#a9e7dc';for(let i=0;i<7;i++){const x=((i*87-t*36)%560+560)%560-40;c.fillRect(x,195+(i%3)*19,48,3);c.fillRect(x+22,231+(i%2)*14,32,2);}
+  const boatX=35+((t*42)%400),boatY=166+Math.sin(t*2)*3;
+  c.fillStyle='#af5947';c.beginPath();c.moveTo(boatX,boatY);c.lineTo(boatX+64,boatY);c.lineTo(boatX+52,boatY+18);c.lineTo(boatX+12,boatY+18);c.fill();
+  c.fillStyle='#fff4d0';c.fillRect(boatX+30,boatY-40,3,39);c.beginPath();c.moveTo(boatX+28,boatY-38);c.lineTo(boatX+3,boatY-7);c.lineTo(boatX+28,boatY-7);c.fill();
+  c.fillStyle='#182b39';c.fillRect(0,0,w,36);c.fillRect(0,h-27,w,27);
+  c.fillStyle='#fff4d0';c.font='bold 19px sans-serif';c.fillText('海岛奇遇',15,25);
+  c.font='13px sans-serif';c.fillText(paused?'已暂停 · 按 E 结束':'动画电影放映中',w-145,h-9);
+  cinema.texture.needsUpdate=true;
 }
 export function paintTV(tv, time, channel, paused) {
   const c = tv.ctx; c.fillStyle = channel ? '#acd2de' : '#152d43'; c.fillRect(0, 0, 320, 180);

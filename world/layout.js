@@ -7,6 +7,8 @@ export const ISLAND = { x0: -36, x1: 38, z0: -42, z1: 31 };
 // 56 x 44 m = 2,464 m², twice the original 44 x 28 m footprint.
 // The walls occupy the ring of cells just outside the interior.
 export const SEA_BRIDGE={x:24,z0:26,z1:170,width:10};
+// The complete mountain faces the bridge's far landing.
+export const MOUNTAIN_SITE={x:SEA_BRIDGE.x,z:SEA_BRIDGE.z1+46,r:46,h:27};
 
 export const HOUSE = { x0: -26, x1: 30, z0: -28, z1: 16, height: 10 };
 
@@ -38,7 +40,9 @@ export const ROOF_LADDER = { x: HOUSE.x1+1.65, z: 14.5, top: HOUSE.height+1, gat
 // its east wall (x = -17) holds a two-block door at z = -10.
 export const SECRET = { x0: -20, x1: -17, z0: -12, z1: -9, door: -10 };
 
-export const GARAGE = { x0: 11, x1: 30, z0: -28, z1: 3, door: { z0: -9, z1: -4 }, glassDoor: { z0: -3, z1: -1 } };
+// The main east-facing garage opening is now ten metres wide so a full-size
+// vehicle can turn through it without clipping the frame.
+export const GARAGE = { x0: 11, x1: 30, z0: -28, z1: 3, door: { z0: -11.5, z1: -1.5 }, glassDoor: { z0: -3, z1: -1 } };
 // The water stands just below the deck; the floor (`bed`) is deep enough to dive to.
 export const POOL = { x0: -13, x1: 3, z0: 24, z1: 30, water: -0.22, bed: -3 };
 // The pool ladder on the house side: its rails straddle x0..x1 and its rungs
@@ -76,10 +80,9 @@ export const STATIONS = [
   { id: 'lab', name: '工具车库', en: 'Workshop', at: [15.5, -4.5], look: [15.5, -6.5] },
   { id: 'coffee', name: '音乐咖啡吧', en: 'Music cafe', at: [8, 13.3], look: [8, 14.8] },
   { id: 'pool', name: '社区花园', en: 'Community garden', at: [-5, 22.6], look: [-5, 27] },
-  // The foot of the mountain path at the north point. No page of its own: the
-  // camera rises over the roof to show the whole mountain until a key is pressed.
-  { id: 'mountain', name: '后山', en: 'Mountain', at: [5, -37.7], look: [5, -70], page: false,
-    show: [[5, 40, 12], [5, 14, -63]], showPortrait: [[5, 68, 36], [5, 15, -65]] },
+  // The mountain entrance now sits at the far end of the sea bridge.
+  { id: 'mountain', name: '后山', en: 'Mountain', at: [SEA_BRIDGE.x, SEA_BRIDGE.z1-1], look: [MOUNTAIN_SITE.x, MOUNTAIN_SITE.z], page: false,
+    show: [[100, 65, 125], [24, 14, 209]], showPortrait: [[115, 95, 88], [24, 14, 205]] },
   // On the terrace; the phone's mail card opens it too.
   { id: 'mailbox', name: '小屋指南', en: 'Guide', icon: 'mail', at: [WELCOME.x, WELCOME.z + 1.2], look: [WELCOME.x, WELCOME.z] },
   // In front of the portal: walk in, click it, or press F here, to visit other worlds.
@@ -112,10 +115,10 @@ export const FOREST = [
   [-33,-4],[-34,20],[-13,-17],[22,-21],[-22,-23],[-18,-17],
 ];
 
-// The baked lamp light covers the house (min corner, size in metres, texels).
-export const LIGHT_VOLUME = { min: [-28, -1, -30], extent: [60, 12, 48], size: [60, 16, 48] };
+// Baked lamp light covers the house and bridge at the original texel density.
+export const LIGHT_VOLUME = { min: [-28, -1, -30], extent: [66, 12, 202], size: [66, 16, 202] };
 // The weather's shelter map covers the island, the mountain and the pier.
-export const SHELTER = { x0: -64, z0: -144, w: 144, d: 192 };
+export const SHELTER = { x0: -64, z0: -52, w: 144, d: 324 };
 // Flying out of the house goes through the front doors.
 export const DOORWAY = [{ x: 0.5, y: 1, z: 15 }, { x: 0.5, y: 1.2, z: 18 }];
 export const EXIT = { x: 0.5, z: 18.6 };

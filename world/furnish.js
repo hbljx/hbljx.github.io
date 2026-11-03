@@ -91,7 +91,8 @@ export function furnish({ layer }) {
   for(const [a,b] of [[HOUSE.z0,-6],[-4,HOUSE.z1]])glazing(batches.wallW,HOUSE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
   glazing(batches.wallW,HOUSE.x0-.02,-5,2,7,3,Math.PI/2,true);
   for(const [a,b] of [[HOUSE.z0,GARAGE.door.z0],[GARAGE.door.z1,HOUSE.z1]])glazing(batches.wallE,HOUSE.x1+.02,(a+b)/2,b-a,0,10,Math.PI/2);
-  glazing(batches.wallE,HOUSE.x1+.02,-6.5,5,4,6,Math.PI/2,true);
+  const garageDoorCenter=(GARAGE.door.z0+GARAGE.door.z1)/2,garageDoorWidth=GARAGE.door.z1-GARAGE.door.z0;
+  glazing(batches.wallE,HOUSE.x1+.02,garageDoorCenter,garageDoorWidth,0,4,Math.PI/2,true);
   for(const [a,b] of [[GARAGE.z0,GARAGE.glassDoor.z0],[GARAGE.glassDoor.z1,GARAGE.z1]])glazing(B,GARAGE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
   glazing(B,GARAGE.x0-.02,-2,2,3,7,Math.PI/2,true);
   glazing(B,(GARAGE.x0-1+GARAGE.x1)/2,GARAGE.z1+.02,GARAGE.x1-GARAGE.x0+1,3,7);
