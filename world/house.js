@@ -118,8 +118,10 @@ export function buildShell(grid) {
   for (let y = 0; y < height; y++) {
     for (let z = GARAGE.z0; z < GARAGE.z1; z++) {
       const door = z >= GARAGE.glassDoor.z0 && z < GARAGE.glassDoor.z1 && y < 3;
-      const clearAisle = y < 4 && z >= -15 && z < -10;
-      grid.set(GARAGE.x0 - 1, y, z, door || clearAisle ? null : 'glass');
+      // Keep the car/living-room divider on the same voxel-glass surface as
+      // the neighboring garage panes; the former clear aisle left a visibly
+      // different overlay when a furniture glass panel was placed beside it.
+      grid.set(GARAGE.x0 - 1, y, z, door ? null : 'glass');
     }
     for (let x = GARAGE.x0 - 1; x < GARAGE.x1; x++) grid.set(x, y, GARAGE.z1, y < 3 ? 'brick' : 'glass');
   }

@@ -33,7 +33,7 @@ export function build({ grid, layer, materials, stage }) {
   // The garage approach shares the surrounding grass-and-dirt shore. These
   // voxels own both its visible surface and collision, with no overlapping
   // road boxes along the coast. Keep the filled route to the bridge solid.
-  for (const [x0, z0, x1, z1] of [[31, -10, 38, 30], [19, 22, 31, 31]]) {
+  for (const [x0, z0, x1, z1] of [[31, -10, 38, 30], [19, 22, 31, 26]]) {
     grid.fill(x0,-2,z0,x1,-1,z1,'dirt');
     grid.fill(x0,-1,z0,x1,0,z1,'grass');
   }

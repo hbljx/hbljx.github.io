@@ -23,7 +23,10 @@ export function buildSharedRooms(B, obstacles, lighting) {
   }
   const darkFrame={tex:'black_metal'};
   function doorFrame(x,z,width){
-    for(const dx of [-width/2,width/2])B.box(x+dx,0,z,.09,3,.16,darkFrame);
+    for(const dx of [-width/2,width/2]){
+      B.box(x+dx,0,z,.09,3,.16,darkFrame);
+      foot(x+dx,z,.12,.2);
+    }
     B.box(x,2.91,z,width+.09,.09,.16,darkFrame);
   }
   function openDoor(x,z,width,hingeSide=1){
@@ -43,15 +46,6 @@ export function buildSharedRooms(B, obstacles, lighting) {
   const endWidth = STUDIO_WALL_END - Math.floor(STUDIO_WALL_END);
   if (endWidth > 0) partition(STUDIO_WALL_END - endWidth / 2, -12.5, endWidth, 1, 4,
     { tex: 'wood_panel', top: 'steel', bottom: 'black_metal' });
-  // Restore the clear aisle beside the studio display wall.
-  partition(10.99,-12.5,.08,5,4,glass);
-  // The lounge-to-garage sightline uses the same glazed divider. Keep the
-  // pane on the existing divider line so the vehicle bay and living room do
-  // not leave an unglazed rectangular gap between the timber bays.
-  partition(10.99,-6.5,.08,5,4,glass);
-  const dividerFrame = { tex: 'black_metal' };
-  for (const z of [-9, -4]) B.box(10.92, 0, z, .07, 4, .08, dividerFrame);
-  for (const y of [0, 3.93]) B.box(10.92, y, -6.5, .07, .07, 5, dividerFrame);
 
   // Library: two banks of actual books, a shared desk and two reading chairs.
   B.box(-20,0,-22.4,10.9,.018,9.4,{tex:'parquet'});
@@ -97,16 +91,16 @@ export function buildSharedRooms(B, obstacles, lighting) {
   partition(1.275,-18.4,8.95,.16,3.25,stone);
   partition(10,-18.4,2,.16,3.25,stone);
   // Both rooms have a clear glazed ceiling below the house's taller roof.
-  B.box(-8,3.35,-23.05,9.8,.08,9.2,glass);
-  B.box(5.05,4.4,-23.05,9.75,.08,9.2,glass);
-  glassRoofFrame(-8,-23.05,9.8,9.2,3.4);
-  glassRoofFrame(5.05,-23.05,9.75,9.2,4.45);
+  B.box(-8,3.25,-23.05,9.8,.08,9.3,glass);
+  B.box(3.55,3.25,-23.05,13.5,.08,9.3,glass);
+  glassRoofFrame(-8,-23.05,9.8,9.3,3.25);
+  glassRoofFrame(3.55,-23.05,13.5,9.3,3.25);
   // The north wall openings remain open for circulation; each has a visible
   // wood leaf and a dark frame so the door is readable against the stone.
-  doorFrame(-8,-18.45,2);
-  openDoor(-9,-18.45,2,1);
-  doorFrame(7.4,-18.4,2.4);
-  openDoor(6.2,-18.4,2.4,-1);
+  doorFrame(-8,-18.25,2);
+  openDoor(-9,-18.25,2,1);
+  doorFrame(7.4,-18.2,2.4);
+  openDoor(6.2,-18.2,2.4,-1);
   for(const x of [-10.7,-7.2]){
     B.box(x,.03,-25.55,2.8,.035,3.05,ivory);
     B.box(x,0,-26.9,2.8,2.9,.12,{tex:'paint',tint:0x8bada6});

@@ -88,7 +88,14 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     const bx = Math.floor(x), bz = Math.floor(z);
     if (!grid || solidAt(bx, -1, bz)) best = { y: 0, island: null, landable: false };
     const raised = nav.heightAt(x, z);
-    if (raised > 0.05 && raised <= top + 0.01 && (!grid || solidAt(bx, Math.floor(raised + 0.01) - 1, bz))) best = { y: raised, island: null, landable: false };
+    // Stair treads are rendered furniture rather than voxel blocks. Keep their
+    // analytic navigation height as a flight floor so descending over the stair
+    // does not pass through the visible steps and drop to the lower floor.
+    const onStairs = L.onStairs?.(x, z);
+    if (raised > 0.05 && raised <= top + 0.01 &&
+      (onStairs || !grid || solidAt(bx, Math.floor(raised + 0.01) - 1, bz))) {
+      best = { y: raised, island: null, landable: false };
+    }
     const g = ground?.topAt(x, z, top);
     if (g && g.y >= best.y) best = { y: g.y, island: g.site, landable: false };
     best.landable = best.island ? !!ground.canStand(x, z, best.y) : best.y > SEA && nav.canStand(x, z) && Math.abs(nav.heightAt(x, z) - best.y) < 0.3;
@@ -166,13 +173,8 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     if (mode !== 'ground') return;
     mode = 'air'; vy = JUMP;
   }
-  function standingOnBridge() {
-    if (island === 'sea-bridge') return true;
-    return ground?.topAt(pos.x, pos.z, y + .75)?.site === 'sea-bridge';
-  }
   function startFlying() {
     if (mode === 'fly') return true;
-    if (standingOnBridge()) return false;
     const fromWater = leaveWater(0.7);
     cancel(); ladder = null; mode = 'fly'; island = null; standing = null; velocity.set(0, 0, 0); vy = 0; zip = null; web.visible = false;
     // Out of the pool in a burst, so the player does not drop straight back in.
