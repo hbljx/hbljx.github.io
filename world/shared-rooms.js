@@ -66,6 +66,9 @@ export function buildSharedRooms(B, obstacles, lighting) {
   partition(3.55,-27.7,13.5,.16,3.25,stone);
   partition(1.275,-18.4,8.95,.16,3.25,stone);
   partition(10,-18.4,2,.16,3.25,stone);
+  // Both rooms have a clear glazed ceiling below the house's taller roof.
+  B.box(-8,3.35,-23.05,9.8,.08,9.2,glass);
+  B.box(5.05,4.4,-23.05,9.75,.08,9.2,glass);
   for(const x of [-10.7,-7.2]){
     B.box(x,.03,-25.55,2.8,.035,3.05,ivory);
     B.box(x,0,-26.9,2.8,2.9,.12,{tex:'paint',tint:0x8bada6});
@@ -128,6 +131,15 @@ export function buildSharedRooms(B, obstacles, lighting) {
   B.box(5,0,-26.25,7.2,.2,.42,{tex:'steel'});
   B.box(5,.2,-26.25,6.75,4.05,.24,{tex:'paint',tint:0x151b20});
   B.box(5,.34,-26.08,6.25,3.55,.035,{tex:'paint',tint:0x242d36,emissive:.3});
+  // Film-reel motif and framed stills make the side wall read as a cinema.
+  for(const z of [-25.55,-23.05,-20.55]){
+    B.box(10.78,2.05,z,.055,1.65,1.7,{tex:'paint',tint:0x182229});
+    B.box(10.735,2.05,z,.025,1.38,1.42,{tex:'paint',tint:z===-23.05?0xb45e48:0x668b87,emissive:.18});
+    for(const y of [1.2,2.9])B.box(10.69,y,z,.06,.08,1.78,brass);
+    for(const dz of [-.85,.85])B.box(10.69,2.05,z+dz,.06,1.78,.08,brass);
+  }
+  B.box(5,3.02,-27.25,4.8,.26,.08,{tex:'paint',tint:0xd7b46d,emissive:.75});
+  for(const x of [3.1,6.9])B.box(x,2.02,-27.2,.12,.12,.08,{tex:'paint',tint:0xc85c4c,emissive:.6});
   // A wide two-seat sofa faces the screen. Its center gap marks both seats.
   B.box(5,.12,-22.05,4.25,.24,1.25,{tex:'velvet'});foot(5,-22.05,4.35,1.35);
   B.box(5,.39,-21.58,4.25,.55,.28,{tex:'velvet'});

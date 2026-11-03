@@ -69,7 +69,8 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   const zooms = [2.6, 4, 6.2];
   let zoomIndex = 1;
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
-  const landmarks=[{id:'fishing',name:'钓鱼台',en:'Fishing deck',at:[-45.3,2],symbol:'⚑'},{id:'harbor',name:'航母停泊港',en:'Carrier harbor',at:[56.8,8],symbol:'⚓'}];
+  const harborZ=L.SEA_BRIDGE?(L.SEA_BRIDGE.z0+L.SEA_BRIDGE.z1)/2:98;
+  const landmarks=[{id:'fishing',name:'钓鱼台',en:'Fishing deck',at:[-45.3,2],symbol:'⚑'},{id:'harbor',name:'航母停泊港',en:'Carrier harbor',at:[56.8,harborZ],symbol:'⚓'}];
   const symbolCanvas=s=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.fillStyle='#ffe6a1';g.font='26px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(s,16,16);return c;};
   const blips = [...STATIONS.map(s => ({ s, img: icon(s.icon || s.id).canvas })),...landmarks.map(s=>({s,img:symbolCanvas(s.symbol)}))];
 
@@ -239,8 +240,8 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     }
     bctx.drawImage(mapImage, ox, oz, mapImage.width * s * mapXScale / PPM, mapImage.height * s / PPM);
     if(L.SEA_BRIDGE){bctx.strokeStyle='#526477';bctx.lineWidth=10*s*mapXScale;bctx.beginPath();bctx.moveTo(...P(24,26));bctx.lineTo(...P(24,160));bctx.stroke();const bp=P(15,150);bctx.fillStyle='#526477';bctx.fillRect(bp[0],bp[1],18*s*mapXScale,20*s);bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('海上观景大桥',...P(24,130));}
-    bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));bctx.moveTo(...P(35,8));bctx.lineTo(...P(57,8));bctx.stroke();
-    bctx.fillStyle='#52636e';const dock=P(56.4,-24);bctx.fillRect(dock[0],dock[1],15.2*s*mapXScale,65*s);
+    bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));if(L.SEA_BRIDGE){bctx.moveTo(...P(29,harborZ));bctx.lineTo(...P(57,harborZ));}bctx.stroke();
+    bctx.fillStyle='#52636e';const dock=P(56.4,harborZ-32.5);bctx.fillRect(dock[0],dock[1],15.2*s*mapXScale,65*s);
     bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;
     bctx.textAlign = 'left'; bctx.textBaseline = 'middle';
     for (const { s: st, img } of blips) {

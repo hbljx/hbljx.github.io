@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
-import { ISLAND } from './layout.js';
+import { ISLAND, SEA_BRIDGE } from './layout.js';
 
-const HOME={x:64,z:8,heading:0},DECK=3.4;
+const DOCK_Z=(SEA_BRIDGE.z0+SEA_BRIDGE.z1)/2;
+const HOME={x:64,z:DOCK_Z,heading:0},DECK=3.4;
 const STERN=-32,BOW=33,TURN_RADIUS=36,PORT_CLEARANCE=40;
 const sections=[[STERN,5.9],[-29,9.5],[-21,9.5],[-18,7.6],[22,7.6],[29,6.3],[BOW,4.8]];
 const deckY=()=>DECK;
@@ -129,16 +130,16 @@ function carrierMesh(){
 export function buildCarrier(layer,staticBatch){
   const mesh=carrierMesh(),B=new BoxBatch(layer),steel={tex:'steel',tint:0x89989c},floor={tex:'travertine',tint:0xc5c3b5};
   let planeObstacle=()=>false;
-  const slabs=[],path=[{x:35,y:0,z:8}],foot={x:35,y:0,z:8},local=new THREE.Vector3(),hit=new THREE.Vector3();
-  function slab(x0,x1,y,drawEnd=x1){B.box((x0+drawEnd)/2,y-.18,8,drawEnd-x0,.18,2.8,floor);slabs.push({x0,x1,z0:6.6,z1:9.4,y,box:new THREE.Box3(new THREE.Vector3(x0,y-.18,6.6),new THREE.Vector3(x1,y,9.4))});}
-  slab(35,41,.2);path.push({x:40.5,y:.2,z:8});
-  for(let i=0;i<16;i++){const x=41+i*.9,y=.4+i*.2;slab(x,x+.9,y);B.box(x+.82,y+.012,8,.10,.025,2.65,{tex:'paint',tint:0xd9bc77});for(const dx of [.22,.42,.62])B.box(x+dx,y+.005,8,.025,.012,2.45,{tex:'black_metal'});path.push({x:x+.45,y,z:8});}
-  slab(55.4,57.2,DECK,56.38);path.push({x:56.8,y:DECK,z:8});
-  for(let x=36;x<=56;x+=2)for(const z of [6.65,9.35]){const y=x<41?.2:Math.min(DECK,.4+Math.floor((x-41)/.9)*.2);B.box(x,-2.3,z,.14,y+3.3,.14,steel);}
-  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],dx=b.x-a.x,dy=b.y-a.y;for(const z of [6.65,9.35])B.box((a.x+b.x)/2,(a.y+b.y)/2+.94,z,Math.hypot(dx,dy),.075,.075,steel,{rz:Math.atan2(dy,dx)});}
-  for(const z of [6.6,9.4]){B.box(35.5,.2,z,.12,2.6,.12,steel);B.box(35.5,2.8,z,.35,.25,.35,{tex:'paint',tint:0xe4cb86});}
-  for(let x=38;x<56;x+=3){const y=x<41?.2:Math.min(DECK,.4+Math.floor((x-41)/.9)*.2);for(const z of [6.65,9.35])B.box(x,y+.95,z,.22,.12,.22,{tex:'paint',tint:0xffdf9b,emissive:.65});}
-  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];for(const z of [6.65,9.35])B.box((a.x+b.x)/2,(a.y+b.y)/2+.48,z,Math.hypot(b.x-a.x,b.y-a.y),.055,.055,steel,{rz:Math.atan2(b.y-a.y,b.x-a.x)});}
+  const slabs=[],path=[{x:29,y:0,z:DOCK_Z}],foot={x:29,y:0,z:DOCK_Z},local=new THREE.Vector3(),hit=new THREE.Vector3();
+  function slab(x0,x1,y,drawEnd=x1){B.box((x0+drawEnd)/2,y-.18,DOCK_Z,drawEnd-x0,.18,2.8,floor);slabs.push({x0,x1,z0:DOCK_Z-1.4,z1:DOCK_Z+1.4,y,box:new THREE.Box3(new THREE.Vector3(x0,y-.18,DOCK_Z-1.4),new THREE.Vector3(x1,y,DOCK_Z+1.4))});}
+  slab(29,35,.2);path.push({x:34.5,y:.2,z:DOCK_Z});
+  for(let i=0;i<16;i++){const x=35+i*.9,y=.4+i*.2;slab(x,x+.9,y);B.box(x+.82,y+.012,DOCK_Z,.10,.025,2.65,{tex:'paint',tint:0xd9bc77});for(const dx of [.22,.42,.62])B.box(x+dx,y+.005,DOCK_Z,.025,.012,2.45,{tex:'black_metal'});path.push({x:x+.45,y,z:DOCK_Z});}
+  slab(49.4,56.2,DECK,55.8);path.push({x:55.8,y:DECK,z:DOCK_Z});
+  for(let x=30;x<=56;x+=2)for(const z of [DOCK_Z-1.35,DOCK_Z+1.35]){const y=x<35?.2:Math.min(DECK,.4+Math.floor((x-35)/.9)*.2);B.box(x,-2.3,z,.14,y+3.3,.14,steel);}
+  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],dx=b.x-a.x,dy=b.y-a.y;for(const z of [DOCK_Z-1.35,DOCK_Z+1.35])B.box((a.x+b.x)/2,(a.y+b.y)/2+.94,z,Math.hypot(dx,dy),.075,.075,steel,{rz:Math.atan2(dy,dx)});}
+  for(const z of [DOCK_Z-1.4,DOCK_Z+1.4]){B.box(29.5,.2,z,.12,2.6,.12,steel);B.box(29.5,2.8,z,.35,.25,.35,{tex:'paint',tint:0xe4cb86});}
+  for(let x=32;x<56;x+=3){const y=x<35?.2:Math.min(DECK,.4+Math.floor((x-35)/.9)*.2);for(const z of [DOCK_Z-1.35,DOCK_Z+1.35])B.box(x,y+.95,z,.22,.12,.22,{tex:'paint',tint:0xffdf9b,emissive:.65});}
+  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];for(const z of [DOCK_Z-1.35,DOCK_Z+1.35])B.box((a.x+b.x)/2,(a.y+b.y)/2+.48,z,Math.hypot(b.x-a.x,b.y-a.y),.055,.055,steel,{rz:Math.atan2(b.y-a.y,b.x-a.x)});}
   // Static pier pieces share the furniture batch; the entire moving ship is one draw.
   for(const kind of Object.keys(B.items))staticBatch.items[kind].push(...B.items[kind]);
   function toLocal(x,z){const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return{x:dx*c-dz*s,z:dx*s+dz*c};}
@@ -293,7 +294,7 @@ export function createCruise({world,player}){
     // A straight approach can reverse toward the berth without attempting a
     // dangerous U-turn beside the pier or the mountain.
     if(Math.abs(mesh.position.x-HOME.x)<.001&&canTurn(mesh.position.x,mesh.position.z,mesh.rotation.y,0)&&canTravel(mesh.position.x,mesh.position.z,HOME.x,HOME.z,0))route=[{...HOME,yaw:0}];
-    else route=planTo([{x:64,z:76,dock:true},{x:64,z:-128,dock:true}]);
+    else route=planTo([{x:HOME.x,z:HOME.z-22,dock:true},{x:HOME.x,z:HOME.z+22,dock:true}]);
     if(!route){message='航线受阻，请稍作挪船后重试';return false;}
     mode='return';message='自动返港中';return true;
   }
