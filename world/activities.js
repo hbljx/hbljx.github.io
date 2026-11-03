@@ -20,7 +20,7 @@ export const ACTIVITY_SPOTS = [
   { id: 'tea', title: '三楼茶室 · 泡茶', at: [-11, 2], floor: 11, radius: 1.5, anchor: [-11, 11, .45], yaw: Math.PI, view: [-6.3, 13.8, 3.8], look: [-11, 12, -1.5] },
   { id: 'airplane', title: '领地飞机 · 驾驶飞机', at: [12, 4.2], floor: 11, radius: 1.6 },
   { id: 'basketball', title: '篮球场 · 投篮', at: [-12, 4], floor: 0, radius: 3, view: [-8, 6, 14], look: [-13.5, 1.5, 4] },
-  { id: 'sleep', title: '卧室 · 睡觉', at: [-9.8, -9.3], floor: 4, radius: 2, anchor: [-12, 4, -9.3], yaw: 0, view: [-8, 8, -6], look: [-12, 4.8, -9.5] },
+  { id: 'sleep', title: '卧室 · 睡觉', at: [-9.8, -8.2], floor: 4, radius: 2, anchor: [-12, 4, -8.2], yaw: 0, view: [-8, 8, -4.9], look: [-12, 4.8, -8.4] },
   { id: 'reading', title: '灵感书房 · 看书', at: [-7.3, -6.7], floor: 4, radius: 2, anchor: [-8.8, 4, -6.85], yaw: 0, view: [-6.1, 7, -5], look: [-8.8, 5, -6.6] },
   { id: 'tv', title: '日常客厅 · 看电视', at: [1, -.3], floor: 0, radius: 3, anchor: [2.95, 0, -3.1], yaw: -Math.PI / 2, view: [9, 5, 2], look: [1.4, 1.1, -3.2] },
   { id: 'driving', title: '工具车库 · 开车', at: [15.5, -4.5], floor: 0, radius: 1.1 },
@@ -177,7 +177,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       const x = car.position.x + Math.cos(carHeading) * side * (vehicle.halfWidth + .65) + Math.sin(carHeading) * along;
       const z = car.position.z - Math.sin(carHeading) * side * (vehicle.halfWidth + .65) + Math.cos(carHeading) * along;
       const surface=world.ground.canStand(x,z,car.position.y);
-      if(surface?.site==='sea-bridge')return{x,y:surface.y,z};
+      if(surface?.site==='sea-bridge'||surface?.site==='carrier')return{x,y:surface.y,z};
       if (nav.canStand(x, z) && floorAt(x, z) === 0) return { x, y:0,z };
     }
     return null;
@@ -433,12 +433,19 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     else if (id === 'cooking') status.textContent = life.cooking.phase === 'prep' ? `备菜 ${life.cooking.chops} / 3` : life.cooking.phase === 'cooking' ? `翻炒 ${Math.min(3, life.cooking.stirs)} / 3 · ${life.cooking.elapsed < 6 ? `还需 ${Math.ceil(6 - life.cooking.elapsed)} 秒` : '食材已熟，完成翻炒即可出锅'}` : `做好了！已完成 ${life.cooking.dishes} 份料理`;
     else if (id === 'treadmill') status.textContent = `${life.treadmill.paused ? '已暂停' : `${(life.treadmill.speed * 6).toFixed(1)} km/h`} · ${Math.round(life.treadmill.distance)} 米 · ${Math.floor(life.treadmill.elapsed)} 秒`;
   }
+  function driveHeight(x,z){
+    const ship=world.carrier.driveHeight(x,z);
+    return ship??(world.seaBridge.contains(x,z)?world.seaBridge.height(z):0);
+  }
   function canDrive(x, z, heading) {
     const c = Math.sin(heading), s = Math.cos(heading);
     const { halfLength: length, halfWidth: width } = vehicle;
+    const y=driveHeight(x,z);
+    if(world.carrier.blocksVehicle(x,z,heading,length,width))return false;
     // Separating-axis checks also catch thin furniture between grid samples.
     for (const o of world.obstacles) {
       if (o === carObstacle || o.level === 1) continue;
+      if(Math.abs((o.y||0)-y)>1.5)continue;
       const dx = (o.x0 + o.x1) / 2 - x, dz = (o.z0 + o.z1) / 2 - z;
       const w = (o.x1 - o.x0) / 2, d = (o.z1 - o.z0) / 2, ac = Math.abs(c), as = Math.abs(s);
       if (Math.abs(dx) > length * ac + width * as + w || Math.abs(dz) > length * as + width * ac + d) continue;
@@ -447,7 +454,9 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     }
     for (const p of vehicle.samples) {
       const px = x + c * p[0] - s * p[1], pz = z + s * p[0] + c * p[1];
-      if(world.seaBridge.contains(px,pz,.5))continue;
+      const ship=world.carrier.driveHeight(px,pz,.35);
+      if(ship!==null){if(Math.abs(ship-y)>1.1)return false;continue;}
+      if(world.seaBridge.contains(px,pz,.5)||world.seaBridge.junction(px,pz,.35))continue;
       if (px < ISLAND.x0 + 1 || px > ISLAND.x1 - 1 || pz < ISLAND.z0 + 1 || pz > ISLAND.z1 - 1 || floorAt(px, pz) !== 0) return false;
       if (px > POOL.x0 - .4 && px < POOL.x1 + .4 && pz > POOL.z0 - .4 && pz < POOL.z1 + .4) return false;
       const bx = Math.floor(px), bz = Math.floor(pz);
@@ -474,11 +483,13 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     }
     const x = car.position.x + Math.sin(carHeading) * carSpeed * dt, z = car.position.z + Math.cos(carHeading) * carSpeed * dt;
     if (Math.abs(carSpeed) > .001) {
-      if (canDrive(x, z, carHeading)) { driveDistance += Math.abs(carSpeed) * dt; vehicle.distance = driveDistance; car.position.set(x, world.seaBridge.contains(x,z)?world.seaBridge.height(z):0, z); if(active.id==='roadster')car.userData.wheelAngle=(car.userData.wheelAngle||0)-carSpeed*dt/.43; }
+      if (canDrive(x, z, carHeading)) { driveDistance += Math.abs(carSpeed) * dt; vehicle.distance = driveDistance; car.position.set(x, driveHeight(x,z), z); if(active.id==='roadster')car.userData.wheelAngle=(car.userData.wheelAngle||0)-carSpeed*dt/.43; }
       else { carSpeed = 0; notice = '遇到障碍，请反向挪车后转向'; }
     }
     // The mesh faces local +X; Three.js rotates +X toward -Z for positive yaw.
-    car.rotation.set(0,carHeading-Math.PI/2,world.seaBridge.contains(car.position.x,car.position.z)?Math.atan(world.seaBridge.slope(car.position.z)*Math.cos(carHeading)):0); car.updateMatrix();
+    const ship=world.carrier.driveHeight(car.position.x,car.position.z);
+    const slope=ship!==null?world.carrier.driveSlope(car.position.x,car.position.z,carHeading):world.seaBridge.contains(car.position.x,car.position.z)?world.seaBridge.slope(car.position.z)*Math.cos(carHeading):0;
+    car.rotation.set(0,carHeading-Math.PI/2,Math.atan(slope)); car.updateMatrix();
     player.anchor(car.position.x, car.position.y, car.position.z, carHeading);
     sound.loop(active.id==='roadster'?'luxury-engine':'engine', Math.abs(carSpeed) / topSpeed);
   }

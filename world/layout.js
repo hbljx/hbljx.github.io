@@ -7,10 +7,16 @@ export const ISLAND = { x0: -36, x1: 38, z0: -42, z1: 31 };
 // 56 x 44 m = 2,464 m², twice the original 44 x 28 m footprint.
 // The walls occupy the ring of cells just outside the interior.
 export const SEA_BRIDGE={x:24,z0:26,z1:170,width:10};
+// Shared opening and road width for the carrier's boarding ramp.
+export const CARRIER_ACCESS={z:(SEA_BRIDGE.z0+SEA_BRIDGE.z1)/2,width:8};
 // The complete mountain faces the bridge's far landing.
 export const MOUNTAIN_SITE={x:SEA_BRIDGE.x,z:SEA_BRIDGE.z1+46,r:46,h:27};
 
 export const HOUSE = { x0: -26, x1: 30, z0: -28, z1: 16, height: 10 };
+
+// Trim only the jersey bay at the right end of the studio's display wall.
+// The two certificates and the cabinet to their left keep their positions.
+export const STUDIO_WALL_END = 8.3;
 
 // Half court with the hoop on the west wall, seen side-on from the pool.
 export const COURT = { x0: -19, x1: -7, z0: -2.5, z1: 10.5 };

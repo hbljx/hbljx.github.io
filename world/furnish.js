@@ -9,7 +9,7 @@ import { createMotorcycle } from './motorcycle.js';
 import { createRoadster } from './roadster.js';
 import { buildSharedRooms } from './shared-rooms.js';
 import { buildFloorPlants } from './plants.js';
-import { HOUSE, COURT, RIM, VERTEC, LOFT, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR } from './layout.js';
+import { HOUSE, COURT, RIM, VERTEC, LOFT, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, STUDIO_WALL_END } from './layout.js';
 
 const L = {
   // Two interior wood finishes: the existing floor and the wall-panel timber.
@@ -95,8 +95,8 @@ export function furnish({ layer }) {
   const garageFrame={tex:'black_metal'};
   batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter-garageDoorWidth/2+.035,.07,4,.1,garageFrame);
   batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter+garageDoorWidth/2-.035,.07,4,.1,garageFrame);
-  batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter,garageDoorWidth,.07,.1,garageFrame);
-  batches.wallE.box(HOUSE.x1+.02,3.93,garageDoorCenter,garageDoorWidth,.07,.1,garageFrame);
+  // Keep the doorway jambs; omit the two crosswise bars that projected into
+  // the garage and out over the shore instead of following the opening.
   for(const [a,b] of [[GARAGE.z0,GARAGE.glassDoor.z0],[GARAGE.glassDoor.z1,GARAGE.z1]])glazing(B,GARAGE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
   glazing(B,GARAGE.x0-.02,-2,2,3,7,Math.PI/2,true);
   glazing(B,(GARAGE.x0-1+GARAGE.x1)/2,GARAGE.z1+.02,GARAGE.x1-GARAGE.x0+1,3,7);
@@ -299,12 +299,14 @@ export function furnish({ layer }) {
   });
   ergonomicChair(B, 2.1, -9.55, 0); foot(2.1, -9.55, 0.85, 0.85);
   ergonomicChair(B, 4.05, -9.1, -Math.PI / 2); foot(4.05, -9.1, 0.85, 0.85);
-  // The thinking board is mounted directly on the north wall, leaving the
-  // aisle open. The chalk content remains a draft of ideas and future goals.
-  B.box(-1.05, 0.85, -11.91, 3.6, 2.45, 0.12, L.panel);
-  plane(3.43, 2.28, canvasTexture(600, 400, P.paintIdeasBoard, { pixelated: false }), -1.05, 2.075, -11.84);
-  B.box(-1.05, 3.31, -11.8, 3.5, 0.025, 0.055, L.light(0xffdfa7));
-  bake('thinking-board', -1.05, 3.34, -11.5, 1.15, 4, [0, -1, -.3]);
+  // The former board opening becomes a black-framed glass door.
+  const studioDoorX = 1, studioDoorZ = -11.91, studioDoorWidth = 4;
+  B.box(studioDoorX, .08, studioDoorZ, studioDoorWidth, 3.84, .055, { tex: 'glass', glass: true });
+  for (const x of [studioDoorX - studioDoorWidth / 2, studioDoorX + studioDoorWidth / 2])
+    B.box(x, 0, studioDoorZ + .045, .09, 4, .12, { tex: 'black_metal' });
+  for (const y of [.06, 3.94]) B.box(studioDoorX, y, studioDoorZ + .045, studioDoorWidth, .09, .12, { tex: 'black_metal' });
+  B.box(studioDoorX, 2, studioDoorZ + .05, .045, 3.82, .12, { tex: 'black_metal' });
+  B.box(studioDoorX + 1.72, 1.05, studioDoorZ + .13, .035, .38, .05, L.steel);
   // A black pegboard, about the chalkboard's size, is mounted over the wall
   // panelling behind the two desks, with a few sheets pinned to it.
   const pegX = 2.95, pegFace = -11.84, pegDepth = .06;
@@ -312,11 +314,12 @@ export function furnish({ layer }) {
   plane(3.6, 2.2, paint(1080, 660, P.paintPegboard), pegX, 2.2, pegFace + .005);
   hot('works', 2, 0, -9.7, 7.3, 3.4, 4.5);
 
-  // Three framed keepsakes remain as decoration, without an interactive page.
-  B.box(7.7, 0, -11.6, 3.4, 0.65, 0.6, L.wood); foot(7.7, -11.6, 3.5, 0.7);
-  for (const [x, kind] of [[6.5, 'cert'], [7.7, 'diploma'], [8.9, 'jersey']]) {
+  // Keep the two certificates; trim only the cabinet's former jersey bay.
+  const keepsakeWidth = STUDIO_WALL_END - 6, keepsakeX = 6 + keepsakeWidth / 2;
+  B.box(keepsakeX, 0, -11.6, keepsakeWidth, 0.65, 0.6, L.wood); foot(keepsakeX, -11.6, keepsakeWidth + 0.1, 0.7);
+  for (const [x, kind] of [[6.5, 'cert'], [7.7, 'diploma']]) {
     B.box(x, 1.7, -11.9, 0.95, 1.2, 0.08, L.wood);
-    const art = kind === 'jersey' ? paint(80, 104, P.paintJersey) : paint(40, 52, (ctx, w, h) => P.paintCertificate(ctx, w, h, { kind }));
+    const art = paint(40, 52, (ctx, w, h) => P.paintCertificate(ctx, w, h, { kind }));
     plane(0.81, 1.06, art, x, 2.3, -11.85);
     B.box(x, 3.13, -11.74, .74, .07, .14, L.steel);
     B.box(x, 3.115, -11.65, .65, .018, .1, L.light(0xffe9c9));
@@ -493,12 +496,12 @@ export function furnish({ layer }) {
   B.box(-4.5, LOFT.y + 2.83, -4.1, 3, .07, .1, L.steel);
   openDoor(B, -6, LOFT.y, -4.02, 2.75, Math.PI);
   foot(-7.38, -4.03, 2.85, .15, 1);
-  const bedX = -12, bedZ = -9.65, bedY = LOFT.y;
-  B.box(bedX, bedY, -8.45, 7.4, .025, 6.4, L.linen);
-  B.box(bedX, bedY, -11.86, 6.8, 2.3, .1, L.panel);
-  B.box(bedX, bedY + .3, -11.79, 4.9, 1.5, .07, L.marble);
-  B.box(bedX, bedY + 2.27, -11.77, 6.5, .025, .035, L.light(0xffe2ae));
-  for (const x of [bedX - 2, bedX + 2]) bake('headboard-cove', x, bedY + 2.3, -11.5, 1.05, 5.5, [0, -.7, 1]);
+  const bedX = -12, bedZ = -8.55, bedY = LOFT.y;
+  B.box(bedX, bedY, bedZ + 1.2, 7.4, .025, 6.4, L.linen);
+  B.box(bedX, bedY, bedZ - 2.21, 6.8, 2.3, .1, L.panel);
+  B.box(bedX, bedY + .3, bedZ - 2.14, 4.9, 1.5, .07, L.marble);
+  B.box(bedX, bedY + 2.27, bedZ - 2.12, 6.5, .025, .035, L.light(0xffe2ae));
+  for (const x of [bedX - 2, bedX + 2]) bake('headboard-cove', x, bedY + 2.3, bedZ - 1.85, 1.05, 5.5, [0, -.7, 1]);
   B.box(bedX, bedY, bedZ, 3.25, .28, 3.15, L.panel);
   B.box(bedX, bedY + .28, bedZ, 3.1, .28, 3, L.linen);
   B.box(bedX, bedY, bedZ - 1.52, 3.4, 1.02, .15, L.paint(0x4a514b));
@@ -512,14 +515,18 @@ export function furnish({ layer }) {
     B.box(x, bedY + 1.03, bedZ - .64, .3, .11, .3, L.light(0xffdfa8));
     bake('bedside-lamp', x, bedY + 1.06, bedZ - .64, .75, 3.5);
   }
-  B.box(-6.2, LOFT.y, -11.38, 4.6, 2.8, .95, L.panel); foot(-6.2, -11.38, 4.7, 1.05, 1);
-  B.box(-6.2, LOFT.y + 2.82, -10.82, 4.4, .065, .17, L.steel);
-  B.box(-6.2, LOFT.y + 2.8, -10.76, 4.25, .02, .1, L.light(0xffe9c9));
-  for (const x of [-7.5, -5]) bake('wardrobe-wash', x, LOFT.y + 2.77, -10.65, 1.1, 5.5, [0, -1, -.2]);
+  const wardrobeZ = -10.28;
+  B.box(-6.2, LOFT.y, wardrobeZ, 4.6, 2.8, .95, L.panel); foot(-6.2, wardrobeZ, 4.7, 1.05, 1);
+  B.box(-6.2, LOFT.y + 2.82, wardrobeZ + .49, 4.4, .065, .17, L.steel);
+  B.box(-6.2, LOFT.y + 2.8, wardrobeZ + .49, 4.25, .02, .1, L.light(0xffe9c9));
+  for (const x of [-7.5, -5]) bake('wardrobe-wash', x, LOFT.y + 2.77, wardrobeZ + .49, 1.1, 5.5, [0, -1, -.2]);
   for (const x of [-7.85, -6.72, -5.59, -4.46]) {
-    B.box(x, LOFT.y, -10.893, .015, 2.75, .012, L.steel);
-    B.box(x + .15, LOFT.y + 1.15, -10.87, .025, .6, .025, L.steel);
+    B.box(x, LOFT.y, wardrobeZ + .487, .015, 2.75, .012, L.steel);
+    B.box(x + .15, LOFT.y + 1.15, wardrobeZ + .51, .025, .6, .025, L.steel);
   }
+  const bedroomBoardZ = wardrobeZ + .49;
+  B.box(-6.2, LOFT.y + 1.68, bedroomBoardZ - .035, 3.45, 1.9, .08, { tex: 'black_metal' });
+  plane(3.28, 1.72, canvasTexture(600, 315, P.paintIdeasBoard, { pixelated: false }), -6.2, LOFT.y + 1.68, bedroomBoardZ + .012);
   // The bench stands against the foot of the bed, a hand's width clear.
   const benchZ = bedZ + 1.575 + .05 + .36;
   B.box(bedX, LOFT.y + .08, benchZ, 3.1, .41, .72, L.paint(0x1f2224));

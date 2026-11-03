@@ -30,16 +30,13 @@ export function build({ grid, layer, materials, stage }) {
   buildIsland(grid, ISLAND, { surfaceAt });
   buildPool(grid);
   buildShell(grid);
-  // Fill the ragged shoreline beneath the coastal access road as well as
-  // drawing its surface, so wheels never encounter invisible coastal gaps.
-  grid.fill(31,-2,-10,38,0,30,'pavers');
-  grid.fill(19,-2,22,31,0,31,'pavers');
-  // Retain solid ground for navigation, but let the road own the only visible
-  // top face. This also covers the first metre beneath the bridge ramp.
-  grid.define('coastal_road_base',{tex:{all:'pavers'},merge:true,skipFace:f=>f===2,map:'#45535f'});
-  grid.fill(31,-1,-10,38,0,30,'coastal_road_base');
-  grid.fill(19,-1,22,31,0,30,'coastal_road_base');
-  grid.fill(19,-1,30,29,0,31,'coastal_road_base');
+  // The garage approach shares the surrounding grass-and-dirt shore. These
+  // voxels own both its visible surface and collision, with no overlapping
+  // road boxes along the coast. Keep the filled route to the bridge solid.
+  for (const [x0, z0, x1, z1] of [[31, -10, 38, 30], [19, 22, 31, 31]]) {
+    grid.fill(x0,-2,z0,x1,-1,z1,'dirt');
+    grid.fill(x0,-1,z0,x1,0,z1,'grass');
+  }
   const third = buildThirdFloor({ grid, layer });
   // Clear the three trees inside the new outside stair's footprint.
   const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>=19&&x<=38&&z>=10&&z<=33)&&!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));

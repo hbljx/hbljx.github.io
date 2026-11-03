@@ -30,11 +30,10 @@ export function paintForestScreen(ctx, w, h) {
 export function paintIdeasBoard(ctx, w, h) {
   ctx.fillStyle='#142920'; ctx.fillRect(0,0,w,h);
   ctx.strokeStyle='#759780'; ctx.lineWidth=3; ctx.strokeRect(14,14,w-28,h-28);
-  ctx.fillStyle='#f1e7cb'; ctx.font='bold 48px sans-serif'; ctx.fillText('LI+ / AI STUDIO',32,78);
-  ctx.fillStyle='#9bbd9c'; ctx.font='24px sans-serif'; ctx.fillText('CREATE  ·  EXPLORE  ·  COLLECT',32,120);
-  const rows=['01   AI 对话 / 模型平台','02   Image 2 / 图像创作','03   API / 开发工具'];
-  ctx.fillStyle='#eee4cb'; ctx.font='25px sans-serif'; rows.forEach((s,i)=>ctx.fillText(s,32,190+i*48));
-  ctx.fillStyle='#e6bf72'; ctx.font='20px sans-serif'; ctx.fillText('靠近工作台，按 F 打开网址',32,h-35);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#e6bf72'; ctx.font='bold 34px sans-serif'; ctx.fillText('年度倒计时',w/2,h*.25);
+  ctx.fillStyle='#f1e7cb'; ctx.font='bold 31px sans-serif'; ctx.fillText('距离2026年结束还有？天',w/2,h*.52);
+  ctx.fillStyle='#9bbd9c'; ctx.font='27px sans-serif'; ctx.fillText('努力学习，积累产品。',w/2,h*.78);
 }
 
 // The black pegboard behind the desks: how Terry takes the world apart, one

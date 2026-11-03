@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { STUDIO_WALL_END } from './layout.js';
 
 export const LIBRARY = {
   at: [-21.5, -19.25], male: [-21.5, 0, -20.5], female: [-18.5, 0, -20.5],
@@ -20,6 +21,11 @@ export function buildSharedRooms(B, obstacles, lighting) {
   function partition(x,z,w,d,h,look){
     B.box(x,0,z,w,h,d,look);foot(x,z,w,d);walls.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,h});
   }
+  // Preserve the narrow strip behind the diploma with the original wall
+  // finish and exact walking/flying collision at the new cut edge.
+  const endWidth = STUDIO_WALL_END - Math.floor(STUDIO_WALL_END);
+  if (endWidth > 0) partition(STUDIO_WALL_END - endWidth / 2, -12.5, endWidth, 1, 4,
+    { tex: 'wood_panel', top: 'steel', bottom: 'black_metal' });
   // Restore the clear aisle beside the studio display wall.
   partition(10.99,-12.5,.08,5,4,glass);
 

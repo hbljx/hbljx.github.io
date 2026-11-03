@@ -1,6 +1,6 @@
 // The house shell, the pool's basin and the island's surface, built from
 // blocks. The island itself comes from the engine (terrain.js buildIsland).
-import { HOUSE, LOFT, SECRET, GARAGE, POOL, TERRACE, DRIVEWAY, ENTRANCE, BACKDOOR, ROOF_GLASS, ROOF_LADDER } from './layout.js';
+import { HOUSE, LOFT, SECRET, GARAGE, POOL, TERRACE, DRIVEWAY, ENTRANCE, BACKDOOR, ROOF_GLASS, ROOF_LADDER, STUDIO_WALL_END } from './layout.js';
 import { inRect } from '@engine/world/terrain.js';
 
 const SHELL = { x0: HOUSE.x0 - 1, x1: HOUSE.x1 + 1, z0: HOUSE.z0 - 1, z1: HOUSE.z1 + 1 };
@@ -52,7 +52,7 @@ export function surfaceAt(x, z) {
   if (inRect(TERRACE, x, z)) return 'deck';
 
   if (inRect(POOL_DECK, x, z)) return 'travertine';
-  if (inRect(DRIVEWAY, x, z)) return 'pavers';
+  if (inRect(DRIVEWAY, x, z)) return 'grass';
   // Stepping stones from the terrace east to the drive and west to the garden.
   if (z >= TERRACE.z0 && z < TERRACE.z1 && (x === 22 || x === 24 || x === -23 || x === -25)) return 'travertine';
   return 'grass';
@@ -108,7 +108,10 @@ export function buildShell(grid) {
   // Standalone feature walls support the existing court and studio as the
   // outer glazed envelope expands around them.
   grid.fill(-21,0,-3,-20,7,7,'wall');
-  grid.fill(-2,0,-13,10,4,-12,'wall');
+  // The fractional end is drawn and collided by shared-rooms, so the cut
+  // falls between the diploma and the removed jersey instead of a full cell.
+  grid.fill(-2,0,-13,-1,4,-12,'wall');
+  grid.fill(3,0,-13,Math.floor(STUDIO_WALL_END),4,-12,'wall');
   grid.fill(SECRET.x0-1,LOFT.y,SECRET.z0,SECRET.x0,LOFT.y+3,SECRET.z1,'brick');
   grid.fill(SECRET.x0,LOFT.y,SECRET.z0-1,SECRET.x1,LOFT.y+3,SECRET.z0,'brick');
   // The garage: a steel-framed glass wall to the west with a door in it, and a

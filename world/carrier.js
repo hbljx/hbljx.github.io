@@ -1,9 +1,13 @@
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
-import { ISLAND, SEA_BRIDGE } from './layout.js';
+import { ISLAND, SEA_BRIDGE, CARRIER_ACCESS } from './layout.js';
+import { bridgeHeight } from './sea-bridge.js';
 
-const DOCK_Z=(SEA_BRIDGE.z0+SEA_BRIDGE.z1)/2;
+const DOCK_Z=CARRIER_ACCESS.z;
 const HOME={x:64,z:DOCK_Z,heading:0},DECK=3.4;
+const GANGWAY={x0:SEA_BRIDGE.x+SEA_BRIDGE.width/2,x1:HOME.x-7.6,flat:33,rampEnd:52,z:DOCK_Z,width:CARRIER_ACCESS.width};
+const gangwayHeight=x=>bridgeHeight(DOCK_Z)+(DECK-bridgeHeight(DOCK_Z))*THREE.MathUtils.clamp((x-GANGWAY.flat)/(GANGWAY.rampEnd-GANGWAY.flat),0,1);
+const onGangway=(x,z,margin=0)=>x>=GANGWAY.x0&&x<=GANGWAY.x1&&Math.abs(z-DOCK_Z)<=GANGWAY.width/2-margin;
 const STERN=-32,BOW=33,TURN_RADIUS=36,PORT_CLEARANCE=40;
 const sections=[[STERN,5.9],[-29,9.5],[-21,9.5],[-18,7.6],[22,7.6],[29,6.3],[BOW,4.8]];
 const deckY=()=>DECK;
@@ -130,16 +134,23 @@ function carrierMesh(){
 export function buildCarrier(layer,staticBatch){
   const mesh=carrierMesh(),B=new BoxBatch(layer),steel={tex:'steel',tint:0x89989c},floor={tex:'travertine',tint:0xc5c3b5};
   let planeObstacle=()=>false;
-  const slabs=[],path=[{x:29,y:0,z:DOCK_Z}],foot={x:29,y:0,z:DOCK_Z},local=new THREE.Vector3(),hit=new THREE.Vector3();
-  function slab(x0,x1,y,drawEnd=x1){B.box((x0+drawEnd)/2,y-.18,DOCK_Z,drawEnd-x0,.18,2.8,floor);slabs.push({x0,x1,z0:DOCK_Z-1.4,z1:DOCK_Z+1.4,y,box:new THREE.Box3(new THREE.Vector3(x0,y-.18,DOCK_Z-1.4),new THREE.Vector3(x1,y,DOCK_Z+1.4))});}
-  slab(29,35,.2);path.push({x:34.5,y:.2,z:DOCK_Z});
-  for(let i=0;i<16;i++){const x=35+i*.9,y=.4+i*.2;slab(x,x+.9,y);B.box(x+.82,y+.012,DOCK_Z,.10,.025,2.65,{tex:'paint',tint:0xd9bc77});for(const dx of [.22,.42,.62])B.box(x+dx,y+.005,DOCK_Z,.025,.012,2.45,{tex:'black_metal'});path.push({x:x+.45,y,z:DOCK_Z});}
-  slab(49.4,56.2,DECK,55.8);path.push({x:55.8,y:DECK,z:DOCK_Z});
-  for(let x=30;x<=56;x+=2)for(const z of [DOCK_Z-1.35,DOCK_Z+1.35]){const y=x<35?.2:Math.min(DECK,.4+Math.floor((x-35)/.9)*.2);B.box(x,-2.3,z,.14,y+3.3,.14,steel);}
-  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],dx=b.x-a.x,dy=b.y-a.y;for(const z of [DOCK_Z-1.35,DOCK_Z+1.35])B.box((a.x+b.x)/2,(a.y+b.y)/2+.94,z,Math.hypot(dx,dy),.075,.075,steel,{rz:Math.atan2(dy,dx)});}
-  for(const z of [DOCK_Z-1.4,DOCK_Z+1.4]){B.box(29.5,.2,z,.12,2.6,.12,steel);B.box(29.5,2.8,z,.35,.25,.35,{tex:'paint',tint:0xe4cb86});}
-  for(let x=32;x<56;x+=3){const y=x<35?.2:Math.min(DECK,.4+Math.floor((x-35)/.9)*.2);for(const z of [DOCK_Z-1.35,DOCK_Z+1.35])B.box(x,y+.95,z,.22,.12,.22,{tex:'paint',tint:0xffdf9b,emissive:.65});}
-  for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];for(const z of [DOCK_Z-1.35,DOCK_Z+1.35])B.box((a.x+b.x)/2,(a.y+b.y)/2+.48,z,Math.hypot(b.x-a.x,b.y-a.y),.055,.055,steel,{rz:Math.atan2(b.y-a.y,b.x-a.x)});}
+  const foot={x:GANGWAY.x0-1,y:bridgeHeight(DOCK_Z),z:DOCK_Z},local=new THREE.Vector3(),hit=new THREE.Vector3();
+  const path=[foot,{x:GANGWAY.flat,y:foot.y,z:DOCK_Z},{x:GANGWAY.rampEnd,y:DECK,z:DOCK_Z},{x:HOME.x-7.1,y:DECK,z:DOCK_Z}];
+  const spans=[[GANGWAY.x0,GANGWAY.flat],[GANGWAY.flat,GANGWAY.rampEnd],[GANGWAY.rampEnd,GANGWAY.x1]];
+  // A wide, continuous road descends from the bridge to the flight deck.
+  // The analytic surface below is also used for walking, driving and picking.
+  for(const [a,b] of spans){
+    const ya=gangwayHeight(a),yb=gangwayHeight(b),angle=Math.atan2(yb-ya,b-a),t=.24;
+    B.box((a+b)/2+t*Math.sin(angle)/2,(ya+yb)/2-t*Math.cos(angle)/2-t/2,DOCK_Z,Math.hypot(b-a,yb-ya),t,GANGWAY.width,floor,{rz:angle});
+    const stripeTint={tex:'paint',tint:0xd2b26c};
+    for(const side of [-1,1]) B.box((a+b)/2+t*Math.sin(angle)/2,(ya+yb)/2-t*Math.cos(angle)/2+.012,DOCK_Z+side*(GANGWAY.width/2-.34),Math.hypot(b-a,yb-ya),.018,.08,stripeTint,{rz:angle});
+    for(const side of [-1,1])for(const up of [.48,1])B.box((a+b)/2,(ya+yb)/2+up-.04,DOCK_Z+side*(GANGWAY.width/2-.08),Math.hypot(b-a,yb-ya),.08,.08,steel,{rz:angle});
+  }
+  for(let x=30;x<56;x+=2)for(const side of [-1,1]){
+    const y=gangwayHeight(x),z=DOCK_Z+side*(GANGWAY.width/2-.08);
+    B.box(x,-2.3,z,.14,y+3.38,.14,steel);
+    if(x%4===0)B.box(x,y+1.04,z,.22,.12,.22,{tex:'paint',tint:0xffdf9b,emissive:.65});
+  }
   // Static pier pieces share the furniture batch; the entire moving ship is one draw.
   for(const kind of Object.keys(B.items))staticBatch.items[kind].push(...B.items[kind]);
   function toLocal(x,z){const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return{x:dx*c-dz*s,z:dx*s+dz*c};}
@@ -164,13 +175,37 @@ export function buildCarrier(layer,staticBatch){
     const a=toLocal(ax,az),b=toLocal(bx,bz),fromDeck=ay>=DECK-.1&&onDeck(a.x,a.z),toDeck=by>=DECK-.1&&onDeck(b.x,b.z);
     if(fromDeck&&toDeck)return deckRoute(a.x,a.z,b.x,b.z);
     if(!docked())return[];
-    const nearest=x=>path.reduce((best,p,i)=>Math.abs(p.x-x)<Math.abs(path[best].x-x)?i:best,0);
-    const ai=fromDeck?path.length-1:nearest(ax),bi=toDeck?path.length-1:nearest(bx),points=path.slice(Math.min(ai,bi),Math.max(ai,bi)+1);if(ai>bi)points.reverse();
+    const start=fromDeck?path.at(-1).x:THREE.MathUtils.clamp(ax,foot.x,path.at(-1).x),end=toDeck?path.at(-1).x:THREE.MathUtils.clamp(bx,foot.x,path.at(-1).x);
+    const points=path.filter(p=>p.x>Math.min(start,end)&&p.x<Math.max(start,end));if(start>end)points.reverse();
+    points.unshift({x:start,y:gangwayHeight(start),z:DOCK_Z});points.push({x:end,y:gangwayHeight(end),z:DOCK_Z});
     if(fromDeck)points.unshift(...deckRoute(a.x,a.z,-7.1,0));
     if(toDeck)points.push(...deckRoute(-7.1,0,b.x,b.z));else points.push({x:bx,y:by,z:bz});return points;
   }
   return{
-    mesh,foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,deckAircraft,ramp:RAMP,
+    mesh,foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,deckAircraft,ramp:RAMP,gangway:GANGWAY,
+    driveHeight(x,z,margin=0){
+      if(onGangway(x,z,margin)&& (docked()||x<GANGWAY.x1-margin))return gangwayHeight(x);
+      const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y),lx=dx*c-dz*s,lz=dx*s+dz*c;
+      // At the berth the ramp replaces the deck-edge safety margin, so a
+      // vehicle's front wheels can cross the shared seam before its centre.
+      const joining=docked()&&x>=GANGWAY.x1&&x<=GANGWAY.x1+margin&&Math.abs(z-DOCK_Z)<=GANGWAY.width/2-margin;
+      if(!(onDeck(lx,lz,margin)||joining&&onDeck(lx,lz))||planeObstacle(x,z,surfaceY(lx,lz)))return null;
+      return surfaceY(lx,lz);
+    },
+    driveSlope(x,z,heading){
+      if(onGangway(x,z))return x>GANGWAY.flat&&x<GANGWAY.rampEnd?(DECK-bridgeHeight(DOCK_Z))/(GANGWAY.rampEnd-GANGWAY.flat)*Math.sin(heading):0;
+      const p=toLocal(x,z);return onRamp(p.x,p.z)?RAMP.height/(RAMP.z1-RAMP.z0)*Math.cos(heading-mesh.rotation.y):0;
+    },
+    blocksVehicle(x,z,heading,length,width){
+      const p=toLocal(x,z),angle=heading-mesh.rotation.y,c=Math.sin(angle),s=Math.cos(angle),ac=Math.abs(c),as=Math.abs(s);
+      for(const o of obstacles){
+        const dx=(o.x0+o.x1)/2-p.x,dz=(o.z0+o.z1)/2-p.z,w=(o.x1-o.x0)/2+.05,d=(o.z1-o.z0)/2+.05;
+        if(Math.abs(dx)>length*ac+width*as+w||Math.abs(dz)>length*as+width*ac+d)continue;
+        if(Math.abs(dx*c+dz*s)>length+w*ac+d*as||Math.abs(-dx*s+dz*c)>width+w*as+d*ac)continue;
+        return true;
+      }
+      return false;
+    },
     setPlaneObstacle(fn){planeObstacle=fn;},
     canBoard(player){const p=toLocal(player.pos.x,player.pos.z);return Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z)&&Math.hypot(p.x-4.65,p.z-5.1)<1.6;},
     insideCabin(player){const p=toLocal(player.pos.x,player.pos.z);return Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z);},
@@ -178,11 +213,11 @@ export function buildCarrier(layer,staticBatch){
     updateCabin(){
       mesh.userData.cabinView.value=0;
     },
-    levels(x,z,out){for(const s of slabs)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'carrier',tread:true});const p=toLocal(x,z);if(onDeck(p.x,p.z))out.push({y:surfaceY(p.x,p.z),site:'carrier'});},
+    levels(x,z,out){if(onGangway(x,z))out.push({y:gangwayHeight(x),site:'carrier'});const p=toLocal(x,z);if(onDeck(p.x,p.z))out.push({y:surfaceY(p.x,p.z),site:'carrier'});},
     obstructed(x,z,y){const p=toLocal(x,z);return planeObstacle(x,z,y)||y>=DECK-.1&&y<6.3&&obstacles.some(o=>p.x>o.x0-.05&&p.x<o.x1+.05&&p.z>o.z0-.05&&p.z<o.z1+.05)||y>=6.3&&y<8.4&&p.x>2.4&&p.x<6.9&&p.z>-3.4&&p.z<8.4;},
-    collides(x,y,z){const p=toLocal(x,z);return onDeck(p.x,p.z)&&y<surfaceY(p.x,p.z)-.02&&y+1.8>-2.8||this.obstructed(x,z,y);},
+    collides(x,y,z){const p=toLocal(x,z);return onGangway(x,z)&&y<gangwayHeight(x)-.02&&y+1.8>gangwayHeight(x)-.24||onDeck(p.x,p.z)&&y<surfaceY(p.x,p.z)-.02&&y+1.8>-2.8||this.obstructed(x,z,y);},
     pick(ray){
-      let best=null;for(const s of slabs)if(ray.intersectBox(s.box,hit)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:new THREE.Vector3(hit.x,s.y,hit.z),site:'carrier'};}
+      let best=null;for(const [a,b] of spans){const slope=(gangwayHeight(b)-gangwayHeight(a))/(b-a),plane=new THREE.Plane(new THREE.Vector3(-slope,1,0),slope*a-gangwayHeight(a));if(ray.intersectPlane(plane,hit)&&hit.x>=a&&hit.x<=b&&onGangway(hit.x,hit.z)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:hit.clone(),site:'carrier'};}}
       const o=toLocal(ray.origin.x,ray.origin.z),c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y),dz=ray.direction.x*s+ray.direction.z*c,dx=ray.direction.x*c-ray.direction.z*s;
       if(ray.direction.y<0){const t=(DECK-ray.origin.y)/ray.direction.y,z=o.z+dz*t,x=o.x+dx*t;if(t>=0&&onDeck(x,z)&&(!best||t<best.t))best={t,point:ray.at(t,local).clone(),site:'carrier'};}
       const slope=RAMP.height/(RAMP.z1-RAMP.z0),denominator=ray.direction.y-slope*dz;
