@@ -299,14 +299,10 @@ export function furnish({ layer }) {
   });
   ergonomicChair(B, 2.1, -9.55, 0); foot(2.1, -9.55, 0.85, 0.85);
   ergonomicChair(B, 4.05, -9.1, -Math.PI / 2); foot(4.05, -9.1, 0.85, 0.85);
-  // The former board opening becomes a black-framed glass door.
-  const studioDoorX = 1, studioDoorZ = -11.91, studioDoorWidth = 4;
-  B.box(studioDoorX, .08, studioDoorZ, studioDoorWidth, 3.84, .055, { tex: 'glass', glass: true });
-  for (const x of [studioDoorX - studioDoorWidth / 2, studioDoorX + studioDoorWidth / 2])
-    B.box(x, 0, studioDoorZ + .045, .09, 4, .12, { tex: 'black_metal' });
-  for (const y of [.06, 3.94]) B.box(studioDoorX, y, studioDoorZ + .045, studioDoorWidth, .09, .12, { tex: 'black_metal' });
-  B.box(studioDoorX, 2, studioDoorZ + .05, .045, 3.82, .12, { tex: 'black_metal' });
-  B.box(studioDoorX + 1.72, 1.05, studioDoorZ + .13, .035, .38, .05, L.steel);
+  // Close the former door opening with the same wood-panel wall as its neighbour.
+  const studioWallX = 1, studioWallZ = -11.91, studioWallWidth = 4;
+  B.box(studioWallX, 0, studioWallZ, studioWallWidth, 4, .1, L.panel);
+  foot(studioWallX, studioWallZ, studioWallWidth + .08, .18);
   // A black pegboard, about the chalkboard's size, is mounted over the wall
   // panelling behind the two desks, with a few sheets pinned to it.
   const pegX = 2.95, pegFace = -11.84, pegDepth = .06;
@@ -496,7 +492,7 @@ export function furnish({ layer }) {
   B.box(-4.5, LOFT.y + 2.83, -4.1, 3, .07, .1, L.steel);
   openDoor(B, -6, LOFT.y, -4.02, 2.75, Math.PI);
   foot(-7.38, -4.03, 2.85, .15, 1);
-  const bedX = -12, bedZ = -8.55, bedY = LOFT.y;
+  const bedX = -12, bedZ = -13.61, bedY = LOFT.y;
   B.box(bedX, bedY, bedZ + 1.2, 7.4, .025, 6.4, L.linen);
   B.box(bedX, bedY, bedZ - 2.21, 6.8, 2.3, .1, L.panel);
   B.box(bedX, bedY + .3, bedZ - 2.14, 4.9, 1.5, .07, L.marble);
@@ -515,7 +511,7 @@ export function furnish({ layer }) {
     B.box(x, bedY + 1.03, bedZ - .64, .3, .11, .3, L.light(0xffdfa8));
     bake('bedside-lamp', x, bedY + 1.06, bedZ - .64, .75, 3.5);
   }
-  const wardrobeZ = -10.28;
+  const wardrobeZ = -15.38;
   B.box(-6.2, LOFT.y, wardrobeZ, 4.6, 2.8, .95, L.panel); foot(-6.2, wardrobeZ, 4.7, 1.05, 1);
   B.box(-6.2, LOFT.y + 2.82, wardrobeZ + .49, 4.4, .065, .17, L.steel);
   B.box(-6.2, LOFT.y + 2.8, wardrobeZ + .49, 4.25, .02, .1, L.light(0xffe9c9));
@@ -524,9 +520,6 @@ export function furnish({ layer }) {
     B.box(x, LOFT.y, wardrobeZ + .487, .015, 2.75, .012, L.steel);
     B.box(x + .15, LOFT.y + 1.15, wardrobeZ + .51, .025, .6, .025, L.steel);
   }
-  const bedroomBoardZ = wardrobeZ + .49;
-  B.box(-6.2, LOFT.y + 1.68, bedroomBoardZ - .035, 3.45, 1.9, .08, { tex: 'black_metal' });
-  plane(3.28, 1.72, canvasTexture(600, 315, P.paintIdeasBoard, { pixelated: false }), -6.2, LOFT.y + 1.68, bedroomBoardZ + .012);
   // The bench stands against the foot of the bed, a hand's width clear.
   const benchZ = bedZ + 1.575 + .05 + .36;
   B.box(bedX, LOFT.y + .08, benchZ, 3.1, .41, .72, L.paint(0x1f2224));

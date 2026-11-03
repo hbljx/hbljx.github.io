@@ -65,7 +65,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   panel.innerHTML='<strong>睡前时光</strong><p role="status"></p><button type="button">取消 · E</button>';document.body.append(panel);
   const message=panel.querySelector('p'),cancel=panel.querySelector('button');cancel.addEventListener('click',wakeMale);
   let phase='idle',maleSleep=false,femaleSleep=false,reason=null,bathStarted=0,femaleWakeAt=0,bedtimeFirstPerson=false;
-  let reading=false,readArrived=false,watching=false,watchArrived=false,routeClock=0,clock=0,lastMove=Date.now(),lastNight=false,nightDismissed=false,sleepControl=false;
+  let reading=false,readArrived=false,watching=false,watchArrived=false,routeClock=0,clock=0,lastMove=Date.now(),lastNight=false,nightDismissed=false,sleepControl=false,startup=true;
   const wakeButton=document.querySelector('[data-control="interact"]');
   wakeButton.addEventListener('click',e=>{if(phase!=='idle'||maleSleep){e.stopImmediatePropagation();wakeMale();}},{capture:true});
   const last={x:player.pos.x,y:player.y,z:player.pos.z},clockDate=new Date();let clockAt=0,night=false;
@@ -183,15 +183,19 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   }
   function update(dt){
     clock+=dt;
+    const firstFrame=startup;startup=false;
     if(sharedRide(dt)){lastMove=Date.now();covers();return;}
 routeClock+=dt;const now=Date.now();
     if(femaleWakeAt&&now>=femaleWakeAt)wakeWoman();
     if(Math.abs(now-clockAt)>=1000){clockAt=now;clockDate.setTime(now);const hour=Number(hours.format(clockDate));night=hour>=22||hour<7;}
-    if(!night&&lastNight){if(reason==='night')wakeMale();nightDismissed=false;}
-    if(night&&!lastNight)nightDismissed=false;lastNight=night;
+    if(firstFrame){nightDismissed=true;lastNight=night;}
+    else{
+      if(!night&&lastNight){if(reason==='night')wakeMale();nightDismissed=false;}
+      if(night&&!lastNight)nightDismissed=false;lastNight=night;
+    }
     if(Math.hypot(player.pos.x-last.x,player.pos.z-last.z,player.y-last.y)>.025||player.moving||activities.active)lastMove=now;
     last.x=player.pos.x;last.y=player.y;last.z=player.pos.z;
-    if(phase==='idle'&&!maleSleep&&!activities.active&&!rig.introActive&&(night&&!nightDismissed||now-lastMove>=FIVE_MINUTES))begin(night?'night':'idle');
+    if(!firstFrame&&phase==='idle'&&!maleSleep&&!activities.active&&!rig.introActive&&(night&&!nightDismissed||now-lastMove>=FIVE_MINUTES))begin(night?'night':'idle');
     if(activities.current==='library'&&phase==='idle')library(dt);
     else if(activities.current==='cinema'&&phase==='idle')cinema(dt);
     else{

@@ -166,12 +166,18 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     if (mode !== 'ground') return;
     mode = 'air'; vy = JUMP;
   }
+  function standingOnBridge() {
+    if (island === 'sea-bridge') return true;
+    return ground?.topAt(pos.x, pos.z, y + .75)?.site === 'sea-bridge';
+  }
   function startFlying() {
-    if (mode === 'fly') return;
+    if (mode === 'fly') return true;
+    if (standingOnBridge()) return false;
     const fromWater = leaveWater(0.7);
     cancel(); ladder = null; mode = 'fly'; island = null; standing = null; velocity.set(0, 0, 0); vy = 0; zip = null; web.visible = false;
     // Out of the pool in a burst, so the player does not drop straight back in.
     if (fromWater) { velocity.y = CLIMB; flewOut = 0.8; }
+    return true;
   }
 
   // ---------- In the pool ----------
@@ -464,7 +470,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     spots.sort((a, b) => Math.hypot(a.x - pos.x, a.z - pos.z) - Math.hypot(b.x - pos.x, b.z - pos.z));
     return spots.some(spot => flyTo(spot.x, spot.z));
   }
-  function toggleFly() { if (mode === 'fly') return stopFlying(); startFlying(); return true; }
+  function toggleFly() { if (mode === 'fly') return stopFlying(); return startFlying(); }
 
   // Fly to a tapped point and land there. Points inside the house are reached
   // on foot from the terrace; leaving the house goes out by the front doors.
@@ -484,8 +490,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       then = () => launch(target, after);
       return true;
     }
-    launch(target, after);
-    return true;
+    return launch(target, after);
   }
   function launch(target, after) {
     const legs = [];
@@ -493,8 +498,9 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     const high = Math.max(target.y, island ? level : 0, ridge(pos.x, pos.z, target.x, target.z));
     const crossesHouse = segmentCrosses(pos.x, pos.z, target.x, target.z);
     legs.push({ x: target.x, z: target.z, y: target.y, cruise: Math.max(high + 2.5, crossesHouse ? HOUSE.height + 2.5 : 0), final: true });
-    startFlying();
+    if (!startFlying()) return false;
     pilot = { legs, target, after, best: Infinity, stuck: 0 };
+    return true;
   }
   // The highest ground along the way (islands, the stair, the mountain), short of
   // the last few metres, where the landing takes over.

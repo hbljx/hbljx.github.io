@@ -28,6 +28,13 @@ export function buildSharedRooms(B, obstacles, lighting) {
     { tex: 'wood_panel', top: 'steel', bottom: 'black_metal' });
   // Restore the clear aisle beside the studio display wall.
   partition(10.99,-12.5,.08,5,4,glass);
+  // The lounge-to-garage sightline uses the same glazed divider. Keep the
+  // pane on the existing divider line so the vehicle bay and living room do
+  // not leave an unglazed rectangular gap between the timber bays.
+  partition(10.99,-6.5,.08,5,4,glass);
+  const dividerFrame = { tex: 'black_metal' };
+  for (const z of [-9, -4]) B.box(10.92, 2, z, .07, 4, .08, dividerFrame);
+  for (const y of [0, 3.93]) B.box(10.92, y, -6.5, .07, .07, 5, dividerFrame);
 
   // Library: two banks of actual books, a shared desk and two reading chairs.
   B.box(-20,0,-22.4,10.9,.018,9.4,{tex:'parquet'});

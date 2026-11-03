@@ -110,7 +110,6 @@ export function buildShell(grid) {
   grid.fill(-21,0,-3,-20,7,7,'wall');
   // The fractional end is drawn and collided by shared-rooms, so the cut
   // falls between the diploma and the removed jersey instead of a full cell.
-  grid.fill(-2,0,-13,-1,4,-12,'wall');
   grid.fill(3,0,-13,Math.floor(STUDIO_WALL_END),4,-12,'wall');
   grid.fill(SECRET.x0-1,LOFT.y,SECRET.z0,SECRET.x0,LOFT.y+3,SECRET.z1,'brick');
   grid.fill(SECRET.x0,LOFT.y,SECRET.z0-1,SECRET.x1,LOFT.y+3,SECRET.z0,'brick');

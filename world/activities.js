@@ -20,7 +20,7 @@ export const ACTIVITY_SPOTS = [
   { id: 'tea', title: '三楼茶室 · 泡茶', at: [-11, 2], floor: 11, radius: 1.5, anchor: [-11, 11, .45], yaw: Math.PI, view: [-6.3, 13.8, 3.8], look: [-11, 12, -1.5] },
   { id: 'airplane', title: '领地飞机 · 驾驶飞机', at: [12, 4.2], floor: 11, radius: 1.6 },
   { id: 'basketball', title: '篮球场 · 投篮', at: [-12, 4], floor: 0, radius: 3, view: [-8, 6, 14], look: [-13.5, 1.5, 4] },
-  { id: 'sleep', title: '卧室 · 睡觉', at: [-9.8, -8.2], floor: 4, radius: 2, anchor: [-12, 4, -8.2], yaw: 0, view: [-8, 8, -4.9], look: [-12, 4.8, -8.4] },
+  { id: 'sleep', title: '卧室 · 睡觉', at: [-9.8, -13.26], floor: 4, radius: 2, anchor: [-12, 4, -13.26], yaw: 0, view: [-8, 8, -9.96], look: [-12, 4.8, -13.46] },
   { id: 'reading', title: '灵感书房 · 看书', at: [-7.3, -6.7], floor: 4, radius: 2, anchor: [-8.8, 4, -6.85], yaw: 0, view: [-6.1, 7, -5], look: [-8.8, 5, -6.6] },
   { id: 'tv', title: '日常客厅 · 看电视', at: [1, -.3], floor: 0, radius: 3, anchor: [2.95, 0, -3.1], yaw: -Math.PI / 2, view: [9, 5, 2], look: [1.4, 1.1, -3.2] },
   { id: 'driving', title: '工具车库 · 开车', at: [15.5, -4.5], floor: 0, radius: 1.1 },
