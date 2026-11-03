@@ -127,6 +127,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     ctx.imageSmoothingEnabled = false;
     const k = scale / PPM;
     ctx.drawImage(mapImage, (ISLAND.x0 - p.x) * scale, (ISLAND.z0 - p.z) * scale, mapImage.width * k, mapImage.height * k);
+    if(L.SEA_BRIDGE){ctx.fillStyle='#526477';ctx.fillRect((19-p.x)*scale,(26-p.z)*scale,10*scale,124*scale);ctx.fillRect((15-p.x)*scale,(150-p.z)*scale,18*scale,20*scale);ctx.strokeStyle='#eddaa0';ctx.lineWidth=Math.max(1,scale*.12);ctx.setLineDash([3*scale,5*scale]);ctx.beginPath();ctx.moveTo((24-p.x)*scale,(26-p.z)*scale);ctx.lineTo((24-p.x)*scale,(168-p.z)*scale);ctx.stroke();ctx.setLineDash([]);}
     // Route to the waypoint.
     const route = getRoute();
     if (route && route.length) {
@@ -183,7 +184,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       const r = big.getBoundingClientRect();
       big.width = Math.round(r.width * dpr); big.height = Math.round(r.height * dpr);
       const terrain=getLandscape();
-      const bounds={x0:Math.min(-58,ISLAND.x0-8),x1:85,z0:Math.min(ISLAND.z0-8,terrain?terrain.z-terrain.r-8:-125),z1:45};
+      const bounds={x0:Math.min(-58,ISLAND.x0-8),x1:85,z0:Math.min(ISLAND.z0-8,terrain?terrain.z-terrain.r-8:-125),z1:L.SEA_BRIDGE?182:45};
       const fitScale = Math.min(big.width / ((bounds.x1-bounds.x0)*mapXScale), big.height / (bounds.z1-bounds.z0)) * .86;
       view = { cx: (bounds.x0+bounds.x1)/2, cz: (bounds.z0+bounds.z1)/2, scale: fitScale, min: fitScale * 0.9, max: fitScale * 4 };
       drawBig();
@@ -237,6 +238,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('山顶停机坪',mx,mz+4*dpr);
     }
     bctx.drawImage(mapImage, ox, oz, mapImage.width * s * mapXScale / PPM, mapImage.height * s / PPM);
+    if(L.SEA_BRIDGE){bctx.strokeStyle='#526477';bctx.lineWidth=10*s*mapXScale;bctx.beginPath();bctx.moveTo(...P(24,26));bctx.lineTo(...P(24,160));bctx.stroke();const bp=P(15,150);bctx.fillStyle='#526477';bctx.fillRect(bp[0],bp[1],18*s*mapXScale,20*s);bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('海上观景大桥',...P(24,130));}
     bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));bctx.moveTo(...P(35,8));bctx.lineTo(...P(57,8));bctx.stroke();
     bctx.fillStyle='#52636e';const dock=P(56.4,-24);bctx.fillRect(dock[0],dock[1],15.2*s*mapXScale,65*s);
     bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;

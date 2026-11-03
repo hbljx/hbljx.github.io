@@ -4,6 +4,7 @@ import { buildIsland } from '@engine/world/terrain.js';
 import { buildForest } from '@engine/world/landscape.js';
 import { defineHouseBlocks, surfaceAt, buildPool, buildShell } from './house.js';
 import { furnish } from './furnish.js';
+import { buildSeaBridge } from './sea-bridge.js';
 import { buildOuter } from './outer.js';
 import { buildMountain } from './mountain.js';
 import { buildRoofAccess } from './roof-access.js';
@@ -29,9 +30,13 @@ export function build({ grid, layer, materials, stage }) {
   buildIsland(grid, ISLAND, { surfaceAt });
   buildPool(grid);
   buildShell(grid);
+  // Fill the ragged shoreline beneath the coastal access road as well as
+  // drawing its surface, so wheels never encounter invisible coastal gaps.
+  grid.fill(31,-2,-10,38,0,30,'pavers');
+  grid.fill(19,-2,22,31,0,31,'pavers');
   const third = buildThirdFloor({ grid, layer });
   // Clear the three trees inside the new outside stair's footprint.
-  const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));
+  const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>=19&&x<=38&&z>=10&&z<=33)&&!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));
   const furn = furnish({ layer });
   furn.planes.push(third.skylights);
   const mergeBatch = (into, from) => {
@@ -49,6 +54,7 @@ export function build({ grid, layer, materials, stage }) {
   // The pier and sailboat, the mountain and the roof's outside stair are
   // ground of their own, outside the block grid.
   const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
+  const seaBridge=buildSeaBridge(furn.batches.static,furn.obstacles);
   const carrier = buildCarrier(layer, furn.batches.static);
   const oceanLife=createOceanLife(furn.batches.static);
   const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster]);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
@@ -60,8 +66,8 @@ export function build({ grid, layer, materials, stage }) {
   return {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
-    sites: [outer, mountain, furn.stairs, third.source, carrier, furn.partitions], sitesAfter: [roofAccess],
-    named: { outer, mountain, roofAccess, carrier, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
+    sites: [outer, mountain, furn.stairs, third.source, carrier, furn.partitions, seaBridge], sitesAfter: [roofAccess],
+    named: { seaBridge, outer, mountain, roofAccess, carrier, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
   };
 }
 

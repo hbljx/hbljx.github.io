@@ -146,8 +146,30 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
     femaleAvatar.prop(0,1.05,.43,.54,.04,.34,0xf4e8ca,false,.2);
     femaleAvatar.prop(0,1.08,.43,.025,.015,.34,0xc3aa76,false,.2);femaleAvatar.endProps();
   }
+  let riding=null,boarding=null;
+  function sharedRide(dt){
+    const v=activities.ride;
+    if(!v){
+      if(riding){if(riding.passengerReady){const g=world.ground.nearestStand(player.pos.x,player.pos.z+.8,player.y);woman.restore(g?.x??player.pos.x,g?.y??player.y,g?.z??player.pos.z,player.heading);}else woman.cancel();femaleAvatar.update(0,still);riding=null;routine.resume();}
+      return false;
+    }
+    const car=v.mesh,h=car.rotation.y+Math.PI/2;
+    if(riding!==v){leaveReading();if(femaleSleep)wakeWoman();routine.pause();riding=v;boarding={x:car.position.x-Math.cos(h)*(v.halfWidth+.8),y:car.position.y,z:car.position.z+Math.sin(h)*(v.halfWidth+.8)};}
+    if(!v.passengerReady){
+      if(!woman.travelling)navigateWoman(boarding.x,boarding.y,boarding.z);
+      woman.update(dt,IDLE,0);
+      if(reached(woman,boarding)){woman.cancel();v.passengerReady=true;}
+      return true;
+    }
+    const bike=v.id==='motorcycle',forward=bike?-.98:v.id==='roadster'?-.66:-.4,side=bike?0:.48;
+    const x=car.position.x+Math.sin(h)*forward-Math.cos(h)*side,z=car.position.z+Math.cos(h)*forward+Math.sin(h)*side;
+    woman.anchor(x,car.position.y,z,h);femaleAvatar.root.position.set(x,car.position.y+(bike?.38:v.id==='roadster'?.08:-.3),z);femaleAvatar.root.rotation.set(0,h,0);
+    pose.seated=true;pose.left=pose.right=bike?-.8:-.4;femaleAvatar.update(dt,pose);return true;
+  }
   function update(dt){
-    clock+=dt;routeClock+=dt;const now=Date.now();
+    clock+=dt;
+    if(sharedRide(dt)){lastMove=Date.now();covers();return;}
+routeClock+=dt;const now=Date.now();
     if(femaleWakeAt&&now>=femaleWakeAt)wakeWoman();
     if(Math.abs(now-clockAt)>=1000){clockAt=now;clockDate.setTime(now);const hour=Number(hours.format(clockDate));night=hour>=22||hour<7;}
     if(!night&&lastNight){if(reason==='night')wakeMale();nightDismissed=false;}
@@ -181,7 +203,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,shower,
     get sleeping(){return maleSleep;},get bathing(){return phase==='bathing';},get walking(){return phase!=='idle'&&phase!=='sleeping';},
     status:()=>({phase,male:maleSleep?'sleeping':phase==='idle'?'awake':phase==='to-bath'?'going-to-bath':phase==='to-bed'?'going-to-bed':phase,
-      female:femaleSleep?'sleeping':reading?(readArrived?'reading':'going-to-library'):phase==='idle'?'awake':phase,
+      female:riding?(riding.passengerReady?'riding':'boarding'):femaleSleep?'sleeping':reading?(readArrived?'reading':'going-to-library'):phase==='idle'?'awake':phase,
       bathRemaining:phase==='bathing'?Math.max(0,(BATH.duration-(Date.now()-bathStarted))/1000):null,bathDuration:BATH.duration/1000,
       femaleWakeIn:femaleWakeAt?Math.max(0,(femaleWakeAt-Date.now())/1000):null,femaleActivity:routine.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
 }

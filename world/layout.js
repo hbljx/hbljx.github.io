@@ -6,6 +6,8 @@ export const ISLAND = { x0: -36, x1: 38, z0: -42, z1: 31 };
 
 // 56 x 44 m = 2,464 m², twice the original 44 x 28 m footprint.
 // The walls occupy the ring of cells just outside the interior.
+export const SEA_BRIDGE={x:24,z0:26,z1:170,width:10};
+
 export const HOUSE = { x0: -26, x1: 30, z0: -28, z1: 16, height: 10 };
 
 // Half court with the hoop on the west wall, seen side-on from the pool.

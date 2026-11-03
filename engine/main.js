@@ -619,6 +619,12 @@ async function boot() {
   // Walk if the place is reachable on foot from here; otherwise fly there.
   function navigate(x, z, targetY = null, useRoofLadder = false) {
     closePage(); minimap.toggleBig(false); input.clear(); rig.skipIntro();
+    const bridge=world.seaBridge;
+    if(bridge&&player.island==='sea-bridge'){
+      if(bridge.contains(x,z))return player.follow(bridge.route(player.pos.x,player.pos.z,x,z));
+      return player.follow(bridge.route(player.pos.x,player.pos.z,bridge.foot.x,bridge.foot.z),null,()=>{player.teleport(bridge.foot.x,bridge.foot.z);navigate(x,z,targetY);});
+    }
+    if(bridge?.contains(x,z))return player.follow(bridge.route(24,26,x,z),bridge.foot);
     // The pool: swim there; from the deck walk to its side and dive in, from
     // anywhere else fly over and drop in. Swimming, a place on land is
     // reached by climbing out on the nearest side first.
