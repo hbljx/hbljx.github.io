@@ -291,7 +291,7 @@ export function createSound() {
   }
   function loop(name, intensity = 1) {
     if (!name || !on || !unlocked || document.hidden || !focused) { stopLoop(); return; }
-    if (!['engine', 'sizzle', 'treadmill', 'tv'].includes(name) || !ensure()) return;
+    if (!['engine', 'luxury-engine', 'shower', 'sizzle', 'treadmill', 'tv'].includes(name) || !ensure()) return;
     if (ctx.state !== 'running') return;
     const amount = Math.max(0, Math.min(1, Number.isFinite(intensity) ? intensity : 1));
     if (activityLoop?.name !== name) {
@@ -314,7 +314,7 @@ export function createSound() {
       source.connect(filter).connect(level).connect(bus); source.start();
       const sources = [source], nodes = [source, filter, level];
       let motor = null;
-      if (name === 'engine' || name === 'treadmill') {
+      if (name === 'engine' || name === 'luxury-engine' || name === 'treadmill') {
         motor = ctx.createOscillator(); const motorGain = ctx.createGain();
         motor.type = 'triangle'; motor.frequency.value = 44; motorGain.gain.value = .36;
         motor.connect(motorGain).connect(level); motor.start();
@@ -325,8 +325,8 @@ export function createSound() {
     const t = ctx.currentTime, current = activityLoop;
     current.intensity = amount;
     current.level.gain.setTargetAtTime(name === 'tv' ? .055 : name === 'sizzle' ? .045 + amount * .035 : .035 + amount * .055, t, .12);
-    if (current.motor) current.motor.frequency.setTargetAtTime(name === 'engine' ? 38 + amount * 64 : 70 + amount * 28, t, .1);
-    if (name !== 'sizzle') current.filter.frequency.setTargetAtTime(210 + amount * 700, t, .12);
+    if (current.motor) current.motor.frequency.setTargetAtTime(name === 'luxury-engine' ? 32 + amount * 94 : name === 'engine' ? 38 + amount * 64 : 70 + amount * 28, t, .1);
+    if (name !== 'sizzle') current.filter.frequency.setTargetAtTime(name==='shower'?1500:name==='luxury-engine'?260+amount*1000:210+amount*700, t, .12);
   }
 
   // ---------- Rain, and being under the water ----------

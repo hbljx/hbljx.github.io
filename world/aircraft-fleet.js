@@ -3,7 +3,7 @@ import { HOUSE, ROOF_PARKING } from './layout.js';
 import { AIRFIELD,createAirplane,aircraftObstacle } from './aircraft.js';
 import { createNavalAircraft } from './naval-aircraft.js';
 
-export function createAircraftFleet(carrier,oceanLife){
+export function createAircraftFleet(carrier,oceanLife,vehicles=[]){
   const first=createAirplane();Object.assign(first.userData,{label:'领地飞机',halfSpan:3.7,halfLength:3.2,seat:[0,.92,0]});
   const planes=[first,...carrier.deckAircraft.map(createNavalAircraft)],fields=new Map();
   fields.set(first,carrier.airfield);
@@ -15,7 +15,7 @@ export function createAircraftFleet(carrier,oceanLife){
   // The wheelhouse glass shares the canopy pass, keeping the populated deck
   // within the same draw budget. Its hidden source still tracks the ship.
   const cabinGlass=carrier.mesh.getObjectByName('carrier-cabin-glass');cabinGlass.visible=false;
-  const swimmers=oceanLife.creatures,count=planes.length+1+swimmers.length,bodyMatrices=[...planes.map(p=>p.matrixWorld),carrier.mesh.matrixWorld,...swimmers.map(p=>p.matrixWorld)],canopyMatrices=[...planes.map(p=>p.userData.canopy.matrixWorld),cabinGlass.matrixWorld,...swimmers.map(p=>p.matrixWorld)],visible=new Float32Array(count).fill(1),shadow=new Float32Array(count),angles=new Float32Array(count);
+  const swimmers=[...oceanLife.creatures,...vehicles],count=planes.length+1+swimmers.length,bodyMatrices=[...planes.map(p=>p.matrixWorld),carrier.mesh.matrixWorld,...swimmers.map(p=>p.matrixWorld)],canopyMatrices=[...planes.map(p=>p.userData.canopy.matrixWorld),cabinGlass.matrixWorld,...swimmers.map(p=>p.matrixWorld)],visible=new Float32Array(count).fill(1),shadow=new Float32Array(count),angles=new Float32Array(count);
   function combined(canopies=false){
     const data={position:[],normal:[],color:[],aircraftIndex:[],propellerPart:[],propellerPivot:[],swimWeight:[],swimAxis:[]};
     const sources=planes.map((plane,i)=>[canopies?plane.userData.canopy:plane,i]);
@@ -54,6 +54,7 @@ export function createAircraftFleet(carrier,oceanLife){
   const collisions=planes.map(aircraftObstacle);
   function update(cutaway=false){
     carrier.mesh.updateMatrixWorld(true);
+    vehicles.forEach((v,i)=>{v.updateMatrixWorld(true);const index=planes.length+1+oceanLife.creatures.length+i;shadow[index]=v.castShadow?1:0;angles[index]=v.userData.wheelAngle||0;});
     for(let i=0;i<planes.length;i++){
       const p=planes[i],v=p.position;p.updateMatrixWorld(true);angles[i]=p.userData.propeller.rotation.z;
       visible[i]=cutaway&&v.y<14&&v.x>HOUSE.x0-1&&v.x<HOUSE.x1+1&&v.z>HOUSE.z0-1&&v.z<HOUSE.z1+1?0:1;

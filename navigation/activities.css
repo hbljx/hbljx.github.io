@@ -1,4 +1,8 @@
 /* Page destinations belong to the bottom Dock. Keep character controls on one row. */
+#shared-routine{position:fixed;right:16px;top:calc(max(16px,env(safe-area-inset-top)) + 60px);z-index:16;width:min(310px,calc(100vw - 32px));box-sizing:border-box;padding:14px 16px;background:var(--gui);color:var(--ink);border:4px solid transparent;border-image:var(--mc-frame) 4 fill / 4px;font:15px/1.6 var(--text);box-shadow:4px 4px 0 #0005}
+#shared-routine[hidden]{display:none!important}
+#shared-routine p{margin:8px 0 12px;font-variant-numeric:tabular-nums}
+#shared-routine button{min-height:44px;padding:8px 16px;border:2px solid var(--line);background:var(--btn);color:white;font:600 15px var(--text);cursor:pointer}
 #prompt{display:none!important}
 #corner{--corner-size:44px;--corner-icon:32px;width:max-content;max-width:calc(100vw - 32px);flex-wrap:nowrap;justify-content:flex-end;z-index:17}
 #activity-controls{display:contents}
@@ -71,15 +75,15 @@ body.reading #activity-controls,body.phone-on #activity-controls{display:none!im
   #activity-ui[data-activity=airplane] .activity-buttons button{font-size:12px;padding:6px 3px;min-height:40px}
   #activity-ui[data-activity=airplane] .activity-pad{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:8px}
   #activity-ui[data-activity=airplane] .activity-pad button{min-width:0;padding:4px 1px;font-size:15px}
-  #activity-ui[data-activity=reading]{display:flex;flex-direction:column;max-height:36dvh;overflow:hidden}
-  #activity-ui[data-activity=reading] .activity-heading,#activity-ui[data-activity=reading] .activity-hint,#activity-ui[data-activity=reading] .activity-buttons{flex-shrink:0}
-  #activity-ui[data-activity=reading] .activity-status:empty{display:none}
-  #activity-ui[data-activity=reading] .activity-book{min-height:0;overflow:auto;margin:6px 0;padding:8px 10px}
-  #activity-ui[data-activity=reading] .activity-book h3{font-size:15px;margin-bottom:5px}
-  #activity-ui[data-activity=reading] .activity-book p{font-size:15px;line-height:1.6}
-  #activity-ui[data-activity=reading] .activity-hint{font-size:13px;line-height:1.4;margin:5px 0}
-  #activity-ui[data-activity=reading] .activity-buttons{gap:5px;margin-top:6px}
-  #activity-ui[data-activity=reading] .activity-buttons button{font-size:13px;padding:8px}
+  #activity-ui:is([data-activity=reading],[data-activity=library]){display:flex;flex-direction:column;max-height:36dvh;overflow:hidden}
+  #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-heading,#activity-ui:is([data-activity=reading],[data-activity=library]) .activity-hint,#activity-ui:is([data-activity=reading],[data-activity=library]) .activity-buttons{flex-shrink:0}
+  #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-status:empty{display:none}
+  #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-book{min-height:0;overflow:auto;margin:6px 0;padding:8px 10px}
+  #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-book h3{font-size:15px;margin-bottom:5px}
+  #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-book p{font-size:15px;line-height:1.6}
+  #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-hint{font-size:13px;line-height:1.4;margin:5px 0}
+  #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-buttons{gap:5px;margin-top:6px}
+  #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-buttons button{font-size:13px;padding:8px}
 }
 
 /* Reserve the left end of the same row for the brand, including narrow phones. */

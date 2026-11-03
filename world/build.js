@@ -51,7 +51,7 @@ export function build({ grid, layer, materials, stage }) {
   const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
   const carrier = buildCarrier(layer, furn.batches.static);
   const oceanLife=createOceanLife(furn.batches.static);
-  const aircraftFleet=createAircraftFleet(carrier,oceanLife);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
+  const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster]);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh);
@@ -60,7 +60,7 @@ export function build({ grid, layer, materials, stage }) {
   return {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
-    sites: [outer, mountain, furn.stairs, third.source, carrier], sitesAfter: [roofAccess],
+    sites: [outer, mountain, furn.stairs, third.source, carrier, furn.partitions], sitesAfter: [roofAccess],
     named: { outer, mountain, roofAccess, carrier, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
   };
 }
@@ -90,7 +90,7 @@ export function setup(app) {
   const household = createHousehold(app,activities);
   return {
     activities,household,
-    get locked() { return activities.active || household.sleeping; },
+    get locked() { return activities.active || household.sleeping || household.bathing; },
     get running() { return activities.running; },
     keyDown: e => { if(household.sleeping||household.walking){household.wakeMale();if(['e','escape'].includes(e.key.toLowerCase()))return true;}return activities.keyDown(e); },
     keyUp: e => activities.keyUp(e),

@@ -60,6 +60,18 @@ export function createAvatar(skinUrl, { onFace } = {}) {
     img.src = skinUrl;
   }
   let eyesClosed=false,awakeFace=null;
+  let bathingSkin=null;
+  function setBathing(on){
+    if(on===!!bathingSkin)return;
+    if(on){
+      bathingSkin=ctx.getImageData(0,0,64,64);
+      // A modest light bathing wrap, using the same skin and draw call.
+      ctx.fillStyle='#e8e2d3';ctx.fillRect(16,16,24,16);
+      ctx.fillStyle='#d5ac89';for(const r of [[40,16,16,16],[32,48,16,16],[0,16,16,16],[16,48,16,16]])ctx.fillRect(...r);
+      ctx.fillStyle='#e8e2d3';ctx.fillRect(0,16,16,8);ctx.fillRect(16,48,16,8);
+    }else{ctx.putImageData(bathingSkin,0,0);bathingSkin=null;}
+    texture.needsUpdate=true;
+  }
   function setEyesClosed(closed){
     if(eyesClosed===closed)return;eyesClosed=closed;
     if(closed){awakeFace=ctx.getImageData(8,8,8,8);const pixels=awakeFace.data,skinIndex=(3*8+3)*4;ctx.fillStyle=`rgb(${pixels[skinIndex]},${pixels[skinIndex+1]},${pixels[skinIndex+2]})`;ctx.fillRect(9,12,2,1);ctx.fillRect(13,12,2,1);ctx.fillStyle='#654736';ctx.fillRect(9,12.6,2,.4);ctx.fillRect(13,12.6,2,.4);}
@@ -235,7 +247,7 @@ export function createAvatar(skinUrl, { onFace } = {}) {
   function reach(arm = 'R') { reachT = 0.75; reachArm = arm; }
   function holdPhone(on) { phoneOut = on; handset.visible = on; }
 
-  return { root, body, head, armR, armL, legR, legL, hand, blob, update, setEyesClosed, get eyesClosed(){return eyesClosed;}, wave, reach, holdPhone, material };
+  return { root, body, head, armR, armL, legR, legL, hand, blob, update, setEyesClosed, setBathing, get eyesClosed(){return eyesClosed;}, wave, reach, holdPhone, material };
 }
 
 // ---------- Pets ----------

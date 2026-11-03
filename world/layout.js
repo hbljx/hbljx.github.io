@@ -63,6 +63,8 @@ export const SPAWN = { x: 0.5, z: 5.8, heading: Math.PI };
 // Each station is something in the house you can walk up to. `at` is where the
 // player stands, `look` the point they turn to face; `name` is Chinese, `en` English.
 export const STATIONS = [
+  { id:'library',name:'双人图书馆',en:'Library',icon:'writing',at:[-21.5,-19.25],look:[-20,-22],page:false },
+  { id:'bath',name:'浴室',en:'Bathroom',icon:'pool',at:[-8,-17.4],look:[-8,-23],page:false },
   { id: 'works', name: 'AI 工作台', en: 'AI studio', at: [1.2, -8.3], look: [2.3, -10.95] },
   { id: 'writing', name: '灵感书房', en: 'Library', at: [-7.3, -6.7], look: [-8.8, -5.65], floor: LOFT.y },
   // From the south end of the lounge rug: sofa, TV and fireplace stay in view.

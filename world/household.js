@@ -4,6 +4,7 @@ import { createPlayer } from '@engine/world/player.js';
 import { createFemaleRoutine } from './female-routine.js';
 import { createSharedQuilt } from './quilt.js';
 import { createNpcNavigator } from './npc-navigation.js';
+import { LIBRARY, BATH, createShower } from './shared-rooms.js';
 
 const BED={x:-9.8,y:4,z:-9.3},IDLE={x:0,z:0,run:false},FIVE_MINUTES=300000;
 const hours=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',hourCycle:'h23'});
@@ -54,75 +55,133 @@ function createWoman(){
   update(0);return{root,body,hand,blob,update,beginProps,prop,endProps,setSwimsuit,setEyesClosed(on){if(eyesClosed===on)return;eyesClosed=on;for(let i=0;i<parts.length;i++)if(parts[i].color===0x28232a){mesh.getMatrixAt(i,m);const k=on ? .012/.045 : .045/.012;for(let j=4;j<7;j++)m.elements[j]*=k;mesh.setMatrixAt(i,m);}mesh.instanceMatrix.needsUpdate=true;},get eyesClosed(){return eyesClosed;},get outfit(){return swimsuit?'swimsuit':'casual';}};
 }
 
-export function createHousehold({stage,world,player,avatar,nav,rig},activities){
+export function createHousehold({stage,world,player,avatar,nav,rig,sound},activities){
   const femaleAvatar=createWoman(),woman=createPlayer({avatar:femaleAvatar,nav,grid:world.grid,ground:world.ground});
   stage.scene.add(femaleAvatar.root);woman.restore(-1.5,0,5.8,Math.PI);
   const navigateWoman=createNpcNavigator(woman,world,nav);
   const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities,world,nav,stage,navigate:navigateWoman});
-  const quilts=createSharedQuilt();stage.scene.add(quilts);
-  let maleSleep=false,femaleSleep=false,going=false,femaleGoing=false,reason=null,sleepControl=false,femaleWakeAt=0,wasManualSleep=false;
+  const quilts=createSharedQuilt(),shower=createShower(stage.scene);stage.scene.add(quilts);
+  const panel=document.createElement('aside');panel.id='shared-routine';panel.hidden=true;
+  panel.innerHTML='<strong>睡前时光</strong><p role="status"></p><button type="button">取消 · E</button>';document.body.append(panel);
+  const message=panel.querySelector('p'),cancel=panel.querySelector('button');cancel.addEventListener('click',wakeMale);
+  let phase='idle',maleSleep=false,femaleSleep=false,reason=null,bathStarted=0,femaleWakeAt=0,bedtimeFirstPerson=false;
+  let reading=false,readArrived=false,routeClock=0,clock=0,lastMove=Date.now(),lastNight=false,nightDismissed=false,sleepControl=false;
   const wakeButton=document.querySelector('[data-control="interact"]');
-  wakeButton.addEventListener('click',e=>{if(maleSleep){e.stopImmediatePropagation();wakeMale();}},{capture:true});
-  let lastMove=Date.now(),lastNight=false,nightDismissed=false,clock=0,last={x:player.pos.x,y:player.y,z:player.pos.z},routeClock=0;
-  const clockDate=new Date(),maleLimbs=[avatar.legL,avatar.legR,avatar.armL,avatar.armR,avatar.head];let clockAt=0,night=false;
-  const atBed=p=>Math.abs(p.y-4)<.25&&Math.hypot(p.pos.x-BED.x,p.pos.z-BED.z)<.5;
+  wakeButton.addEventListener('click',e=>{if(phase!=='idle'||maleSleep){e.stopImmediatePropagation();wakeMale();}},{capture:true});
+  const last={x:player.pos.x,y:player.y,z:player.pos.z},clockDate=new Date();let clockAt=0,night=false;
+  const limbs=[avatar.legL,avatar.legR,avatar.armL,avatar.armR,avatar.head];
+  const still={speed:0,fly:-1},pose={activity:true,seated:false,speed:0,left:0,right:0};
+  const reached=(p,t)=>Math.abs(p.y-t.y)<.25&&Math.hypot(p.pos.x-t.x,p.pos.z-t.z)<.38;
   function covers(){
-    const male=maleSleep||activities.current==='sleep';world.preserveRoof=male||femaleSleep;avatar.setEyesClosed(male);femaleAvatar.setEyesClosed(femaleSleep);const state=(male?1:0)+(femaleSleep?2:0);quilts.visible=state!==0;
-    if(maleSleep){wakeButton.hidden=false;if(wakeButton.getAttribute('aria-label')!=='起床 · E')wakeButton.setAttribute('aria-label','起床 · E');}
+    world.preserveRoof=maleSleep||femaleSleep;avatar.setEyesClosed(maleSleep);femaleAvatar.setEyesClosed(femaleSleep);quilts.visible=maleSleep||femaleSleep;
+    const controlled=phase!=='idle'||maleSleep;
+    if(controlled){wakeButton.hidden=false;wakeButton.setAttribute('aria-label',maleSleep?'起床 · E':'取消睡前流程 · E');}
     else if(sleepControl){const nearby=activities.spots.find(s=>s.id===activities.status().nearby);wakeButton.hidden=!nearby;wakeButton.setAttribute('aria-label',`${nearby?.title.split(' · ').at(-1)||'互动'} · E`);}
-    sleepControl=maleSleep;
+    sleepControl=controlled;panel.hidden=!controlled;
+    if(!controlled)return;
+    let text=phase==='to-bath'?'一起前往浴室，到齐后开始沐浴':phase==='to-bed'?'沐浴结束，一起上楼睡觉':'两个人正在休息';
+    if(phase==='bathing'){const left=Math.ceil(Math.max(0,BATH.duration-(Date.now()-bathStarted))/1000);text=`一起沐浴 · ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')} · 结束后上楼睡觉`;}
+    if(message.textContent!==text)message.textContent=text;
+    const cancelText=maleSleep?'起床 · E':'取消 · E';if(cancel.textContent!==cancelText)cancel.textContent=cancelText;
   }
-  function sleepingPose(a,x){a.root.position.set(x,4.78,-8.55);a.root.rotation.set(0,0,0);if(a===avatar)for(const limb of maleLimbs)limb?.rotation.set(0,0,0);a.body.rotation.set(-Math.PI/2,0,0);a.body.position.set(0,Math.sin(clock*1.3)*.008,0);}
+  function sleepingPose(a,x){a.root.position.set(x,4.78,-8.55);a.root.rotation.set(0,0,0);if(a===avatar)for(const limb of limbs)limb.rotation.set(0,0,0);a.body.rotation.set(-Math.PI/2,0,0);a.body.position.set(0,Math.sin(clock*1.3)*.008,0);}
+  function resetBath(){shower.update(0,false);avatar.setBathing(false);femaleAvatar.setSwimsuit(false);sound.loop(null);}
+  function leaveReading(){
+    if(!reading)return;const wasSeated=readArrived;reading=readArrived=false;woman.cancel();if(wasSeated)woman.restore(LIBRARY.approach.x,0,LIBRARY.approach.z,0);femaleAvatar.update(0,still);routine.resume();
+  }
+  function wakeWoman(){
+    const inBed=femaleSleep;femaleSleep=false;femaleWakeAt=0;woman.cancel();femaleAvatar.setEyesClosed(false);femaleAvatar.body.rotation.set(0,0,0);femaleAvatar.body.position.set(0,0,0);
+    if(inBed)woman.restore(BED.x,4,BED.z,0);routine.resume();
+  }
   function wakeMale(){
     lastMove=Date.now();nightDismissed=true;
-    if(maleSleep||going||activities.current==='sleep')scheduleWomanWake();
-    if(!maleSleep&&!going)return false;
-    going=false;player.cancel();
-    if(maleSleep){maleSleep=false;avatar.body.rotation.set(0,0,0);avatar.body.position.set(0,0,0);avatar.update(0,{speed:0,fly:-1});player.restore(BED.x,4,BED.z,0);rig.recenter(player,true);}
-    covers();return true;
+    if(phase==='idle'&&!maleSleep)return false;
+    phase='idle';player.cancel();resetBath();
+    if(maleSleep){maleSleep=false;avatar.body.rotation.set(0,0,0);avatar.body.position.set(0,0,0);avatar.update(0,still);player.restore(BED.x,4,BED.z,0);rig.recenter(player,true);}
+    else avatar.update(0,still);
+    if(femaleSleep)femaleWakeAt=Date.now()+5000;else wakeWoman();
+    rig.setFirstPerson(bedtimeFirstPerson,player.heading);covers();return true;
   }
-  function scheduleWomanWake(){if((femaleSleep||femaleGoing)&&!femaleWakeAt)femaleWakeAt=Date.now()+5000;nightDismissed=true;}
-  function wakeWoman(){const inBed=femaleSleep;femaleWakeAt=0;femaleSleep=femaleGoing=false;woman.cancel();femaleAvatar.body.rotation.set(0,0,0);femaleAvatar.body.position.set(0,0,0);if(inBed)woman.restore(BED.x,4,BED.z,0);routine.resume();}
-  function begin(cause){
-    if(going||maleSleep)return false;
+  function begin(cause='manual'){
+    if(phase!=='idle'||maleSleep)return false;
     if(activities.active&&!activities.stop(false))return false;
-    reason=cause;femaleWakeAt=0;going=true;femaleGoing=!femaleSleep;routine.pause();routeClock=1;
-    const h=window.__home;const ok=h?.navigate(BED.x,BED.z,4);
-    if(!ok){going=false;return false;}return true;
+    leaveReading();if(femaleSleep)wakeWoman();routine.pause();femaleWakeAt=0;reason=cause;phase='to-bath';bathStarted=0;routeClock=1;
+    if(!window.__home?.navigate(BATH.male.x,BATH.male.z,0)){phase='idle';routine.resume();return false;}
+    bedtimeFirstPerson=rig.firstPerson;rig.setFirstPerson(false);
+    return true;
   }
-  function guideWoman(){
-    if(femaleSleep||!femaleGoing)return;
-    const target=BED;
-    if(Math.hypot(woman.pos.x-target.x,woman.pos.z-target.z)<.3)return;
-    if(!woman.travelling)navigateWoman(target.x,target.y,target.z);
+  activities.setBedtimeHandler(begin);
+  function frameBath(){
+    if(phase!=='bathing')return;
+    const portrait=innerWidth<720&&innerHeight>innerWidth;
+    rig.showcase(portrait?[-8.95,9,-19.4]:[-5,4.8,-17.1],portrait?[-8.95,1.3,-25.5]:[-9,1.3,-24.6],{interactive:true});
   }
-  const recordInput=e=>{if(e.isTrusted&&going)wakeMale();};
-  addEventListener('keydown',recordInput);addEventListener('pointerdown',recordInput);
+  addEventListener('resize',frameBath);
+  function guide(){
+    if(phase!=='to-bath'&&phase!=='to-bed')return;
+    const male=phase==='to-bath'?BATH.male:BED,female=phase==='to-bath'?BATH.female:BED;
+    if(!maleSleep&&!player.travelling&&!reached(player,male))window.__home?.navigate(male.x,male.z,male.y);
+    if(!femaleSleep&&!woman.travelling&&!reached(woman,female))navigateWoman(female.x,female.y,female.z);
+  }
+  function bathingPose(dt){
+    avatar.root.position.set(BATH.male.x,0,BATH.male.z);avatar.root.rotation.set(0,Math.PI,0);avatar.body.position.set(0,0,0);avatar.body.rotation.set(0,0,0);
+    for(const limb of limbs)limb.rotation.set(0,0,0);
+    avatar.armL.rotation.x=-.7+Math.sin(clock*2)*.25;avatar.armR.rotation.x=-1.1-Math.sin(clock*2)*.25;avatar.head.rotation.x=.1;
+    femaleAvatar.root.position.set(BATH.female.x,0,BATH.female.z);femaleAvatar.root.rotation.set(0,Math.PI,0);
+    pose.seated=false;pose.left=-1.1+Math.sin(clock*2)*.25;pose.right=-.7-Math.sin(clock*2)*.25;femaleAvatar.update(dt,pose);
+    sound.loop('shower',.35);shower.update(dt,true);
+  }
+  function library(dt){
+    if(!reading){routine.pause();reading=true;readArrived=false;routeClock=1;}
+    if(!readArrived){
+      if(!woman.travelling)navigateWoman(LIBRARY.approach.x,0,LIBRARY.approach.z);
+      woman.update(dt,IDLE,0);
+      if(reached(woman,LIBRARY.approach)){woman.cancel();woman.anchor(...LIBRARY.female,Math.PI);readArrived=true;}
+    }
+    activities.setSharedStatus(readArrived?'两个人正在一起看书':'女主正在前来，一起看书');
+    if(!readArrived)return;
+    femaleAvatar.root.position.set(...LIBRARY.female);femaleAvatar.root.rotation.set(0,Math.PI,0);
+    pose.seated=true;pose.left=pose.right=-1.15;femaleAvatar.update(dt,pose);femaleAvatar.beginProps();
+    femaleAvatar.prop(0,1.02,.43,.58,.035,.37,0x416754,false,.2);
+    femaleAvatar.prop(0,1.05,.43,.54,.04,.34,0xf4e8ca,false,.2);
+    femaleAvatar.prop(0,1.08,.43,.025,.015,.34,0xc3aa76,false,.2);femaleAvatar.endProps();
+  }
   function update(dt){
     clock+=dt;routeClock+=dt;const now=Date.now();
-    const manualSleep=activities.current==='sleep';
-    if(wasManualSleep&&!manualSleep)scheduleWomanWake();
-    if(manualSleep&&!wasManualSleep)femaleWakeAt=0;
-    wasManualSleep=manualSleep;
-    if(femaleWakeAt&&now>=femaleWakeAt&&!maleSleep&&!manualSleep)wakeWoman();
+    if(femaleWakeAt&&now>=femaleWakeAt)wakeWoman();
     if(Math.abs(now-clockAt)>=1000){clockAt=now;clockDate.setTime(now);const hour=Number(hours.format(clockDate));night=hour>=22||hour<7;}
-    if(!night&&lastNight){wakeMale();nightDismissed=false;if(femaleSleep||femaleGoing)wakeWoman();}
+    if(!night&&lastNight){if(reason==='night')wakeMale();nightDismissed=false;}
     if(night&&!lastNight)nightDismissed=false;lastNight=night;
-    const moved=Math.hypot(player.pos.x-last.x,player.pos.z-last.z,player.y-last.y)>.025;
-    if(moved||player.moving||activities.active)lastMove=now;
+    if(Math.hypot(player.pos.x-last.x,player.pos.z-last.z,player.y-last.y)>.025||player.moving||activities.active)lastMove=now;
     last.x=player.pos.x;last.y=player.y;last.z=player.pos.z;
-    // Bedtime waits for the visitor to finish driving or another interaction.
-    if(!maleSleep&&(night&&!nightDismissed||now-lastMove>=FIVE_MINUTES)&&!going&&!activities.active&&!rig.introActive){begin(night?'night':'idle');}
-    if((night&&!nightDismissed||manualSleep)&&!femaleSleep&&!femaleGoing&&!femaleWakeAt){routine.pause();femaleGoing=true;routeClock=1;}
-    if(going&&atBed(player)){player.cancel();maleSleep=true;going=false;player.anchor(-11.24,4,-9.3,0);avatar.update(0,{speed:0,fly:-1});rig.recenter(player,true);rig.showcase(innerWidth<720&&innerHeight>innerWidth?[-3,11,3]:[-6.5,8.7,-4.9],[-12,4.9,-9.3],{interactive:true});}
-    if(routeClock>.6){routeClock=0;guideWoman();}
-    if(!femaleSleep){
-      if(femaleGoing){woman.update(dt,IDLE,0);if(atBed(woman)){woman.cancel();femaleSleep=true;femaleGoing=false;femaleAvatar.update(0,{speed:0});}}
-      else routine.update(dt);
+    if(phase==='idle'&&!maleSleep&&!activities.active&&!rig.introActive&&(night&&!nightDismissed||now-lastMove>=FIVE_MINUTES))begin(night?'night':'idle');
+    if(activities.current==='library'&&phase==='idle')library(dt);
+    else{
+      leaveReading();
+      if(phase==='to-bath'||phase==='to-bed'){
+        if(routeClock>.75){routeClock=0;guide();}
+        if(!femaleSleep)woman.update(dt,IDLE,0);
+        if(phase==='to-bath'&&reached(player,BATH.male)&&reached(woman,BATH.female)){
+          player.cancel();woman.cancel();player.anchor(BATH.male.x,0,BATH.male.z,Math.PI);woman.anchor(BATH.female.x,0,BATH.female.z,Math.PI);
+          phase='bathing';bathStarted=now;avatar.setBathing(true);femaleAvatar.setSwimsuit(true);frameBath();
+        }
+        if(phase==='to-bed'){
+          if(!maleSleep&&reached(player,BED)){player.cancel();maleSleep=true;player.anchor(-11.24,4,-9.3,0);rig.recenter(player,true);rig.showcase(innerWidth<720&&innerHeight>innerWidth?[-3,11,3]:[-6.5,8.7,-4.9],[-12,4.9,-9.3],{interactive:true});}
+          if(!femaleSleep&&reached(woman,BED)){woman.cancel();femaleSleep=true;woman.anchor(-12.76,4,-9.3,0);femaleAvatar.update(0,still);}
+          if(maleSleep&&femaleSleep)phase='sleeping';
+        }
+      }else if(phase==='idle'&&!femaleSleep&&!femaleWakeAt)routine.update(dt);
     }
-    if(maleSleep)sleepingPose(avatar,-11.24);
-    if(femaleSleep)sleepingPose(femaleAvatar,-12.76);
-    covers();
+    if(phase==='bathing'){
+      bathingPose(dt);
+      if(now-bathStarted>=BATH.duration){resetBath();phase='to-bed';routeClock=1;avatar.update(0,still);guide();}
+    }
+    if(maleSleep)sleepingPose(avatar,-11.24);if(femaleSleep)sleepingPose(femaleAvatar,-12.76);covers();
   }
-  return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,get sleeping(){return maleSleep;},get walking(){return going;},status:()=>({male:maleSleep?'sleeping':going?'going-to-bed':'awake',female:femaleSleep?'sleeping':femaleGoing?'going-to-bed':'awake',femaleWakeIn:femaleWakeAt?Math.max(0,(femaleWakeAt-Date.now())/1000):null,femaleActivity:routine.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
+  return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,shower,
+    get sleeping(){return maleSleep;},get bathing(){return phase==='bathing';},get walking(){return phase!=='idle'&&phase!=='sleeping';},
+    status:()=>({phase,male:maleSleep?'sleeping':phase==='idle'?'awake':phase==='to-bath'?'going-to-bath':phase==='to-bed'?'going-to-bed':phase,
+      female:femaleSleep?'sleeping':reading?(readArrived?'reading':'going-to-library'):phase==='idle'?'awake':phase,
+      bathRemaining:phase==='bathing'?Math.max(0,(BATH.duration-(Date.now()-bathStarted))/1000):null,bathDuration:BATH.duration/1000,
+      femaleWakeIn:femaleWakeAt?Math.max(0,(femaleWakeAt-Date.now())/1000):null,femaleActivity:routine.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
 }

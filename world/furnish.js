@@ -6,6 +6,8 @@ import { canvasTexture } from '@engine/world/textures.js';
 import * as P from './paint.js';
 import { createCar } from './car.js';
 import { createMotorcycle } from './motorcycle.js';
+import { createRoadster } from './roadster.js';
+import { buildSharedRooms } from './shared-rooms.js';
 import { buildFloorPlants } from './plants.js';
 import { HOUSE, COURT, RIM, VERTEC, LOFT, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR } from './layout.js';
 
@@ -462,6 +464,8 @@ export function furnish({ layer }) {
   foot(14.5, 1, 2.5, 1.04);
   animated.motorcycleObstacle = obstacles[obstacles.length - 1];
   animated.motorcycleObstacle.dynamic = true;
+  animated.roadster = createRoadster();
+  foot(22,-17,2.54,5.64);animated.roadsterObstacle=obstacles[obstacles.length-1];animated.roadsterObstacle.dynamic=true;
   B.box(19.2, 0, -11.4, 0.8, 1.8, 0.9, L.steel);
   plane(0.65, 1.65, paint(32, 62, P.paintRack), 19.2, 0.95, -10.94, 0, true);
   foot(19.2, -11.4, 0.9, 1);
@@ -526,14 +530,7 @@ export function furnish({ layer }) {
   for (let i = 0; i < 3; i++) B.box(-9.25, LOFT.y + .86 + i * .055, -5.65, .4, .055, .28, L.paint([0x597262, 0xb38b55, 0x748899][i]));
   hot('writing', -8.8, LOFT.y, -5.65, 2, 1.4, 1);
 
-  // Reading/display space in the new north gallery; keep the back-door lane clear.
-  B.box(-15,0,-26.5,13,.48,1.1,L.wood);foot(-15,-26.5,13.1,1.2);
-  B.box(-15,.48,-26.5,12.8,.1,1.02,L.paint(0x587565));
-  for(const x of [-24,-5]){
-    B.box(x,0,-25,1.2,.65,1.2,L.paint(0x676e66));
-    B.box(x,.65,-25,.16,1.7,.16,L.wood);
-    B.box(x,1.25,-25,1.15,.9,1.1,L.paint(0x59815d));foot(x,-25,1.3,1.3);
-  }
+  const partitions=buildSharedRooms(B,obstacles,lighting);
   for(const x of [-15,4,23])pendant(x,-22,6.5);
   // A quiet terrace and still pool outside. No games corner, string lights,
   // solar array or lawn lettering.
@@ -593,7 +590,7 @@ export function furnish({ layer }) {
       return { t: distance, point, site: 'stairs' };
     },
   };
-  return { batches, obstacles, lights, lighting, hotspots, planes, animated, surfaces, stairs };
+  return { batches, obstacles, lights, lighting, hotspots, planes, animated, surfaces, stairs, partitions };
 }
 
 function ergonomicChair(B, x, z, ry) {

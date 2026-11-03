@@ -71,7 +71,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
   const landmarks=[{id:'fishing',name:'钓鱼台',en:'Fishing deck',at:[-45.3,2],symbol:'⚑'},{id:'harbor',name:'航母停泊港',en:'Carrier harbor',at:[56.8,8],symbol:'⚓'}];
   const symbolCanvas=s=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.fillStyle='#ffe6a1';g.font='26px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(s,16,16);return c;};
-  const blips = [...STATIONS.map(s => ({ s, img: icon(s.id).canvas })),...landmarks.map(s=>({s,img:symbolCanvas(s.symbol)}))];
+  const blips = [...STATIONS.map(s => ({ s, img: icon(s.icon || s.id).canvas })),...landmarks.map(s=>({s,img:symbolCanvas(s.symbol)}))];
 
   function fit() {
     const r = canvas.getBoundingClientRect();
@@ -170,6 +170,9 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     ctx.restore();
   }
 
+  // A wider schematic projection makes the rectangular home readable. All
+  // drawing, dragging, zooming and picking share this same affine transform.
+  const mapXScale=1.35;
   // ---------- Full map ----------
   const big = bigRoot.querySelector('canvas');
   const bctx = big.getContext('2d');
@@ -181,7 +184,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       big.width = Math.round(r.width * dpr); big.height = Math.round(r.height * dpr);
       const terrain=getLandscape();
       const bounds={x0:Math.min(-58,ISLAND.x0-8),x1:85,z0:Math.min(ISLAND.z0-8,terrain?terrain.z-terrain.r-8:-125),z1:45};
-      const fitScale = Math.min(big.width / (bounds.x1-bounds.x0), big.height / (bounds.z1-bounds.z0)) * .86;
+      const fitScale = Math.min(big.width / ((bounds.x1-bounds.x0)*mapXScale), big.height / (bounds.z1-bounds.z0)) * .86;
       view = { cx: (bounds.x0+bounds.x1)/2, cz: (bounds.z0+bounds.z1)/2, scale: fitScale, min: fitScale * 0.9, max: fitScale * 4 };
       drawBig();
     }
@@ -193,7 +196,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   function toWorld(clientX, clientY) {
     const r = big.getBoundingClientRect();
     const sx = (clientX - r.left) * dpr - big.width / 2, sy = (clientY - r.top) * dpr - big.height / 2;
-    return { x: view.cx + sx / view.scale, z: view.cz + sy / view.scale };
+    return { x: view.cx + sx / (view.scale*mapXScale), z: view.cz + sy / view.scale };
   }
   let pan = null;
   big.addEventListener('pointerdown', e => { big.setPointerCapture(e.pointerId); pan = { x: e.clientX, y: e.clientY, moved: false }; });
@@ -201,7 +204,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     if (!pan) return;
     const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
     if (Math.hypot(dx, dy) > 4) pan.moved = true;
-    if (pan.moved) { view.cx -= dx * dpr / view.scale; view.cz -= dy * dpr / view.scale; pan.x = e.clientX; pan.y = e.clientY; drawBig(); }
+    if (pan.moved) { view.cx -= dx * dpr / (view.scale*mapXScale); view.cz -= dy * dpr / view.scale; pan.x = e.clientX; pan.y = e.clientY; drawBig(); }
   });
   big.addEventListener('pointerup', e => {
     if (pan && !pan.moved) { const w = toWorld(e.clientX, e.clientY); onPick(w.x, w.z); toggleBig(false); }
@@ -223,29 +226,31 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     bctx.fillStyle = '#9fc6e8';
     bctx.fillRect(0, 0, W, H);
     bctx.imageSmoothingEnabled = false;
-    const ox = W / 2 - (view.cx - ISLAND.x0) * s, oz = H / 2 - (view.cz - ISLAND.z0) * s;
-    const P = (x, z) => [ox + (x - ISLAND.x0) * s, oz + (z - ISLAND.z0) * s];
+    const ox = W / 2 - (view.cx - ISLAND.x0) * s * mapXScale, oz = H / 2 - (view.cz - ISLAND.z0) * s;
+    const P = (x, z) => [ox + (x - ISLAND.x0) * s * mapXScale, oz + (z - ISLAND.z0) * s];
     const mountain=getLandscape();
     if(mountain){
       const [mx,mz]=P(mountain.x,mountain.z);
-      for(let i=0;i<7;i++){bctx.fillStyle=['#44744d','#508454','#63905a','#80a367','#9ab97a','#b5c899','#cfceb3'][i];bctx.beginPath();bctx.arc(mx,mz,(mountain.r-(mountain.r-mountain.summit)*i/6)*s,0,Math.PI*2);bctx.fill();}
+      for(let i=0;i<7;i++){bctx.fillStyle=['#44744d','#508454','#63905a','#80a367','#9ab97a','#b5c899','#cfceb3'][i];bctx.beginPath();bctx.ellipse(mx,mz,(mountain.r-(mountain.r-mountain.summit)*i/6)*s*mapXScale,(mountain.r-(mountain.r-mountain.summit)*i/6)*s,0,0,Math.PI*2);bctx.fill();}
       bctx.strokeStyle='#e8ddc7';bctx.lineWidth=2*dpr;bctx.beginPath();mountain.path.forEach((p,i)=>{const [x,z]=P(p.x,p.z);if(i)bctx.lineTo(x,z);else bctx.moveTo(x,z);});bctx.stroke();
-      bctx.fillStyle='#5a6970';bctx.beginPath();bctx.arc(mx,mz,mountain.summit*s,0,Math.PI*2);bctx.fill();
+      bctx.fillStyle='#5a6970';bctx.beginPath();bctx.ellipse(mx,mz,mountain.summit*s*mapXScale,mountain.summit*s,0,0,Math.PI*2);bctx.fill();
       bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('山顶停机坪',mx,mz+4*dpr);
     }
-    bctx.drawImage(mapImage, ox, oz, mapImage.width * s / PPM, mapImage.height * s / PPM);
+    bctx.drawImage(mapImage, ox, oz, mapImage.width * s * mapXScale / PPM, mapImage.height * s / PPM);
     bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));bctx.moveTo(...P(35,8));bctx.lineTo(...P(57,8));bctx.stroke();
-    bctx.fillStyle='#52636e';const dock=P(56.4,-24);bctx.fillRect(dock[0],dock[1],15.2*s,65*s);
+    bctx.fillStyle='#52636e';const dock=P(56.4,-24);bctx.fillRect(dock[0],dock[1],15.2*s*mapXScale,65*s);
     bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;
     bctx.textAlign = 'left'; bctx.textBaseline = 'middle';
     for (const { s: st, img } of blips) {
       const [x, y] = P(st.at[0], st.at[1]);
       const glyph = 22 * dpr;
+      if(x < -glyph/2 || x > W+glyph/2 || y < -glyph/2 || y > H+glyph/2)continue;
       drawBlip(bctx, x, y, img, glyph);
       if(!st.symbol&&s<5*dpr)continue;
       const label = nameOf(st);
       const tw = bctx.measureText(label).width;
-      const lx = x + glyph / 2 + 5 * dpr;
+      const right=x+glyph/2+5*dpr;
+      const lx=Math.max(6*dpr,right+tw+12*dpr>W-6*dpr?x-glyph/2-5*dpr-tw-12*dpr:right);
       bctx.fillStyle = 'rgba(12, 14, 16, .72)';
       bctx.fillRect(lx, y - 10 * dpr, tw + 12 * dpr, 20 * dpr);
       bctx.fillStyle = '#fff';
@@ -260,7 +265,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     const [px, py] = P(p.x, p.z);
     bctx.save();
     bctx.translate(px, py);
-    bctx.rotate(-p.heading + Math.PI);
+    bctx.rotate(-Math.atan2(Math.sin(p.heading)*mapXScale,Math.cos(p.heading)) + Math.PI);
     const a = 11 * dpr;
     bctx.beginPath();
     bctx.moveTo(0, -a); bctx.lineTo(a * 0.72, a * 0.8); bctx.lineTo(0, a * 0.38); bctx.lineTo(-a * 0.72, a * 0.8); bctx.closePath();

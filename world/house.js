@@ -116,7 +116,8 @@ export function buildShell(grid) {
   for (let y = 0; y < height; y++) {
     for (let z = GARAGE.z0; z < GARAGE.z1; z++) {
       const door = z >= GARAGE.glassDoor.z0 && z < GARAGE.glassDoor.z1 && y < 3;
-      grid.set(GARAGE.x0 - 1, y, z, door ? null : 'glass');
+      const clearAisle = y < 4 && z >= -15 && z < -10;
+      grid.set(GARAGE.x0 - 1, y, z, door || clearAisle ? null : 'glass');
     }
     for (let x = GARAGE.x0 - 1; x < GARAGE.x1; x++) grid.set(x, y, GARAGE.z1, y < 3 ? 'brick' : 'glass');
   }

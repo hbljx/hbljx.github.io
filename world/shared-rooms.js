@@ -1,0 +1,111 @@
+import * as THREE from 'three';
+
+export const LIBRARY = {
+  at: [-21.5, -19.25], male: [-21.5, 0, -20.5], female: [-18.5, 0, -20.5],
+  approach: {x:-18.5,y:0,z:-19.25},
+};
+export const BATH = { male:{x:-10.7,y:0,z:-25.5}, female:{x:-7.2,y:0,z:-25.5}, duration:300000 };
+
+// All fixtures join the existing furniture batches; partitions use their real
+// thickness for both walking and flying instead of full-metre glass voxels.
+export function buildSharedRooms(B, obstacles, lighting) {
+  const wood={tex:'walnut'}, ivory={tex:'paint',tint:0xece8df}, stone={tex:'travertine'},
+    brass={tex:'paint',tint:0xb5a074}, glass={tex:'glass',glass:true}, green={tex:'paint',tint:0x46675d};
+  const walls=[];
+  const foot=(x,z,w,d)=>obstacles.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,level:0});
+  function partition(x,z,w,d,h,look){
+    B.box(x,0,z,w,h,d,look);foot(x,z,w,d);walls.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,h});
+  }
+  // Restore the clear aisle beside the studio display wall.
+  partition(10.99,-12.5,.08,5,4,glass);
+
+  // Library: two banks of actual books, a shared desk and two reading chairs.
+  B.box(-20,0,-22.4,10.9,.018,9.4,{tex:'parquet'});
+  const colors=[0x35585b,0xa16b4a,0xb5a56f,0x71657c,0x6c805e,0xdbc7a1];
+  function shelf(x,z,w,yaw=0){
+    B.at(x,0,z,yaw,()=>{
+      B.box(0,0,0,w,3.15,.42,wood);
+      for(let row=0;row<4;row++){
+        const y=.21+row*.72;
+        B.box(0,y,-.005,w-.14,.055,.5,brass);
+        for(let col=0;col<18;col++){
+          const bx=-w/2+.2+col*(w-.4)/18, bh=.40+(col%4)*.045;
+          B.box(bx,y+.055,.245,(w-.4)/18-.025,bh,.24,{tex:'paint',tint:colors[(col+row*2)%colors.length]});
+          B.box(bx,y+.14,.369,(w-.4)/18-.06,.018,.008,ivory);
+        }
+      }
+      B.box(0,3.16,.13,w,.035,.4,{tex:'paint',tint:0xffdf9d,emissive:1});
+    });
+    foot(x,z,yaw?.66:w+.1,yaw?w+.1:.66);
+  }
+  shelf(-20.4,-27.1,8.8);shelf(-25.15,-22.5,6.2,Math.PI/2);
+  B.box(-20,.78,-22,5.8,.14,1.45,wood);foot(-20,-22,5.9,1.55);
+  for(const x of [-22.45,-17.55]) B.box(x,0,-22,.14,.78,1.1,brass);
+  for(const x of [-21.5,-18.5]){
+    B.box(x,.48,-20.5,.68,.1,.66,green);B.box(x,.58,-20.16,.68,.65,.1,green);
+    for(const dx of [-.26,.26])for(const dz of [-.25,.25])B.box(x+dx,0,-20.5+dz,.055,.48,.055,wood);
+    foot(x,-20.45,.75,.8);
+    B.box(x,.925,-22,.76,.025,.5,green);B.box(x,.95,-22,.71,.035,.46,ivory);
+    B.box(x, .985,-22,.025,.012,.46,brass);
+    B.box(x+.9,.92,-22.35,.27,.035,.25,brass);B.box(x+.9,.955,-22.35,.035,.48,.035,brass);
+    B.box(x+.72,1.41,-22.35,.4,.04,.25,{tex:'paint',tint:0xffe3a1,emissive:1});
+  }
+  // Bathroom entrance is two metres wide. Its solid screen shields the WC;
+  // walk-in showers remain open from the south, without invisible thresholds.
+  B.box(-8.1,.005,-23.0,9.6,.02,9.4,{tex:'pool_tile'});
+  partition(-13,-23.05,.16,9.3,3.25,stone);
+  partition(-11,-18.45,4,.16,3.25,stone);
+  partition(-5.1,-18.45,3.8,.16,3.25,stone);
+  partition(-3.2,-23.05,.16,9.3,3.25,stone);
+  for(const x of [-10.7,-7.2]){
+    B.box(x,.03,-25.55,2.8,.035,3.05,ivory);
+    B.box(x,0,-26.9,2.8,2.9,.12,{tex:'paint',tint:0x8bada6});
+    B.box(x, .15,-26.81,.045,2.5,.045,brass);
+    B.box(x,2.62,-26.2,.045,.045,1.25,brass);
+    B.box(x,2.59,-25.65,.66,.055,.58,brass);
+    B.box(x,1.1,-26.75,.35,.12,.08,brass);
+    for(let i=0;i<3;i++)B.box(x-.6+i*.22,1.18,-26.65,.14,.25,.14,{tex:'paint',tint:colors[i]});
+    B.box(x,.072,-25.5,.44,.008,.16,{tex:'paint',tint:0x777f81});
+  }
+  partition(-8.95,-25.7,.055,2.6,2.7,glass);
+  B.box(-8.95,2.7,-25.7,.07,.045,2.6,brass);
+  // Freestanding tub, water, mixer and step-free access around its east end.
+  B.box(-10,.04,-22.25,3.55,.12,1.7,ivory);foot(-10,-22.25,3.65,1.8);
+  for(const z of [-22.99,-21.51])B.box(-10,.16,z,3.55,.49,.22,ivory);
+  for(const x of [-11.66,-8.34])B.box(x,.16,-22.25,.23,.49,1.48,ivory);
+  B.box(-10,.43,-22.25,3.06,.02,1.23,{tex:'paint',tint:0xa3d0d4});
+  B.box(-8.03,0,-22.25,.06,.95,.06,brass);B.box(-8.24,.9,-22.25,.46,.05,.06,brass);
+  // Double basin, mirrors, towel shelves and a toilet.
+  B.box(-4.05,.12,-21.8,1.2,.72,3.5,wood);foot(-4.05,-21.8,1.3,3.6);
+  B.box(-4.05,.84,-21.8,1.35,.09,3.65,ivory);
+  for(const z of [-22.65,-20.95]){
+    B.box(-4.05,.94,z,.9,.12,.7,ivory);B.box(-4.05,1.065,z,.67,.015,.48,{tex:'paint',tint:0x9eb8bb});
+    B.box(-3.66,.93,z,.05,.32,.05,brass);B.box(-3.81,1.22,z,.35,.04,.05,brass);
+    B.box(-3.31,1.25,z,.055,1.3,1.3,brass);B.box(-3.35,1.3,z,.025,1.2,1.2,{tex:'paint',tint:0xacc6cd});
+    B.box(-3.38,2.56,z,.08,.06,1.25,{tex:'paint',tint:0xffe3b6,emissive:1});
+    B.box(-4.62,.6,z,.035,.035,.8,brass);B.box(-4.66,.36,z,.035,.25,.55,{tex:'linen'});
+  }
+  B.box(-11.7,.02,-19.5,.48,.35,.65,ivory);B.box(-11.7,.37,-19.5,.62,.12,.82,ivory);
+  B.box(-11.7,.49,-19.8,.65,.52,.18,ivory);foot(-11.7,-19.5,.72,.92);
+  B.box(-12.45,.65,-19.5,.08,.22,.24,{tex:'linen'});
+  for(let i=0;i<3;i++)B.box(-5.4,.06+i*.13,-19,.75,.11,.42,{tex:'linen'});
+  lighting.push({id:'library-reading',position:[-20,3,-22],power:4,radius:8,direction:null},
+    {id:'bathroom',position:[-8,3,-23],power:4,radius:7,direction:null});
+  return {id:'interior-partitions',levels(){},collides(x,y,z){
+    return walls.some(w=>y<w.h&&y+1.8>0&&x+.28>w.x0&&x-.28<w.x1&&z+.28>w.z0&&z-.28<w.z1);
+  }};
+}
+
+export function createShower(scene){
+  const positions=[],uvs=[];
+  for(const p of [BATH.male,BATH.female]){
+    const source=new THREE.CylinderGeometry(.55,.8,2.5,12,1,true),g=source.toNonIndexed();source.dispose();
+    g.translate(p.x,1.35,p.z);positions.push(...g.attributes.position.array);uvs.push(...g.attributes.uv.array);g.dispose();
+  }
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  const time={value:0},m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true,
+    uniforms:{time},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:'varying vec2 vUv;uniform float time;void main(){float line=pow(max(0.,sin(vUv.x*151.)),18.);float drop=step(.45,fract(vUv.y*15.+time*4.+floor(vUv.x*24.)*.17));float a=line*drop*.48*smoothstep(0.,.1,vUv.y);gl_FragColor=vec4(.7,.9,1.,a);}' });
+  const mesh=new THREE.Mesh(g,m);mesh.name='shared-shower-water';mesh.visible=false;scene.add(mesh);
+  return {mesh,update(dt,on){mesh.visible=on;if(on)time.value+=dt;}};
+}
