@@ -24,7 +24,11 @@ export function buildSeaBridge(B,obstacles,bakes=[]){
   }
   for(const [a,b,ya,yb] of SPANS){
     const width=a>=150?18:10;
-    if(a!==26)slab(X,a,ya,b,yb,width,.44,road);
+    // The approach span is part of the deck. Leaving 26..30 unmeshed makes
+    // the analytic bridge floor continue across a visible gap at the shore.
+    // Its bottom sits below the grass and its top ends exactly at y=0, so the
+    // two surfaces meet at the seam without coplanar overlap.
+    slab(X,a,ya,b,yb,width,.44,road);
     for(const side of [-1,1]){
       const edge=X+side*(width/2-.14);
       // The east-side pavement and rails stop at the carrier junction.
@@ -113,7 +117,7 @@ export function buildSeaBridge(B,obstacles,bakes=[]){
       const h=bridgeHeight(z),edge=Math.abs(x-X)>(z>=150?8.6:4.6)&&!junction(x,z,.3)||(z>END-.4&&Math.abs(x-X)>1.3);
       return y<h-.02&&y+1.8>h-.45||edge&&y<h+1.1&&y+1.8>h;
     },
-    levels(x,z,out){if(onBridge(x,z,.3)||junction(x,z,.3)||Math.abs(x-X)<1.05&&z>=END-.5&&z<=END+.15)out.push({y:bridgeHeight(z),site:'sea-bridge'});},
+    levels(x,z,out){if(onBridge(x,z)||junction(x,z)||Math.abs(x-X)<1.05&&z>=END-.5&&z<=END+.15)out.push({y:bridgeHeight(z),site:'sea-bridge'});},
     obstructed(x,z,y){return onBridge(x,z)&&obstacles.some(o=>(o.dynamic||o.bridgeFixture)&&Math.abs((o.y||0)-y)<1&&x>o.x0-.28&&x<o.x1+.28&&z>o.z0-.28&&z<o.z1+.28);},
     route(x,z,tx,tz){
       const lane=obstacles.some(o=>o.dynamic&&o.x0<X-3.4&&o.x1>X-4.6&&o.z1>=Math.min(z,tz)&&o.z0<=Math.max(z,tz))?X+4:X-4;

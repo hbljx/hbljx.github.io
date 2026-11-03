@@ -107,10 +107,13 @@ export function furnish({ layer }) {
   // Keep the doorway jambs; omit the two crosswise bars that projected into
   // the garage and out over the shore instead of following the opening.
   for(const [a,b] of [[GARAGE.z0,GARAGE.glassDoor.z0],[GARAGE.glassDoor.z1,GARAGE.z1]])glazing(B,GARAGE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
-  // Complete the missing west-side garage glazing at full height. The pane
-  // sits on the existing wall line and does not overlap the shared divider.
-  B.box(GARAGE.x0-.02,0,-2,.055,10,2,{tex:'glass',glass:true});
-  glazing(B,GARAGE.x0-.02,-2,2,0,10,Math.PI/2,true);
+  // Complete the missing west-side garage glazing at full height. Keep the
+  // pane between the two existing jambs so its edges meet the black frames
+  // without protruding past them or leaving a visible slit.
+  const garageSideSpan = GARAGE.glassDoor.z1 - GARAGE.glassDoor.z0;
+  const garageSidePane = garageSideSpan - .07;
+  B.box(GARAGE.x0-.02,0,-2,.055,10,garageSidePane,{tex:'glass',glass:true});
+  glazing(B,GARAGE.x0-.02,-2,garageSideSpan,0,10,Math.PI/2,true);
   glazing(B,(GARAGE.x0-1+GARAGE.x1)/2,GARAGE.z1+.02,GARAGE.x1-GARAGE.x0+1,3,7);
   // Garage access is an actual open, framed glass door.
   B.at(GARAGE.x0 - 0.02, 0, GARAGE.glassDoor.z0, 0, () => {
@@ -603,6 +606,16 @@ export function furnish({ layer }) {
     // The navigation grid already owns stair heights and routes. This source
     // only selects the step under the cursor, including its vertical riser.
     levels() {},
+    // Stair treads are furniture rather than voxels, so the flight controller
+    // needs their boxes when checking a body moving through the stairwell.
+    // A body standing on a tread is clear; only a tread above the feet blocks.
+    collides(x, feet, z) {
+      for (const [ox, oz] of [[0, 0], [.3, .3], [.3, -.3], [-.3, .3], [-.3, -.3]]) {
+        if (stairTreads.some(t => t.max.y > feet + .02 && t.min.y < feet + 1.8 &&
+          x + ox >= t.min.x && x + ox <= t.max.x && z + oz >= t.min.z && z + oz <= t.max.z)) return true;
+      }
+      return false;
+    },
     pick(ray) {
       let nearest = null, distance = Infinity;
       for (const tread of stairTreads) {
