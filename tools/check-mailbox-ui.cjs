@@ -1,7 +1,10 @@
 // Isolated browser fixtures: no real challenges, tokens or mail deliveries.
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
-const base = process.argv[2] || 'http://127.0.0.1:4192';
+const { readFileSync } = require('node:fs');
+const remembered = () => { try { return readFileSync(`${__dirname}/.serve-url`, 'utf8').trim(); } catch { return ''; } };
+const base = process.argv[2] || remembered();
+if (!base) { console.error('Start npm run serve first, or pass the preview URL.'); process.exit(1); }
 const endpoint = 'https://mailbox.example.test/send';
 const script = `
   const state = window.__mailboxTest = { widgets: new Map(), created: 0, removed: 0, resets: 0,
