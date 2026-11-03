@@ -21,6 +21,23 @@ export function buildSharedRooms(B, obstacles, lighting) {
   function partition(x,z,w,d,h,look){
     B.box(x,0,z,w,h,d,look);foot(x,z,w,d);walls.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,h});
   }
+  const darkFrame={tex:'black_metal'};
+  function doorFrame(x,z,width){
+    for(const dx of [-width/2,width/2])B.box(x+dx,0,z,.09,3,.16,darkFrame);
+    B.box(x,2.91,z,width+.09,.09,.16,darkFrame);
+  }
+  function openDoor(x,z,width,hingeSide=1){
+    B.at(x,0,z,hingeSide*Math.PI/2,()=>{
+      B.box(width/2,0,0,width,2.8,.12,wood);
+      B.box(width-.2,1.1,.075,.035,.3,.04,brass);
+      B.box(width-.18,1.15,.11,.07,.04,.04,{tex:'steel'});
+    });
+  }
+  function glassRoofFrame(x,z,width,depth,y){
+    for(const dz of [-depth/2,depth/2])B.box(x,y,z+dz,width,.1,.1,darkFrame);
+    for(const dx of [-width/2,width/2])B.box(x+dx,y,z,.1,.1,depth,darkFrame);
+    B.box(x,y,z,width,.06,.06,darkFrame);
+  }
   // Preserve the narrow strip behind the diploma with the original wall
   // finish and exact walking/flying collision at the new cut edge.
   const endWidth = STUDIO_WALL_END - Math.floor(STUDIO_WALL_END);
@@ -33,7 +50,7 @@ export function buildSharedRooms(B, obstacles, lighting) {
   // not leave an unglazed rectangular gap between the timber bays.
   partition(10.99,-6.5,.08,5,4,glass);
   const dividerFrame = { tex: 'black_metal' };
-  for (const z of [-9, -4]) B.box(10.92, 2, z, .07, 4, .08, dividerFrame);
+  for (const z of [-9, -4]) B.box(10.92, 0, z, .07, 4, .08, dividerFrame);
   for (const y of [0, 3.93]) B.box(10.92, y, -6.5, .07, .07, 5, dividerFrame);
 
   // Library: two banks of actual books, a shared desk and two reading chairs.
@@ -82,6 +99,14 @@ export function buildSharedRooms(B, obstacles, lighting) {
   // Both rooms have a clear glazed ceiling below the house's taller roof.
   B.box(-8,3.35,-23.05,9.8,.08,9.2,glass);
   B.box(5.05,4.4,-23.05,9.75,.08,9.2,glass);
+  glassRoofFrame(-8,-23.05,9.8,9.2,3.4);
+  glassRoofFrame(5.05,-23.05,9.75,9.2,4.45);
+  // The north wall openings remain open for circulation; each has a visible
+  // wood leaf and a dark frame so the door is readable against the stone.
+  doorFrame(-8,-18.45,2);
+  openDoor(-9,-18.45,2,1);
+  doorFrame(7.4,-18.4,2.4);
+  openDoor(6.2,-18.4,2.4,-1);
   for(const x of [-10.7,-7.2]){
     B.box(x,.03,-25.55,2.8,.035,3.05,ivory);
     B.box(x,0,-26.9,2.8,2.9,.12,{tex:'paint',tint:0x8bada6});

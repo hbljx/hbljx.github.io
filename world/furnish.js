@@ -95,6 +95,13 @@ export function furnish({ layer }) {
   const garageFrame={tex:'black_metal'};
   batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter-garageDoorWidth/2+.035,.07,4,.1,garageFrame);
   batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter+garageDoorWidth/2-.035,.07,4,.1,garageFrame);
+  // The main garage leaf is raised inside the opening, leaving the vehicle
+  // route clear while restoring the missing framed glass door.
+  B.at(HOUSE.x1-.9,4.05,garageDoorCenter,0,()=>{
+    B.box(0,0,0,1.8,.08,garageDoorWidth,{tex:'glass',glass:true});
+    for(const z of [-garageDoorWidth/2,garageDoorWidth/2])B.box(0,0,z,1.8,.08,.08,garageFrame);
+    for(const x of [-.9,.9])B.box(x,0,0,.08,.08,garageDoorWidth,garageFrame);
+  });
   // Keep the doorway jambs; omit the two crosswise bars that projected into
   // the garage and out over the shore instead of following the opening.
   for(const [a,b] of [[GARAGE.z0,GARAGE.glassDoor.z0],[GARAGE.glassDoor.z1,GARAGE.z1]])glazing(B,GARAGE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
@@ -484,9 +491,16 @@ export function furnish({ layer }) {
   glazing(B,(LOFT.x0-6)/2,-4.14,-6-LOFT.x0,LOFT.y,3);
   foot((LOFT.x0-6)/2,-4.14,-6-LOFT.x0,.1,1);
   // Glass guards enclose the enlarged upper bedroom above the rear gallery.
-  B.box((LOFT.x0+LOFT.x1)/2,LOFT.y,LOFT.z0+.06,LOFT.x1-LOFT.x0,1.1,.07,{tex:'glass',glass:true});
-  B.box(LOFT.x1-.06,LOFT.y,(LOFT.z0+LOFT.z1)/2,.07,1.1,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
+  // Match the opposite wall's full-height pane and frame dimensions.
+  const bedroomBottom=LOFT.y, bedroomHeight=3, bedroomPaneBottom=LOFT.y+.35, bedroomPaneHeight=2.65;
+  B.box((LOFT.x0+LOFT.x1)/2,bedroomPaneBottom,LOFT.z0+.06,LOFT.x1-LOFT.x0,bedroomPaneHeight,.055,{tex:'glass',glass:true});
+  glazing(B,(LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,bedroomBottom,bedroomHeight);
+  B.box(LOFT.x0+.02,bedroomPaneBottom,(LOFT.z0+LOFT.z1)/2,.055,bedroomPaneHeight,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
+  glazing(B,LOFT.x0+.02,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2);
+  B.box(LOFT.x1-.06,bedroomPaneBottom,(LOFT.z0+LOFT.z1)/2,.055,bedroomPaneHeight,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
+  glazing(B,LOFT.x1-.06,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2);
   foot((LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,.12,1);
+  foot(LOFT.x0+.02,(LOFT.z0+LOFT.z1)/2,.12,LOFT.z1-LOFT.z0,1);
   foot(LOFT.x1-.06,(LOFT.z0+LOFT.z1)/2,.12,LOFT.z1-LOFT.z0,1);
   for (const x of [-6, -3]) B.box(x, LOFT.y, -4.1, .07, 2.9, .1, L.steel);
   B.box(-4.5, LOFT.y + 2.83, -4.1, 3, .07, .1, L.steel);
