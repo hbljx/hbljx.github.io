@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // Sculpted, vertex-coloured geometry still joins the existing fleet draw.
 // Tails and limbs taper their animation weights to zero at their attachment.
-export function createOceanModel(kind){
+export function createOceanModel(kind,{fishCount=18}={}){
   const data={position:[],normal:[],color:[],swimWeight:[],swimAxis:[]};
   const color=new THREE.Color(),shade=new THREE.Color();let offset=[0,0,0];
   function append(geometry,tint,weight=0,axis=[.08,0,0]){
@@ -76,7 +76,14 @@ export function createOceanModel(kind){
     if(!whale&&!shark&&!small){
       ell(0,-.055*s,1.24*s,.22*s,.16*s,.65*s,top);ell(0,-.1*s,1.26*s,.19*s,.06*s,.61*s,belly);
     }
-    eyes((whale?.47:.245)*s,.1*s,(whale?1.03:.83)*s,(small?.1:.065)*s);
+    // School fish are only half a metre long: flat iris/glint discs retain
+    // their eye detail without four miniature spheres per fish.
+    if(small){
+      for(const side of [-1,1]){
+        const eye=new THREE.CircleGeometry(.05*s,8);eye.rotateY(side*Math.PI/2);eye.translate(side*.275*s,.1*s,.83*s);append(eye,0x0d2430);
+        const glint=new THREE.CircleGeometry(.016*s,4);glint.rotateY(side*Math.PI/2);glint.translate(side*.277*s,.12*s,.845*s);append(glint,0xe4f7f1);
+      }
+    }else eyes((whale?.47:.245)*s,.1*s,(whale?1.03:.83)*s,.065*s);
     if(!small){
       for(const side of [-1,1]){
         const mouth=whale?[[.08,-.1,1.58],[.37,-.21,1.25],[.49,-.12,.84]]:shark?[[.06,-.09,1.07],[.24,-.2,.65],[.32,-.12,.42]]:[[.03,-.085,1.54],[.09,-.09,1.24],[.245,-.12,.84]];
@@ -99,7 +106,7 @@ export function createOceanModel(kind){
   if(kind==='whale')swimmer({size:3,top:0x345e76,belly:0xb2c7cc,mammal:true,whale:true});
   if(kind==='shark')swimmer({size:1.7,top:0x527485,belly:0xe0e4d5,shark:true});
   if(kind==='dolphin')swimmer({size:1.15,top:0x4e99ac,belly:0xd2ece4,mammal:true});
-  if(kind==='fish-school')for(let i=0;i<18;i++){
+  if(kind==='fish-school')for(let i=0;i<fishCount;i++){
     offset=[Math.sin(i*2.2)*2.1,Math.cos(i*1.7)*.45,(i%6)*.8-2];
     swimmer({size:.24+(i%3)*.025,top:[0xe79939,0x359cab,0xd87763][i%3],belly:0xffe9ad,small:true});
   }

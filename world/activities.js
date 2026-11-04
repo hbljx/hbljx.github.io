@@ -8,11 +8,15 @@ import { icon } from '@engine/ui/icons.js';
 import { distanceToAirplane, createFlight } from './aircraft.js';
 import { createCruise } from './carrier.js';
 import { createDive } from './submarine.js';
+import { PATROL_LENGTH, samplePatrol } from './submarine-path.js';
 import { LIBRARY, CINEMA } from './shared-rooms.js';
 import { createRoadsterLights } from './roadster.js';
 import { CARRIER_HOME, SUBMARINE_HOME } from './layout.js';
+import { TRANSIT_STOPS } from './transit-layout.js';
+import { createTransitRides } from './transit-rides.js';
 
 export const ACTIVITY_SPOTS = [
+  ...TRANSIT_STOPS.map(s=>({...s,title:s.name+' · 双人候车',radius:1.8})),
   ...LIFE_SPOTS,
   {id:'library',title:'双人图书馆 · 一起看书',at:LIBRARY.at,floor:0,radius:1.8,anchor:LIBRARY.male,yaw:Math.PI,view:[-16,4.6,-17.8],look:[-20,1.1,-21.5]},
   {id:'cinema',title:'家庭影院 · 一起看电影',at:CINEMA.at,floor:0,radius:2,anchor:CINEMA.male,yaw:Math.PI,view:[7.4,4.4,-18.65],look:[5,1.7,-24.4]},
@@ -41,6 +45,7 @@ const IDLE = { speed: 0, fly: -1 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 export function createActivities({ stage, world, player, avatar, nav, rig, sound }) {
+  const transit=createTransitRides({world,player,avatar,rig,sound});
   const ui = document.createElement('aside'); ui.id = 'activity-ui'; ui.hidden = true;
   ui.setAttribute('aria-label', '场景互动');
   ui.innerHTML = `<div class="activity-heading"><strong></strong><button type="button" data-action="collapse" aria-label="收起操作面板">收起</button></div>
@@ -71,9 +76,10 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   let flight=flights[0];
   const cruise = createCruise({ world, player });
   const dive = createDive({ world, player, stage });
+  world.transit.installView(stage,player);
   const sonar = document.createElement('canvas'); sonar.className = 'activity-sonar'; sonar.width = 320; sonar.height = 126; sonar.hidden = true;
   sonar.setAttribute('role','img'); sonar.setAttribute('aria-label','深海领地航图'); ui.insertBefore(sonar, $('.activity-buttons'));
-  const sonarContext = sonar.getContext('2d');
+  const sonarContext = sonar.getContext('2d'), sonarPoint = {};
   let planeExitPending = false, teaCups = 0;
   const allSpots = [...ACTIVITY_SPOTS, ...seats], life = createLifeActions(sound, () => refreshUI());
   const limbs = [avatar.armL, avatar.armR, avatar.legL, avatar.legR];
@@ -96,6 +102,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   let runMode = false, collapsed = false, controlsReady = false, stepDistance = 0, lastX = player.pos.x, lastZ = player.pos.z, lastMode = player.mode, breathClock = 0;
   let firstPerson = false, saved = null, pageIndex = 0, flip = 0, sip = 0, sips = 0;
   let tvChannel = 0, tvTime = 0, tvPaused = false, cinemaTime = 0, carSpeed = 0, carHeading = Math.PI / 2, driveDistance = 0, notice = '';
+  let tunnelGuide=0,tunnelArrived=false;
+  const guidePoint={},guideProjection={};
   let ambient=null,ambientTime=0,ambientClock=0;
   function setAmbientActivity(id){
     ambient=id;
@@ -189,7 +197,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       const x = car.position.x + Math.cos(carHeading) * side * (vehicle.halfWidth + .65) + Math.sin(carHeading) * along;
       const z = car.position.z - Math.sin(carHeading) * side * (vehicle.halfWidth + .65) + Math.cos(carHeading) * along;
       const surface=world.ground.canStand(x,z,car.position.y);
-      if(surface?.site==='sea-bridge'||surface?.site==='carrier')return{x,y:surface.y,z};
+      if(['sea-bridge','carrier','sea-tunnel','transit-concourse'].includes(surface?.site))return{x,y:surface.y,z};
       if (nav.canStand(x, z) && floorAt(x, z) === 0) return { x, y:0,z };
     }
     return null;
@@ -201,7 +209,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     saved = { x: player.pos.x, y: player.y, z: player.pos.z, heading: player.heading }; firstPerson = rig.firstPerson;
     rig.setFirstPerson(false); player.cancel(); keys.clear(); active = spot; entered = time; notice = '';
     collapsed = false; breathClock = 0; rig.skipIntro();
-    if (spot.id === 'basketball') {
+    if(spot.service){transit.start(spot);}
+    else if (spot.id === 'basketball') {
       player.anchor(saved.x, 0, saved.z, Math.atan2(RIM.x - saved.x, RIM.z - saved.z)); visuals.ball.visible = true;
     } else if (spot.id === 'airplane') {
       flight=flights[spot.flightIndex||0];planeExitPending = false; flight.start();
@@ -211,12 +220,14 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       dive.start();
     } else if (vehicles[spot.id]) {
       vehicle = vehicles[spot.id]; vehicle.passengerReady=false; car = vehicle.mesh; carObstacle = vehicle.obstacle;
+      tunnelGuide=0;tunnelArrived=false;
       hideCarObstacle(); carSpeed = 0; carHeading = car.rotation.y + Math.PI / 2; driveDistance = vehicle.distance;
       car.castShadow = false; stage.renderer.shadowMap.needsUpdate = true;
       player.anchor(car.position.x, car.position.y, car.position.z, carHeading);
     } else player.anchor(...spot.anchor, spot.yaw);
     rig.recenter(player, true);
     if (isDriving()) rig.set(carHeading + Math.PI, .3, spot.id === 'motorcycle' ? 5 : 6.8);
+    if(spot.service)rig.set(spot.service==='metro'?.7:2.3,.48,spot.service==='metro'?15:11);
     if (spot.id === 'airplane') rig.set(flight.heading + Math.PI, .34, innerWidth < 720 && innerHeight > innerWidth ? 18 : 12);
     if (spot.id === 'carrier') rig.set(world.carrier.mesh.rotation.y + .65, .62, innerWidth < 720 && innerHeight > innerWidth ? 86 : 72);
     if (spot.id === 'submarine') rig.set(-2.4, .42, innerWidth < 720 && innerHeight > innerWidth ? 300 : 175);
@@ -237,6 +248,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   function stop(force = false) {
     if (!active) return true;
     let exit = saved;
+    if(active.service){exit=transit.stop();if(!exit){keys.clear();updateStatus();return false;}}
     if (active.id === 'carrier') exit = cruise.stop();
     if (active.id === 'submarine') { exit = dive.stop(); if (!exit) { keys.clear(); updateStatus(); return false; } }
     if (active.id === 'airplane') {
@@ -272,6 +284,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     notice = '篮球飞向篮筐……'; updateStatus();
   }
   function primaryAction() {
+    if(isDriving()){toggleTunnelGuide();return;}
     if (life.primary()) return;
     if (active?.id === 'airplane') { flight.takeoff(); refreshUI(); }
     else if (active?.id === 'carrier') { keys.clear(); cruise.togglePatrol(); refreshUI(); }
@@ -303,6 +316,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (k === 'q') { if (!e.repeat) { if (active?.kind === 'seat') stop(); else if (!active) { const seat = nearest(seats); if (seat) start(seat.id); } } return true; }
     if (k === 'e') { if (!e.repeat) { if (active) stop(); else start(); } return true; }
     if (!active) return false;
+    if(isDriving()&&k==='t'){if(!e.repeat)toggleTunnelGuide();return true;}
     if(active.id==='airplane'&&k==='v'){if(!e.repeat){flight.toggleHover();refreshUI();}return true;}
     if (active.id==='airplane' && k==='l') { if(!e.repeat){flight.landAt('summit');refreshUI();} return true; }
     if (active.id==='airplane' && k==='h') { if(!e.repeat){flight.landAt('carrier');refreshUI();} return true; }
@@ -311,6 +325,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (k === 'escape') { stop(); return true; }
     if (k === 'f') { return stop(true) === false; }
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k) || (['airplane','submarine'].includes(active.id) && k === 'c')) {
+      if(isDriving()){tunnelGuide=0;tunnelArrived=false;}
       if(active.id==='submarine'){if(dive.automatic && e.repeat)return true;dive.takeOver();}
       if(active.id==='carrier' && cruise.automatic && e.repeat)return true;
       if(active.id==='carrier')cruise.takeOver();
@@ -319,6 +334,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       return true;
     }
     if (k === ' ') {
+      if(isDriving()){tunnelGuide=0;tunnelArrived=false;keys.add(k);return true;}
       if(active.id==='submarine'){if(dive.automatic&&e.repeat)return true;dive.takeOver();}
       if(active.id==='carrier'){if(cruise.automatic&&e.repeat)return true;cruise.takeOver();}
       keys.add(k);
@@ -373,10 +389,10 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   carrierLand.addEventListener('click',()=>{flight.landAt('carrier');refreshUI();carrierLand.blur();});
   for(const [button,mode]of [[catapult,'catapult'],[skiJump,'ski-jump']])button.addEventListener('click',()=>{keys.clear();flight.takeoff(mode);refreshUI();button.blur();});
   for (const b of pad.children) {
-    b.addEventListener('pointerdown', e => { b.setPointerCapture(e.pointerId); if(active?.id==='carrier')cruise.takeOver(); if(active?.id==='submarine')dive.takeOver(); keys.add(b.dataset.key); e.preventDefault(); });
+    b.addEventListener('pointerdown', e => { b.setPointerCapture(e.pointerId); if(isDriving()){tunnelGuide=0;tunnelArrived=false;}if(active?.id==='carrier')cruise.takeOver(); if(active?.id==='submarine')dive.takeOver(); keys.add(b.dataset.key); e.preventDefault(); });
     for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(name, () => keys.delete(b.dataset.key));
   }
-  const clearKeys = () => { keys.clear(); shot.charging = false; carSpeed = 0; cruise.pause(); if(active?.id==='submarine')dive.pause(); };
+  const clearKeys = () => { keys.clear(); shot.charging = false; carSpeed = 0;tunnelGuide=0; cruise.pause(); if(active?.id==='submarine')dive.releaseControls(); };
   addEventListener('blur', clearKeys); document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
 
   // UI and animation helpers below run only while an interaction is visible.
@@ -418,12 +434,13 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       case 'gaming': canvas.hidden = primary.hidden = pad.hidden = false; primary.textContent = '重新开始 空格'; hint.textContent = 'A / D 或 ← → 移动 · 接金块，避红块'; break;
       case 'motorcycle':
       case 'roadster':
-      case 'driving': pad.hidden = secondary.hidden = false; secondary.textContent = '回车库 R'; toggle.textContent = s.id === 'motorcycle' ? '下摩托车 E' : '下车 E'; hint.textContent = 'W / S 前进倒车 · A / D 转向 · 空格刹车'; break;
+      case 'driving': pad.hidden = primary.hidden = secondary.hidden = false; primary.textContent='隧道领航 T';secondary.textContent = '回车库 R'; toggle.textContent = s.id === 'motorcycle' ? '下摩托车 E' : '下车 E'; hint.textContent = 'W / S 前进倒车 · A / D 转向 · 空格刹车 · 驶进入口后按 T 沿隧道行驶'; break;
       case 'fishing': primary.hidden = false; primary.textContent = life.fishing.phase === 'bite' ? '立即收线！空格' : life.fishing.phase === 'waiting' ? '提竿 空格' : '抛竿 空格'; hint.textContent = '空格抛竿 · 浮漂下沉后 2.5 秒内按空格收线'; break;
       case 'cooking': primary.hidden = false; primary.textContent = life.cooking.phase === 'prep' ? '切菜 空格' : life.cooking.phase === 'cooking' ? '翻炒 空格' : '再做一份 空格'; hint.textContent = '切菜 3 次 → 翻炒 3 次 → 等待出锅 · E 结束'; break;
       case 'treadmill': primary.hidden = secondary.hidden = false; primary.textContent = life.treadmill.paused ? '继续跑 空格' : '暂停 空格'; secondary.textContent = '调速度 R'; hint.textContent = '空格暂停 / 继续 · R 调速 · E 下跑步机'; break;
     }
-    if (!hint.textContent.includes('点击地面') && !['airplane','submarine'].includes(s.id)) hint.textContent += ' · 点击地面结束';
+    if(s.service){toggle.textContent='取消候车 E';hint.textContent='进站开门后一起上车 · 停稳后按 E 下车 · 行驶中按 E 预约下一站下车';}
+    if (!hint.textContent.includes('点击地面') && !['airplane','submarine'].includes(s.id)&&!s.service) hint.textContent += ' · 点击地面结束';
     for (const b of pad.children) b.hidden = (b.dataset.key === 'c' && !['airplane','submarine'].includes(s.id)) || (s.id === 'gaming' && b.dataset.key !== 'a' && b.dataset.key !== 'd');
     pad.querySelector('[data-key=" "]').textContent = s.id === 'airplane' ? '升高' : '刹车';
     pad.querySelector('[data-key=" "]').setAttribute('aria-label', s.id === 'airplane' ? '升高' : '刹车');
@@ -438,6 +455,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   function updateStatus() {
     if (!active) return;
     const id = active.id;
+    if(active.service){const t=transit.status();title.textContent=active.name+' · '+(t.phase==='waiting'?'双人候车':t.phase==='boarding'?'正在上车':'双人乘车');status.textContent=t.message;toggle.textContent=t.phase==='waiting'?'取消候车 E':t.phase==='boarding'?'取消上车 E':t.atStop?'下车 E':t.exitPending?'已预约下一站下车':'下一站下车 E';return;}
     if (id === 'submarine') {
       const d = dive.status();
       primary.textContent = d.mode === 'patrol' ? '暂停巡视 P' : '下潜巡视 P';
@@ -460,7 +478,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     else if (id === 'library' || id === 'cinema') status.textContent=sharedStatus;
     else if (id === 'coffee') status.textContent = `已喝 ${sips} 口 · ${sip > 0 ? '慢慢品尝中' : '稍作休息，再喝一口'}`;
     else if (id === 'tv') status.textContent = `${tvChannel ? '像素体育台' : '海岸旅行台'}${tvPaused ? ' · 已暂停' : ' · 正在播放'}`;
-    else if (isDriving()) status.textContent = `${Math.round(Math.abs(carSpeed) * 3.6)} km/h · ${Math.round(driveDistance)} 米 · 双人出游${notice ? ' · ' + notice : ''}`;
+    else if (isDriving()){primary.textContent=tunnelGuide?'停止领航 T':'隧道领航 T';status.textContent = `${Math.round(Math.abs(carSpeed) * 3.6)} km/h · ${Math.round(driveDistance)} 米 · 双人出游${world.seaTunnel.contains(car.position.x,car.position.z)?' · 海底隧道 '+Math.max(0,Math.round(-car.position.y))+' 米':''}${notice ? ' · ' + notice : ''}`;}
     else if (id === 'gaming') status.textContent = `${game.score} 分 · ${game.lives} 颗心 · ${Math.ceil(game.time)} 秒${game.over ? ' · 本局结束' : ''}`;
     else if (id === 'fishing') status.textContent = `${life.fishing.catches} 条鱼 · ${life.fishing.message}`;
     else if (id === 'cooking') status.textContent = life.cooking.phase === 'prep' ? `备菜 ${life.cooking.chops} / 3` : life.cooking.phase === 'cooking' ? `翻炒 ${Math.min(3, life.cooking.stirs)} / 3 · ${life.cooking.elapsed < 6 ? `还需 ${Math.ceil(6 - life.cooking.elapsed)} 秒` : '食材已熟，完成翻炒即可出锅'}` : `做好了！已完成 ${life.cooking.dishes} 份料理`;
@@ -474,6 +492,12 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     for (let y = 21; y < 115; y += 17) { c.beginPath(); c.moveTo(18, y); c.lineTo(302, y); c.stroke(); }
     c.font = '11px sans-serif'; c.fillStyle = '#a3d6d7'; c.fillText('领地声呐 · 西侧深海', 9, 13); c.fillText('母港', 277, 13);
     c.fillStyle = '#edd391'; c.fillRect(X(home.x) - 3, Z(home.z) - 3, 6, 6);
+    c.strokeStyle = '#64dfc2'; c.lineWidth = 1.5; c.beginPath();
+    for (let i = 0; i <= 64; i++) {
+      samplePatrol(i / 64 * PATROL_LENGTH, sonarPoint);
+      if (i) c.lineTo(X(sonarPoint.x), Z(sonarPoint.z)); else c.moveTo(X(sonarPoint.x), Z(sonarPoint.z));
+    }
+    c.stroke();
     world.submarine.landmarks.forEach((site, i) => {
       const x = X(site.x), y = Z(site.z); c.strokeStyle = site.color; c.fillStyle = site.color;
       c.beginPath(); c.arc(x, y, d.visited.includes(i) ? 4 : 2.5, 0, Math.PI * 2); c.fill();
@@ -485,6 +509,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     sonar.setAttribute('aria-label', '深海领地航图，已巡视 ' + d.visited.length + ' 个地标，共 3 个');
   }
   function driveHeight(x,z){
+    const tunnel=world.seaTunnel.driveHeight(x,z);
+    if(tunnel!==null)return tunnel;
     const ship=world.carrier.driveHeight(x,z);
     return ship??(world.seaBridge.contains(x,z)?world.seaBridge.height(z):0);
   }
@@ -505,6 +531,9 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     }
     for (const p of vehicle.samples) {
       const px = x + c * p[0] - s * p[1], pz = z + s * p[0] + c * p[1];
+      const tunnel=world.seaTunnel.driveHeight(px,pz,.35);
+      if(tunnel!==null){if(Math.abs(tunnel-y)>1.8)return false;continue;}
+      if(world.transit.approach.driveHeight(px,pz,.35)!==null&&Math.abs(y)<.5)continue;
       const ship=world.carrier.driveHeight(px,pz,.35);
       if(ship!==null){if(Math.abs(ship-y)>1.1)return false;continue;}
       if(world.seaBridge.contains(px,pz,.5)||world.seaBridge.junction(px,pz,.35))continue;
@@ -515,31 +544,47 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     }
     return true;
   }
+  function toggleTunnelGuide(){
+    if(tunnelGuide){tunnelGuide=0;carSpeed=0;return;}
+    if(!world.seaTunnel.contains(car.position.x,car.position.z,1)){notice='请先沿车库外海岸道路驶到海底隧道入口';updateStatus();return;}
+    const path=world.seaTunnel.path,p=path.project(car.position.x,car.position.z,guideProjection);
+    tunnelGuide=p.s<20?1:p.s>path.length-20?-1:Math.cos(carHeading-p.heading)>=0?1:-1;
+    tunnelArrived=false;keys.clear();updateStatus();
+  }
   function drive(dt) {
     if(!vehicle.passengerReady){carSpeed=0;notice='等女主上车，一起出游';return;}
-    const forward = keys.has('w') || keys.has('arrowup'), reverse = keys.has('s') || keys.has('arrowdown');
+    let guideRemaining=Infinity,guideHeading=carHeading;
+    if(tunnelGuide){
+      const path=world.seaTunnel.path,p=path.project(car.position.x,car.position.z,guideProjection);
+      guideRemaining=tunnelGuide>0?path.length-p.s:p.s;
+      path.sample(p.s+tunnelGuide*4,guidePoint);guideHeading=Math.atan2(guidePoint.x-car.position.x,guidePoint.z-car.position.z);
+      if(guideRemaining<.35){tunnelGuide=0;tunnelArrived=true;carSpeed=0;}
+    }
+    const forward = !!tunnelGuide||keys.has('w') || keys.has('arrowup'), reverse = keys.has('s') || keys.has('arrowdown');
     const braking = keys.has(' '), throttle = Number(forward) - Number(reverse);
     const topSpeed = active.id === 'motorcycle' ? 7 : active.id === 'roadster' ? 8 : 5.5;
-    const target = braking ? 0 : throttle > 0 ? topSpeed : throttle < 0 ? -2.5 : 0;
+    const guideAngle=Math.atan2(Math.sin(guideHeading-carHeading),Math.cos(guideHeading-carHeading));
+    const target = braking ? 0 : tunnelGuide?(Math.abs(guideAngle)>.4?0:Math.min(4.5,Math.sqrt(3*guideRemaining))):throttle > 0 ? topSpeed : throttle < 0 ? -2.5 : 0;
     const acceleration = braking ? 14 : 4;
     carSpeed += clamp(target - carSpeed, -acceleration * dt, acceleration * dt);
     const turn = Number(keys.has('a') || keys.has('arrowleft')) - Number(keys.has('d') || keys.has('arrowright'));
     const direction = carSpeed < -.08 ? -1 : 1;
-    const heading = carHeading + turn * direction * (.9 + Math.min(Math.abs(carSpeed), 5.5) * .08) * dt;
+    const angle=Math.atan2(Math.sin(guideHeading-carHeading),Math.cos(guideHeading-carHeading));
+    const heading = carHeading + (tunnelGuide?clamp(angle,-1.3*dt,1.3*dt):turn * direction * (.9 + Math.min(Math.abs(carSpeed), 5.5) * .08) * dt);
     // Allow steering while stopped; a blocked translation must not discard a safe turn.
-    notice = '';
-    if (turn) {
+    notice = tunnelGuide?'沿隧道行驶中 · 操作方向键可接管':tunnelArrived?'已到隧道出口，可停车下车或继续驾驶':'';
+    if (turn||tunnelGuide) {
       if (canDrive(car.position.x, car.position.z, heading)) carHeading = heading;
       else notice = '转弯空间不足，请先向空处挪车';
     }
     const x = car.position.x + Math.sin(carHeading) * carSpeed * dt, z = car.position.z + Math.cos(carHeading) * carSpeed * dt;
     if (Math.abs(carSpeed) > .001) {
       if (canDrive(x, z, carHeading)) { driveDistance += Math.abs(carSpeed) * dt; vehicle.distance = driveDistance; car.position.set(x, driveHeight(x,z), z); if(active.id==='roadster')car.userData.wheelAngle=(car.userData.wheelAngle||0)-carSpeed*dt/.43; }
-      else { carSpeed = 0; notice = '遇到障碍，请反向挪车后转向'; }
+      else { carSpeed = 0;tunnelGuide=0; notice = '遇到障碍，请反向挪车后转向'; }
     }
     // The mesh faces local +X; Three.js rotates +X toward -Z for positive yaw.
     const ship=world.carrier.driveHeight(car.position.x,car.position.z);
-    const slope=ship!==null?world.carrier.driveSlope(car.position.x,car.position.z,carHeading):world.seaBridge.contains(car.position.x,car.position.z)?world.seaBridge.slope(car.position.z)*Math.cos(carHeading):0;
+    const slope=world.seaTunnel.contains(car.position.x,car.position.z)?world.seaTunnel.slope(car.position.x,car.position.z,carHeading):ship!==null?world.carrier.driveSlope(car.position.x,car.position.z,carHeading):world.seaBridge.contains(car.position.x,car.position.z)?world.seaBridge.slope(car.position.z)*Math.cos(carHeading):0;
     car.rotation.set(0,carHeading-Math.PI/2,Math.atan(slope)); car.updateMatrix();
     player.anchor(car.position.x, car.position.y, car.position.z, carHeading);
     sound.loop(active.id==='roadster'?'luxury-engine':'engine', Math.abs(carSpeed) / topSpeed);
@@ -668,6 +713,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       controlsReady = true; controls.hidden = false;
     }
     time += dt; uiClock += dt; screenClock += dt;
+    transit.update(dt);
+    if(active?.service&&transit.readyToExit){stop();return;}
     for(const f of flights)f.syncParked();
     ambientScreens(dt);
     if (!active) { walkingSounds(); if (uiClock > .15) { uiClock = 0; const seat = nearest(seats), next = nearest() || seat; if (near !== next || nearSeat !== seat || nearTitle !== next?.title) { near = next; nearSeat = seat; nearTitle = next?.title; refreshUI(); } } return; }
@@ -687,6 +734,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (active.id === 'cinema') cinemaTime += dt;
     if (active.id === 'sleep') { breathClock += dt; if (breathClock > 3) { breathClock = 0; sound.effect('sleep'); } }
     pose(dt);
+    if(active.service)transit.pose();
     if (screenClock > .1) { screenClock = 0; if (active.id === 'tv') paintTV(visuals.tv, tvTime, tvChannel, tvPaused); if (active.id === 'cinema') paintCinema(visuals.cinema,cinemaTime); if (active.id === 'gaming') drawGame(); }
     if (uiClock > .25) { uiClock = 0; updateStatus(); }
   }
@@ -697,11 +745,12 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   return {
     setResidentBall(x,y,z){if(active?.id==='basketball')return;visuals.ball.visible=x!==null;if(x!==null)visuals.ball.position.set(x,y,z);},
     setBedtimeHandler(fn){bedtimeHandler=fn;},setSharedStatus(text){sharedStatus=text;},
-    start, stop, keyDown, keyUp, update, cycleMovement, syncMovement, setAmbientActivity, spots: allSpots, seats, get flight(){return flight;}, flights, cruise, dive,
+    start, stop, keyDown, keyUp, update, cycleMovement, syncMovement, setAmbientActivity, spots: allSpots, seats, get flight(){return flight;}, flights, cruise, dive, transit,
+    canDrive,
     pause() { clearKeys(); sound.loop(null); },
     get ride(){return isDriving()?vehicle:null;},
     get running() { return runMode; },
     get active() { return !!active; }, get current() { return active?.id || null; },
-    status: () => ({ active: active?.id || null, nearby: near?.id || null, seat: nearSeat?.id || null, running: runMode, fishing: { ...life.fishing }, cooking: { ...life.cooking }, treadmill: { ...life.treadmill }, page: pageIndex, sips, tvChannel, tvPaused, tvTime, roadster: vehicleStatus('roadster'), car: vehicleStatus('driving'), motorcycle: vehicleStatus('motorcycle'), shot: { ...shot }, game: { ...game, objects: game.objects.map(o => ({ ...o })) } }),
+    status: () => ({ active: active?.id || null, transit:transit.status(),nearby: near?.id || null, seat: nearSeat?.id || null, running: runMode, fishing: { ...life.fishing }, cooking: { ...life.cooking }, treadmill: { ...life.treadmill }, page: pageIndex, sips, tvChannel, tvPaused, tvTime, roadster: vehicleStatus('roadster'), car: vehicleStatus('driving'), motorcycle: vehicleStatus('motorcycle'), shot: { ...shot }, game: { ...game, objects: game.objects.map(o => ({ ...o })) } }),
   };
 }

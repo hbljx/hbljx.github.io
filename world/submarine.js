@@ -3,6 +3,7 @@ import { SEA_BRIDGE, SUBMARINE_ACCESS, SUBMARINE_HOME } from './layout.js';
 import { bridgeHeight } from './sea-bridge.js';
 import { canvasTexture } from '@engine/world/textures.js';
 import { DEEP_LANDMARKS, seabedAt, installDeepSeaView } from './deep-sea.js';
+import { PATROL_BOUNDS, PATROL_LENGTH, samplePatrol } from './submarine-path.js';
 
 const HOME = { ...SUBMARINE_HOME, y: 0 }, DECK = 4.4, MAX_DEPTH = 320;
 const PIER = { x0: HOME.x + 5, x1: SEA_BRIDGE.x - 4, z: HOME.z, width: SUBMARINE_ACCESS.width };
@@ -142,11 +143,8 @@ export function buildSubmarine(B, planes) {
 
 export function createDive({ world, player, stage }) {
   const sub = world.submarine, mesh = sub.mesh, visited = new Set();
-  let active = false, mode = 'manual', route = [], speed = 0, distance = 0, exitPending = false, message = '已靠港 · 舱门开启', lap = 0, patrolIndex = 0;
-  const patrol = [
-    { x: -340, y: -260, z: 230 }, { x: -555, y: -300, z: 395 },
-    { x: -430, y: -300, z: 515 }, { x: -330, y: -260, z: 410 },
-  ];
+  let active = false, mode = 'manual', route = [], speed = 0, distance = 0, exitPending = false, message = '已靠港 · 舱门开启', lap = 0, patrolDistance = 0, patrolling = false;
+  const patrolPoint = samplePatrol(0, {}), entry = { ...patrolPoint };
   const samples = [];
   for (let z = -65; z <= 61; z += 6) for (const x of [-13, 0, 13]) samples.push([x, z]);
   installDeepSeaView(stage, () => active, world.oceanLife.deepGroup);
@@ -161,51 +159,73 @@ export function createDive({ world, player, stage }) {
     return true;
   }
   const anchor = () => player.anchor(mesh.position.x, mesh.position.y + 1, mesh.position.z, mesh.rotation.y);
-  function takeOver() { route = []; mode = 'manual'; exitPending = false; message = '手动航行'; }
+  function takeOver() { route = []; mode = 'manual'; patrolling = false; exitPending = false; message = '手动航行'; }
   function leaveBasin() {
-    const p = mesh.position, y = p.x > -180 && p.z < 220 && p.y <= -18 ? -18.5 : 0;
+    // Stay below the pier until the entire 126 m hull is clear, even when
+    // returning from a manual dive or interrupting another automatic route.
+    const p = mesh.position, y = -18.5, z = Math.max(p.z, 260);
     return [{ x: p.x, y, z: p.z, yaw: mesh.rotation.y },
-      { x: p.x, y, z: 260, yaw: mesh.rotation.y }, { x: p.x, y: 0, z: 260, yaw: 0 }];
+      { x: p.x, y, z, yaw: mesh.rotation.y }, { x: p.x, y: 0, z, yaw: 0 }];
   }
   function returnHome(leaving = false) {
     exitPending ||= leaving;
     if (mode === 'return') return;
-    if (sub.docked()) { message = '已靠港 · 可以下艇'; return; }
-    speed = 0; mode = 'return'; message = '自动上浮返港';
+    if (sub.docked()) { route = []; mode = 'manual'; patrolling = false; speed = 0; message = '已靠港 · 可以下艇'; return; }
+    speed = 0; mode = 'return'; patrolling = false; message = '自动上浮返港';
     route = [...leaveBasin(), { x: HOME.x, y: 0, z: 260 },
       { ...HOME, yaw: 0 }];
   }
   function togglePatrol() {
     if (mode === 'patrol') { takeOver(); speed = 0; message = '巡视已暂停 · 保持当前深度'; return; }
-    exitPending = false; mode = 'patrol'; speed = 0; patrolIndex = 0; message = '离港前往深海巡视';
+    exitPending = false; mode = 'patrol'; patrolling = false; speed = 0; patrolDistance = 0; message = '离港前往深海巡视';
     const p = mesh.position;
-    route = p.x > -300 ? [...leaveBasin(),
-      { x: -330, y: 0, z: 260 }, { ...patrol[0] },
-    ] : [{ ...patrol[0] }];
+    route = p.x > PATROL_BOUNDS.x1 || p.z < 110 ? [...leaveBasin(),
+      { x: entry.x, y: 0, z: entry.z }, { ...entry },
+    ] : [{ x: p.x, y: entry.y, z: p.z, yaw: mesh.rotation.y },
+      { x: entry.x, y: entry.y, z: entry.z }, { ...entry }];
+  }
+  function recoverRoute() {
+    // Preserve both the command and deferred exit; recover through the open
+    // harbor corridor instead of silently abandoning the requested action.
+    const returning = mode === 'return', leaving = exitPending;
+    mode = 'manual';
+    if (returning) returnHome(leaving); else togglePatrol();
+    message = '正在调整安全航线';
   }
   function update(dt, keys) {
     if (!active) return; dt = Math.min(dt, .05);
     const p = mesh.position;
-    if (route.length) {
+    if (patrolling && mode === 'patrol') {
+      speed = Math.min(18, speed + 5 * dt);
+      const step = speed * dt, next = patrolDistance + step;
+      samplePatrol(next, patrolPoint);
+      if (canSail(patrolPoint.x, patrolPoint.y, patrolPoint.z, patrolPoint.yaw)) {
+        if (next >= PATROL_LENGTH) { lap++; message = '长方形连续巡视 · 第 ' + (lap + 1) + ' 圈'; }
+        patrolDistance = next % PATROL_LENGTH; distance += step;
+        p.set(patrolPoint.x, patrolPoint.y, patrolPoint.z); mesh.rotation.y = patrolPoint.yaw;
+      } else recoverRoute();
+    } else if (route.length) {
       const target = route[0], dx = target.x - p.x, dz = target.z - p.z, horizontal = Math.hypot(dx, dz), dy = target.y - p.y;
       const yaw = target.yaw ?? (horizontal > .001 ? Math.atan2(dx, dz) : mesh.rotation.y);
       const delta = angle(yaw - mesh.rotation.y), nextYaw = mesh.rotation.y + clamp(delta, -.42 * dt, .42 * dt);
       if (Math.abs(delta) > .002) {
         speed = 0;
+        message = mode === 'return' ? '返港航线 · 正在调整航向' : '前往巡视区 · 正在调整航向';
         if (canSail(p.x, p.y, p.z, nextYaw)) mesh.rotation.y = nextYaw;
-        else { takeOver(); message = '前方浅滩 · 已停艇，请后退避让'; }
+        else recoverRoute();
       } else if (horizontal > .001 || Math.abs(dy) > .001) {
         speed = Math.min(18, speed + 5 * dt); const step = Math.min(horizontal, speed * dt);
         const x = p.x + (horizontal ? dx / horizontal * step : 0), z = p.z + (horizontal ? dz / horizontal * step : 0);
         const y = p.y + clamp(dy, -9 * dt, 9 * dt);
+        message = mode === 'return' ? (dy > .01 ? '自动返港 · 正在上浮' : '自动返港 · 沿安全航道靠港')
+          : (dy < -.01 ? '正在下潜至巡视深度' : '正在前往长方形巡视航线');
         if (canSail(x, y, z, yaw)) { p.set(x, y, z); distance += step; mesh.rotation.y = yaw; }
-        else { takeOver(); speed = 0; message = '距海床过近 · 已停艇，请先上浮'; }
+        else recoverRoute();
       } else {
         p.set(target.x, target.y, target.z); mesh.rotation.y = yaw; route.shift(); speed = 0;
         if (!route.length && mode === 'return') { p.set(HOME.x, 0, HOME.z); mesh.rotation.y = 0; mode = 'manual'; message = '已靠港 · 舱门开启'; }
         else if (!route.length && mode === 'patrol') {
-          patrolIndex = (patrolIndex + 1) % patrol.length; if (!patrolIndex) lap++;
-          route.push(patrol[patrolIndex]); message = '正在巡视深海领地';
+          patrolling = true; patrolDistance = 0; message = '长方形连续巡视 · 第 ' + (lap + 1) + ' 圈';
         }
       }
     } else {
@@ -233,9 +253,10 @@ export function createDive({ world, player, stage }) {
     start() { active = true; takeOver(); speed = 0; message = '核动力在线 · 按 P 自动下潜巡视'; anchor(); },
     stop() { if (!sub.docked()) { returnHome(true); return null; } active = false; route = []; speed = 0; mode = 'manual'; message = '已靠港 · 舱门开启'; exitPending = false; return { ...sub.board, heading: Math.PI / 2 }; },
     update, togglePatrol, returnHome, takeOver, canSail,
-    pause() { speed = 0; route = []; mode = 'manual'; message = '航行暂停 · 保持深度'; },
+    pause() { takeOver(); speed = 0; message = '航行暂停 · 保持深度'; },
+    releaseControls() { if (mode === 'manual') speed = 0; },
     get automatic() { return mode !== 'manual'; }, get readyToExit() { return exitPending && sub.docked(); },
     status: () => ({ x: mesh.position.x, z: mesh.position.z, depth: -mesh.position.y, heading: mesh.rotation.y, speed, distance, maxDepth: MAX_DEPTH,
-      mode, message, docked: sub.docked(), exitPending, visited: [...visited], lap }),
+      mode, message, docked: sub.docked(), exitPending, visited: [...visited], lap, patrolling }),
   };
 }

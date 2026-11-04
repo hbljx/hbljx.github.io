@@ -8,15 +8,18 @@ export const DEEP_LANDMARKS = [
 
 // One continuous slope, shared by visual geometry and hull clearance checks.
 export function seabedAt(x, z) {
+  // The eastern observation basin lies below the complete tunnel floor.
+  if (x > 50 && x <= 180 && z >= 32 && z <= 180) return -23;
   if (z < 32 || x > 50) return -9.5;
   return -34 - THREE.MathUtils.clamp((-x - 140) / 160, 0, 1) * 386;
 }
 
 export function buildDeepSea(shallow, B) {
-  const rock = { tex: 'stone', tint: 0x356675 };
-  const sand = { tex: 'sand', tint: 0x416e78 };
+  const rock = { tex: 'stone', tint: 0x417d8b, emissive: .12 };
+  const sand = { tex: 'sand', tint: 0x83b3ac, emissive: .22 };
   // Retain the shallow reefs, opening only the western harbor and trench.
-  shallow.box(115, -10, 0, 130, .5, 360, { tex: 'paint', tint: 0x327e94 });
+  shallow.box(115, -10, -74, 130, .5, 212, { tex: 'paint', tint: 0x327e94 });
+  shallow.box(115, -23.5, 106, 130, .5, 148, sand);
   shallow.box(4, -10, -74, 92, .5, 212, { tex: 'paint', tint: 0x327e94 });
   shallow.box(-111, -10, -74, 138, .5, 212, { tex: 'paint', tint: 0x327e94 });
   shallow.box(-45, -35, 366, 190, 1, 668, sand);
@@ -27,6 +30,50 @@ export function buildDeepSea(shallow, B) {
     const x = -330 - (i * 83 % 490), z = 90 + (i * 137 % 560), h = 6 + i % 6 * 3;
     B.box(x, -420, z, 15 + i % 4 * 5, h, 14 + i % 3 * 6, rock);
     B.box(x + 2, -420 + h, z - 1, 9, 4, 9, sand);
+  }
+  // Terraced gardens frame the circuit with a sandy channel between them.
+  // Even the highest branches remain below the full-depth hull envelope.
+  const gardens = [[-360,290],[-495,245],[-605,330],[-625,470],[-520,555],[-370,515],[-350,405],[-485,405]];
+  const palette = [0x67e4cc,0xb29be8,0xf29b9b,0xf0c17b,0x72cbea];
+  for (const [n, garden] of gardens.entries()) {
+    const [gx,gz] = garden, base = -390 + n % 3 * 6;
+    B.box(gx,-420,gz,68,base+420,53,rock,{ry:n*.31});
+    B.box(gx,base,gz,56,2,43,sand,{ry:n*.31});
+    for(let i=0;i<11;i++) {
+      const a=i*2.4, x=gx+Math.cos(a)*(8+i*1.4), z=gz+Math.sin(a)*(7+i), y=base+2;
+      const coral={tex:'paint',tint:palette[(n+i)%palette.length],emissive:.55};
+      const h=11+i%4*5;
+      if(i%3===0) {
+        B.box(x,y,z,2,h,2,rock);
+        for(let j=0;j<3;j++){
+          B.box(x,y+h-j*4,z,15-j*3,1.6,11-j*2,coral,{ry:a});
+          B.box(x,y+h-j*4+1.6,z,13-j*3,.3,9-j*2,{tex:'paint',tint:0xc1f4dc,emissive:.65},{ry:a});
+        }
+      } else {
+        B.at(x,y,z,a,()=>{
+          B.box(0,0,0,1.5,h,1.5,coral);
+          for(const side of [-1,1]) {
+            B.box(side*3,h*.45,0,7,1.4,1.4,coral,{rz:side*.55});
+            B.box(side*5,h*.58,0,1.2,h*.45,1.2,coral);
+            B.box(side*5,h*.95,0,3.5,1.2,3.5,{tex:'paint',tint:0xc6ffeb,emissive:.8});
+          }
+        });
+      }
+    }
+    for(let i=0;i<14;i++){
+      const a=i*2.3,x=gx+Math.cos(a)*(32+i*.5),z=gz+Math.sin(a)*(27+i*.4);
+      const kelp={tex:'paint',tint:i%2?0x319f96:0x5fc7ac,emissive:.25};
+      B.box(x,-420,z,.8,15+i%5*3,2.3,kelp,{rz:Math.sin(a)*.18});
+      B.box(x+1,-408+i%5*2,z,5,.7,2.2,kelp,{rz:.35});
+    }
+  }
+  for(let i=0;i<90;i++){
+    const x=-345-(i*79%365),z=190+(i*131%415);
+    B.box(x,-419.9,z,9+i%4*3,.16,1.2,{tex:'sand',tint:0xb2cdc0,emissive:.28},{ry:.3});
+    if(i%3===0){
+      B.box(x,-420,z+5,3,2,3,{tex:'paint',tint:palette[i%5],emissive:.7});
+      B.box(x,-418,z+5,1,2.8,1,{tex:'paint',tint:0xd0fff3,emissive:.9});
+    }
   }
   // All scenery stays below the submarine's 320 m navigation envelope.
   for (let i = 0; i < 19; i++) {
@@ -59,7 +106,7 @@ export function buildDeepSea(shallow, B) {
 // Every overridden value is restored immediately after the submarine frame.
 export function installDeepSeaView(stage, isActive, scenery) {
   const scene = stage.scene, before = scene.onBeforeRender, after = scene.onAfterRender;
-  const water = new THREE.Color(0x073343), savedColor = new THREE.Color();
+  const water = new THREE.Color(0x10475b), savedColor = new THREE.Color();
   const state = { background: null, near: 0, far: 0, cameraFar: 0, sky: true, hemi: 0 };
   let saved = null;
   scene.onBeforeRender = function(renderer, current, camera) {
@@ -68,9 +115,9 @@ export function installDeepSeaView(stage, isActive, scenery) {
     if (!isActive() || camera !== stage.camera || camera.position.y >= -1.2) return;
     saved = state; saved.background = scene.background; saved.near = scene.fog.near; saved.far = scene.fog.far;
     saved.cameraFar = camera.far; saved.sky = stage.sky.visible; saved.hemi = stage.hemi.intensity; savedColor.copy(scene.fog.color);
-    scene.background = water; scene.fog.color.copy(water); scene.fog.near = 120; scene.fog.far = 600;
-    stage.sky.visible = false; stage.hemi.intensity = Math.max(1.4, saved.hemi);
-    camera.far = 660; camera.updateProjectionMatrix();
+    scene.background = water; scene.fog.color.copy(water); scene.fog.near = 160; scene.fog.far = 720;
+    stage.sky.visible = false; stage.hemi.intensity = Math.max(1.8, saved.hemi);
+    camera.far = 800; camera.updateProjectionMatrix();
   };
   scene.onAfterRender = function(renderer, current, camera) {
     if (saved && camera === stage.camera) {

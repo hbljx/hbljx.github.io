@@ -734,7 +734,7 @@ async function boot() {
   const minimap = createMinimap({
     root: $('#minimap'), bigRoot: $('#bigmap'), grid: world.grid, obstacles: world.obstacles, decorate: world.drawMap,
     getPlayer: () => ({ x: player.pos.x, z: player.pos.z, heading: player.heading }),
-    getLandscape: () => world.mountain.mapShape,
+    getLandscape: () => world.mountain.mapShape, drawTransit: world.drawTransitMap,
     getResidents: () => {const w=extras.household?.woman;return w?[{x:w.pos.x,z:w.pos.z}]:[];},
     getYaw: () => rig.yaw,
     getRoute: () => player.path,

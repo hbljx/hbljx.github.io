@@ -11,7 +11,7 @@ const KEY = 'terryhome-sound';
 
 export function createSound() {
   let ctx = null, bus = null, tone = null, clear = null, room = null, white = null, rumble = null, master = null;
-  let activityLoop = null, played = 0, last = null, focused = true, unlocked = false, tvBuffer = null;
+  let activityLoop = null, windLoop = null, played = 0, last = null, focused = true, unlocked = false, tvBuffer = null;
   let on = true;
   try { on = localStorage.getItem(KEY) !== 'off'; } catch {}
 
@@ -289,6 +289,29 @@ export function createSound() {
     for (const source of previous.sources) { try { source.stop(); } catch {} }
     for (const node of previous.nodes) node.disconnect();
   }
+  function stopWind() {
+    if (!windLoop) return;
+    const previous = windLoop; windLoop = null;
+    try { previous.source.stop(); } catch {}
+    previous.source.disconnect(); previous.filter.disconnect(); previous.level.disconnect();
+  }
+  // A continuous, filtered noise bed for the offshore turbine. The caller
+  // supplies a distance-based intensity, so it fades out before the player
+  // reaches the island and never competes with activity sounds.
+  function wind(intensity = 0) {
+    const amount = Math.max(0, Math.min(1, Number.isFinite(intensity) ? intensity : 0));
+    if (!amount || !on || !unlocked || document.hidden || !focused || !ensure() || ctx.state !== 'running') { stopWind(); return; }
+    if (!windLoop) {
+      const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), level = ctx.createGain();
+      source.buffer = white; source.loop = true;
+      filter.type = 'bandpass'; filter.frequency.value = 1150; filter.Q.value = 0.45;
+      level.gain.value = 0; source.connect(filter).connect(level).connect(bus); source.start();
+      windLoop = { source, filter, level };
+    }
+    const t = ctx.currentTime;
+    windLoop.level.gain.setTargetAtTime(0.018 + amount * 0.1, t, 0.16);
+    windLoop.filter.frequency.setTargetAtTime(700 + amount * 900, t, 0.2);
+  }
   function loop(name, intensity = 1) {
     if (!name || !on || !unlocked || document.hidden || !focused) { stopLoop(); return; }
     if (!['engine', 'luxury-engine', 'shower', 'sizzle', 'treadmill', 'tv'].includes(name) || !ensure()) return;
@@ -446,10 +469,10 @@ export function createSound() {
   // A hidden tab goes quiet; the rain does not keep falling in the background.
   document.addEventListener('visibilitychange', () => {
     if (!ctx) return;
-    if (document.hidden) { stopLoop(); ctx.suspend().catch(() => {}); }
+    if (document.hidden) { stopLoop(); stopWind(); ctx.suspend().catch(() => {}); }
     else if (on) ctx.resume().catch(() => {});
   });
-  addEventListener('blur', () => { focused = false; stopLoop(); });
+  addEventListener('blur', () => { focused = false; stopLoop(); stopWind(); });
   addEventListener('focus', () => { focused = true; });
   // Browsers let sound start only from a gesture: the first one wakes the
   // rain for a visitor who left the sound on last time.
@@ -461,12 +484,12 @@ export function createSound() {
     on = !!value;
     try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch {}
     if (on) { unlocked = true; ensure(); ctx?.resume().catch(() => {}); }
-    else stopLoop();
+    else { stopLoop(); stopWind(); }
     if (master) master.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, .015);
   }
 
   return {
-    play, effect, loop, ambience, setOn, get on() { return on; },
+    play, effect, loop, wind, ambience, setOn, get on() { return on; },
     status() { return { on, unlocked, focused, context: ctx?.state || 'uninitialized', loop: activityLoop?.name || null, intensity: activityLoop?.intensity || 0, played, last }; },
   };
 }

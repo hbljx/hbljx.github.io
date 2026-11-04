@@ -162,6 +162,37 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
     pose.seated=true;pose.left=pose.right=-.35;femaleAvatar.update(dt,pose);
   }
   let riding=null,boarding=null;
+  let transitSession=null;
+  const transitSeat={};
+  function sharedTransit(dt){
+    const session=activities.transit.session;
+    if(!session){
+      if(transitSession){
+        woman.cancel();
+        if(transitSession.phase!=='waiting'||transitSession.companionReady){const stop=transitSession.arrivalStop||transitSession.fromStop;woman.restore(stop.at[0]+(stop.service==='metro'?.85:0),stop.floor,stop.at[1]+(stop.service==='metro'?0:.75),player.heading);}
+        femaleAvatar.update(0,still);
+        transitSession=null;routine.resume();
+      }return false;
+    }
+    if(transitSession!==session){
+      leaveReading();leaveCinema();if(femaleSleep)wakeWoman();routine.pause();transitSession=session;routeClock=1;
+    }
+    const stop=session.fromStop,waitX=stop.at[0]+(stop.service==='metro'?.85:0),waitZ=stop.at[1]+(stop.service==='metro'?0:.75);
+    if(session.phase==='waiting'){
+      if(!session.companionReady){
+        routeClock+=dt;if(!woman.travelling&&routeClock>.7){routeClock=0;navigateWoman(waitX,stop.floor,waitZ);}
+        woman.update(dt,IDLE,0);
+        if(Math.hypot(woman.pos.x-waitX,woman.pos.z-waitZ)<.45&&Math.abs(woman.y-stop.floor)<.4){woman.cancel();session.companionReady=true;}
+      }
+      if(session.companionReady){woman.anchor(waitX,stop.floor,waitZ,player.heading);femaleAvatar.root.position.set(waitX,stop.floor,waitZ);femaleAvatar.root.rotation.set(0,player.heading,0);femaleAvatar.update(dt,still);}
+    }else{
+      activities.transit.passenger(true,transitSeat);
+      const t=session.phase==='boarding'?session.boarding*session.boarding*(3-2*session.boarding):1;
+      const x=waitX+(transitSeat.x-waitX)*t,z=waitZ+(transitSeat.z-waitZ)*t,y=stop.floor+(transitSeat.y-stop.floor)*t;
+      woman.anchor(x,y,z,transitSeat.heading);femaleAvatar.root.position.set(x,y,z);femaleAvatar.root.rotation.set(0,transitSeat.heading,0);
+      pose.seated=session.phase==='riding'||session.phase==='arrived';pose.left=pose.right=-.4;femaleAvatar.update(dt,pose);
+    }return true;
+  }
   function sharedRide(dt){
     const v=activities.ride;
     if(!v){
@@ -184,7 +215,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   function update(dt){
     clock+=dt;
     const firstFrame=startup;startup=false;
-    if(sharedRide(dt)){lastMove=Date.now();covers();return;}
+    if(sharedTransit(dt)||sharedRide(dt)){lastMove=Date.now();covers();return;}
 routeClock+=dt;const now=Date.now();
     if(femaleWakeAt&&now>=femaleWakeAt)wakeWoman();
     if(Math.abs(now-clockAt)>=1000){clockAt=now;clockDate.setTime(now);const hour=Number(hours.format(clockDate));night=hour>=22||hour<7;}
@@ -223,7 +254,7 @@ routeClock+=dt;const now=Date.now();
   return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,shower,
     get sleeping(){return maleSleep;},get bathing(){return phase==='bathing';},get walking(){return phase!=='idle'&&phase!=='sleeping';},
     status:()=>({phase,male:maleSleep?'sleeping':phase==='idle'?'awake':phase==='to-bath'?'going-to-bath':phase==='to-bed'?'going-to-bed':phase,
-      female:riding?(riding.passengerReady?'riding':'boarding'):femaleSleep?'sleeping':reading?(readArrived?'reading':'going-to-library'):watching?(watchArrived?'watching-movie':'going-to-cinema'):phase==='idle'?'awake':phase,
+      female:transitSession?`transit-${transitSession.phase}`:riding?(riding.passengerReady?'riding':'boarding'):femaleSleep?'sleeping':reading?(readArrived?'reading':'going-to-library'):watching?(watchArrived?'watching-movie':'going-to-cinema'):phase==='idle'?'awake':phase,
       bathRemaining:phase==='bathing'?Math.max(0,(BATH.duration-(Date.now()-bathStarted))/1000):null,bathDuration:BATH.duration/1000,
       femaleWakeIn:femaleWakeAt?Math.max(0,(femaleWakeAt-Date.now())/1000):null,femaleActivity:routine.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
 }

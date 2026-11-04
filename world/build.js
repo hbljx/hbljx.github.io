@@ -21,6 +21,7 @@ import { buildSubmarine } from './submarine.js';
 import { buildOffshore } from './offshore.js';
 import { createHousehold } from './household.js';
 import { flattenGlazing, flattenBatchGlazing } from './glazing.js';
+import { buildSeaTransit } from './sea-transit.js';
 
 export function build({ grid, layer, materials, stage }) {
   // Flat glass panes need one two-sided pass rather than separate front/back
@@ -42,7 +43,7 @@ export function build({ grid, layer, materials, stage }) {
   }
   const third = buildThirdFloor({ grid, layer });
   // Clear the three trees inside the new outside stair's footprint.
-  const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>=19&&x<=38&&z>=10&&z<=33)&&!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));
+  const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>=19&&x<=38&&z>=10&&z<=33)&&!(x>=-43&&x<=-12&&z>=20&&z<=35)&&!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));
   const furn = furnish({ layer });
   furn.planes.push(third.skylights);
   const mergeBatch = (into, from) => {
@@ -61,12 +62,14 @@ export function build({ grid, layer, materials, stage }) {
   // ground of their own, outside the block grid.
   const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
   const seaBridge=buildSeaBridge(furn.batches.static,furn.obstacles,furn.lighting);
+  const transit=buildSeaTransit({B:furn.batches.static,planes:furn.planes,layer,materials,scene:stage.scene});
   const carrier = buildCarrier(layer, furn.batches.static);
   const submarine = buildSubmarine(furn.batches.static, furn.planes);
-  const offshore = buildOffshore(furn.batches.static);
-  const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch);
+  const offshore = buildOffshore(furn.batches.static, layer, materials);
+  stage.scene.add(offshore.rotor);
+  const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch,transit.tunnel.path);
   for(const mesh of deepBatch.build(materials)){mesh.castShadow=false;oceanLife.deepGroup.add(mesh);}
-  stage.scene.add(oceanLife.deepGroup);
+  stage.scene.add(oceanLife.deepGroup,oceanLife.tunnelGroup);
   const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster,submarine.mesh]);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
@@ -76,8 +79,8 @@ export function build({ grid, layer, materials, stage }) {
   return {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
-    sites: [outer, mountain, furn.stairs, third.source, carrier, submarine, furn.partitions, seaBridge], sitesAfter: [roofAccess],
-    named: { seaBridge, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
+    sites: [outer, mountain, furn.stairs, third.source, carrier, submarine, furn.partitions, seaBridge,transit.platform,transit.approach,transit.tunnel], sitesAfter: [roofAccess],
+    named: { seaBridge, transit, seaTunnel:transit.tunnel, drawTransitMap:transit.drawMap, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
   };
 }
 
@@ -102,6 +105,7 @@ function drawMap(ctx, X, Z, PPM) {
 export function setup(app) {
   const { stage, world } = app;
   world.oceanLife.configureSea(world.coast);
+  world.transit.maskWater(world.coast);
   const activities = createActivities(app);
   const household = createHousehold(app,activities);
   return {
@@ -118,8 +122,12 @@ export function setup(app) {
       household.update(dt);
       world.carrier.updateCabin(app.player,stage.camera);
       const cutaway = world.hidden.has('roof');
-      world.oceanLife.update(dt,world.carrier);
+      world.oceanLife.update(dt,world.carrier,stage.camera);
       world.aircraftFleet.update(cutaway);
+      world.offshore.rotor.rotation.z -= dt * 0.8;
+      const dx = app.player.pos.x - world.offshore.x, dz = app.player.pos.z - world.offshore.z;
+      const distance = Math.hypot(dx, dz);
+      app.sound.wind(distance < 36 ? 1 - distance / 36 : 0);
       world.setHidden('thirdRoomRoof', cutaway);
     },
   };
