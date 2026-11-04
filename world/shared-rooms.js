@@ -29,14 +29,16 @@ export function buildSharedRooms(B, obstacles, lighting) {
   const darkFrame={tex:'black_metal'};
   function slidingEntrance(x,width,x0,x1){
     const z=room.south,left=x-width/2,right=x+width/2;
-    // Walls and jambs share the same cuts and centre plane. The stone lintel
-    // closes the space above the frame without adding a walking obstacle.
-    partition((x0+left)/2,z,left-x0,room.thickness,room.height,stone);
-    partition((right+x1)/2,z,x1-right,room.thickness,room.height,stone);
+    const jambWidth=.09,jambHeight=2.91;
+    const wallLeftEnd=left-jambWidth/2,wallRightStart=right+jambWidth/2;
+    // Butt the wall segments against the frame and the posts against the
+    // lintel, so their visible faces do not overlap.
+    partition((x0+wallLeftEnd)/2,z,wallLeftEnd-x0,room.thickness,room.height,stone);
+    partition((wallRightStart+x1)/2,z,x1-wallRightStart,room.thickness,room.height,stone);
     for(const dx of [-width/2,width/2]){
-      partition(x+dx,z,.09,.2,3,darkFrame);
+      partition(x+dx,z,jambWidth,.2,jambHeight,darkFrame);
     }
-    partition(x,z,width+.09,.2,.09,darkFrame,2.91);
+    partition(x,z,width+jambWidth,.2,3-jambHeight,darkFrame,jambHeight);
     partition(x,z,width+.09,room.thickness,room.height-3,stone,3);
     // Two top-hung leaves are parked flat against the hall side of the wall,
     // retaining the existing always-open entrances and their full clear width.

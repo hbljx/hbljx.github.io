@@ -50,9 +50,13 @@ export function furnish({ layer }) {
   };
   // Broad 3–4 m panes, divided at one mid-height rail on tall walls. The glass
   // stays merged; a few instanced profiles establish its joints and thickness.
-  const glazing = (batch, x, z, width, bottom, height, ry = 0, sharedEdges = false) => batch.at(x, 0, z, ry, () => {
+  const glazing = (batch, x, z, width, bottom, height, ry = 0, sharedEdges = false, verticals = true) => batch.at(x, 0, z, ry, () => {
     const count = Math.ceil(width / 3.8);
-    for (let i = sharedEdges ? 1 : 0; i <= (sharedEdges ? count - 1 : count); i++) batch.box(-width / 2 + width * i / count, bottom, 0, 0.07, height, 0.1, L.steel);
+    for (let i = 0; i <= count; i++) {
+      if (sharedEdges && (i === 0 || i === count)) continue;
+      if (!verticals && i > 0 && i < count) continue;
+      batch.box(-width / 2 + width * i / count, bottom, 0, 0.07, height, 0.1, L.steel);
+    }
     for (const y of [bottom, ...(height > 5 ? [bottom + height / 2] : []), bottom + height - 0.07]) for(let i=0;i<count;i++)batch.box(-width/2+width*(i+.5)/count,y,0,width/count-.07,.07,.1,L.steel);
   });
   const openDoor = (batch, x, y, z, width, ry, height = 2.8) => batch.at(x, y, z, ry, () => {
@@ -90,9 +94,11 @@ export function furnish({ layer }) {
   glazing(batches.wallN,14,HOUSE.z0-.02,2,3,7,0,true);
   for(const [a,b] of [[HOUSE.z0,-6],[-4,HOUSE.z1]])glazing(batches.wallW,HOUSE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
   glazing(batches.wallW,HOUSE.x0-.02,-5,2,7,3,Math.PI/2,true);
-  // Keep the long south-side facade pane; the short north-side strip beside
-  // the garage opening is intentionally open to match the reference layout.
+  // Frame the full-height east facade on either side of the garage opening.
   glazing(batches.wallE,HOUSE.x1+.02,(HOUSE.z0+GARAGE.door.z0)/2,GARAGE.door.z0-HOUSE.z0,0,10,Math.PI/2);
+  // The kitchen-side pane south of the garage opening uses the same black
+  // perimeter and mullions as the matching north-side glazing.
+  glazing(batches.wallE,HOUSE.x1+.02,(GARAGE.door.z1+HOUSE.z1)/2,HOUSE.z1-GARAGE.door.z1,0,10,Math.PI/2);
   const garageDoorCenter=(GARAGE.door.z0+GARAGE.door.z1)/2,garageDoorWidth=GARAGE.door.z1-GARAGE.door.z0;
   const garageFrame={tex:'black_metal'};
   batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter-garageDoorWidth/2+.035,.07,4,.1,garageFrame);
@@ -515,7 +521,7 @@ export function furnish({ layer }) {
   B.box((LOFT.x0+LOFT.x1)/2,bedroomBottom,LOFT.z0+.06,LOFT.x1-LOFT.x0,bedroomHeight,.055,{tex:'glass',glass:true});
   glazing(B,(LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,bedroomBottom,bedroomHeight);
   B.box(LOFT.x0+.02,bedroomBottom,(LOFT.z0+LOFT.z1)/2,.055,bedroomHeight,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
-  glazing(B,LOFT.x0+.02,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2);
+  glazing(B,LOFT.x0+.02,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2,false,false);
   B.box(LOFT.x1-.06,bedroomBottom,(LOFT.z0+LOFT.z1)/2,.055,bedroomHeight,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
   glazing(B,LOFT.x1-.06,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2);
   foot((LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,.12,1);

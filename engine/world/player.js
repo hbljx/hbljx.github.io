@@ -175,6 +175,9 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
   function startFlying() {
     if (mode === 'fly') return true;
+    // Walking eases y toward level, so uphill feet can still be inside the
+    // supporting surface. Clear it before flight collision checks take over.
+    if (mode === 'ground') y = Math.max(y, level);
     const fromWater = leaveWater(0.7);
     cancel(); ladder = null; mode = 'fly'; island = null; standing = null; velocity.set(0, 0, 0); vy = 0; zip = null; web.visible = false;
     // Out of the pool in a burst, so the player does not drop straight back in.

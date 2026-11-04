@@ -96,6 +96,43 @@ for (const view of VIEWS) {
     console.log(`${view.name}: roof round trip and indoor dog route: ${JSON.stringify(traversal)}`);
     if (!traversal.up || !traversal.down || !traversal.dogIndoors) errors.push('showcase traversal regression');
   }
+  // Switching to flight while climbing a ramp must clear the smoothed walking
+  // height; otherwise the deck traps the player and rejects every movement.
+  const bridgeFlight = await page.evaluate(() => {
+    const h = __home, p = h.player, bridge = h.world.seaBridge;
+    if (!bridge) return null;
+    const saved = { x: p.pos.x, y: p.y, z: p.pos.z, heading: p.heading };
+    const empty = { x: 0, z: 0, up: false, down: false, run: false };
+    const failures = [];
+    let cases = 0;
+    try {
+      for (const dt of [1 / 60, 1 / 30]) for (const run of [false, true]) {
+        for (const [z, direction] of [[40, 1], [130, -1], [40, -1], [90, 1]]) {
+          const label = JSON.stringify({ z, direction, run, dt });
+          cases++;
+          if (!p.restore(bridge.foot.x, bridge.height(z), z, 0)) { failures.push(label + ': restore'); continue; }
+          for (let i = 0; i < 30; i++) p.update(dt, { ...empty, z: direction, run }, 0);
+          const before = p.y, deck = bridge.height(p.pos.z);
+          p.toggleFly();
+          if (!p.flying || p.y < Math.max(before, deck) - .001 || h.world.ground.collides(p.pos.x, p.y, p.pos.z)) failures.push(label + ': takeoff');
+          const takeoff = p.y;
+          for (let i = 0; i < 60; i++) p.update(dt, { ...empty, up: true }, 0);
+          if (p.y < takeoff + 1) failures.push(label + ': climb');
+          const x = p.pos.x;
+          for (let i = 0; i < 15; i++) p.update(dt, { ...empty, x: 1 }, 0);
+          if (p.pos.x < x + .2) failures.push(label + ': steer');
+          p.toggleFly();
+          for (let i = 0; i < 180; i++) p.update(dt, empty, 0);
+          if (p.mode !== 'ground' || p.island !== 'sea-bridge' || Math.abs(p.y - bridge.height(p.pos.z)) > .01) failures.push(label + ': land');
+        }
+      }
+    } finally { p.restore(saved.x, saved.y, saved.z, saved.heading); }
+    return { cases, failures };
+  });
+  if (bridgeFlight) {
+    console.log(view.name + ': bridge flight: ' + JSON.stringify(bridgeFlight));
+    if (bridgeFlight.failures.length) errors.push('bridge flight regression');
+  }
   const over = [stats.calls > stats.budget.calls && 'draw calls', stats.triangles > stats.budget.triangles && 'triangles'].filter(Boolean);
   // Bytes as served; a server that compresses (tools/build.sh, deploy.md) sends far fewer.
   console.log(`${view.name}: started in ${(bootMs / 1000).toFixed(1)} s, loaded ${Math.round(bytes / 1024)} KB uncompressed, `
