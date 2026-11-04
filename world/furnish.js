@@ -97,6 +97,17 @@ export function furnish({ layer }) {
   const garageFrame={tex:'black_metal'};
   batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter-garageDoorWidth/2+.035,.07,4,.1,garageFrame);
   batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter+garageDoorWidth/2-.035,.07,4,.1,garageFrame);
+  // End each side pane inside its jamb, on the same plane as the frame.
+  // Sharing these exact cuts with the upper pane leaves no exposed overlap
+  // or half-block gap at either side of the garage opening.
+  const garageGlassNorth = GARAGE.door.z0 + .035;
+  const garageGlassSouth = GARAGE.door.z1 - .035;
+  for (const [a, b, bottom, height] of [
+    [HOUSE.z0, garageGlassNorth, 0, HOUSE.height],
+    [garageGlassSouth, HOUSE.z1, 0, HOUSE.height],
+    [garageGlassNorth, garageGlassSouth, 4, HOUSE.height - 4],
+  ]) batches.wallE.box(HOUSE.x1+.02,bottom,(a+b)/2,.055,height,b-a,
+    {tex:'glass',glass:true},{tag:'garage-facade-glazing'});
   // The main garage leaf is raised inside the opening, leaving the vehicle
   // route clear while restoring the missing framed glass door.
   B.at(HOUSE.x1-.9,4.05,garageDoorCenter,0,()=>{

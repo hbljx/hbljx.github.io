@@ -1,6 +1,6 @@
 // The house shell, the pool's basin and the island's surface, built from
 // blocks. The island itself comes from the engine (terrain.js buildIsland).
-import { HOUSE, LOFT, SECRET, GARAGE, POOL, TERRACE, DRIVEWAY, ENTRANCE, BACKDOOR, ROOF_GLASS, ROOF_LADDER, STUDIO_WALL_END } from './layout.js';
+import { HOUSE, LOFT, SECRET, GARAGE, POOL, TERRACE, DRIVEWAY, ENTRANCE, BACKDOOR, ROOF_GLASS, ROOF_LADDER, STUDIO_WALL_END, SEA_BRIDGE } from './layout.js';
 import { inRect } from '@engine/world/terrain.js';
 
 const SHELL = { x0: HOUSE.x0 - 1, x1: HOUSE.x1 + 1, z0: HOUSE.z0 - 1, z1: HOUSE.z1 + 1 };
@@ -17,6 +17,12 @@ export function defineHouseBlocks(grid) {
     return 'wood_panel';
   };
   grid.define('wood_floor', { tex: { all: 'greige_floor' }, merge: true });
+  // The level bridge approach owns the visible surface at y=0. Keep its
+  // underlying land solid, but omit the grass top that would fight the deck.
+  grid.define('bridge_ground', {
+    tex: { top: 'grass_top', side: 'grass_side', bottom: 'dirt' },
+    skipFace: face => face === 2,
+  });
   grid.define('epoxy', { tex: { all: 'concrete' }, tint: 0xc2c5c8 });
   grid.define('pool_tile', { tex: { all: 'pool_tile' } });
   grid.define('pool_deep', { tex: { all: 'pool_deep' } });
@@ -46,6 +52,8 @@ export function defineHouseBlocks(grid) {
 
 // What tops each column of the island: floors, decks and paving, else grass.
 export function surfaceAt(x, z) {
+  if (x >= SEA_BRIDGE.x - SEA_BRIDGE.width / 2 && x < SEA_BRIDGE.x + SEA_BRIDGE.width / 2
+    && z >= SEA_BRIDGE.z0 && z < 30) return 'bridge_ground';
   if (inRect(SHELL, x, z)) {
     return 'wood_floor';
   }
@@ -132,7 +140,9 @@ function northWall(x,y){return x===HOUSE.x0-1||x===HOUSE.x1;}
 function westWall(z,y){return false;}
 function eastWall(z,y){
   if(z>=GARAGE.door.z0&&z<GARAGE.door.z1&&y<4)return null;
-  return 'glass';
+  // Keep the collision shell; furnish draws this facade to the exact jambs.
+  // Integer voxel edges cannot match the garage's half-metre opening.
+  return 'front_glass';
 }
 function southWall(x,y){
   if(x===HOUSE.x0-1||x===HOUSE.x1)return 'wall';

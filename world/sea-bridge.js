@@ -26,8 +26,8 @@ export function buildSeaBridge(B,obstacles,bakes=[]){
     const width=a>=150?18:10;
     // The approach span is part of the deck. Leaving 26..30 unmeshed makes
     // the analytic bridge floor continue across a visible gap at the shore.
-    // Its bottom sits below the grass and its top ends exactly at y=0, so the
-    // two surfaces meet at the seam without coplanar overlap.
+    // Its top meets the grass at y=0. surfaceAt() hides only the grass tops
+    // beneath this level span so the seam has no coplanar overlap.
     slab(X,a,ya,b,yb,width,.44,road);
     for(const side of [-1,1]){
       const edge=X+side*(width/2-.14);
