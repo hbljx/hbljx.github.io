@@ -7,8 +7,10 @@ import { setActivityControl } from '../navigation/activity-icons.js';
 import { icon } from '@engine/ui/icons.js';
 import { distanceToAirplane, createFlight } from './aircraft.js';
 import { createCruise } from './carrier.js';
+import { createDive } from './submarine.js';
 import { LIBRARY, CINEMA } from './shared-rooms.js';
 import { createRoadsterLights } from './roadster.js';
+import { CARRIER_HOME, SUBMARINE_HOME } from './layout.js';
 
 export const ACTIVITY_SPOTS = [
   ...LIFE_SPOTS,
@@ -16,7 +18,8 @@ export const ACTIVITY_SPOTS = [
   {id:'cinema',title:'家庭影院 · 一起看电影',at:CINEMA.at,floor:0,radius:2,anchor:CINEMA.male,yaw:Math.PI,view:[7.4,4.4,-18.65],look:[5,1.7,-24.4]},
   {id:'bath',title:'浴室 · 睡前一起沐浴',at:[-8,-17.4],floor:0,radius:1.8},
   {id:'roadster',title:'劳斯莱斯 · 白色敞篷跑车',at:[24.2,-17],floor:0,radius:1.2},
-  { id: 'carrier', title: '航母驾驶舱 · 海上巡航', at: [68.65, 13.1], floor: 3.4, radius: 1.6 },
+  { id: 'carrier', title: '航母驾驶舱 · 海上巡航', at: [CARRIER_HOME.x + 4.65, CARRIER_HOME.z + 5.1], floor: 3.4, radius: 1.6 },
+  { id: 'submarine', title: '领海一号 · 核潜艇', at: [SUBMARINE_HOME.x, SUBMARINE_HOME.z - 10], floor: 4.4, radius: 2.2 },
   { id: 'tea', title: '三楼茶室 · 泡茶', at: [-11, 2], floor: 11, radius: 1.5, anchor: [-11, 11, .45], yaw: Math.PI, view: [-6.3, 13.8, 3.8], look: [-11, 12, -1.5] },
   { id: 'airplane', title: '领地飞机 · 驾驶飞机', at: [12, 4.2], floor: 11, radius: 1.6 },
   { id: 'basketball', title: '篮球场 · 投篮', at: [-12, 4], floor: 0, radius: 3, view: [-8, 6, 14], look: [-13.5, 1.5, 4] },
@@ -67,6 +70,10 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   const flights = world.aircraftFleet.planes.map(mesh=>createFlight({mesh,world,player,stage,sound}));
   let flight=flights[0];
   const cruise = createCruise({ world, player });
+  const dive = createDive({ world, player, stage });
+  const sonar = document.createElement('canvas'); sonar.className = 'activity-sonar'; sonar.width = 320; sonar.height = 126; sonar.hidden = true;
+  sonar.setAttribute('role','img'); sonar.setAttribute('aria-label','深海领地航图'); ui.insertBefore(sonar, $('.activity-buttons'));
+  const sonarContext = sonar.getContext('2d');
   let planeExitPending = false, teaCups = 0;
   const allSpots = [...ACTIVITY_SPOTS, ...seats], life = createLifeActions(sound, () => refreshUI());
   const limbs = [avatar.armL, avatar.armR, avatar.legL, avatar.legR];
@@ -116,8 +123,9 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   function fitActivityPanel() {
     // Leave the lower part of a portrait phone for the character or aircraft.
     const portraitPanel = !ui.hidden && innerWidth < 720 && innerHeight > innerWidth;
-    const offset = active?.id==='library' ? .13 : isReading(active?.id) ? .24 : ['airplane','tea','carrier'].includes(active?.id) ? .12 : 0;
+    const offset = active?.id==='library' ? .13 : isReading(active?.id) ? .24 : ['airplane','tea','carrier','submarine'].includes(active?.id) ? .12 : 0;
     if (portraitPanel && offset) stage.camera.setViewOffset(innerWidth, innerHeight, 0, -innerHeight * offset, innerWidth, innerHeight);
+    else if (!ui.hidden && active?.id === 'submarine') stage.camera.setViewOffset(innerWidth, innerHeight, innerWidth * .12, -innerHeight * .06, innerWidth, innerHeight);
     else stage.camera.clearViewOffset();
   }
   function frameActivity() {
@@ -130,12 +138,16 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       else rig.showcase(active.view, active.look, { interactive: true });
     }
   }
-  addEventListener('resize', frameActivity);
+  addEventListener('resize', () => {
+    if (active?.id === 'submarine') rig.set(rig.yaw, .42, innerWidth < 720 && innerHeight > innerWidth ? 300 : 175);
+    frameActivity();
+  });
   function nearest(list = ACTIVITY_SPOTS) {
     if (player.mode !== 'ground' || document.querySelector('dialog[open]') || document.body.classList.contains('phone-on')) return null;
     let best = null, distance = Infinity;
     for (const spot of list) {
       if (spot.id === 'carrier') { if (world.carrier.canBoard(player)) { best = spot; distance = 0; } continue; }
+      if (spot.id === 'submarine') { if (world.submarine.canBoard(player)) { best = spot; distance = 0; } continue; }
       let plane=null;
       if(spot.id==='airplane'){
         let closest=Infinity;
@@ -195,6 +207,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       flight=flights[spot.flightIndex||0];planeExitPending = false; flight.start();
     } else if (spot.id === 'carrier') {
       cruise.start();
+    } else if (spot.id === 'submarine') {
+      dive.start();
     } else if (vehicles[spot.id]) {
       vehicle = vehicles[spot.id]; vehicle.passengerReady=false; car = vehicle.mesh; carObstacle = vehicle.obstacle;
       hideCarObstacle(); carSpeed = 0; carHeading = car.rotation.y + Math.PI / 2; driveDistance = vehicle.distance;
@@ -205,6 +219,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (isDriving()) rig.set(carHeading + Math.PI, .3, spot.id === 'motorcycle' ? 5 : 6.8);
     if (spot.id === 'airplane') rig.set(flight.heading + Math.PI, .34, innerWidth < 720 && innerHeight > innerWidth ? 18 : 12);
     if (spot.id === 'carrier') rig.set(world.carrier.mesh.rotation.y + .65, .62, innerWidth < 720 && innerHeight > innerWidth ? 86 : 72);
+    if (spot.id === 'submarine') rig.set(-2.4, .42, innerWidth < 720 && innerHeight > innerWidth ? 300 : 175);
     frameActivity();
     visuals.book.visible = visuals.page.visible = isReading(spot.id);
     visuals.mug.visible = spot.id === 'coffee' || spot.id === 'tea'; visuals.tv.mesh.visible = spot.id === 'tv'; visuals.monitor.mesh.visible = spot.id === 'gaming';
@@ -223,6 +238,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (!active) return true;
     let exit = saved;
     if (active.id === 'carrier') exit = cruise.stop();
+    if (active.id === 'submarine') { exit = dive.stop(); if (!exit) { keys.clear(); updateStatus(); return false; } }
     if (active.id === 'airplane') {
       if (!flight.parked && !force) { flight.landNearest(); planeExitPending = true; updateStatus(); return false; }
       flight.park(); flight.leave(); exit = flight.exitPosition(); planeExitPending = false;
@@ -259,6 +275,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (life.primary()) return;
     if (active?.id === 'airplane') { flight.takeoff(); refreshUI(); }
     else if (active?.id === 'carrier') { keys.clear(); cruise.togglePatrol(); refreshUI(); }
+    else if (active?.id === 'submarine') { keys.clear(); dive.togglePatrol(); refreshUI(); }
     else if (active?.id === 'tea' && sip <= 0) { sip = 2.2; teaCups++; sound.effect('coffee'); updateStatus(); }
     else if (isReading(active?.id)) readingPage(1);
     else if (active?.id === 'coffee' && sip <= 0) { sip = 1.8; sips++; sound.effect('coffee'); updateStatus(); }
@@ -269,6 +286,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (life.secondary()) return;
     if (active?.id === 'airplane') { flight.returnHome(); refreshUI(); }
     else if (active?.id === 'carrier') { keys.clear(); cruise.returnHome(); refreshUI(); }
+    else if (active?.id === 'submarine') { keys.clear(); dive.returnHome(); refreshUI(); }
     else if (isReading(active?.id)) readingPage(-1);
     else if (active?.id === 'tv') { tvPaused = !tvPaused; sound.effect('click'); sound.loop(null); paintTV(visuals.tv, tvTime, tvChannel, tvPaused); refreshUI(); }
     else if (isDriving()) {
@@ -289,10 +307,11 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (active.id==='airplane' && k==='l') { if(!e.repeat){flight.landAt('summit');refreshUI();} return true; }
     if (active.id==='airplane' && k==='h') { if(!e.repeat){flight.landAt('carrier');refreshUI();} return true; }
     if (active.id==='airplane' && ['1','2','3'].includes(k)) { if(!e.repeat){keys.clear();flight.takeoff({'1':'vertical','2':'catapult','3':'ski-jump'}[k]);refreshUI();} return true; }
-    if (active.id==='carrier' && k==='p') { if(!e.repeat)primaryAction(); return true; }
+    if (['carrier','submarine'].includes(active.id) && k==='p') { if(!e.repeat)primaryAction(); return true; }
     if (k === 'escape') { stop(); return true; }
-    if (k === 'f') { stop(true); return false; }
-    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k) || (active.id === 'airplane' && k === 'c')) {
+    if (k === 'f') { return stop(true) === false; }
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k) || (['airplane','submarine'].includes(active.id) && k === 'c')) {
+      if(active.id==='submarine'){if(dive.automatic && e.repeat)return true;dive.takeOver();}
       if(active.id==='carrier' && cruise.automatic && e.repeat)return true;
       if(active.id==='carrier')cruise.takeOver();
       keys.add(k);
@@ -300,11 +319,12 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       return true;
     }
     if (k === ' ') {
+      if(active.id==='submarine'){if(dive.automatic&&e.repeat)return true;dive.takeOver();}
       if(active.id==='carrier'){if(cruise.automatic&&e.repeat)return true;cruise.takeOver();}
       keys.add(k);
       if (!e.repeat) {
         if (active.id === 'basketball' && !shot.flight) { shot.charging = true; shot.power = 0; }
-        else if(active.id!=='carrier')primaryAction();
+        else if(!['carrier','submarine'].includes(active.id))primaryAction();
       }
       return true;
     }
@@ -353,10 +373,10 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   carrierLand.addEventListener('click',()=>{flight.landAt('carrier');refreshUI();carrierLand.blur();});
   for(const [button,mode]of [[catapult,'catapult'],[skiJump,'ski-jump']])button.addEventListener('click',()=>{keys.clear();flight.takeoff(mode);refreshUI();button.blur();});
   for (const b of pad.children) {
-    b.addEventListener('pointerdown', e => { b.setPointerCapture(e.pointerId); if(active?.id==='carrier')cruise.takeOver(); keys.add(b.dataset.key); e.preventDefault(); });
+    b.addEventListener('pointerdown', e => { b.setPointerCapture(e.pointerId); if(active?.id==='carrier')cruise.takeOver(); if(active?.id==='submarine')dive.takeOver(); keys.add(b.dataset.key); e.preventDefault(); });
     for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(name, () => keys.delete(b.dataset.key));
   }
-  const clearKeys = () => { keys.clear(); shot.charging = false; carSpeed = 0; cruise.pause(); };
+  const clearKeys = () => { keys.clear(); shot.charging = false; carSpeed = 0; cruise.pause(); if(active?.id==='submarine')dive.pause(); };
   addEventListener('blur', clearKeys); document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
 
   // UI and animation helpers below run only while an interaction is visible.
@@ -375,6 +395,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     document.body.classList.toggle('activity-near', !!s);
     if (!s) return;
     ui.dataset.activity = active?.id || '';
+    sonar.hidden = active?.id !== 'submarine';
     hover.hidden=active?.id!=='airplane';
     title.textContent = s.title; toggle.textContent = active ? '结束互动 E' : '开始互动 E';
     toggle.hidden=false;
@@ -387,6 +408,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       case 'cinema': hint.textContent = '两人已在沙发上 · 一起观看动画电影'; toggle.textContent = '结束观影 E'; break;
       case 'airplane': pad.hidden = primary.hidden = secondary.hidden = summit.hidden = carrierLand.hidden = false; primary.textContent = '起飞'; secondary.textContent = '回三楼 R'; toggle.textContent = '下机 E'; hint.textContent = 'V 悬停/继续 · W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶 · H 降落航母'; break;
       case 'carrier': pad.hidden = primary.hidden = secondary.hidden = false; secondary.textContent = '自动返港 R'; toggle.textContent = '停船离舵 E'; hint.textContent = 'P 自动巡航 · R 返港 · W/S 前进倒航 · A/D 转向 · 空格刹车'; break;
+      case 'submarine': pad.hidden = primary.hidden = secondary.hidden = false; secondary.textContent = '上浮返港 R'; hint.textContent = 'P 下潜巡视 · W/S 前后航行 · A/D 转向 · C 下潜 / 空格上浮 · E 返港下艇'; break;
       case 'basketball': primary.hidden = meter.hidden = false; primary.textContent = '按住蓄力 / 松手投篮'; hint.textContent = '按住空格蓄力，绿色区松手投篮 · E 退出'; break;
       case 'sleep': toggle.textContent = '起床 E'; break;
       case 'library':
@@ -401,17 +423,28 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       case 'cooking': primary.hidden = false; primary.textContent = life.cooking.phase === 'prep' ? '切菜 空格' : life.cooking.phase === 'cooking' ? '翻炒 空格' : '再做一份 空格'; hint.textContent = '切菜 3 次 → 翻炒 3 次 → 等待出锅 · E 结束'; break;
       case 'treadmill': primary.hidden = secondary.hidden = false; primary.textContent = life.treadmill.paused ? '继续跑 空格' : '暂停 空格'; secondary.textContent = '调速度 R'; hint.textContent = '空格暂停 / 继续 · R 调速 · E 下跑步机'; break;
     }
-    if (!hint.textContent.includes('点击地面') && s.id!=='airplane') hint.textContent += ' · 点击地面结束';
-    for (const b of pad.children) b.hidden = (b.dataset.key === 'c' && s.id !== 'airplane') || (s.id === 'gaming' && b.dataset.key !== 'a' && b.dataset.key !== 'd');
+    if (!hint.textContent.includes('点击地面') && !['airplane','submarine'].includes(s.id)) hint.textContent += ' · 点击地面结束';
+    for (const b of pad.children) b.hidden = (b.dataset.key === 'c' && !['airplane','submarine'].includes(s.id)) || (s.id === 'gaming' && b.dataset.key !== 'a' && b.dataset.key !== 'd');
     pad.querySelector('[data-key=" "]').textContent = s.id === 'airplane' ? '升高' : '刹车';
     pad.querySelector('[data-key=" "]').setAttribute('aria-label', s.id === 'airplane' ? '升高' : '刹车');
     pad.querySelector('[data-key="w"]').setAttribute('aria-label', s.id === 'airplane' ? '加速' : '前进');
     pad.querySelector('[data-key="s"]').setAttribute('aria-label', s.id === 'airplane' ? '减速' : '倒车');
+    if (s.id === 'submarine') {
+      const up = pad.querySelector('[data-key=" "]'), down = pad.querySelector('[data-key=c]');
+      up.textContent = '上浮'; up.setAttribute('aria-label','上浮'); down.textContent = '下潜'; down.setAttribute('aria-label','下潜');
+    } else { const down = pad.querySelector('[data-key=c]'); down.textContent = '降低'; down.setAttribute('aria-label','降低高度'); }
     updateStatus();
   }
   function updateStatus() {
     if (!active) return;
     const id = active.id;
+    if (id === 'submarine') {
+      const d = dive.status();
+      primary.textContent = d.mode === 'patrol' ? '暂停巡视 P' : '下潜巡视 P';
+      toggle.textContent = d.docked ? '下艇 E' : d.exitPending ? '返港后下艇…' : '返港下艇 E';
+      status.textContent = d.message + ' · 深度 ' + Math.round(d.depth) + ' / ' + d.maxDepth + ' 米 · ' + Math.round(Math.abs(d.speed) * 3.6) + ' km/h · 巡视 ' + d.visited.length + '/3';
+      drawSonar(d); return;
+    }
     if (id === 'airplane') {
       const f = flight.status(), label = {parked:`${f.airportName} · 已停稳`,takeoff:'垂直起飞中',taxi:'前往起飞位','deck-roll':f.launchMode==='catapult'?'弹射加速中':'滑跑上坡中','launch-climb':'离舰爬升中',flying:f.hovering?'空中悬停':'巡视领地',returning:`飞往${f.destinationName}`,landing:`降落${f.destinationName}`}[f.phase];
       status.textContent = `${label} · ${Math.round(f.y)} 米${planeExitPending?' · 停稳后下机':''}${f.notice?' · '+f.notice:''}`;
@@ -432,6 +465,24 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     else if (id === 'fishing') status.textContent = `${life.fishing.catches} 条鱼 · ${life.fishing.message}`;
     else if (id === 'cooking') status.textContent = life.cooking.phase === 'prep' ? `备菜 ${life.cooking.chops} / 3` : life.cooking.phase === 'cooking' ? `翻炒 ${Math.min(3, life.cooking.stirs)} / 3 · ${life.cooking.elapsed < 6 ? `还需 ${Math.ceil(6 - life.cooking.elapsed)} 秒` : '食材已熟，完成翻炒即可出锅'}` : `做好了！已完成 ${life.cooking.dishes} 份料理`;
     else if (id === 'treadmill') status.textContent = `${life.treadmill.paused ? '已暂停' : `${(life.treadmill.speed * 6).toFixed(1)} km/h`} · ${Math.round(life.treadmill.distance)} 米 · ${Math.floor(life.treadmill.elapsed)} 秒`;
+  }
+  function drawSonar(d) {
+    const home = world.submarine.home;
+    const c = sonarContext, X = x => 18 + (x + 750) / (home.x + 750) * 282, Z = z => 21 + (z - home.z) / 502 * 85;
+    c.fillStyle = '#0a2b36'; c.fillRect(0, 0, 320, 126); c.strokeStyle = '#244a53'; c.lineWidth = 1;
+    for (let x = 20; x < 320; x += 28) { c.beginPath(); c.moveTo(x, 17); c.lineTo(x, 112); c.stroke(); }
+    for (let y = 21; y < 115; y += 17) { c.beginPath(); c.moveTo(18, y); c.lineTo(302, y); c.stroke(); }
+    c.font = '11px sans-serif'; c.fillStyle = '#a3d6d7'; c.fillText('领地声呐 · 西侧深海', 9, 13); c.fillText('母港', 277, 13);
+    c.fillStyle = '#edd391'; c.fillRect(X(home.x) - 3, Z(home.z) - 3, 6, 6);
+    world.submarine.landmarks.forEach((site, i) => {
+      const x = X(site.x), y = Z(site.z); c.strokeStyle = site.color; c.fillStyle = site.color;
+      c.beginPath(); c.arc(x, y, d.visited.includes(i) ? 4 : 2.5, 0, Math.PI * 2); c.fill();
+      c.fillText((d.visited.includes(i) ? '✓ ' : '') + site.name, x - 24, y - 8);
+    });
+    c.save(); c.translate(X(d.x), Z(d.z)); c.rotate(-d.heading); c.fillStyle = '#ffffff';
+    c.beginPath(); c.moveTo(0, 6); c.lineTo(-4, -4); c.lineTo(0, -2); c.lineTo(4, -4); c.closePath(); c.fill(); c.restore();
+    c.fillStyle = '#a3d6d7'; c.fillText('航程 ' + Math.round(d.distance) + ' m', 9, 121); c.fillText('完成 ' + d.lap + ' 圈', 251, 121);
+    sonar.setAttribute('aria-label', '深海领地航图，已巡视 ' + d.visited.length + ' 个地标，共 3 个');
   }
   function driveHeight(x,z){
     const ship=world.carrier.driveHeight(x,z);
@@ -540,6 +591,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     for (const limb of limbs) limb.rotation.set(0, 0, 0);
     const id = active.id;
     if (id === 'carrier') { const helm=world.carrier.helm();avatar.root.position.set(helm.x,helm.y,helm.z);avatar.armL.rotation.x = avatar.armR.rotation.x = -.65; return; }
+    if (id === 'submarine') { avatar.legL.rotation.x = avatar.legR.rotation.x = -Math.PI / 2; avatar.armL.rotation.x = avatar.armR.rotation.x = -.65; return; }
     if (active.kind === 'seat' || id === 'tea' || id === 'airplane' || isReading(id) || id === 'tv' || id === 'cinema' || id === 'gaming' || id === 'driving' || id === 'roadster') {
       avatar.root.position.y = active.kind === 'seat' ? active.seatHeight - .5625 : player.y + (id === 'airplane' ? .92 : id === 'tea' ? .0675 : id === 'driving' ? -.12 : id === 'tv' ? -.0025 : .0075);
       avatar.legL.rotation.x = avatar.legR.rotation.x = -Math.PI / 2;
@@ -623,6 +675,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (isDriving()) drive(dt);
     roadsterLights.update(dt,active?.id==='roadster',Math.abs(carSpeed));
     if (active.id === 'carrier') {cruise.update(dt, keys);for(const f of flights)f.syncParked();}
+    if (active.id === 'submarine') { dive.update(dt, keys); if (dive.readyToExit) { stop(); return; } }
     if (active.id === 'airplane') {
       flight.update(dt, keys);
       if (planeExitPending && flight.parked) { stop(); return; }
@@ -644,7 +697,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   return {
     setResidentBall(x,y,z){if(active?.id==='basketball')return;visuals.ball.visible=x!==null;if(x!==null)visuals.ball.position.set(x,y,z);},
     setBedtimeHandler(fn){bedtimeHandler=fn;},setSharedStatus(text){sharedStatus=text;},
-    start, stop, keyDown, keyUp, update, cycleMovement, syncMovement, setAmbientActivity, spots: allSpots, seats, get flight(){return flight;}, flights, cruise,
+    start, stop, keyDown, keyUp, update, cycleMovement, syncMovement, setAmbientActivity, spots: allSpots, seats, get flight(){return flight;}, flights, cruise, dive,
     pause() { clearKeys(); sound.loop(null); },
     get ride(){return isDriving()?vehicle:null;},
     get running() { return runMode; },

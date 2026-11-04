@@ -9,6 +9,11 @@ export const ISLAND = { x0: -36, x1: 38, z0: -42, z1: 31 };
 export const SEA_BRIDGE={x:24,z0:26,z1:170,width:10};
 // Shared opening and road width for the carrier's boarding ramp.
 export const CARRIER_ACCESS={z:(SEA_BRIDGE.z0+SEA_BRIDGE.z1)/2,width:8};
+// West branch directly opposite the carrier harbor at the bridge midpoint.
+export const SUBMARINE_ACCESS={z:CARRIER_ACCESS.z,width:CARRIER_ACCESS.width};
+// Keep the vessels equally spaced; the western berth begins beyond the shelf.
+export const CARRIER_HOME={x:SEA_BRIDGE.x+79,z:CARRIER_ACCESS.z};
+export const SUBMARINE_HOME={x:SEA_BRIDGE.x-79,z:SUBMARINE_ACCESS.z};
 // The complete mountain faces the bridge's far landing.
 export const MOUNTAIN_SITE={x:SEA_BRIDGE.x,z:SEA_BRIDGE.z1+46,r:46,h:27};
 
@@ -75,6 +80,7 @@ export const SPAWN = { x: 0.5, z: 5.8, heading: Math.PI };
 // Each station is something in the house you can walk up to. `at` is where the
 // player stands, `look` the point they turn to face; `name` is Chinese, `en` English.
 export const STATIONS = [
+  { id:'submarine',name:'核潜艇港',en:'Submarine harbor',icon:'dive',at:[SUBMARINE_HOME.x,SUBMARINE_HOME.z-10],look:[SUBMARINE_HOME.x,SUBMARINE_HOME.z+16],floor:4.4,page:false },
   { id:'library',name:'双人图书馆',en:'Library',icon:'writing',at:[-21.5,-19.25],look:[-20,-22],page:false },
   { id:'bath',name:'浴室',en:'Bathroom',icon:'pool',at:[-8,-17.4],look:[-8,-23],page:false },
   { id: 'works', name: 'AI 工作台', en: 'AI studio', at: [1.2, -8.3], look: [2.3, -10.95] },

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SEA_BRIDGE, CARRIER_ACCESS } from './layout.js';
+import { SEA_BRIDGE, CARRIER_ACCESS, SUBMARINE_ACCESS } from './layout.js';
 
 export { SEA_BRIDGE };
 const X=SEA_BRIDGE.x, END=SEA_BRIDGE.z1;
@@ -7,7 +7,8 @@ const SPANS=[[26,30,0,0],[30,62,0,6],[62,118,6,6],[118,150,6,0],[150,END,0,0]];
 export function bridgeHeight(z){return Math.max(0,Math.min(6,(z-30)*6/32,(150-z)*6/32));}
 export function onBridge(x,z,margin=0){return z>=SEA_BRIDGE.z0&&z<=END-margin&&Math.abs(x-X)<=(z>=150?9:5)-margin;}
 const dockOpening=(z,margin=0)=>Math.abs(z-CARRIER_ACCESS.z)<=CARRIER_ACCESS.width/2-margin;
-const junction=(x,z,margin=0)=>x>=X&&onBridge(x,z)&&dockOpening(z,margin);
+const subOpening=(z,margin=0)=>Math.abs(z-SUBMARINE_ACCESS.z)<=SUBMARINE_ACCESS.width/2-margin;
+const junction=(x,z,margin=0)=>onBridge(x,z)&&(x>=X?dockOpening(z,margin):subOpening(z,margin));
 
 export function buildSeaBridge(B,obstacles,bakes=[]){
   const road={tex:'paint',tint:0x3c4b58},stone={tex:'concrete',tint:0xaabbbd};
@@ -31,8 +32,9 @@ export function buildSeaBridge(B,obstacles,bakes=[]){
     slab(X,a,ya,b,yb,width,.44,road);
     for(const side of [-1,1]){
       const edge=X+side*(width/2-.14);
-      // The east-side pavement and rails stop at the carrier junction.
-      const runs=side<0?[[a,b]]:[[a,Math.min(b,CARRIER_ACCESS.z-CARRIER_ACCESS.width/2)],[Math.max(a,CARRIER_ACCESS.z+CARRIER_ACCESS.width/2),b]];
+      // Both harbor branches have real openings through pavement and rails.
+      const access=side<0?SUBMARINE_ACCESS:CARRIER_ACCESS;
+      const runs=[[a,Math.min(b,access.z-access.width/2)],[Math.max(a,access.z+access.width/2),b]];
       for(const [start,end] of runs){
       if(end<=start)continue;
       const sy=bridgeHeight(start),ey=bridgeHeight(end);
@@ -53,7 +55,7 @@ export function buildSeaBridge(B,obstacles,bakes=[]){
   }
   // Rail posts, crossheads and paired piers give the deck a readable structure.
   for(let z=30;z<=END;z+=5)for(const side of [-1,1]){
-    if(side>0&&dockOpening(z))continue;
+    if(side>0?dockOpening(z):subOpening(z))continue;
     B.box(X+side*((z>=150?9:5)-.14),bridgeHeight(z),z,.12,1.12,.12,steel);
   }
   for(const z of [42,60,82,104,126,144,160]){
@@ -72,7 +74,7 @@ export function buildSeaBridge(B,obstacles,bakes=[]){
       B.box(x,27.7,z,1.15,.5,1.5,gold);
       B.box(x-side*.49,7,z,.045,19,.36,steel);
       for(const d of [-26,-18,-10,10,18,26]){
-        if(side>0&&dockOpening(z+d))continue;
+        if(side>0?dockOpening(z+d):subOpening(z+d))continue;
         beam(x,z,26.8,z+d,bridgeHeight(z+d)+.4,.075,.075,steel);
         const anchor=`${side}:${z+d}`;
         if(!stayAnchors.has(anchor)){
@@ -137,27 +139,29 @@ export function buildSeaBridge(B,obstacles,bakes=[]){
 // Shared by click navigation and residents: connect the home's nav grid,
 // the bridge, and the mountain's original stair route without a flight.
 export function travelLandscape(actor,world,nav,x,z,y=null,continueTo=null){
-  const bridge=world.seaBridge,mountain=world.mountain,carrier=world.carrier,on=actor.island;
-  if(actor.flying||actor.swimming||on&&!['sea-bridge','mountain','carrier'].includes(on))return null;
+  const bridge=world.seaBridge,mountain=world.mountain,on=actor.island;
+  const harbors={carrier:world.carrier,submarine:world.submarine},connected=['sea-bridge','mountain','carrier','submarine'];
+  if(actor.flying||actor.swimming||on&&!connected.includes(on))return null;
   const surface=world.ground.topAt(x,z,y===null?Infinity:y+.7);
-  const to=surface?.site==='carrier'?'carrier':surface?.site==='mountain'?'mountain':bridge.contains(x,z)?'sea-bridge':null;
-  if(!to&&!['sea-bridge','mountain','carrier'].includes(on))return null;
+  const to=harbors[surface?.site]?surface.site:surface?.site==='mountain'?'mountain':bridge.contains(x,z)?'sea-bridge':null;
+  if(!to&&!connected.includes(on))return null;
   if(!to&&!nav.canStand(x,z)&&!continueTo)return null;
-  if(on==='carrier'&&to==='carrier')return actor.follow(carrier.route(actor.pos.x,actor.y,actor.pos.z,x,surface.y,z));
-  if((on==='carrier'||to==='carrier')&&!carrier.docked())return false;
+  const fromHarbor=harbors[on],toHarbor=harbors[to];
+  if(fromHarbor&&on===to)return actor.follow(fromHarbor.route(actor.pos.x,actor.y,actor.pos.z,x,surface.y,z));
+  if(fromHarbor&&!fromHarbor.docked()||toHarbor&&!toHarbor.docked())return false;
   const entry=mountain.trailhead,end=bridge.foot,points=[];
   let startX=actor.pos.x,startZ=actor.pos.z;
   if(on==='mountain'){
     if(to==='mountain')return actor.follow(mountain.route(startX,actor.y,startZ,x,surface.y,z));
     points.push(...mountain.route(startX,actor.y,startZ,entry.x,.02,entry.z));
     startX=entry.x;startZ=entry.z;
-  }else if(on==='carrier'){
-    points.push(...carrier.route(startX,actor.y,startZ,carrier.foot.x,carrier.foot.y,carrier.foot.z));
-    startX=carrier.foot.x;startZ=carrier.foot.z;
+  }else if(fromHarbor){
+    points.push(...fromHarbor.route(startX,actor.y,startZ,fromHarbor.foot.x,fromHarbor.foot.y,fromHarbor.foot.z));
+    startX=fromHarbor.foot.x;startZ=fromHarbor.foot.z;
   }else if(on!=='sea-bridge'){startX=end.x;startZ=end.z;}
-  const target=to==='carrier'?carrier.foot:to==='mountain'?entry:to==='sea-bridge'?{x,z}:end;
+  const target=toHarbor?toHarbor.foot:to==='mountain'?entry:to==='sea-bridge'?{x,z}:end;
   points.push(...bridge.route(startX,startZ,target.x,target.z));
   if(to==='mountain')points.push(...mountain.route(entry.x,null,entry.z,x,surface.y,z));
-  if(to==='carrier')points.push(...carrier.route(target.x,target.y,target.z,x,surface.y,z));
+  if(toHarbor)points.push(...toHarbor.route(target.x,target.y,target.z,x,surface.y,z));
   return actor.follow(points,on?null:end,to?null:()=>{actor.teleport(end.x,end.z);if(continueTo)continueTo();else actor.goTo(x,z);});
 }

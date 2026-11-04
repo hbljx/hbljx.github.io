@@ -70,7 +70,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   let zoomIndex = 1;
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
   const harborZ=L.SEA_BRIDGE?(L.SEA_BRIDGE.z0+L.SEA_BRIDGE.z1)/2:98;
-  const landmarks=[{id:'fishing',name:'钓鱼台',en:'Fishing deck',at:[-45.3,2],symbol:'⚑'},{id:'harbor',name:'航母停泊港',en:'Carrier harbor',at:[56.8,harborZ],symbol:'⚓'}];
+  const landmarks=[{id:'fishing',name:'钓鱼台',en:'Fishing deck',at:[-45.3,2],symbol:'⚑'},{id:'harbor',name:'航母停泊港',en:'Carrier harbor',at:[(L.CARRIER_HOME?.x ?? 64)-7.2,harborZ],symbol:'⚓'}];
   const symbolCanvas=s=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.fillStyle='#ffe6a1';g.font='26px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(s,16,16);return c;};
   const blips = [...STATIONS.map(s => ({ s, img: icon(s.icon || s.id).canvas })),...landmarks.map(s=>({s,img:symbolCanvas(s.symbol)}))];
 
@@ -128,7 +128,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     ctx.imageSmoothingEnabled = false;
     const k = scale / PPM;
     ctx.drawImage(mapImage, (ISLAND.x0 - p.x) * scale, (ISLAND.z0 - p.z) * scale, mapImage.width * k, mapImage.height * k);
-    if(L.SEA_BRIDGE){ctx.fillStyle='#526477';ctx.fillRect((19-p.x)*scale,(26-p.z)*scale,10*scale,124*scale);ctx.fillRect((15-p.x)*scale,(150-p.z)*scale,18*scale,20*scale);ctx.strokeStyle='#eddaa0';ctx.lineWidth=Math.max(1,scale*.12);ctx.setLineDash([3*scale,5*scale]);ctx.beginPath();ctx.moveTo((24-p.x)*scale,(26-p.z)*scale);ctx.lineTo((24-p.x)*scale,(168-p.z)*scale);ctx.stroke();ctx.setLineDash([]);}
+    if(L.SEA_BRIDGE){const b=L.SEA_BRIDGE;ctx.fillStyle='#526477';ctx.fillRect((b.x-b.width/2-p.x)*scale,(b.z0-p.z)*scale,b.width*scale,(124)*scale);ctx.fillRect((b.x-9-p.x)*scale,(150-p.z)*scale,18*scale,20*scale);ctx.strokeStyle='#eddaa0';ctx.lineWidth=Math.max(1,scale*.12);ctx.setLineDash([3*scale,5*scale]);ctx.beginPath();ctx.moveTo((b.x-p.x)*scale,(b.z0-p.z)*scale);ctx.lineTo((b.x-p.x)*scale,(b.z1-2-p.z)*scale);ctx.stroke();ctx.setLineDash([]);}
     // Route to the waypoint.
     const route = getRoute();
     if (route && route.length) {
@@ -185,7 +185,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       const r = big.getBoundingClientRect();
       big.width = Math.round(r.width * dpr); big.height = Math.round(r.height * dpr);
       const terrain=getLandscape();
-      const bounds={x0:Math.min(-58,ISLAND.x0-8,terrain?terrain.x-terrain.r-8:0),x1:Math.max(85,terrain?terrain.x+terrain.r+8:0),z0:Math.min(ISLAND.z0-8,terrain?terrain.z-terrain.r-8:-125),z1:Math.max(L.SEA_BRIDGE?L.SEA_BRIDGE.z1+12:45,terrain?terrain.z+terrain.r+8:45)};
+      const bounds={x0:Math.min(-58,ISLAND.x0-8,(L.SUBMARINE_HOME?.x ?? -38)-20,terrain?terrain.x-terrain.r-8:0),x1:Math.max(85,(L.CARRIER_HOME?.x ?? 65)+20,terrain?terrain.x+terrain.r+8:0),z0:Math.min(ISLAND.z0-8,terrain?terrain.z-terrain.r-8:-125),z1:Math.max(L.SEA_BRIDGE?L.SEA_BRIDGE.z1+12:45,terrain?terrain.z+terrain.r+8:45)};
       const fitScale = Math.min(big.width / ((bounds.x1-bounds.x0)*mapXScale), big.height / (bounds.z1-bounds.z0)) * .86;
       view = { cx: (bounds.x0+bounds.x1)/2, cz: (bounds.z0+bounds.z1)/2, scale: fitScale, min: fitScale * 0.9, max: fitScale * 4 };
       drawBig();
@@ -198,7 +198,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   function toWorld(clientX, clientY) {
     const r = big.getBoundingClientRect();
     const sx = (clientX - r.left) * dpr - big.width / 2, sy = (clientY - r.top) * dpr - big.height / 2;
-    return { x: view.cx + sx / (view.scale*mapXScale), z: view.cz + sy / view.scale };
+    return { x: view.cx - sx / (view.scale*mapXScale), z: view.cz - sy / view.scale };
   }
   let pan = null;
   big.addEventListener('pointerdown', e => { big.setPointerCapture(e.pointerId); pan = { x: e.clientX, y: e.clientY, moved: false }; });
@@ -206,7 +206,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     if (!pan) return;
     const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
     if (Math.hypot(dx, dy) > 4) pan.moved = true;
-    if (pan.moved) { view.cx -= dx * dpr / (view.scale*mapXScale); view.cz -= dy * dpr / view.scale; pan.x = e.clientX; pan.y = e.clientY; drawBig(); }
+    if (pan.moved) { view.cx += dx * dpr / (view.scale*mapXScale); view.cz += dy * dpr / view.scale; pan.x = e.clientX; pan.y = e.clientY; drawBig(); }
   });
   big.addEventListener('pointerup', e => {
     if (pan && !pan.moved) { const w = toWorld(e.clientX, e.clientY); onPick(w.x, w.z); toggleBig(false); }
@@ -229,7 +229,9 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     bctx.fillRect(0, 0, W, H);
     bctx.imageSmoothingEnabled = false;
     const ox = W / 2 - (view.cx - ISLAND.x0) * s * mapXScale, oz = H / 2 - (view.cz - ISLAND.z0) * s;
-    const P = (x, z) => [ox + (x - ISLAND.x0) * s * mapXScale, oz + (z - ISLAND.z0) * s];
+    // South-up places the mountain above the home and the carrier on the left.
+    const P = (x, z) => [W/2 - (x-view.cx)*s*mapXScale, H/2 - (z-view.cz)*s];
+    const rect = (x,z,w,d) => { const [px,py]=P(x+w,z+d);bctx.fillRect(px,py,w*s*mapXScale,d*s); };
     const mountain=getLandscape();
     if(mountain){
       const [mx,mz]=P(mountain.x,mountain.z);
@@ -238,10 +240,13 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       bctx.fillStyle='#5a6970';bctx.beginPath();bctx.ellipse(mx,mz,mountain.summit*s*mapXScale,mountain.summit*s,0,0,Math.PI*2);bctx.fill();
       bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('山顶停机坪',mx,mz+4*dpr);
     }
+    bctx.save();bctx.translate(W,H);bctx.rotate(Math.PI);
     bctx.drawImage(mapImage, ox, oz, mapImage.width * s * mapXScale / PPM, mapImage.height * s / PPM);
-    if(L.SEA_BRIDGE){bctx.strokeStyle='#526477';bctx.lineWidth=10*s*mapXScale;bctx.beginPath();bctx.moveTo(...P(24,26));bctx.lineTo(...P(24,160));bctx.stroke();const bp=P(15,150);bctx.fillStyle='#526477';bctx.fillRect(bp[0],bp[1],18*s*mapXScale,20*s);bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('海上观景大桥',...P(24,130));}
-    bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));if(L.SEA_BRIDGE){bctx.moveTo(...P(29,harborZ));bctx.lineTo(...P(57,harborZ));}bctx.stroke();
-    bctx.fillStyle='#52636e';const dock=P(56.4,harborZ-32.5);bctx.fillRect(dock[0],dock[1],15.2*s*mapXScale,65*s);
+    bctx.restore();
+    bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));bctx.stroke();
+    if(L.SEA_BRIDGE){const b=L.SEA_BRIDGE;const bx=b.x,by=harborZ;bctx.strokeStyle='#526477';bctx.lineWidth=10*s*mapXScale;bctx.beginPath();bctx.moveTo(...P(bx,b.z0));bctx.lineTo(...P(bx,b.z1-10));bctx.stroke();bctx.fillStyle='#526477';rect(bx-9,150,18,20);bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('海上观景大桥',...P(bx,130));
+      const carrier=L.CARRIER_HOME||{x:64,z:by},sub=L.SUBMARINE_HOME;bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(bx+b.width/2,by));bctx.lineTo(...P(carrier.x-7.6,by));if(sub){bctx.moveTo(...P(bx-b.width/2,by));bctx.lineTo(...P(sub.x+5,by));}bctx.stroke();
+      bctx.fillStyle='#52636e';rect(carrier.x-7.6,by-32.5,15.2,65);if(sub)rect(sub.x-10,by-65,20,126);}
     bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;
     bctx.textAlign = 'left'; bctx.textBaseline = 'middle';
     for (const { s: st, img } of blips) {
@@ -249,7 +254,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
       const glyph = 22 * dpr;
       if(x < -glyph/2 || x > W+glyph/2 || y < -glyph/2 || y > H+glyph/2)continue;
       drawBlip(bctx, x, y, img, glyph);
-      if(!st.symbol&&s<5*dpr)continue;
+      if(!st.symbol&&st.id!=='submarine'&&s<5*dpr)continue;
       const label = nameOf(st);
       const tw = bctx.measureText(label).width;
       const right=x+glyph/2+5*dpr;
@@ -268,7 +273,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     const [px, py] = P(p.x, p.z);
     bctx.save();
     bctx.translate(px, py);
-    bctx.rotate(-Math.atan2(Math.sin(p.heading)*mapXScale,Math.cos(p.heading)) + Math.PI);
+    bctx.rotate(-Math.atan2(Math.sin(p.heading)*mapXScale,Math.cos(p.heading)));
     const a = 11 * dpr;
     bctx.beginPath();
     bctx.moveTo(0, -a); bctx.lineTo(a * 0.72, a * 0.8); bctx.lineTo(0, a * 0.38); bctx.lineTo(-a * 0.72, a * 0.8); bctx.closePath();

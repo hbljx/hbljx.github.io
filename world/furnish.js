@@ -521,7 +521,7 @@ export function furnish({ layer }) {
   B.box((LOFT.x0+LOFT.x1)/2,bedroomBottom,LOFT.z0+.06,LOFT.x1-LOFT.x0,bedroomHeight,.055,{tex:'glass',glass:true});
   glazing(B,(LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,bedroomBottom,bedroomHeight);
   B.box(LOFT.x0+.02,bedroomBottom,(LOFT.z0+LOFT.z1)/2,.055,bedroomHeight,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
-  glazing(B,LOFT.x0+.02,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2,false,false);
+  glazing(B,LOFT.x0+.02,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2,false,true);
   B.box(LOFT.x1-.06,bedroomBottom,(LOFT.z0+LOFT.z1)/2,.055,bedroomHeight,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
   glazing(B,LOFT.x1-.06,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2);
   foot((LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,.12,1);

@@ -1,6 +1,7 @@
 // Build the Homecraft show-home example. The engine calls build() once at boot,
 // then setup() once the player exists.
 import { buildIsland } from '@engine/world/terrain.js';
+import { BoxBatch } from '@engine/world/blocks.js';
 import { buildForest } from '@engine/world/landscape.js';
 import { defineHouseBlocks, surfaceAt, buildPool, buildShell } from './house.js';
 import { furnish } from './furnish.js';
@@ -16,6 +17,8 @@ import { buildThirdFloor } from './third-floor.js';
 import { createOceanLife } from './ocean-life.js';
 import { createAircraftFleet } from './aircraft-fleet.js';
 import { buildCarrier } from './carrier.js';
+import { buildSubmarine } from './submarine.js';
+import { buildOffshore } from './offshore.js';
 import { createHousehold } from './household.js';
 import { flattenGlazing, flattenBatchGlazing } from './glazing.js';
 
@@ -59,8 +62,12 @@ export function build({ grid, layer, materials, stage }) {
   const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
   const seaBridge=buildSeaBridge(furn.batches.static,furn.obstacles,furn.lighting);
   const carrier = buildCarrier(layer, furn.batches.static);
-  const oceanLife=createOceanLife(furn.batches.static);
-  const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster]);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
+  const submarine = buildSubmarine(furn.batches.static, furn.planes);
+  const offshore = buildOffshore(furn.batches.static);
+  const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch);
+  for(const mesh of deepBatch.build(materials)){mesh.castShadow=false;oceanLife.deepGroup.add(mesh);}
+  stage.scene.add(oceanLife.deepGroup);
+  const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster,submarine.mesh]);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh);
@@ -69,8 +76,8 @@ export function build({ grid, layer, materials, stage }) {
   return {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
-    sites: [outer, mountain, furn.stairs, third.source, carrier, furn.partitions, seaBridge], sitesAfter: [roofAccess],
-    named: { seaBridge, travelLandscape, outer, mountain, roofAccess, carrier, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
+    sites: [outer, mountain, furn.stairs, third.source, carrier, submarine, furn.partitions, seaBridge], sitesAfter: [roofAccess],
+    named: { seaBridge, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
   };
 }
 

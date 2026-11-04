@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
-import { ISLAND, SEA_BRIDGE, CARRIER_ACCESS } from './layout.js';
+import { ISLAND, SEA_BRIDGE, CARRIER_ACCESS, CARRIER_HOME } from './layout.js';
 import { bridgeHeight } from './sea-bridge.js';
 
 const DOCK_Z=CARRIER_ACCESS.z;
-const HOME={x:64,z:DOCK_Z,heading:0},DECK=3.4;
+const HOME={...CARRIER_HOME,heading:0},DECK=3.4;
 const GANGWAY={x0:SEA_BRIDGE.x+SEA_BRIDGE.width/2,x1:HOME.x-7.6,flat:33,rampEnd:52,z:DOCK_Z,width:CARRIER_ACCESS.width};
 const gangwayHeight=x=>bridgeHeight(DOCK_Z)+(DECK-bridgeHeight(DOCK_Z))*THREE.MathUtils.clamp((x-GANGWAY.flat)/(GANGWAY.rampEnd-GANGWAY.flat),0,1);
 const onGangway=(x,z,margin=0)=>x>=GANGWAY.x0&&x<=GANGWAY.x1&&Math.abs(z-DOCK_Z)<=GANGWAY.width/2-margin;
@@ -146,7 +146,7 @@ export function buildCarrier(layer,staticBatch){
     for(const side of [-1,1]) B.box((a+b)/2+t*Math.sin(angle)/2,(ya+yb)/2-t*Math.cos(angle)/2+.012,DOCK_Z+side*(GANGWAY.width/2-.34),Math.hypot(b-a,yb-ya),.018,.08,stripeTint,{rz:angle});
     for(const side of [-1,1])for(const up of [.48,1])B.box((a+b)/2,(ya+yb)/2+up-.04,DOCK_Z+side*(GANGWAY.width/2-.08),Math.hypot(b-a,yb-ya),.08,.08,steel,{rz:angle});
   }
-  for(let x=30;x<56;x+=2)for(const side of [-1,1]){
+  for(let x=GANGWAY.x0+1;x<GANGWAY.x1-1;x+=2)for(const side of [-1,1]){
     const y=gangwayHeight(x),z=DOCK_Z+side*(GANGWAY.width/2-.08);
     B.box(x,-2.3,z,.14,y+3.38,.14,steel);
     if(x%4===0)B.box(x,y+1.04,z,.22,.12,.22,{tex:'paint',tint:0xffdf9b,emissive:.65});

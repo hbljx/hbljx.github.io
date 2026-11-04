@@ -1,12 +1,18 @@
 import * as THREE from 'three';
 import { createOceanModel } from './ocean-models.js';
+import { buildDeepSea } from './deep-sea.js';
 
-// Models share the aircraft batch; reef and seabed share the existing static batch.
-// No new draw calls, textures, shadow passes or frame-by-frame geometry uploads.
-export function createOceanLife(B){
+// Shallow life shares the fleet batch. Abyss scenery draws only underwater,
+// without extra lights, shadow passes or frame-by-frame geometry uploads.
+export function createOceanLife(B,deepBatch){
   const creatures=[],time={value:0};
   const sand={tex:'sand',tint:0xb1b99c},rock={tex:'stone',tint:0x6f9287};
-  B.box(0,-10,0,360,.5,360,{tex:'paint',tint:0x327e94});
+  buildDeepSea(B,deepBatch);
+  const deepGroup=new THREE.Group(),deepCreatures=[];deepGroup.name='deep-sea-scenery';deepGroup.visible=false;
+  const deepMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+  deepMaterial.onBeforeCompile=shader=>{shader.uniforms.uOceanTime=time;
+    shader.vertexShader='attribute float swimWeight; attribute vec3 swimAxis; uniform float uOceanTime;'+String.fromCharCode(10)+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>'+String.fromCharCode(10)+'transformed+=swimAxis*swimWeight*sin(uOceanTime*3.+position.z*2.);');
+  };
   const reefs=[[-49,16],[-49,-9],[-17,41],[17,42]];
   for(const [x,z] of reefs){
     B.box(x,-9.5,z,14,2.5,12,rock);B.box(x,-7,z,11,1.5,10,rock);B.box(x,-5.5,z,9,1,8,rock);B.box(x,-4.5,z,8.6,.2,7.6,sand);
@@ -15,7 +21,8 @@ export function createOceanLife(B){
   function animal(kind,x,y,z,rx,rz,speed,phase=0){
     if(!cache.has(kind))cache.set(kind,createOceanModel(kind));
     const mesh=new THREE.Mesh(cache.get(kind));mesh.name=`ocean-${kind}-${creatures.length}`;
-    mesh.userData={kind,x,y,z,rx,rz,speed,phase};mesh.position.set(x,y,z);mesh.updateMatrixWorld(true);creatures.push(mesh);
+    mesh.userData={kind,x,y,z,rx,rz,speed,phase};mesh.position.set(x,y,z);mesh.updateMatrixWorld(true);
+    if(y<-30){mesh.material=deepMaterial;deepCreatures.push(mesh);deepGroup.add(mesh);}else creatures.push(mesh);
   }
   for(const [x,z] of reefs)animal('reef',x,-4.28,z,0,0,0);
   animal('whale',-24,-2.5,64,16,8,.055);animal('whale',-75,-3,12,8,18,.045,2);
@@ -26,9 +33,12 @@ export function createOceanLife(B){
   animal('shrimp',-49,-3.9,-9,1,.7,.25);animal('shrimp',-17,-3.9,41,1,.8,.2,2);
   animal('octopus',-47.2,-4.25,17.6,.25,.3,.1);animal('octopus',14.8,-4.25,43.4,.3,.25,.08,2);
   animal('turtle',-40,-2.5,38,4,3,.08);
+  animal('whale',-390,-285,320,26,18,.045);
+  animal('shark',-445,-305,545,20,16,.07,1);
+  const allCreatures=[...creatures,...deepCreatures];
   function update(dt,carrier){
     time.value+=Math.min(dt,.1);
-    for(const mesh of creatures){const a=mesh.userData;if(a.kind==='reef')continue;const t=time.value*a.speed+a.phase;
+    for(const mesh of allCreatures){const a=mesh.userData;if(a.kind==='reef')continue;const t=time.value*a.speed+a.phase;
       let x=a.x+Math.cos(t)*a.rx,z=a.z+Math.sin(t)*a.rz,y=a.y;
       if(a.kind==='dolphin')y+=Math.pow(Math.max(0,Math.sin(time.value*.65+a.phase)),8)*2.3;
       else if(a.kind==='whale')y+=Math.sin(time.value*.22+a.phase)*.55;
@@ -45,5 +55,5 @@ export function createOceanLife(B){
     };
     material.needsUpdate=true;
   }
-  update(0);return{creatures,time,update,configureSea,species:[...cache.keys()].filter(kind=>kind!=='reef')};
+  update(0);return{creatures,deepGroup,time,update,configureSea,species:[...cache.keys()].filter(kind=>kind!=='reef')};
 }
