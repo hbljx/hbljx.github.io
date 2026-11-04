@@ -17,28 +17,46 @@ export function buildSharedRooms(B, obstacles, lighting) {
   const wood={tex:'walnut'}, ivory={tex:'paint',tint:0xece8df}, stone={tex:'travertine'},
     brass={tex:'paint',tint:0xb5a074}, glass={tex:'glass',glass:true}, green={tex:'paint',tint:0x46675d};
   const walls=[];
+  const room={bathWest:-13,shared:-3.2,cinemaEast:11,north:-27.7,south:-18.4,height:3.25,thickness:.16};
+  const roomZ=(room.north+room.south)/2,roomDepth=room.south-room.north;
+  const cinemaX=(room.shared+room.cinemaEast)/2,cinemaWidth=room.cinemaEast-room.shared;
   const foot=(x,z,w,d)=>obstacles.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,level:0});
-  function partition(x,z,w,d,h,look){
-    B.box(x,0,z,w,h,d,look);foot(x,z,w,d);walls.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,h});
+  function partition(x,z,w,d,h,look,bottom=0){
+    B.box(x,bottom,z,w,h,d,look);
+    if(bottom<1.8)foot(x,z,w,d);
+    walls.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:bottom,y1:bottom+h});
   }
   const darkFrame={tex:'black_metal'};
-  function doorFrame(x,z,width){
+  function slidingEntrance(x,width,x0,x1){
+    const z=room.south,left=x-width/2,right=x+width/2;
+    // Walls and jambs share the same cuts and centre plane. The stone lintel
+    // closes the space above the frame without adding a walking obstacle.
+    partition((x0+left)/2,z,left-x0,room.thickness,room.height,stone);
+    partition((right+x1)/2,z,x1-right,room.thickness,room.height,stone);
     for(const dx of [-width/2,width/2]){
-      B.box(x+dx,0,z,.09,3,.16,darkFrame);
-      foot(x+dx,z,.12,.2);
+      partition(x+dx,z,.09,.2,3,darkFrame);
     }
-    B.box(x,2.91,z,width+.09,.09,.16,darkFrame);
+    partition(x,z,width+.09,.2,.09,darkFrame,2.91);
+    partition(x,z,width+.09,room.thickness,room.height-3,stone,3);
+    // Two top-hung leaves are parked flat against the hall side of the wall,
+    // retaining the existing always-open entrances and their full clear width.
+    const leafWidth=width/2+.06,leafZ=z+room.thickness/2+.1;
+    B.box(x,3.03,leafZ,width*2+.36,.08,.08,darkFrame);
+    for(const side of [-1,1]){
+      B.box(x+side*(width+.1),3,z+.08,.12,.14,.22,darkFrame);
+      const leafX=x+side*(width/2+.04+leafWidth/2);
+      partition(leafX,leafZ,leafWidth,.12,2.84,wood,.04);
+      for(const dx of [-leafWidth/2+.025,leafWidth/2-.025])
+        B.box(leafX+dx,.04,leafZ,.05,2.84,.14,darkFrame);
+      for(const y of [.04,2.82])B.box(leafX,y,leafZ,leafWidth,.06,.14,darkFrame);
+      for(const dx of [-leafWidth*.3,leafWidth*.3])
+        B.box(leafX+dx,2.86,leafZ,.075,.22,.09,darkFrame);
+      B.box(leafX-side*(leafWidth/2-.16),1.08,leafZ+.09,.045,.42,.055,brass);
+    }
   }
-  function openDoor(x,z,width,hingeSide=1){
-    B.at(x,0,z,hingeSide*Math.PI/2,()=>{
-      B.box(width/2,0,0,width,2.8,.12,wood);
-      B.box(width-.2,1.1,.075,.035,.3,.04,brass);
-      B.box(width-.18,1.15,.11,.07,.04,.04,{tex:'steel'});
-    });
-  }
-  function glassRoofFrame(x,z,width,depth,y){
+  function glassRoofFrame(x,z,width,depth,y,sharedWest=false){
     for(const dz of [-depth/2,depth/2])B.box(x,y,z+dz,width,.1,.1,darkFrame);
-    for(const dx of [-width/2,width/2])B.box(x+dx,y,z,.1,.1,depth,darkFrame);
+    for(const dx of sharedWest?[width/2]:[-width/2,width/2])B.box(x+dx,y,z,.1,.1,depth,darkFrame);
     B.box(x,y,z,width,.06,.06,darkFrame);
   }
   // Preserve the narrow strip behind the diploma with the original wall
@@ -81,26 +99,22 @@ export function buildSharedRooms(B, obstacles, lighting) {
   // Bathroom entrance is two metres wide. Its solid screen shields the WC;
   // walk-in showers remain open from the south, without invisible thresholds.
   B.box(-8.1,.005,-23.0,9.6,.02,9.4,{tex:'pool_tile'});
-  partition(-13,-23.05,.16,9.3,3.25,stone);
-  partition(-11,-18.45,4,.16,3.25,stone);
-  partition(-5.1,-18.45,3.8,.16,3.25,stone);
-  partition(-3.2,-23.05,.16,9.3,3.25,stone);
+  partition(room.bathWest,roomZ,room.thickness,roomDepth,room.height,stone);
+  partition(room.shared,roomZ,room.thickness,roomDepth,room.height,stone);
   // The cinema shares the bathroom wall and opens to the hall at its south end.
-  partition(11,-23.05,.16,9.3,3.25,stone);
-  partition(3.55,-27.7,13.5,.16,3.25,stone);
-  partition(1.275,-18.4,8.95,.16,3.25,stone);
-  partition(10,-18.4,2,.16,3.25,stone);
-  // Both rooms have a clear glazed ceiling below the house's taller roof.
-  B.box(-8,3.25,-23.05,9.8,.08,9.3,glass);
-  B.box(3.55,3.25,-23.05,13.5,.08,9.3,glass);
-  glassRoofFrame(-8,-23.05,9.8,9.3,3.25);
-  glassRoofFrame(3.55,-23.05,13.5,9.3,3.25);
-  // The north wall openings remain open for circulation; each has a visible
-  // wood leaf and a dark frame so the door is readable against the stone.
-  doorFrame(-8,-18.25,2);
-  openDoor(-9,-18.25,2,1);
-  doorFrame(7.4,-18.2,2.4);
-  openDoor(6.2,-18.2,2.4,-1);
+  partition(room.cinemaEast,roomZ,room.thickness,roomDepth,room.height,stone);
+  partition(cinemaX,room.north,cinemaWidth+room.thickness,room.thickness,room.height,stone);
+  slidingEntrance(-8,2,room.bathWest-room.thickness/2,room.shared);
+  slidingEntrance(7.4,2.4,room.shared,room.cinemaEast+room.thickness/2);
+  // Glazing and its frame span the same wall bounds, including the corners.
+  for(const [x0,x1] of [[room.bathWest,room.shared],[room.shared,room.cinemaEast]]){
+    const x=(x0+x1)/2,width=x1-x0;
+    // Meet over the shared wall without overlapping coplanar glass panes.
+    const paneLeft=x0-(x0===room.bathWest?room.thickness/2:0);
+    const paneRight=x1+(x1===room.cinemaEast?room.thickness/2:0);
+    B.box((paneLeft+paneRight)/2,room.height,roomZ,paneRight-paneLeft,.08,roomDepth+room.thickness,glass);
+    glassRoofFrame(x,roomZ,width,roomDepth,room.height,x0===room.shared);
+  }
   for(const x of [-10.7,-7.2]){
     B.box(x,.03,-25.55,2.8,.035,3.05,ivory);
     B.box(x,0,-26.9,2.8,2.9,.12,{tex:'paint',tint:0x8bada6});
@@ -156,8 +170,8 @@ export function buildSharedRooms(B, obstacles, lighting) {
   // Cinema lounge occupies the room east of the bathroom; the south doorway
   // and a broad central aisle remain clear for walking and camera movement.
   B.box(4.05,.008,-22.65,13.7,.025,9.2,{tex:'paint',tint:0x26343b});
-  B.box(3.55,0,-27.48,13.5,.12,.36,{tex:'paint',tint:0x12181e});
-  B.box(3.55,3.25,-27.48,13.5,.12,.36,{tex:'paint',tint:0x12181e});
+  B.box(cinemaX,0,-27.48,cinemaWidth,.12,.36,{tex:'paint',tint:0x12181e});
+  B.box(cinemaX,3.25,-27.48,cinemaWidth,.12,.36,{tex:'paint',tint:0x12181e});
   B.box(-3.12,0,-23.05,.12,.12,9.3,{tex:'paint',tint:0x12181e});
   B.box(10.93,0,-23.05,.12,.12,9.3,{tex:'paint',tint:0x12181e});
   B.box(5,0,-26.25,7.2,.2,.42,{tex:'steel'});
@@ -186,7 +200,7 @@ export function buildSharedRooms(B, obstacles, lighting) {
   lighting.push({id:'library-reading',position:[-20,3,-22],power:4,radius:8,direction:null},
     {id:'bathroom',position:[-8,3,-23],power:4,radius:7,direction:null});
   return {id:'interior-partitions',levels(){},collides(x,y,z){
-    return walls.some(w=>y<w.h&&y+1.8>0&&x+.28>w.x0&&x-.28<w.x1&&z+.28>w.z0&&z-.28<w.z1);
+    return walls.some(w=>y<w.y1&&y+1.8>w.y0&&x+.28>w.x0&&x-.28<w.x1&&z+.28>w.z0&&z-.28<w.z1);
   }};
 }
 
