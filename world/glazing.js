@@ -4,6 +4,13 @@ import * as THREE from 'three';
 // frames. A centred two-sided pane has no competing faces at those joints.
 export function flattenGlazing(mesh,material){
   if(!mesh.isInstancedMesh||mesh.material!==material)return;
+  // A box supplies separate outward faces; a plane has only one. Retain
+  // visibility from inside as well, without adding a second glass layer.
+  if(material.side!==THREE.DoubleSide){
+    material.side=THREE.DoubleSide;
+    material.needsUpdate=true;
+  }
+  material.forceSinglePass=true;
   const old=mesh.geometry,pane=new THREE.PlaneGeometry(1,1),matrix=new THREE.Matrix4();
   const turnX=new THREE.Matrix4().makeRotationY(Math.PI/2),turnY=new THREE.Matrix4().makeRotationX(Math.PI/2);
   for(const name of ['iLayers','iEmissive'])if(old.attributes[name])pane.setAttribute(name,old.attributes[name]);
