@@ -11,7 +11,7 @@ import { createDive } from './submarine.js';
 import { PATROL_LENGTH, samplePatrol } from './submarine-path.js';
 import { LIBRARY, CINEMA } from './shared-rooms.js';
 import { createRoadsterLights } from './roadster.js';
-import { CARRIER_HOME, SUBMARINE_HOME } from './layout.js';
+import { CARRIER_HOME, SUBMARINE_HOME, SUBMARINE_SCALE } from './layout.js';
 import { TRANSIT_STOPS } from './transit-layout.js';
 import { createTransitRides } from './transit-rides.js';
 
@@ -23,7 +23,7 @@ export const ACTIVITY_SPOTS = [
   {id:'bath',title:'浴室 · 睡前一起沐浴',at:[-8,-17.4],floor:0,radius:1.8},
   {id:'roadster',title:'劳斯莱斯 · 白色敞篷跑车',at:[24.2,-17],floor:0,radius:1.2},
   { id: 'carrier', title: '航母驾驶舱 · 海上巡航', at: [CARRIER_HOME.x + 4.65, CARRIER_HOME.z + 5.1], floor: 3.4, radius: 1.6 },
-  { id: 'submarine', title: '领海一号 · 核潜艇', at: [SUBMARINE_HOME.x, SUBMARINE_HOME.z - 10], floor: 4.4, radius: 2.2 },
+  { id: 'submarine', title: '领海一号 · 核潜艇', at: [SUBMARINE_HOME.x, SUBMARINE_HOME.z - 10 * SUBMARINE_SCALE], floor: 4.4 * SUBMARINE_SCALE, radius: 2.2 * SUBMARINE_SCALE },
   { id: 'tea', title: '三楼茶室 · 泡茶', at: [-11, 2], floor: 11, radius: 1.5, anchor: [-11, 11, .45], yaw: Math.PI, view: [-6.3, 13.8, 3.8], look: [-11, 12, -1.5] },
   { id: 'airplane', title: '领地飞机 · 驾驶飞机', at: [12, 4.2], floor: 11, radius: 1.6 },
   { id: 'basketball', title: '篮球场 · 投篮', at: [-12, 4], floor: 0, radius: 3, view: [-8, 6, 14], look: [-13.5, 1.5, 4] },

@@ -16,6 +16,7 @@ export const SUBMARINE_ACCESS={z:CARRIER_ACCESS.z,width:CARRIER_ACCESS.width};
 // Keep the vessels equally spaced; the western berth begins beyond the shelf.
 export const CARRIER_HOME={x:SEA_BRIDGE.x+79,z:CARRIER_ACCESS.z};
 export const SUBMARINE_HOME={x:SEA_BRIDGE.x-79,z:SUBMARINE_ACCESS.z};
+export const SUBMARINE_SCALE=0.5;
 // The complete mountain faces the bridge's far landing.
 export const MOUNTAIN_SITE={x:SEA_BRIDGE.x,z:SEA_BRIDGE.z1+46,r:46,h:27};
 
@@ -84,7 +85,7 @@ export const SPAWN = { x: 0.5, z: 5.8, heading: Math.PI };
 export const STATIONS = [
   ...TRANSIT_STOPS.filter(s=>!s.returning).map(s=>({id:s.id,name:s.name,en:s.en,at:s.at,look:s.track,floor:s.floor,icon:s.service==='metro'?'works':'lab',page:false,transit:true})),
   {id:'sea-tunnel',name:'海底隧道入口',en:'Undersea tunnel',at:[34,19],look:[44,25],page:false,icon:'lab'},
-  { id:'submarine',name:'核潜艇港',en:'Submarine harbor',icon:'dive',at:[SUBMARINE_HOME.x,SUBMARINE_HOME.z-10],look:[SUBMARINE_HOME.x,SUBMARINE_HOME.z+16],floor:4.4,page:false },
+  { id:'submarine',name:'核潜艇港',en:'Submarine harbor',icon:'dive',at:[SUBMARINE_HOME.x,SUBMARINE_HOME.z-10*SUBMARINE_SCALE],look:[SUBMARINE_HOME.x,SUBMARINE_HOME.z+16*SUBMARINE_SCALE],floor:4.4*SUBMARINE_SCALE,page:false },
   { id:'library',name:'双人图书馆',en:'Library',icon:'writing',at:[-21.5,-19.25],look:[-20,-22],page:false },
   { id:'bath',name:'浴室',en:'Bathroom',icon:'pool',at:[-8,-17.4],look:[-8,-23],page:false },
   { id: 'works', name: 'AI 工作台', en: 'AI studio', at: [1.2, -8.3], look: [2.3, -10.95] },

@@ -247,8 +247,8 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     bctx.restore();
     bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));bctx.stroke();
     if(L.SEA_BRIDGE){const b=L.SEA_BRIDGE;const bx=b.x,by=harborZ;bctx.strokeStyle='#526477';bctx.lineWidth=10*s*mapXScale;bctx.beginPath();bctx.moveTo(...P(bx,b.z0));bctx.lineTo(...P(bx,b.z1-10));bctx.stroke();bctx.fillStyle='#526477';rect(bx-9,150,18,20);bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('海上观景大桥',...P(bx,130));
-      const carrier=L.CARRIER_HOME||{x:64,z:by},sub=L.SUBMARINE_HOME;bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(bx+b.width/2,by));bctx.lineTo(...P(carrier.x-7.6,by));if(sub){bctx.moveTo(...P(bx-b.width/2,by));bctx.lineTo(...P(sub.x+5,by));}bctx.stroke();
-      bctx.fillStyle='#52636e';rect(carrier.x-7.6,by-32.5,15.2,65);if(sub)rect(sub.x-10,by-65,20,126);}
+      const carrier=L.CARRIER_HOME||{x:64,z:by},sub=L.SUBMARINE_HOME,subScale=L.SUBMARINE_SCALE??1;bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(bx+b.width/2,by));bctx.lineTo(...P(carrier.x-7.6,by));if(sub){bctx.moveTo(...P(bx-b.width/2,by));bctx.lineTo(...P(sub.x+5*subScale,by));}bctx.stroke();
+      bctx.fillStyle='#52636e';rect(carrier.x-7.6,by-32.5,15.2,65);if(sub)rect(sub.x-10*subScale,by-65*subScale,20*subScale,126*subScale);}
     drawTransit?.(bctx,P,s,dpr,true);
     bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;
     bctx.textAlign = 'left'; bctx.textBaseline = 'middle';

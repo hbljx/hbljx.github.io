@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { SEA_BRIDGE, SUBMARINE_ACCESS, SUBMARINE_HOME } from './layout.js';
+import { SEA_BRIDGE, SUBMARINE_ACCESS, SUBMARINE_HOME, SUBMARINE_SCALE } from './layout.js';
 import { bridgeHeight } from './sea-bridge.js';
 import { canvasTexture } from '@engine/world/textures.js';
 import { DEEP_LANDMARKS, seabedAt, installDeepSeaView } from './deep-sea.js';
 import { PATROL_BOUNDS, PATROL_LENGTH, samplePatrol } from './submarine-path.js';
 
-const HOME = { ...SUBMARINE_HOME, y: 0 }, DECK = 4.4, MAX_DEPTH = 320;
-const PIER = { x0: HOME.x + 5, x1: SEA_BRIDGE.x - 4, z: HOME.z, width: SUBMARINE_ACCESS.width };
+const HOME = { ...SUBMARINE_HOME, y: 0 }, MODEL_DECK = 4.4, DECK = MODEL_DECK * SUBMARINE_SCALE, MAX_DEPTH = 320;
+const PIER = { x0: HOME.x + 5 * SUBMARINE_SCALE, x1: SEA_BRIDGE.x - 4, z: HOME.z, width: SUBMARINE_ACCESS.width };
 const pierHeight = x => DECK + (bridgeHeight(HOME.z) - DECK) * THREE.MathUtils.clamp((x - PIER.x0) / (PIER.x1 - PIER.x0), 0, 1);
 const onPier = (x, z, margin = 0) => x >= PIER.x0 && x <= PIER.x1 && Math.abs(z - HOME.z) <= PIER.width / 2 - margin;
 const angle = a => Math.atan2(Math.sin(a), Math.cos(a));
@@ -41,8 +41,8 @@ function createSubmarineMesh() {
   for (const r of [rings[0], rings.at(-1)]) for (let j = 1; j < r.length - 1; j++) quad(r[0], r[j], r[j + 1], r[0], dark);
   // The hull's flat upper face is the deck; no coplanar overlay.
   for (let z = -44; z < 30; z += 3) {
-    for (const x of [-4.6, 4.6]) box(x, DECK + .04, z, .13, .05, 1.6, gold);
-    if (z < 5) box(0, DECK + .03, z, .15, .04, 1.1, light);
+    for (const x of [-4.6, 4.6]) box(x, MODEL_DECK + .04, z, .13, .05, 1.6, gold);
+    if (z < 5) box(0, MODEL_DECK + .03, z, .15, .04, 1.1, light);
   }
   // Sail, diving planes, periscope and a conspicuous boarding hatch.
   box(0, 7.9, 16, 4.8, 7, 16, dark); box(0, 11.5, 16, 4.2, .3, 15, steel);
@@ -54,15 +54,15 @@ function createSubmarineMesh() {
     for (let z = 12; z < 22; z += 2) box(side * 2.41, 10.6, z, .04, .4, 1.2, glow);
   }
   box(0, -.1, -55, .6, 12, 9, steel);
-  box(0, DECK + .12, -10, 2.6, .24, 3, gold); box(0, DECK + .26, -10, 2, .08, 2.4, dark);
-  box(0, DECK + .34, -10, 1.1, .1, .12, light); box(0, DECK + .34, -10, .12, .1, 1.1, light);
+  box(0, MODEL_DECK + .12, -10, 2.6, .24, 3, gold); box(0, MODEL_DECK + .26, -10, 2, .08, 2.4, dark);
+  box(0, MODEL_DECK + .34, -10, 1.1, .1, .12, light); box(0, MODEL_DECK + .34, -10, .12, .1, 1.1, light);
   for (const side of [-1, 1]) {
-    box(side * 1.7, DECK + .5, -10, .12, 1, .12, glow);
-    box(side * 4.6, DECK + .2, 29, .25, .3, .6, glow);
+    box(side * 1.7, MODEL_DECK + .5, -10, .12, 1, .12, glow);
+    box(side * 4.6, MODEL_DECK + .2, 29, .25, .3, .6, glow);
   }
   for (let z = -42; z < -15; z += 5) for (const side of [-1, 1]) {
-    box(side * 2.7, DECK + .035, z, 2.5, .06, 3.4, dark);
-    box(side * 2.7, DECK + .075, z + 1.4, 1.9, .02, .1, light);
+    box(side * 2.7, MODEL_DECK + .035, z, 2.5, .06, 3.4, dark);
+    box(side * 2.7, MODEL_DECK + .075, z + 1.4, 1.9, .02, .1, light);
   }
   const glyphs = ['11101', '10101', '10101', '10101', '11101'];
   for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) if (glyphs[r][c] === '1')
@@ -77,7 +77,7 @@ function createSubmarineMesh() {
   g.setAttribute('propellerPart', new THREE.Float32BufferAttribute(parts, 1)); g.setAttribute('propellerPivot', new THREE.Float32BufferAttribute(pivots, 3));
   g.computeVertexNormals(); g.computeBoundingSphere();
   const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
-  mesh.name = 'territory-nuclear-submarine'; mesh.position.set(HOME.x, 0, HOME.z); mesh.updateMatrixWorld(true); return mesh;
+  mesh.name = 'territory-nuclear-submarine'; mesh.position.set(HOME.x, 0, HOME.z); mesh.scale.setScalar(SUBMARINE_SCALE); mesh.updateMatrixWorld(true); return mesh;
 }
 
 export function buildSubmarine(B, planes) {
@@ -94,36 +94,39 @@ export function buildSubmarine(B, planes) {
     if (x > HOME.x + 16) B.box(x, -3, z, .32, y + 3, .32, { tex: 'steel', tint: 0x516d76 });
   }
   for (const x of [PIER.x1 - 6, PIER.x0 + 6]) {
-    B.box(x, pierHeight(x), HOME.z - 3.2, .2, 3.4, .2, rail);
+    // Stop the post at the board. It previously continued through the text
+    // with its front face at exactly the text's depth, causing z-fighting.
+    B.box(x, pierHeight(x), HOME.z - 3.2, .2, 2.3, .2, rail);
     B.box(x, pierHeight(x) + 2.3, HOME.z - 3.2, 4.5, 1.1, .18, { tex: 'paint', tint: 0x173d49 });
     const texture = canvasTexture(256, 64, (c, w, h) => {
       c.fillStyle = '#173d49'; c.fillRect(0, 0, w, h); c.textAlign = 'center'; c.fillStyle = '#adfff0'; c.font = 'bold 23px sans-serif';
       c.fillText('← 核潜艇 · 深海巡视', w / 2, 28); c.font = '14px sans-serif'; c.fillText('沿栈道登艇 · 舱盖旁按 E', w / 2, 51);
     });
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.1), new THREE.MeshBasicMaterial({ map: texture }));
-    sign.position.set(x, pierHeight(x) + 2.85, HOME.z - 3.1); planes.push(sign);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.36, .98), new THREE.MeshBasicMaterial({ map: texture }));
+    sign.name = 'submarine-patrol-sign';
+    sign.position.set(x, pierHeight(x) + 2.85, HOME.z - 3.06); planes.push(sign);
   }
   const foot = { x: PIER.x1, y: bridgeHeight(HOME.z), z: HOME.z };
   const path = [foot, { x: PIER.x1, y: pierHeight(PIER.x1), z: HOME.z }, { x: PIER.x0, y: DECK, z: HOME.z }, { x: HOME.x, y: DECK, z: HOME.z }];
   const hit = new THREE.Vector3(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -DECK);
   const docked = () => Math.hypot(mesh.position.x - HOME.x, mesh.position.y, mesh.position.z - HOME.z) < .05 && Math.abs(angle(mesh.rotation.y)) < .005;
-  const onDeck = (x, z) => docked() && Math.abs(x - HOME.x) <= 5 && z >= HOME.z - 48 && z <= HOME.z + 30;
-  const board = { x: HOME.x, y: DECK, z: HOME.z - 10 };
+  const onDeck = (x, z) => docked() && Math.abs(x - HOME.x) <= 5 * SUBMARINE_SCALE && z >= HOME.z - 48 * SUBMARINE_SCALE && z <= HOME.z + 30 * SUBMARINE_SCALE;
+  const board = { x: HOME.x, y: DECK, z: HOME.z - 10 * SUBMARINE_SCALE };
   function route(ax, ay, az, bx, by, bz) {
     const from = onDeck(ax, az), to = onDeck(bx, bz);
     if ((from || to) && !docked()) return [];
     const points = [], start = from ? HOME.x : ax, end = to ? HOME.x : bx;
-    if (from) points.push({ x: HOME.x + 3.6, y: DECK, z: az }, { x: HOME.x + 3.6, y: DECK, z: HOME.z });
+    if (from) points.push({ x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: az }, { x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: HOME.z });
     points.push({ x: start, y: pierHeight(start), z: HOME.z });
     const middle = path.filter(p => p.x > Math.min(start, end) && p.x < Math.max(start, end));
     if (start > end) middle.reverse(); points.push(...middle, { x: end, y: pierHeight(end), z: HOME.z });
-    if (to) points.push({ x: HOME.x + 3.6, y: DECK, z: HOME.z }, { x: HOME.x + 3.6, y: DECK, z: bz });
+    if (to) points.push({ x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: HOME.z }, { x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: bz });
     points.push({ x: bx, y: by, z: bz }); return points;
   }
   return { mesh, home: HOME, foot, board, pier: PIER, docked, route, maxDepth: MAX_DEPTH, landmarks: DEEP_LANDMARKS,
-    canBoard: p => docked() && Math.abs(p.y - DECK) < .7 && Math.hypot(p.pos.x - board.x, p.pos.z - board.z) < 2.2,
+    canBoard: p => docked() && Math.abs(p.y - DECK) < .7 * SUBMARINE_SCALE && Math.hypot(p.pos.x - board.x, p.pos.z - board.z) < 2.2 * SUBMARINE_SCALE,
     levels(x, z, out) { if (onPier(x, z)) out.push({ y: pierHeight(x), site: 'submarine' }); else if (onDeck(x, z)) out.push({ y: DECK, site: 'submarine' }); },
-    obstructed(x, z, y) { return onDeck(x, z) && y < 11.7 && Math.abs(x - HOME.x) < 2.65 && z > HOME.z + 7.7 && z < HOME.z + 24.3; },
+    obstructed(x, z, y) { return onDeck(x, z) && y < 11.7 * SUBMARINE_SCALE && Math.abs(x - HOME.x) < 2.65 * SUBMARINE_SCALE && z > HOME.z + 7.7 * SUBMARINE_SCALE && z < HOME.z + 24.3 * SUBMARINE_SCALE; },
     collides(x, y, z) { return onPier(x, z) && y < pierHeight(x) - .02 && y + 1.8 > pierHeight(x) - .28 || this.obstructed(x, z, y); },
     pick(ray) {
       let best = null;
@@ -146,22 +149,22 @@ export function createDive({ world, player, stage }) {
   let active = false, mode = 'manual', route = [], speed = 0, distance = 0, exitPending = false, message = '已靠港 · 舱门开启', lap = 0, patrolDistance = 0, patrolling = false;
   const patrolPoint = samplePatrol(0, {}), entry = { ...patrolPoint };
   const samples = [];
-  for (let z = -65; z <= 61; z += 6) for (const x of [-13, 0, 13]) samples.push([x, z]);
+  for (let z = -65; z <= 61; z += 6) for (const x of [-13, 0, 13]) samples.push([x * SUBMARINE_SCALE, z * SUBMARINE_SCALE]);
   installDeepSeaView(stage, () => active, world.oceanLife.deepGroup);
   function canSail(x, y, z, yaw) {
     if (x < -750 || x > HOME.x + .01 || z < HOME.z - .01 || z > 600 || y > .001 || y < -MAX_DEPTH) return false;
     const c = Math.cos(yaw), s = Math.sin(yaw);
     for (const [lx, lz] of samples) {
       const px = x + lx * c + lz * s, pz = z - lx * s + lz * c;
-      if (y - 13 < seabedAt(px, pz) + 2) return false;
-      if (px > HOME.x + 16 && px < PIER.x1 && Math.abs(pz - HOME.z) < PIER.width / 2 + .5 && y > -18) return false;
+      if (y - 13 * SUBMARINE_SCALE < seabedAt(px, pz) + 2) return false;
+      if (px > HOME.x + 16 && px < PIER.x1 && Math.abs(pz - HOME.z) < PIER.width / 2 + .5 && y > -18 * SUBMARINE_SCALE) return false;
     }
     return true;
   }
-  const anchor = () => player.anchor(mesh.position.x, mesh.position.y + 1, mesh.position.z, mesh.rotation.y);
+  const anchor = () => player.anchor(mesh.position.x, mesh.position.y + SUBMARINE_SCALE, mesh.position.z, mesh.rotation.y);
   function takeOver() { route = []; mode = 'manual'; patrolling = false; exitPending = false; message = '手动航行'; }
   function leaveBasin() {
-    // Stay below the pier until the entire 126 m hull is clear, even when
+    // Stay below the pier until the half-scale hull is clear, even when
     // returning from a manual dive or interrupting another automatic route.
     const p = mesh.position, y = -18.5, z = Math.max(p.z, 260);
     return [{ x: p.x, y, z: p.z, yaw: mesh.rotation.y },

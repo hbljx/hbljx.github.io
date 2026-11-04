@@ -4,6 +4,7 @@ import { createTransitPath } from './transit-path.js';
 import { createTransitVehicle,transitSign } from './transit-models.js';
 import { createTunnelGlazing,maskTunnelWater,tunnelCeiling } from './tunnel-glazing.js';
 import { bridgeHeight,onBridge } from './sea-bridge.js';
+import { buildTransitStations } from './transit-stations.js';
 
 export function buildSeaTransit({B,planes,layer,materials,scene}){
   const metroPath=createTransitPath(METRO_POINTS),tunnelPath=createTransitPath(TUNNEL_POINTS);
@@ -27,13 +28,40 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
     // faces. Thin lane/rail markings only need their visible upper surface.
     if(height>.2){face(point(a,-1,-height/2),point(b,-1,-height/2),bl,al,look);face(ar,br,point(b,1,-height/2),point(a,1,-height/2),look);}
   }
-  for(let s=0;s<metroPath.length;s+=6){
-    metroPath.sample(s,p);metroPath.sample(Math.min(s+6,metroPath.length),q);
+  const silver={tex:'paint',tint:0xdce7e3},ballast={tint:0x657b80};
+  const clearOfPlatforms=(a,b=a)=>metroStopDistances.every(stop=>b<stop-15||a>stop+15);
+  // Short, shared-boundary ribbons follow curves without angular gaps.
+  // The darker track bed, silver rails and teal fascia form separate layers.
+  for(let s=0;s<metroPath.length;s+=3){
+    const end=Math.min(s+3,metroPath.length);
+    metroPath.sample(s,p);metroPath.sample(end,q);
     segment(p,q,0,4.2,.36,-.22,concrete);
-    for(const side of [-1,1]){segment(p,q,side*.75,.13,.15,.08,rail);if(metroStopDistances.every(stop=>Math.abs(s-stop)>13))segment(p,q,side*1.98,.11,.12,.74,teal);}
-    B.at(p.x,p.y,p.z,p.heading,()=>B.box(0,-.1,0,2.5,.08,.26,dark));
-    if(s%24<6&&s>28&&s<metroPath.length-35){
-      B.box(p.x,-4,p.z,1.1,p.y+3.65,1.1,concrete);B.at(p.x,p.y-.6,p.z,p.heading,()=>B.box(0,0,0,4.3,.3,.8,teal));
+    segment(p,q,0,3.05,.025,-.025,ballast);
+    for(const side of [-1,1]){
+      segment(p,q,side*.75,.13,.15,.08,rail);
+      segment(p,q,side*2.11,.10,.24,-.24,teal);
+      segment(p,q,side*1.85,.32,.06,-.005,silver);
+      if(clearOfPlatforms(s,end)){
+        for(const h of [.46,1.03])segment(p,q,side*1.98,.075,.065,h,silver);
+        segment(p,q,side*1.98,.035,.025,.89,lamp);
+      }
+    }
+  }
+  // Sleeper tops use the road mesh instead of hundreds of extra box draws.
+  for(let s=.45;s<metroPath.length-.28;s+=.9){
+    metroPath.sample(s-.13,p);metroPath.sample(s+.13,q);segment(p,q,0,2.6,.03,.005,dark);
+  }
+  for(let s=0;s<metroPath.length;s+=6){
+    metroPath.sample(s,p);
+    if(clearOfPlatforms(s))B.at(p.x,p.y,p.z,p.heading,()=>{
+      for(const side of [-1,1])B.box(side*1.98,0,0,.085,1.08,.085,silver);
+    });
+    if(s%24===0&&s>28&&s<metroPath.length-35){
+      B.box(p.x,-4,p.z,1.1,p.y+3.35,1.1,concrete);
+      B.at(p.x,p.y,p.z,p.heading,()=>{
+        B.box(0,-.7,0,4.3,.3,.95,teal);
+        B.box(0,-.4,0,3.4,.08,.8,silver);
+      });
     }
   }
   // A single continuous tube mesh encloses the roadway, with transparent
@@ -46,19 +74,24 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
     if(s%12<6)segment(p,q,0,.14,.025,.025,gold);
     if(s%18<6){
       B.at(p.x,p.y,p.z,p.heading,()=>{
-        for(let j=1;j<cross.length;j++){
-          const [ax,ay]=cross[j-1],[bx,by]=cross[j],angle=Math.atan2(by-ay,bx-ax);
-          B.box((ax+bx)/2,(ay+by)/2-.055,0,Math.hypot(bx-ax,by-ay)+.035,.11,.16,teal,{rz:angle});
-        }
         B.box(0,5.65,0,2,.05,.35,lamp);
       });
+      // Join each rib into a continuous strip. Adjacent segments share their
+      // edges instead of drawing the hidden end caps of 24 overlapping boxes.
+      const ring=cross.map(([x,y])=>{
+        const r=Math.hypot(x,y-.4),point=(side,depth)=>{
+          const u=x*(1+side*.055/r),v=.4+(y-.4)*(1+side*.055/r);
+          return [p.x+Math.cos(p.heading)*u+Math.sin(p.heading)*depth,p.y+v,p.z-Math.sin(p.heading)*u+Math.cos(p.heading)*depth];
+        };
+        return [point(-1,-.08),point(1,-.08),point(1,.08),point(-1,.08)];
+      });
+      for(let j=1;j<ring.length;j++)for(let k=0;k<4;k++)face(ring[j-1][k],ring[j][k],ring[j][(k+1)%4],ring[j-1][(k+1)%4],teal);
+      for(const end of [ring[0],ring.at(-1)])face(...end,teal);
     }
   }
   const platformRects=[{x0:-42,x1:-13,z0:26,z1:31},{x0:-44,x1:-15,z0:168,z1:173},{x0:-16,x1:10,z0:168,z1:172},{x0:6,x1:10,z0:155,z1:170},{x0:8,x1:20,z0:155,z1:159}];
   const approachRects=[{x0:30,x1:54,z0:155,z1:161},{x0:54,x1:66,z0:151,z1:165},{x0:31,x1:40,z0:150,z1:161},{x0:8,x1:17,z0:150,z1:160}];
   for(const r of approachRects)segment({x:(r.x0+r.x1)/2,y:0,z:r.z0,heading:0},{x:(r.x0+r.x1)/2,y:0,z:r.z1,heading:0},0,r.x1-r.x0,.3,-.15,dark);
-  const ribbonGeometry=new THREE.BufferGeometry();ribbonGeometry.setAttribute('position',new THREE.Float32BufferAttribute(ribbonPositions,3));ribbonGeometry.setAttribute('color',new THREE.Float32BufferAttribute(ribbonColors,3));ribbonGeometry.computeVertexNormals();
-  const ribbons=new THREE.Mesh(ribbonGeometry,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));ribbons.name='sea-transit-road-and-rail';ribbons.receiveShadow=true;scene.add(ribbons);
   for(const [s,text]of [[11,'海底隧道 · 通往山脚'],[tunnelPath.length-17,'海底隧道 · 通往家园']]){
     tunnelPath.sample(s,p);B.at(p.x,p.y,p.z,p.heading,()=>{
       for(const x of [-5.8,5.8])B.box(x,0,0,.65,6.5,.8,concrete);
@@ -66,21 +99,20 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
     });transitSign(B,planes,p.x,p.y+6.4,p.z-.42,text,0x246577,p.heading,8);
   }
   for(const r of platformRects)B.box((r.x0+r.x1)/2,-.25,(r.z0+r.z1)/2,r.x1-r.x0,.28,r.z1-r.z0,concrete);
-  for(const stop of TRANSIT_STOPS){
-    const [x,z]=stop.at,y=stop.floor,isMetro=stop.service==='metro';
-    if(isMetro){
-      for(const dx of [-10,10]){B.box(x+dx,y,z,.18,3.5,.18,teal);B.box(x+dx,y,z+1.9,.18,3.5,.18,teal);}
-      B.box(x,y+3.5,z+.8,24,.18,3.5,teal);B.box(x,y+.02,z+(stop.end? -1.7:2),24,.035,.18,gold);
-      B.box(x+5,y+.42,z+.8,3,.15,.65,{tex:'deck',tint:0xc6a67c});
-      transitSign(B,planes,x,y+2.7,z+1,stop.name,0x267d83,0,8);
-    }else{
-      const side=stop.returning?-1:1;
-      B.box(x+side*.55,y,z-2.2,.1,3,.1,teal);B.box(x+side*.55,y,z+2.2,.1,3,.1,teal);
-      B.box(x,y+3,z,1.5,.13,5,teal);B.box(x+side*.4,y+.45,z+1.1,.45,.12,1.2,{tex:'deck',tint:0xc6a67c});
-      B.box(x,y+.06,z,1.2,.025,.12,gold);
-      transitSign(B,planes,x,y+2.3,z-2.2,'公交 · '+(stop.end==='mountain'||stop.end!=='home'&&stop.returning?'回家':'山脚'),0x397f68,Math.PI/2,3);
-    }
+  const paint=(x,y,z,w,d,look)=>segment({x,y,z:z-d/2,heading:0},{x,y,z:z+d/2,heading:0},0,w,0,0,look);
+  const stationGlass=buildTransitStations(B,planes,paint,shell.material);
+  // Station panes and the tunnel use the same clear glass pass, retaining
+  // the existing draw-call budget. Keep the station-only geometry for picks.
+  const tubeGeometry=shell.geometry,glassGeometry=new THREE.BufferGeometry();
+  for(const key of ['position','normal']){
+    const tube=tubeGeometry.attributes[key].array,station=stationGlass.geometry.attributes[key].array,data=new Float32Array(tube.length+station.length);
+    data.set(tube);data.set(station,tube.length);glassGeometry.setAttribute(key,new THREE.BufferAttribute(data,3));
   }
+  const glassIndices=Array.from(tubeGeometry.index.array),offset=tubeGeometry.attributes.position.count;
+  for(let i=0;i<stationGlass.geometry.attributes.position.count;i++)glassIndices.push(offset+i);
+  glassGeometry.setIndex(glassIndices);glassGeometry.computeBoundingSphere();shell.geometry=glassGeometry;tubeGeometry.dispose();
+  const ribbonGeometry=new THREE.BufferGeometry();ribbonGeometry.setAttribute('position',new THREE.Float32BufferAttribute(ribbonPositions,3));ribbonGeometry.setAttribute('color',new THREE.Float32BufferAttribute(ribbonColors,3));ribbonGeometry.computeVertexNormals();
+  const ribbons=new THREE.Mesh(ribbonGeometry,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));ribbons.name='sea-transit-road-and-rail';ribbons.receiveShadow=true;scene.add(ribbons);
   const inRect=(r,x,z,margin=0)=>x>=r.x0+margin&&x<=r.x1-margin&&z>=r.z0+margin&&z<=r.z1-margin;
   const platform={id:'metro-platform',foot:{x:20,y:0,z:157},docked:()=>true,
     contains:(x,z)=>platformRects.some((r,i)=>i>0&&inRect(r,x,z)),
@@ -129,7 +161,7 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
     }
   }
   Object.values(services).forEach(place);
-  return {services,tunnel,platform,approach,place,stops:TRANSIT_STOPS,
+  return {services,tunnel,platform,approach,place,stationGlass,stops:TRANSIT_STOPS,
     maskWater(coast){tunnel.waterMask=maskTunnelWater(coast,tunnelPath);},
     installView(stage,player){
       const scene=stage.scene,before=scene.onBeforeRender,after=scene.onAfterRender,water=new THREE.Color(0x235467),fogColor=new THREE.Color();
