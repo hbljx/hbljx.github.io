@@ -1,17 +1,18 @@
 // The full map looks south: positive X is the LEFT-hand tunnel in the reference.
-// Sample one circular half-turn instead of hand-placed bends. The diameter
-// joins the arc ends; side selects C or reverse-C on the south-up map.
-function semicircle([ax,az],[bx,bz],side,height){
+// A single half-ellipse keeps the bend convex, with east/west tangents at
+// both shores. Offset endpoints shear the arc without adding reverse bends.
+// side selects C or reverse-C on the south-up map.
+function seaArc([ax,az],[bx,bz],side,height,reach=Math.abs(bz-az)/2){
   const cx=(ax+bx)/2,cz=(az+bz)/2,dx=(bx-ax)/2,dz=(bz-az)/2;
   return Array.from({length:49},(_,i)=>{
     const t=i/48,angle=Math.PI*t;
     // Level ends join the shore/platforms; the vertical profile is independent
-    // of the circular plan, so ramps cannot introduce a sideways kink.
+    // of the arc in plan, so ramps cannot introduce a sideways kink.
     const ramp=Math.max(0,Math.min(1,(t-.06)/.88));
     const y=ramp===0||ramp===1?0:height*Math.sin(Math.PI*ramp)**2;
     if(i===0)return [ax,0,az];
     if(i===48)return [bx,0,bz];
-    return [cx-dx*Math.cos(angle)+side*dz*Math.sin(angle),y,cz-dz*Math.cos(angle)-side*dx*Math.sin(angle)];
+    return [cx-dx*Math.cos(angle)+side*reach*Math.sin(angle),y,cz-dz*Math.cos(angle)];
   });
 }
 // Face the east garage opening on its centreline, six metres from the door.
@@ -20,15 +21,15 @@ export const TUNNEL_HOME={x:36,y:0,z:-6.5};
 export const TUNNEL_HOME_RELEASE={x:33,y:0,z:TUNNEL_HOME.z};
 export const TUNNEL_POINTS = [
   // A straight, level entry lets cars leave the garage without steering.
-  // Ease into the existing seaward half-circle, clear of the carrier berth.
-  [TUNNEL_HOME.x,0,TUNNEL_HOME.z],[44,0,-6.5],[52,0,-6.5],
-  [62,0,-1],[68,0,11],[74,0,21],[80,0,25],
-  ...semicircle([84,25],[84,158],1,-15),
-  [72,0,158],[60,0,158],
+  // One continuous C-shaped bend connects the level approaches. Its 94 m
+  // seaward reach keeps the outer wall clear of the entire carrier berth.
+  [TUNNEL_HOME.x,0,TUNNEL_HOME.z],[44,0,TUNNEL_HOME.z],
+  ...seaArc([52,TUNNEL_HOME.z],[72,158],1,-15,94),
+  [60,0,158],
 ];
 export const METRO_POINTS = [
   [-15,0,33],[-28,0,33],[-42,0,33],
-  ...semicircle([-45,33],[-45,166],-1,6),
+  ...seaArc([-45,33],[-45,166],-1,6),
   [-30,0,166],[-15,0,166],
 ];
 export const TRANSIT_STOPS = [

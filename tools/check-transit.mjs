@@ -52,14 +52,24 @@ try{
    check('straightLevelTunnelEntry',Math.abs(entryAhead.z-garageCenter)<.01&&entryAhead.y===0);
    const tunnelStation=STATIONS.find(s=>s.id==='sea-tunnel');
    check('tunnelMarkerAtGarage',Math.abs(tunnelStation.at[1]-garageCenter)<.01&&tunnelStation.look[0]>entry.x);
-   // The sea routes must retain a single circular half-turn after smoothing.
-   // Exclude only the short shore and platform approaches from the radius check.
-   for(const [name,path,cx,cz,side]of [['tunnel',t.tunnel.path,84,91.5,1],['metro',t.services.metro.path,-45,99.5,-1]]){
-    const arc=path.samples.filter(p=>side*(p.x-cx)>=0);
-    const error=Math.max(...arc.map(p=>Math.abs(Math.hypot(p.x-cx,p.z-cz)-66.5)));
-    details[name+'-arcRadiusError']=error;
-    check(name+'-semicircle',arc.length>150&&error<.08);
+   // Check the full tunnel, including both approaches: fixed endpoints and
+   // one convex half-turn, without the old S-bend before the main sea arc.
+   const tunnelSamples=t.tunnel.path.samples,exit=tunnelSamples.at(-1);
+   check('tunnelEndpointsUnchanged',Math.hypot(entry.x-36,entry.y,entry.z+6.5)<1e-8&&Math.hypot(exit.x-60,exit.y,exit.z-158)<1e-8);
+   let reverseTurn=0,totalTurn=0,maxTurn=0;
+   for(let i=1;i<tunnelSamples.length-1;i++){
+    const a=tunnelSamples[i-1],b=tunnelSamples[i],c=tunnelSamples[i+1];
+    const ax=b.x-a.x,az=b.z-a.z,bx=c.x-b.x,bz=c.z-b.z;
+    const turn=Math.atan2(ax*bz-az*bx,ax*bx+az*bz);
+    totalTurn+=turn;reverseTurn+=Math.max(0,-turn);maxTurn=Math.max(maxTurn,Math.abs(turn));
    }
+   details.tunnelBend={reverseTurn,totalTurn,maxTurn};
+   // Allow tiny spline interpolation drift where the arc meets a straight.
+   check('tunnelSingleCShape',reverseTurn<.02&&Math.abs(totalTurn-Math.PI)<.02&&maxTurn<.04&&tunnelSamples.every((p,i)=>!i||p.z>=tunnelSamples[i-1].z-.01));
+   const metroArc=t.services.metro.path.samples.filter(p=>p.x<=-45);
+   const metroError=Math.max(...metroArc.map(p=>Math.abs(Math.hypot(p.x+45,p.z-99.5)-66.5)));
+   details['metro-arcRadiusError']=metroError;
+   check('metro-semicircle',metroArc.length>150&&metroError<.08);
    // Test the whole map berth, including its corners, against the tunnel's
    // outer wall rather than just checking whether the centreline crosses it.
    let harborGap=Infinity;
