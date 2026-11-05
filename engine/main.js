@@ -991,7 +991,9 @@ async function boot() {
       portal?.update(dt, player);
       rig.update(dt, player);
     }
-    stage.setClearance(rig.introActive ? stage.camera.position.distanceTo(player.pos) : 0);
+    const airborne = extras.activities?.current === 'airplane' && !extras.activities.flight.parked;
+    stage.setClearance(rig.introActive ? stage.camera.position.distanceTo(player.pos) : 0,
+      airborne ? stage.camera.position.y : 0);
     for (const pet of pets) pet.update(dt, stage.camera, player);
     aerial?.update(elapsed, stage.camera, screen);
     atmosphere.update(elapsed, now);

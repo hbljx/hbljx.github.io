@@ -96,6 +96,57 @@ for (const view of VIEWS) {
     console.log(`${view.name}: roof round trip and indoor dog route: ${JSON.stringify(traversal)}`);
     if (!traversal.up || !traversal.down || !traversal.dogIndoors) errors.push('showcase traversal regression');
   }
+  // Aircraft at cruising height must retain hazy ground detail in bad weather.
+  // Exercise the real activity and render loop on both viewport sizes.
+  const flightWeather = await page.evaluate(async () => {
+    const h = __home, a = h.extras.activities, s = h.stage, p = h.player;
+    if (!a?.flight) return null;
+    const { AIRFIELD } = await import('@world/aircraft.js');
+    const THREE = await import('three');
+    const saved = { x: p.pos.x, y: p.y, z: p.pos.z, heading: p.heading, weather: h.getWeatherMode(), time: h.getTimeMode() };
+    const failures = [], samples = [], empty = new Set();
+    const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const check = (name, ok) => { if (!ok) failures.push(name); };
+    try {
+      h.extras.household?.routine.pause(); h.rig.skipIntro();
+      p.anchor(AIRFIELD.x - 4.5, AIRFIELD.y, AIRFIELD.z, AIRFIELD.heading);
+      if (!a.start('airplane')) throw new Error('Could not board aircraft');
+      a.flight.takeoff();
+      for (let i = 0; i < 1000 && a.flight.status().phase !== 'flying'; i++) a.flight.update(.05, empty);
+      if (!a.flight.toggleHover()) throw new Error('Could not reach cruising flight');
+      const plane = h.world.aircraftFleet.planes.find(mesh => mesh.name === a.flight.status().aircraftId);
+      const place = async height => {
+        plane.position.set(12, height, 100); a.flight.update(.016, empty);
+        h.rig.recenter(p); h.rig.set(0, .34, innerWidth < 720 ? 18 : 12);
+        await frame();
+      };
+      for (const time of ['day', 'night']) for (const weather of ['thunder', 'snow']) {
+        h.setTimeMode(time); h.setWeatherMode(weather); s.settle();
+        await place(78);
+        const depth = -new THREE.Vector3(0, 6, 0).applyMatrix4(s.camera.matrixWorldInverse).z;
+        const contrast = 1 - THREE.MathUtils.smoothstep(depth, s.scene.fog.near, s.scene.fog.far);
+        const label = time + '-' + weather;
+        check(label + '-ground-visible-through-haze', depth > 0 && depth < s.camera.far && contrast > .15 && contrast < .8);
+        check(label + '-normal-fog-onset', s.scene.fog.near === s.airNear);
+        samples.push({ time, weather, contrast: +contrast.toFixed(3), far: +s.scene.fog.far.toFixed(1) });
+        await place(18);
+        check(label + '-low-flight-restores-weather', s.scene.fog.far === s.airFar);
+      }
+      h.setTimeMode('day'); h.setWeatherMode('clear'); s.settle(); await place(78);
+      check('clear-day-unchanged', s.scene.fog.far === s.airFar);
+      h.setWeatherMode('thunder'); s.settle(); a.flight.park(); a.flight.update(.016, empty); await frame();
+      check('landing-restores-weather', s.scene.fog.far === s.airFar);
+    } catch (error) { failures.push(error.message); }
+    finally {
+      a.stop(true); p.restore(saved.x, saved.y, saved.z, saved.heading); h.rig.recenter(p);
+      h.setTimeMode(saved.time); h.setWeatherMode(saved.weather); s.settle(); await frame();
+    }
+    return { samples, failures };
+  });
+  if (flightWeather) {
+    console.log(view.name + ': aircraft weather visibility: ' + JSON.stringify(flightWeather));
+    if (flightWeather.failures.length) errors.push('aircraft weather visibility regression');
+  }
   // Switching to flight while climbing a ramp must clear the smoothed walking
   // height; otherwise the deck traps the player and rejects every movement.
   const bridgeFlight = await page.evaluate(() => {

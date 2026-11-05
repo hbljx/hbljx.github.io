@@ -14,10 +14,24 @@ try{
    if(window.__homeStartupError)return{startup:window.__homeStartupError};
    const h=__home,a=h.extras.activities,house=h.extras.household,p=h.player,w=house.woman,t=h.world.transit,empty={x:0,z:0,run:false};
    const THREE=await import('three');
-   const {CARRIER_HOME}=await import('@world/layout.js');
+   const {CARRIER_HOME,GARAGE,STATIONS}=await import('@world/layout.js');
    const {TUNNEL_RADIUS}=await import('@world/tunnel-glazing.js');
    const checks={},details={},check=(name,ok)=>checks[name]=!!ok,key=k=>({key:k,repeat:false});
    h.rig.skipIntro();h.setTimeMode('day');h.setWeatherMode('clear');house.routine.pause();
+   // Snow exposes coplanar approach/bridge faces as flashing dark stripes.
+   // Each sampled road point needs exactly one y=0 face, including both
+   // sides of the seams, so removing the overlap cannot leave a hole.
+   const pavementRay=new THREE.Raycaster(),pavementSamples=[];
+   h.stage.scene.updateMatrixWorld(true);
+   for(const [x,z]of [[16,151],[32,151],[16,156],[32,156],[35,156],[12,151],[36,151],[14.95,153.3],[15.05,153.3],[32.95,153.3],[33.05,153.3],[35,154.95],[35,155.05],[53.95,157.3],[54.05,157.3]]){
+    pavementRay.set(new THREE.Vector3(x,.2,z),new THREE.Vector3(0,-1,0));
+    const faces=pavementRay.intersectObjects(h.stage.scene.children,true).filter(hit=>Math.abs(hit.point.y)<.001);
+    const floor=h.world.ground.surfaceAt(x,z,0);
+    pavementSamples.push({x,z,faces:faces.length,walkable:!!floor&&Math.abs(floor.y)<.001});
+   }
+   details.mountainPavement=pavementSamples;
+   check('mountainPavementSingleSurface',pavementSamples.every(s=>s.faces===1));
+   check('mountainPavementWalkable',pavementSamples.every(s=>s.walkable));
    const tick=()=>{a.update(.05);house.update(.05);};
    const walk=(x,y,z)=>{const ok=h.navigate(x,z,y);let flew=false;for(let i=0;i<5000&&p.travelling;i++){p.update(.05,empty,0);flew ||=p.flying;}return ok&&!flew&&!p.travelling&&Math.hypot(p.pos.x-x,p.pos.z-z)<.3&&Math.abs(p.y-y)<.2;};
    const ride=(id,abort=false)=>{
@@ -33,6 +47,11 @@ try{
     check(label+'-together',Math.hypot(p.pos.x-w.pos.x,p.pos.z-w.pos.z)<1.5&&Math.abs(p.y-w.y)<.3);house.routine.pause();
    };
    check('referenceSides',t.tunnel.path.samples.every(v=>v.x>24)&&t.services.metro.path.samples.every(v=>v.x<24));
+   const garageCenter=(GARAGE.door.z0+GARAGE.door.z1)/2,entry=t.tunnel.path.sample(0,{}),entryAhead=t.tunnel.path.sample(8,{});
+   check('garageFacesTunnel',Math.abs(entry.z-garageCenter)<.01&&Math.abs(entry.heading-Math.PI/2)<.01&&entry.x-GARAGE.x1<=6);
+   check('straightLevelTunnelEntry',Math.abs(entryAhead.z-garageCenter)<.01&&entryAhead.y===0);
+   const tunnelStation=STATIONS.find(s=>s.id==='sea-tunnel');
+   check('tunnelMarkerAtGarage',Math.abs(tunnelStation.at[1]-garageCenter)<.01&&tunnelStation.look[0]>entry.x);
    // The sea routes must retain a single circular half-turn after smoothing.
    // Exclude only the short shore and platform approaches from the radius check.
    for(const [name,path,cx,cz,side]of [['tunnel',t.tunnel.path,84,91.5,1],['metro',t.services.metro.path,-45,99.5,-1]]){
@@ -74,15 +93,21 @@ try{
    for(const id of ['bus-mountain','bus-home-return']){const s=t.stops.find(v=>v.id===id);p.restore(s.at[0],s.floor,s.at[1],0);check(id+'-terminalDestination',a.start(id)&&a.transit.status().destination===(id==='bus-mountain'?'bus-home-return':'bus-mountain'));a.stop();house.update(.05);house.routine.pause();}
    const inside=t.tunnel.path.sample(55,{});
    p.restore(26,0,158,0);check('mountainToTunnelOnFoot',walk(inside.x,inside.y,inside.z));
-   check('tunnelExitToHomeOnFoot',walk(34,0,13));
+   check('tunnelExitToHomeOnFoot',walk(t.tunnel.homeRelease.x,0,t.tunnel.homeRelease.z));
+   check('homeToTunnelOnFoot',walk(inside.x,inside.y,inside.z));
+   check('tunnelToGarageOnFoot',walk(26,0,garageCenter));
    // Exercise the actual driving controller and its guide in BOTH directions.
    const path=t.tunnel.path,car=h.world.animated.car,origin=path.sample(3,{});
-   car.position.set(origin.x,origin.y,origin.z);car.rotation.set(0,origin.heading-Math.PI/2,0);car.updateMatrix();
-   p.restore(origin.x+Math.cos(origin.heading)*2,origin.y,origin.z-Math.sin(origin.heading)*2,origin.heading);
-   w.restore(origin.x-Math.cos(origin.heading)*2,origin.y,origin.z+Math.sin(origin.heading)*2,origin.heading);
+   p.restore(car.position.x,0,car.position.z+2,Math.PI/2);
+   w.restore(car.position.x,0,car.position.z-2,Math.PI/2);
    check('tunnelEnterCar',a.start('driving'));
    if(a.current==='driving'){
     for(let i=0;i<1500&&!a.ride.passengerReady;i++)tick();check('tunnelCompanionBoards',a.ride.passengerReady);
+    const garageBlocked=[];for(let x=car.position.x;x<=origin.x;x+=.25)if(!a.canDrive(x,garageCenter,Math.PI/2))garageBlocked.push(x);
+    details.garageBlocked=garageBlocked;check('continuousGarageApproach',!garageBlocked.length);
+    a.keyDown(key('w'));for(let i=0;i<300&&car.position.x<origin.x;i++)tick();a.keyUp(key('w'));
+    a.keyDown(key(' '));for(let i=0;i<12;i++)tick();a.keyUp(key(' '));
+    check('driveStraightFromGarageToTunnel',car.position.x>=origin.x&&Math.abs(car.position.z-garageCenter)<.01&&t.tunnel.contains(car.position.x,car.position.z,1));
     const invalid=[];for(let s=4;s<path.length-3;s+=1){const q=path.sample(s,{});if(!a.canDrive(q.x,q.z,q.heading))invalid.push({s,x:q.x,y:q.y,z:q.z});}
     details.invalidTunnelSamples=invalid;check('continuousDrivableTunnel',!invalid.length);
     const mid=path.sample(path.length/2,{});check('tunnelBelowSea',mid.y<-10);
@@ -94,11 +119,17 @@ try{
      check('tunnel-'+direction,(direction==='outbound'?loc.s>path.length-.6:loc.s<.6)&&deepest<-10);
      for(let i=0;i<30;i++)tick();
     }
+    a.keyDown(key('w'));for(let i=0;i<150&&car.position.x>GARAGE.x1-4;i++)tick();a.keyUp(key('w'));
+    a.keyDown(key(' '));for(let i=0;i<12;i++)tick();a.keyUp(key(' '));
+    check('driveStraightBackIntoGarage',car.position.x<GARAGE.x1-3&&Math.abs(car.position.z-garageCenter)<.2);
     check('safeTunnelCarExit',a.stop()&&!a.active);house.update(.05);
    }
    return{checks,details,failures:Object.entries(checks).filter(([,ok])=>!ok).map(([name])=>name)};
   });
   console.log(name+': '+JSON.stringify(result));failed ||=!!result.startup||!!result.failures?.length;
+  // Check the garage-to-tunnel alignment at both desktop and phone sizes.
+  await page.evaluate(()=>{const h=__home;h.rig.showcase([68,30,-36],[38,0,-6.5]);for(let i=0;i<80;i++)h.rig.update(.05,h.player);});
+  await page.screenshot({path:out+'transit-'+name+'-garage.png'});
   // A readable station view, followed by the complete schematic map.
   await page.evaluate(()=>{const h=__home;h.rig.showcase([-45,12,12],[-28,1,32]);for(let i=0;i<80;i++)h.rig.update(.05,h.player);});
   await page.screenshot({path:out+'transit-'+name+'-station.png'});

@@ -50,6 +50,18 @@
 #activity-ui .activity-game{width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;border:2px solid var(--line);box-sizing:border-box;border-radius:0;box-shadow:2px 2px 0 var(--gui-shade);margin-top:8px}
 #activity-ui .activity-pad{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 #activity-ui .activity-pad button{min-width:44px;min-height:44px;font-size:18px}
+#activity-ui .activity-jet{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+#activity-ui .activity-jet button{padding:8px 2px;font-size:13px}
+#activity-ui .activity-jet button:disabled{opacity:.5;cursor:default}
+#activity-ui[data-activity=driving] .activity-pad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#activity-ui[data-activity=driving] .activity-pad button{min-width:0;padding:8px 2px;font-size:15px}
+#activity-ui[data-activity=driving] .activity-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#activity-ui[data-activity=driving] .activity-buttons button{padding:8px 2px;font-size:13px}
+@media(max-width:719px){
+  #activity-ui[data-activity=driving]{padding:10px 12px;max-height:51dvh}
+  #activity-ui[data-activity=driving] strong{font-size:16px}
+  #activity-ui[data-activity=driving] .activity-hint,#activity-ui[data-activity=driving] .activity-status{font-size:12px;line-height:1.4;margin:5px 0;min-height:0}
+}
 body.activity-active #prompt,body.reading #activity-ui{display:none!important}
 body.activity-sleep #world:after{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 40% 45%,transparent 25%,#12233480);z-index:1}
 body.reading #activity-controls,body.phone-on #activity-controls{display:none!important}

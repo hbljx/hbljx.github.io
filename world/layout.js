@@ -1,6 +1,6 @@
 // Where everything is. One block = one metre; x runs east, z runs south
 // (towards the pool and the default camera), y is up. The ground is y = 0.
-import { TRANSIT_STOPS } from './transit-layout.js';
+import { TRANSIT_STOPS,TUNNEL_HOME,TUNNEL_HOME_RELEASE } from './transit-layout.js';
 export { TRANSIT_BOUNDS } from './transit-layout.js';
 
 // The south shore ends at the pool; its last sea-facing cell is submerged.
@@ -84,7 +84,7 @@ export const SPAWN = { x: 0.5, z: 5.8, heading: Math.PI };
 // player stands, `look` the point they turn to face; `name` is Chinese, `en` English.
 export const STATIONS = [
   ...TRANSIT_STOPS.filter(s=>!s.returning).map(s=>({id:s.id,name:s.name,en:s.en,at:s.at,look:s.track,floor:s.floor,icon:s.service==='metro'?'works':'lab',page:false,transit:true})),
-  {id:'sea-tunnel',name:'海底隧道入口',en:'Undersea tunnel',at:[34,19],look:[44,25],page:false,icon:'lab'},
+  {id:'sea-tunnel',name:'海底隧道入口',en:'Undersea tunnel',at:[TUNNEL_HOME_RELEASE.x,TUNNEL_HOME_RELEASE.z],look:[TUNNEL_HOME.x+8,TUNNEL_HOME.z],page:false,icon:'lab'},
   { id:'submarine',name:'核潜艇港',en:'Submarine harbor',icon:'dive',at:[SUBMARINE_HOME.x,SUBMARINE_HOME.z-10*SUBMARINE_SCALE],look:[SUBMARINE_HOME.x,SUBMARINE_HOME.z+16*SUBMARINE_SCALE],floor:4.4*SUBMARINE_SCALE,page:false },
   { id:'library',name:'双人图书馆',en:'Library',icon:'writing',at:[-21.5,-19.25],look:[-20,-22],page:false },
   { id:'bath',name:'浴室',en:'Bathroom',icon:'pool',at:[-8,-17.4],look:[-8,-23],page:false },

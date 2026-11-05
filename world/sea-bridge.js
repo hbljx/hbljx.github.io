@@ -151,7 +151,7 @@ export function travelLandscape(actor,world,nav,x,z,y=null,continueTo=null){
     if(on==='sea-tunnel'){
       if(inside)return actor.follow(tunnel.route(actor.pos.x,actor.pos.z,x,z));
       const here=tunnel.path.project(actor.pos.x,actor.pos.z,{}),end=here.s<tunnel.path.length/2?tunnel.foot:tunnel.exit;
-      const release=end===tunnel.foot?{x:34,y:0,z:13}:tunnel.release;
+      const release=end===tunnel.foot?tunnel.homeRelease:tunnel.release;
       return actor.follow([...tunnel.route(actor.pos.x,actor.pos.z,end.x,end.z),release],null,()=>{actor.restore(release.x,0,release.z,actor.heading);if(continueTo)continueTo();else travelLandscape(actor,world,nav,x,z,y)??actor.goTo(x,z);});
     }
     if(inside){

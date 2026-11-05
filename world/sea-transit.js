@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { METRO_POINTS,TUNNEL_POINTS,TRANSIT_STOPS } from './transit-layout.js';
+import { METRO_POINTS,TUNNEL_POINTS,TRANSIT_STOPS,TUNNEL_HOME,TUNNEL_HOME_RELEASE } from './transit-layout.js';
 import { createTransitPath } from './transit-path.js';
 import { createTransitVehicle,transitSign } from './transit-models.js';
 import { createTunnelGlazing,maskTunnelWater,tunnelCeiling } from './tunnel-glazing.js';
-import { bridgeHeight,onBridge } from './sea-bridge.js';
+import { SEA_BRIDGE,bridgeHeight,onBridge } from './sea-bridge.js';
 import { buildTransitStations } from './transit-stations.js';
 
 export function buildSeaTransit({B,planes,layer,materials,scene}){
@@ -95,7 +95,23 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
   // one-metre coplanar overlap that flickers against the pool coping.
   const platformRects=[{x0:-42,x1:-14,z0:26,z1:31},{x0:-44,x1:-15,z0:168,z1:173},{x0:-16,x1:10,z0:168,z1:172},{x0:6,x1:10,z0:159,z1:170},{x0:6,x1:20,z0:155,z1:159,look:{tex:'paint',tint:0x3c4b58}}];
   const approachRects=[{x0:30,x1:54,z0:155,z1:161},{x0:54,x1:66,z0:151,z1:165},{x0:31,x1:40,z0:150,z1:161},{x0:8,x1:17,z0:150,z1:160}];
-  for(const r of approachRects)segment({x:(r.x0+r.x1)/2,y:0,z:r.z0,heading:0},{x:(r.x0+r.x1)/2,y:0,z:r.z1,heading:0},0,r.x1-r.x0,.3,-.15,dark);
+  // The bridge owns the arrival court's y=0 surface. Subtract it and earlier
+  // approach slabs before drawing: coplanar blue pavement fights the snowy
+  // bridge on both sides. Keep the full rectangles below for navigation.
+  const paved=[{x0:SEA_BRIDGE.x-9,x1:SEA_BRIDGE.x+9,z0:150,z1:SEA_BRIDGE.z1}];
+  for(const rect of approachRects){
+    let pieces=[rect];
+    for(const cut of paved)pieces=pieces.flatMap(r=>{
+      const x0=Math.max(r.x0,cut.x0),x1=Math.min(r.x1,cut.x1),z0=Math.max(r.z0,cut.z0),z1=Math.min(r.z1,cut.z1);
+      if(x0>=x1||z0>=z1)return [r];
+      return [
+        {x0:r.x0,x1:x0,z0:r.z0,z1:r.z1},{x0:x1,x1:r.x1,z0:r.z0,z1:r.z1},
+        {x0,x1,z0:r.z0,z1:z0},{x0,x1,z0:z1,z1:r.z1},
+      ].filter(p=>p.x0<p.x1&&p.z0<p.z1);
+    });
+    for(const r of pieces)segment({x:(r.x0+r.x1)/2,y:0,z:r.z0,heading:0},{x:(r.x0+r.x1)/2,y:0,z:r.z1,heading:0},0,r.x1-r.x0,.3,-.15,dark);
+    paved.push(rect);
+  }
   for(const [s,text]of [[11,'海底隧道 · 通往山脚'],[tunnelPath.length-17,'海底隧道 · 通往家园']]){
     tunnelPath.sample(s,p);B.at(p.x,p.y,p.z,p.heading,()=>{
       for(const x of [-5.8,5.8])B.box(x,0,0,.65,6.5,.8,concrete);
@@ -131,7 +147,7 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
     route(x,y,z,tx,ty,tz){return [{x,y:0,z:158},{x:tx,y:0,z:158},{x:tx,y:0,z:tz}];},
     pick(ray){const hit=new THREE.Vector3();if(!ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),hit)||!inApproach(hit.x,hit.z))return null;return {t:hit.distanceTo(ray.origin),point:hit,site:'transit-concourse'};},
   };
-  const tunnel={id:'sea-tunnel',path:tunnelPath,shell,foot:{x:34,y:0,z:19},exit:{x:60,y:0,z:158},release:{x:31,y:0,z:158},
+  const tunnel={id:'sea-tunnel',path:tunnelPath,shell,foot:TUNNEL_HOME,homeRelease:TUNNEL_HOME_RELEASE,exit:{x:60,y:0,z:158},release:{x:31,y:0,z:158},
     contains(x,z,margin=0){return tunnelPath.near(x,z).distance<=5.25-margin;},
     driveHeight(x,z,margin=0){if(onBridge(x,z))return null;const p=tunnelPath.near(x,z);return p.distance<=5.25-margin?p.y:null;},
     slope(x,z,heading){const p=tunnelPath.project(x,z);return p.slope*Math.cos(heading-p.heading);},

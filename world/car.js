@@ -2,6 +2,7 @@
 // One merged opaque mesh including fitted front and rear lamps, movable as a unit.
 // Neutral paint/glass sheen uses no environment map, reflection pass or light.
 import * as THREE from 'three';
+import { createJetExhaust } from './jet-car.js';
 
 export function createCar(B, x, z) {
   const position = [], normals = [], colors = [], finishes = [], emissions = [];
@@ -188,6 +189,16 @@ export function createCar(B, x, z) {
   }
   box(-2.435, 1.008, 0, .018, .032, 1.52, 0xf60018, -1);
   box(-2.433, .97, 0, .014, .042, 1.49, 0xc40016, -1);
+  // The twin rear jets and four VTOL nozzles join the original opaque mesh.
+  for (const s of [-1, 1]) {
+    geometry(new THREE.CylinderGeometry(.255, .22, .46, 16), alloy, 3, transform(-2.52, .57, s * .59, 0, 0, Math.PI / 2));
+    geometry(new THREE.CylinderGeometry(.185, .185, .018, 16), dark, 0, transform(-2.76, .57, s * .59, 0, 0, Math.PI / 2));
+    geometry(new THREE.TorusGeometry(.21, .025, 6, 16), 0x80d9ef, -1, transform(-2.77, .57, s * .59, 0, Math.PI / 2));
+    for (const x of [-1.05, 1.05]) {
+      geometry(new THREE.CylinderGeometry(.21, .18, .14, 12), alloy, 3, transform(x, .19, s * .63));
+      geometry(new THREE.TorusGeometry(.17, .022, 6, 12), 0x80d9ef, -1, transform(x, .115, s * .63, Math.PI / 2));
+    }
+  }
   const meshGeometry = new THREE.BufferGeometry();
   meshGeometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
   meshGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
@@ -222,6 +233,7 @@ export function createCar(B, x, z) {
   const mesh = new THREE.Mesh(meshGeometry, material);
   mesh.name = 'car'; mesh.position.set(x, 0, z);
   mesh.castShadow = mesh.receiveShadow = true; mesh.updateMatrix(); mesh.matrixAutoUpdate = false;
+  mesh.userData.jetExhaust = createJetExhaust(mesh);
 
   return mesh;
 }

@@ -196,10 +196,11 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   function sharedRide(dt){
     const v=activities.ride;
     if(!v){
+      if(riding)femaleAvatar.root.rotation.set(0,player.heading,0);
       if(riding){if(riding.passengerReady){const g=world.ground.nearestStand(player.pos.x,player.pos.z+.8,player.y);woman.restore(g?.x??player.pos.x,g?.y??player.y,g?.z??player.pos.z,player.heading);}else woman.cancel();femaleAvatar.update(0,still);riding=null;routine.resume();}
       return false;
     }
-    const car=v.mesh,h=car.rotation.y+Math.PI/2;
+    const car=v.mesh,h=v.getHeading?.()??car.rotation.y+Math.PI/2;
     if(riding!==v){leaveReading();if(femaleSleep)wakeWoman();routine.pause();riding=v;boarding={x:car.position.x-Math.cos(h)*(v.halfWidth+.8),y:car.position.y,z:car.position.z+Math.sin(h)*(v.halfWidth+.8)};}
     if(!v.passengerReady){
       if(!woman.travelling)navigateWoman(boarding.x,boarding.y,boarding.z);
@@ -210,7 +211,8 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
     const bike=v.id==='motorcycle',forward=bike?-.98:v.id==='roadster'?-.66:-.4,side=bike?0:.48;
     const x=car.position.x+Math.sin(h)*forward-Math.cos(h)*side,z=car.position.z+Math.cos(h)*forward+Math.sin(h)*side;
     woman.anchor(x,car.position.y,z,h);femaleAvatar.root.position.set(x,car.position.y+(bike?.38:v.id==='roadster'?.08:-.3),z);femaleAvatar.root.rotation.set(0,h,0);
-    pose.seated=true;pose.left=pose.right=bike?-.8:-.4;femaleAvatar.update(dt,pose);return true;
+    pose.seated=true;pose.left=pose.right=bike?-.8:-.4;femaleAvatar.update(dt,pose);
+    v.placeOccupant?.(femaleAvatar.root,true);return true;
   }
   function update(dt){
     clock+=dt;

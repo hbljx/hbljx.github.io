@@ -14,12 +14,15 @@ function semicircle([ax,az],[bx,bz],side,height){
     return [cx-dx*Math.cos(angle)+side*dz*Math.sin(angle),y,cz-dz*Math.cos(angle)-side*dx*Math.sin(angle)];
   });
 }
+// Face the east garage opening on its centreline, six metres from the door.
+// Keep the walking handoff on solid land, behind the mouth of the tunnel.
+export const TUNNEL_HOME={x:36,y:0,z:-6.5};
+export const TUNNEL_HOME_RELEASE={x:33,y:0,z:TUNNEL_HOME.z};
 export const TUNNEL_POINTS = [
-  // Leave the existing shore entrance heading out to sea, then merge into
-  // the eastward tangent. A sideways portal would block the north approach.
-  // Move the half-circle 24 m seaward, keeping the full tunnel width clear
-  // of the carrier berth. Tangent approaches preserve both original portals.
-  [34,0,19],[44,0,23.5],[52,0,24.5],[64,0,25],[76,0,25],
+  // A straight, level entry lets cars leave the garage without steering.
+  // Ease into the existing seaward half-circle, clear of the carrier berth.
+  [TUNNEL_HOME.x,0,TUNNEL_HOME.z],[44,0,-6.5],[52,0,-6.5],
+  [62,0,-1],[68,0,11],[74,0,21],[80,0,25],
   ...semicircle([84,25],[84,158],1,-15),
   [72,0,158],[60,0,158],
 ];

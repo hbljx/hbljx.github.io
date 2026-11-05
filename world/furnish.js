@@ -488,12 +488,12 @@ export function furnish({ layer }) {
   for (const x of [6.5, 9.5]) bake('coffee-counter', x, 2.1, 15.1, 1, 4.5, [0, -1, -.2]);
   hot('coffee', 8, 0, 14.8, 5.4, 1.7, 1.1);
 
-  // Black 2025 refreshed Model Y, with continuous white/red lamps lit.
+  // Black Model Y jet car, with continuous white/red lamps lit.
   animated.car = createCar(B, 15.5, -6.5); planes.push(animated.car);
   B.box(15.5, 4.1, -6.5, .24, .09, 5.6, L.steel);
   B.box(15.5, 4.075, -6.5, .15, .025, 5.4, L.light(0xffefd9));
   for (const z of [-8.3, -4.7]) bake('garage-linear', 15.5, 4.05, z, 1.7, 7, [0, -1, 0]);
-  foot(15.5, -6.5, 4.85, 2.25); hot('lab', 15.5, 0, -6.5, 5.2, 1.8, 3);
+  foot(15.5, -6.5, 5.7, 2.25); hot('lab', 15.5, 0, -6.5, 5.8, 1.8, 3);
   animated.carObstacle = obstacles[obstacles.length - 1];
   animated.carObstacle.dynamic = true;
   animated.motorcycle = createMotorcycle(14.5, 1); planes.push(animated.motorcycle);

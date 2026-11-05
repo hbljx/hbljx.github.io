@@ -226,7 +226,7 @@ export function createStage(container, quality) {
   // The hour and the weather each set a goal; colours and amounts glide there
   // in about two seconds, so a change in the live weather or a preview rolls in rather
   // than cuts. The sun's direction moves at once (its shadow is baked once).
-  let mood = MOODS.day, moodName = 'day', practicalLights = [], weather = { ...CALM }, clearance = 0;
+  let mood = MOODS.day, moodName = 'day', practicalLights = [], weather = { ...CALM }, clearance = 0, aerialHeight = 0;
   let baseHemi = 1, flash = 0, settling = false, shadowDirty = false, sunSeen = true;
   // With the camera in the pool, the fog is the water: { color, near, far }.
   let submerged = null;
@@ -266,7 +266,11 @@ export function createStage(container, quality) {
     u.uFogColor.value.copy(now.fog); u.uCloudLit.value.copy(now.cloudLit); u.uCloudShade.value.copy(now.cloudShade);
     u.uSunColor.value.copy(now.sun); u.uCover.value = now.cover; u.uCloud.value = now.veil; u.uNight.value = now.night;
     scene.fog.color.copy(now.fog);
-    scene.fog.near = Math.max(now.near, clearance * 1.3); scene.fog.far = Math.max(now.far, clearance * 2.8);
+    scene.fog.near = Math.max(now.near, clearance * 1.3);
+    // Keep the ground faintly visible from an aircraft, even in rain or snow.
+    // Only extend the far fade: fog still starts at its usual distance,
+    // and the camera's far plane below follows the extended visibility.
+    scene.fog.far = Math.max(now.far, clearance * 2.8, aerialHeight * 2.6);
     if (submerged) { scene.fog.color.copy(submerged.color); scene.fog.near = submerged.near; scene.fog.far = submerged.far; }
     hemi.color.copy(now.hemiSky); hemi.groundColor.copy(now.hemiGround);
     baseHemi = now.hemiI; hemi.intensity = baseHemi + flash * 0.85;
@@ -362,9 +366,11 @@ export function createStage(container, quality) {
   // While the opening shot looks down from far away, the fog starts beyond the
   // island, so a foggy or rainy hour does not open on a grey wall. It follows
   // the camera's distance, so the weather closes in as the camera comes down.
-  function setClearance(distance) {
-    if (Math.abs(distance - clearance) < 0.25) return;
-    clearance = distance; apply();
+  // Flight height extends the far fade separately from the clear opening shot.
+  // As the aircraft descends, the original weather distances take over again.
+  function setClearance(distance, altitude = 0) {
+    if (Math.abs(distance - clearance) < 0.25 && Math.abs(altitude - aerialHeight) < 0.25) return;
+    clearance = distance; aerialHeight = Math.max(0, altitude); apply();
   }
 
   return {
