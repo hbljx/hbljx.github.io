@@ -14,6 +14,8 @@ try{
    if(window.__homeStartupError)return{startup:window.__homeStartupError};
    const h=__home,a=h.extras.activities,house=h.extras.household,p=h.player,w=house.woman,t=h.world.transit,empty={x:0,z:0,run:false};
    const THREE=await import('three');
+   const {CARRIER_HOME}=await import('@world/layout.js');
+   const {TUNNEL_RADIUS}=await import('@world/tunnel-glazing.js');
    const checks={},details={},check=(name,ok)=>checks[name]=!!ok,key=k=>({key:k,repeat:false});
    h.rig.skipIntro();h.setTimeMode('day');h.setWeatherMode('clear');house.routine.pause();
    const tick=()=>{a.update(.05);house.update(.05);};
@@ -31,6 +33,24 @@ try{
     check(label+'-together',Math.hypot(p.pos.x-w.pos.x,p.pos.z-w.pos.z)<1.5&&Math.abs(p.y-w.y)<.3);house.routine.pause();
    };
    check('referenceSides',t.tunnel.path.samples.every(v=>v.x>24)&&t.services.metro.path.samples.every(v=>v.x<24));
+   // The sea routes must retain a single circular half-turn after smoothing.
+   // Exclude only the short shore and platform approaches from the radius check.
+   for(const [name,path,cx,cz,side]of [['tunnel',t.tunnel.path,84,91.5,1],['metro',t.services.metro.path,-45,99.5,-1]]){
+    const arc=path.samples.filter(p=>side*(p.x-cx)>=0);
+    const error=Math.max(...arc.map(p=>Math.abs(Math.hypot(p.x-cx,p.z-cz)-66.5)));
+    details[name+'-arcRadiusError']=error;
+    check(name+'-semicircle',arc.length>150&&error<.08);
+   }
+   // Test the whole map berth, including its corners, against the tunnel's
+   // outer wall rather than just checking whether the centreline crosses it.
+   let harborGap=Infinity;
+   for(let s=0;s<=t.tunnel.path.length;s+=.25){
+    const p=t.tunnel.path.sample(s,{});
+    const dx=Math.max(0,Math.abs(p.x-CARRIER_HOME.x)-7.6),dz=Math.max(0,Math.abs(p.z-CARRIER_HOME.z)-32.5);
+    harborGap=Math.min(harborGap,Math.hypot(dx,dz)-TUNNEL_RADIUS);
+   }
+   details.tunnelHarborClearance=harborGap;
+   check('tunnelClearsCarrierHarbor',harborGap>=12);
    check('threeCarriages',t.services.metro.cars.length===3);
    let busHits=0;const fixtures=h.world.obstacles.filter(o=>o.bridgeFixture),bp=t.services.bus.path;
    for(let d=0;d<bp.length;d+=.2){const p=bp.sample(d,{}),si=Math.sin(p.heading),co=Math.cos(p.heading);for(const o of fixtures){const x=(o.x0+o.x1)/2-p.x,z=(o.z0+o.z1)/2-p.z,w=(o.x1-o.x0)/2,l=(o.z1-o.z0)/2;if(Math.abs(x)>3.1*Math.abs(si)+1.25*Math.abs(co)+w||Math.abs(z)>3.1*Math.abs(co)+1.25*Math.abs(si)+l||Math.abs(x*si+z*co)>3.1+w*Math.abs(si)+l*Math.abs(co)||Math.abs(x*co-z*si)>1.25+w*Math.abs(co)+l*Math.abs(si))continue;busHits++;}}

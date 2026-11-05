@@ -90,7 +90,7 @@ export function createGround(sources) {
     }
     return null;
   }
-  const collides = (x, feet, z) => sources.some(s => s.collides?.(x, feet, z));
+  const collides = (x, feet, z, flying = false) => sources.some(s => s.collides?.(x, feet, z, flying));
   function pick(ray) {
     let best = null;
     for (const s of sources) { const hit = s.pick?.(ray); if (hit && (!best || hit.t < best.t)) best = hit; }

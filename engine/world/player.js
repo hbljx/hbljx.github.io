@@ -106,7 +106,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     for (const h of [0.15, 0.95, 1.7]) for (const [ox, oz] of [[0, 0], [RADIUS, 0], [-RADIUS, 0], [0, RADIUS], [0, -RADIUS]]) {
       if (solidAt(Math.floor(x + ox), Math.floor(feet + h), Math.floor(z + oz))) return true;
     }
-    return !!ground?.collides(x, feet, z);
+    return !!ground?.collides(x, feet, z, mode === 'fly');
   }
   // Is there a clear drop from the feet straight down to `to`?
   function clearDrop(to) {

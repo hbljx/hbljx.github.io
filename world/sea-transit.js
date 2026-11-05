@@ -8,6 +8,7 @@ import { buildTransitStations } from './transit-stations.js';
 
 export function buildSeaTransit({B,planes,layer,materials,scene}){
   const metroPath=createTransitPath(METRO_POINTS),tunnelPath=createTransitPath(TUNNEL_POINTS);
+  const tunnelLabel=tunnelPath.sample(tunnelPath.length/2,{}),metroLabel=metroPath.sample(metroPath.length/2,{});
   // Keep level portals flush with the existing shore/court, without the
   // Catmull-Rom height overshoot that would claim the adjoining bridge floor.
   for(const p of tunnelPath.samples)p.y=Math.min(0,p.y);
@@ -193,7 +194,7 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
       for(const service of Object.values(services))for(const car of service.cars){const [x,y]=P(car.root.position.x,car.root.position.z);context.fillStyle=service.id==='metro'?'#f8faf1':'#e4ae52';context.fillRect(x-3*dpr,y-2*dpr,6*dpr,4*dpr);}
       if(labels){
         context.font=`600 ${11*dpr}px system-ui`;context.textAlign='center';context.textBaseline='middle';
-        for(const [x,z,text]of [[137,111,'海底隧道'],[-104,103,'海上地铁'],[-28,23,'家园地铁站'],[-30,181,'山脚地铁站'],[24,82,'海桥公交站']]){
+        for(const [x,z,text]of [[tunnelLabel.x,tunnelLabel.z,'海底隧道'],[metroLabel.x,metroLabel.z,'海上地铁'],[-28,23,'家园地铁站'],[-30,181,'山脚地铁站'],[24,82,'海桥公交站']]){
           const [px,py]=P(x,z),width=context.measureText(text).width+10*dpr;context.fillStyle='#173849e8';context.fillRect(px-width/2,py-9*dpr,width,18*dpr);context.fillStyle='#fff';context.fillText(text,px,py);
         }
       }context.restore();

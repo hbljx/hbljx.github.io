@@ -115,10 +115,13 @@ export function buildSeaBridge(B,obstacles,bakes=[]){
   const hit=new THREE.Vector3();
   return {id:'sea-bridge',foot:{x:X,y:0,z:26},exit:{x:X,y:.02,z:END},height:bridgeHeight,contains:onBridge,junction,
     slope(z){return z>30&&z<62?6/32:z>118&&z<150?-6/32:0;},
-    collides(x,y,z){
+    collides(x,y,z,flying=false){
       if(!onBridge(x,z))return false;
       const h=bridgeHeight(z),edge=Math.abs(x-X)>(z>=150?8.6:4.6)&&!junction(x,z,.3)||(z>END-.4&&Math.abs(x-X)>1.3);
-      return y<h-.02&&y+1.8>h-.45||edge&&y<h+1.1&&y+1.8>h;
+      // Rails stop walking bodies at the deck edge, but they must not trap a
+      // flying player at deck height while taking off. The deck itself stays
+      // solid below the surface in either mode.
+      return y<h-.02&&y+1.8>h-.45||!flying&&edge&&y<h+1.1&&y+1.8>h;
     },
     levels(x,z,out){if(onBridge(x,z)||junction(x,z)||Math.abs(x-X)<1.05&&z>=END-.5&&z<=END+.15)out.push({y:bridgeHeight(z),site:'sea-bridge'});},
     obstructed(x,z,y){return onBridge(x,z)&&obstacles.some(o=>(o.dynamic||o.bridgeFixture)&&Math.abs((o.y||0)-y)<1&&x>o.x0-.28&&x<o.x1+.28&&z>o.z0-.28&&z<o.z1+.28);},
