@@ -1,12 +1,12 @@
 // 2025 Model Y (Juniper), facing +X. Metres, with a 2.89 m wheelbase.
-// One merged opaque mesh including fitted front and rear lamps, movable as a unit.
+// One opaque body with a transparent glass canopy, movable as a unit.
 // Neutral paint/glass sheen uses no environment map, reflection pass or light.
 import * as THREE from 'three';
 import { createJetExhaust } from './jet-car.js';
 
 export function createCar(B, x, z) {
   const position = [], normals = [], colors = [], finishes = [], emissions = [];
-  const paint = 0x343434, glass = 0x181818, rubber = 0x101010;
+  const paint = 0x343434, glass = 0xc9d6dc, rubber = 0x101010;
   const dark = 0x080808, alloy = 0x595959;
   const a = new THREE.Vector3(), b = new THREE.Vector3(), n = new THREE.Vector3();
   function vertex(p, normal, color, finish, emission = 0) {
@@ -100,6 +100,13 @@ export function createCar(B, x, z) {
     face([canopy[i - 1][j], canopy[i - 1][j + 1], canopy[i][j + 1], canopy[i][j]], glass, 2);
   }
   smooth(canopyStart);
+  // Glazing must leave the opaque batch so occupants and the far windows
+  // remain visible. Reuse the canopy shape and its smoothed normals.
+  const glassGeometry = new THREE.BufferGeometry();
+  glassGeometry.setAttribute('position', new THREE.Float32BufferAttribute(position.splice(canopyStart * 3), 3));
+  glassGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals.splice(canopyStart * 3), 3));
+  colors.splice(canopyStart * 3); finishes.splice(canopyStart); emissions.splice(canopyStart);
+  glassGeometry.computeBoundingSphere();
   for (const s of [-1, 1]) {
     for (let i = 1; i < roof.length; i++) {
       const p = roof[i - 1], q = roof[i];
@@ -236,6 +243,20 @@ export function createCar(B, x, z) {
   const mesh = new THREE.Mesh(meshGeometry, material);
   mesh.name = 'car'; mesh.position.set(x, 0, z);
   mesh.castShadow = mesh.receiveShadow = true; mesh.updateMatrix(); mesh.matrixAutoUpdate = false;
+  const glassMaterial = new THREE.MeshPhongMaterial({
+    color: glass, specular: 0xffffff, shininess: 100,
+    transparent: true, opacity: .18, depthWrite: false,
+    side: THREE.DoubleSide, forceSinglePass: true,
+  });
+  const glazing = new THREE.Mesh(glassGeometry, glassMaterial);
+  glazing.name = 'car-glass'; glazing.matrixAutoUpdate = false;
+  // At overview distance omit the faint sheen to save a draw call; the
+  // cabin remains see-through. Hysteresis avoids flicker at the boundary.
+  const glazingLOD = new THREE.LOD();
+  glazingLOD.name = 'car-glazing';
+  glazingLOD.addLevel(glazing, 0);
+  glazingLOD.addLevel(new THREE.Object3D(), 25, .1);
+  mesh.add(glazingLOD);
   mesh.userData.jetExhaust = createJetExhaust(mesh);
 
   return mesh;
