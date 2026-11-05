@@ -54,11 +54,11 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     <div class="activity-meter" hidden aria-label="投篮力度，绿色区域命中"><i></i><b></b></div>
     <section class="activity-book" hidden><h3></h3><p></p><small></small></section>
     <canvas class="activity-game" width="320" height="180" hidden aria-label="接住金块，避开红块"></canvas>
-    <div class="activity-buttons"><button type="button" data-action="toggle"></button><button type="button" data-action="primary" hidden></button><button type="button" data-action="catapult" hidden>弹射起飞</button><button type="button" data-action="ski-jump" hidden>滑跃起飞</button><button type="button" data-action="secondary" hidden></button><button type="button" data-action="summit" hidden>山顶降落 L</button><button type="button" data-action="hover" hidden>悬停 V</button><button type="button" data-action="carrier-land" hidden>降落航母 H</button></div>
+    <div class="activity-buttons"><button type="button" data-action="toggle"></button><button type="button" data-action="primary" hidden></button><button type="button" data-action="catapult" hidden>弹射起飞</button><button type="button" data-action="ski-jump" hidden>滑跃起飞</button><button type="button" data-action="secondary" hidden></button><button type="button" data-action="tunnel" hidden>隧道领航 T</button><button type="button" data-action="summit" hidden>山顶降落 L</button><button type="button" data-action="hover" hidden>悬停 V</button><button type="button" data-action="carrier-land" hidden>降落航母 H</button></div>
     <div class="activity-pad" hidden><button type="button" data-key="a" aria-label="向左">←</button><button type="button" data-key="w" aria-label="前进">↑</button><button type="button" data-key="s" aria-label="倒车">↓</button><button type="button" data-key="d" aria-label="向右">→</button><button type="button" data-key=" " aria-label="刹车">刹车</button><button type="button" data-key="c" aria-label="降低高度" hidden>降低</button></div>`;
   document.body.append(ui);
   const jetButtons = document.createElement('div'); jetButtons.className = 'activity-jet'; jetButtons.hidden = true;
-  for (const [key, label] of [['v','悬停 V'],['q','翻滚 Q'],['b','前空翻 B'],['x','掉头 X'],['t','隧道领航 T']]) {
+  for (const [key, label] of [['v','悬停 V'],['q','翻滚 Q'],['b','前空翻 B'],['x','掉头 X']]) {
     const button = document.createElement('button'); button.type = 'button'; button.dataset.jet = key; button.textContent = label;
     button.addEventListener('click', () => { jetAction(key); button.blur(); }); jetButtons.append(button);
   }
@@ -75,7 +75,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   setActivityControl(sitButton, 'sit', '坐下 · Q');
   setActivityControl(detailButton, 'detail', '展开操作面板');
   const $ = s => ui.querySelector(s), title = $('strong'), hint = $('.activity-hint'), status = $('.activity-status');
-  const toggle = $('[data-action="toggle"]'), primary = $('[data-action="primary"]'), secondary = $('[data-action="secondary"]');
+  const toggle = $('[data-action="toggle"]'), primary = $('[data-action="primary"]'), secondary = $('[data-action="secondary"]'), tunnelButton = $('[data-action="tunnel"]');
   const summit = $('[data-action="summit"]');
   const carrierLand = $('[data-action="carrier-land"]');
   const catapult=$('[data-action="catapult"]'),skiJump=$('[data-action="ski-jump"]');
@@ -322,6 +322,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     const label = { ground: '地面驾驶', takeoff: '喷气起飞中', flying: f.hovering ? '空中悬停' : '喷气飞行', landing: '正在降落' }[f.phase];
     const maneuver = { roll: '360° 翻滚', flip: '前空翻', uturn: '180° 掉头' }[f.maneuver];
     primary.textContent = flying ? '降落 J / L' : '启动喷气 J';
+    tunnelButton.textContent = tunnelGuide ? '停止领航 T' : '隧道领航 T';
     toggle.textContent = flying ? jetExitPending ? '降落后下车…' : '降落后下车 E' : '下车 E';
     hint.textContent = flying
       ? 'W/S 调速 · A/D 转向 · 空格/C 升降 · Shift 加速 · Q 翻滚 / B 前空翻 · X 掉头 · V 悬停 · R 回车库'
@@ -449,6 +450,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   primary.addEventListener('pointerup', releaseShot);
   primary.addEventListener('pointercancel', () => { shot.charging = false; });
   secondary.addEventListener('click', () => { secondaryAction(); secondary.blur(); });
+  tunnelButton.addEventListener('click', () => { toggleTunnelGuide(); tunnelButton.blur(); });
   const hover=ui.querySelector('[data-action=hover]');hover.addEventListener('click',()=>{flight.toggleHover();refreshUI();});
   summit.addEventListener('click',()=>{flight.landAt('summit');refreshUI();summit.blur();});
   carrierLand.addEventListener('click',()=>{flight.landAt('carrier');refreshUI();carrierLand.blur();});
@@ -481,7 +483,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     hover.hidden=active?.id!=='airplane';
     title.textContent = s.title; toggle.textContent = active ? '结束互动 E' : '开始互动 E';
     toggle.hidden=false;
-    primary.hidden = catapult.hidden = skiJump.hidden = secondary.hidden = summit.hidden = carrierLand.hidden = meter.hidden = book.hidden = canvas.hidden = pad.hidden = true;
+    primary.hidden = catapult.hidden = skiJump.hidden = secondary.hidden = tunnelButton.hidden = summit.hidden = carrierLand.hidden = meter.hidden = book.hidden = canvas.hidden = pad.hidden = true;
     hint.textContent = '走近后按 E 体验 · F 打开网址目录'; status.textContent = '';
     if (!active) return;
     hint.textContent = 'E / Esc 或点击地面结束 · 拖拽转动视角';
@@ -499,8 +501,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       case 'coffee': primary.hidden = false; primary.textContent = '再喝一口 空格'; break;
       case 'gaming': canvas.hidden = primary.hidden = pad.hidden = false; primary.textContent = '重新开始 空格'; hint.textContent = 'A / D 或 ← → 移动 · 接金块，避红块'; break;
       case 'motorcycle':
-      case 'roadster':
-      case 'driving': pad.hidden = primary.hidden = secondary.hidden = false; primary.textContent='隧道领航 T';secondary.textContent = '回车库 R'; toggle.textContent = s.id === 'motorcycle' ? '下摩托车 E' : '下车 E'; hint.textContent = 'W / S 前进倒车 · A / D 转向 · 空格刹车 · 驶进入口后按 T 沿隧道行驶'; break;
+      case 'roadster': pad.hidden = primary.hidden = secondary.hidden = false; primary.textContent='隧道领航 T';secondary.textContent = '回车库 R'; toggle.textContent = s.id === 'motorcycle' ? '下摩托车 E' : '下车 E'; hint.textContent = 'W / S 前进倒车 · A / D 转向 · 空格刹车 · 驶进入口后按 T 沿隧道行驶'; break;
+      case 'driving': pad.hidden = primary.hidden = secondary.hidden = tunnelButton.hidden = false; primary.textContent='启动喷气 J'; secondary.textContent = '回车库 R'; tunnelButton.textContent = '隧道领航 T'; toggle.textContent = '下车 E'; hint.textContent = 'W / S 前进倒车 · A / D 转向 · 空格刹车 · 驶进入口后按 T 沿隧道行驶'; break;
       case 'fishing': primary.hidden = false; primary.textContent = life.fishing.phase === 'bite' ? '立即收线！空格' : life.fishing.phase === 'waiting' ? '提竿 空格' : '抛竿 空格'; hint.textContent = '空格抛竿 · 浮漂下沉后 2.5 秒内按空格收线'; break;
       case 'cooking': primary.hidden = false; primary.textContent = life.cooking.phase === 'prep' ? '切菜 空格' : life.cooking.phase === 'cooking' ? '翻炒 空格' : '再做一份 空格'; hint.textContent = '切菜 3 次 → 翻炒 3 次 → 等待出锅 · E 结束'; break;
       case 'treadmill': primary.hidden = secondary.hidden = false; primary.textContent = life.treadmill.paused ? '继续跑 空格' : '暂停 空格'; secondary.textContent = '调速度 R'; hint.textContent = '空格暂停 / 继续 · R 调速 · E 下跑步机'; break;

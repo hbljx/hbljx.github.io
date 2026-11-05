@@ -166,6 +166,9 @@ export function createCar(B, x, z) {
     frontStrip(s * .65 - .122, s * .65 + .122, .58, .032, 0xf5f5f5, 1.4);
   }
   frontStrip(-.61, .61, .375, .07, dark, 0, .001);
+  // A small silver Tesla T badge sits flush on the sloped front hood.
+  rail([1.39, .96, 0], [1.67, .932, 0], .035, 0xb9bec2, -1);
+  rail([1.53, .946, -.145], [1.53, .946, .145], .035, 0xb9bec2, -1);
   // Rear diffuser and hatch lip.
   box(-2.365, .32, 0, .08, .14, 1.48, dark);
   box(-2.14, 1.075, 0, .20, .035, 1.57, paint, 1, 0, 0, -.05);

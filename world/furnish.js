@@ -101,8 +101,12 @@ export function furnish({ layer }) {
   glazing(batches.wallE,HOUSE.x1+.02,(GARAGE.door.z1+HOUSE.z1)/2,HOUSE.z1-GARAGE.door.z1,0,10,Math.PI/2);
   const garageDoorCenter=(GARAGE.door.z0+GARAGE.door.z1)/2,garageDoorWidth=GARAGE.door.z1-GARAGE.door.z0;
   const garageFrame={tex:'black_metal'};
-  batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter-garageDoorWidth/2+.035,.07,4,.1,garageFrame);
-  batches.wallE.box(HOUSE.x1+.02,0,garageDoorCenter+garageDoorWidth/2-.035,.07,4,.1,garageFrame);
+  const shutterBottom=4.02,slatPitch=.14,slatCount=6;
+  const shutterTop=shutterBottom+slatPitch*slatCount,hoodHeight=.62;
+  for(const z of [GARAGE.door.z0+.035,GARAGE.door.z1-.035]) {
+    batches.wallE.box(HOUSE.x1+.02,0,z,.2,shutterTop,.16,garageFrame);
+    batches.wallE.box(HOUSE.x1+.13,0,z,.025,shutterTop,.055,L.paint(0x89969e));
+  }
   // End each side pane inside its jamb, on the same plane as the frame.
   // Sharing these exact cuts with the upper pane leaves no exposed overlap
   // or half-block gap at either side of the garage opening.
@@ -111,15 +115,23 @@ export function furnish({ layer }) {
   for (const [a, b, bottom, height] of [
     [HOUSE.z0, garageGlassNorth, 0, HOUSE.height],
     [garageGlassSouth, HOUSE.z1, 0, HOUSE.height],
-    [garageGlassNorth, garageGlassSouth, 4, HOUSE.height - 4],
+    [garageGlassNorth, garageGlassSouth, shutterTop+hoodHeight, HOUSE.height-shutterTop-hoodHeight],
   ]) batches.wallE.box(HOUSE.x1+.02,bottom,(a+b)/2,.055,height,b-a,
     {tex:'glass',glass:true},{tag:'garage-facade-glazing'});
-  // The main garage leaf is raised inside the opening, leaving the vehicle
-  // route clear while restoring the missing framed glass door.
-  B.at(HOUSE.x1-.9,4.05,garageDoorCenter,0,()=>{
-    B.box(0,0,0,1.8,.08,garageDoorWidth,{tex:'glass',glass:true});
-    for(const z of [-garageDoorWidth/2,garageDoorWidth/2])B.box(0,0,z,1.8,.08,.08,garageFrame);
-    for(const x of [-.9,.9])B.box(x,0,0,.08,.08,garageDoorWidth,garageFrame);
+  // A raised roller shutter: ribbed metal slats retract into the headbox.
+  // Keep the original four-metre vehicle clearance and batch every fitting.
+  batches.wallE.at(HOUSE.x1+.02,0,garageDoorCenter,0,()=>{
+    const width=garageDoorWidth-.1,metal=L.paint(0xb4bec4);
+    batches.wallE.box(-.015,shutterBottom,0,.07,shutterTop-shutterBottom,width,garageFrame);
+    for(let i=0;i<slatCount;i++) {
+      const y=shutterBottom+i*slatPitch;
+      batches.wallE.box(.035,y+.012,0,.11,slatPitch-.024,width,metal);
+      batches.wallE.box(.1,y+.035,0,.035,.028,width,L.paint(0xd1d8dc));
+    }
+    batches.wallE.box(.04,shutterBottom,0,.18,.07,width,garageFrame);
+    batches.wallE.box(0,shutterTop,0,.72,hoodHeight,garageDoorWidth+.28,garageFrame);
+    batches.wallE.box(.37,shutterTop+.09,0,.035,hoodHeight-.18,garageDoorWidth+.08,L.paint(0x626e76));
+    batches.wallE.box(0,shutterTop+hoodHeight-.04,0,.78,.04,garageDoorWidth+.32,metal);
   });
   // Keep the doorway jambs; omit the two crosswise bars that projected into
   // the garage and out over the shore instead of following the opening.

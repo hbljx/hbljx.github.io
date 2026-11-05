@@ -53,9 +53,9 @@
 #activity-ui .activity-jet{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
 #activity-ui .activity-jet button{padding:8px 2px;font-size:13px}
 #activity-ui .activity-jet button:disabled{opacity:.5;cursor:default}
-#activity-ui[data-activity=driving] .activity-pad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#activity-ui[data-activity=driving] .activity-pad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 #activity-ui[data-activity=driving] .activity-pad button{min-width:0;padding:8px 2px;font-size:15px}
-#activity-ui[data-activity=driving] .activity-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#activity-ui[data-activity=driving] .activity-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 #activity-ui[data-activity=driving] .activity-buttons button{padding:8px 2px;font-size:13px}
 @media(max-width:719px){
   #activity-ui[data-activity=driving]{padding:10px 12px;max-height:51dvh}
