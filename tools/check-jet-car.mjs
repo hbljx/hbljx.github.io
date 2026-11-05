@@ -24,6 +24,16 @@ try {
       const tick = (seconds, dt = 1 / 60) => { for (let i = 0; i < Math.ceil(seconds / dt); i++) { a.update(dt); house.update(dt); } };
       const hold = (key, seconds) => { down(key); tick(seconds); up(key); };
       h.rig.skipIntro(); h.setTimeMode('day'); h.setWeatherMode('clear'); house.routine.pause();
+      car.updateMatrixWorld(true);
+      details.cushionHeights = [-.44, .44].map(side => {
+        const origin = car.localToWorld(new THREE.Vector3(.08, 3, side));
+        const direction = new THREE.Vector3(0, -1, 0).transformDirection(car.matrixWorld);
+        const hit = new THREE.Raycaster(origin, direction).intersectObject(car, false)[0];
+        return hit ? car.worldToLocal(hit.point).y : null;
+      });
+      check('open-cabin-and-seat-cushions', details.cushionHeights.every(y => y > .4 && y < .45));
+      const glazing = car.getObjectByName('car-glass');
+      check('transparent-cabin-glass', glazing?.material.transparent && !glazing.material.depthWrite);
       h.player.anchor(15.5, 0, -4.5, Math.PI / 2);
       check('board-original-garage-car', a.start('driving'));
       if (!a.ride) return { checks, details };
@@ -51,10 +61,10 @@ try {
       const h1 = a.jet.heading; hold('d', .3); check('opposite-air-steering', a.jet.heading < h1 - .3);
       down('q'); tick(.72);
       check('roll-inverts-car', new THREE.Vector3(0, 1, 0).applyQuaternion(car.quaternion).y < -.8);
-      const expectedSeat = new THREE.Vector3(-.4, -.3, -.48).applyQuaternion(car.quaternion).add(car.position);
+      const expectedSeat = new THREE.Vector3(-.28, -.14, -.44).applyQuaternion(car.quaternion).add(car.position);
       check('pilot-follows-roll', h.avatar.root.position.distanceTo(expectedSeat) < .001);
       const companion = h.stage.scene.getObjectByName('female-companion');
-      expectedSeat.set(-.4, -.3, .48).applyQuaternion(car.quaternion).add(car.position);
+      expectedSeat.set(-.28, -.14, .44).applyQuaternion(car.quaternion).add(car.position);
       check('companion-follows-roll', companion.position.distanceTo(expectedSeat) < .001 && new THREE.Vector3(0, 1, 0).applyQuaternion(companion.quaternion).y < -.8);
       tick(.9); check('roll-recovers-upright', a.jet.status().maneuver === null && new THREE.Vector3(0, 1, 0).applyQuaternion(car.quaternion).y > .9);
       down('b'); tick(.72); check('flip-inverts-car', new THREE.Vector3(0, 1, 0).applyQuaternion(car.quaternion).y < -.8);

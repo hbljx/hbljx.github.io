@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MOUNTAIN_SITE } from './layout.js';
+import { CAR_SEAT } from './car-cabin.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const TAU = Math.PI * 2, MAX_HEIGHT = 120;
@@ -170,7 +171,7 @@ export function createJetCar({ mesh, world, player, sound, canDrive, driveHeight
     clearNotice() { notice = ''; },
     releaseControls() { speed = throttle = vertical = 0; boosting = false; },
     placeOccupant(root, passenger = false) {
-      root.position.set(-.4, -.3, passenger ? .48 : -.48).applyQuaternion(mesh.quaternion).add(mesh.position);
+      root.position.set(CAR_SEAT.x, CAR_SEAT.y, passenger ? CAR_SEAT.side : -CAR_SEAT.side).applyQuaternion(mesh.quaternion).add(mesh.position);
       root.quaternion.copy(mesh.quaternion).multiply(seatFacing);
     },
     get airborne() { return phase !== 'ground'; }, get phase() { return phase; },
