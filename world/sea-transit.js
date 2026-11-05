@@ -89,7 +89,10 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
       for(const end of [ring[0],ring.at(-1)])face(...end,teal);
     }
   }
-  const platformRects=[{x0:-42,x1:-13,z0:26,z1:31},{x0:-44,x1:-15,z0:168,z1:173},{x0:-16,x1:10,z0:168,z1:172},{x0:6,x1:10,z0:155,z1:170},{x0:8,x1:20,z0:155,z1:159}];
+  // Match the court-facing link to the adjoining blue pavement, through the bend.
+  // Stop at the pool deck's west edge (x = -14); extending to -13 leaves a
+  // one-metre coplanar overlap that flickers against the pool coping.
+  const platformRects=[{x0:-42,x1:-14,z0:26,z1:31},{x0:-44,x1:-15,z0:168,z1:173},{x0:-16,x1:10,z0:168,z1:172},{x0:6,x1:10,z0:159,z1:170},{x0:6,x1:20,z0:155,z1:159,look:{tex:'paint',tint:0x3c4b58}}];
   const approachRects=[{x0:30,x1:54,z0:155,z1:161},{x0:54,x1:66,z0:151,z1:165},{x0:31,x1:40,z0:150,z1:161},{x0:8,x1:17,z0:150,z1:160}];
   for(const r of approachRects)segment({x:(r.x0+r.x1)/2,y:0,z:r.z0,heading:0},{x:(r.x0+r.x1)/2,y:0,z:r.z1,heading:0},0,r.x1-r.x0,.3,-.15,dark);
   for(const [s,text]of [[11,'海底隧道 · 通往山脚'],[tunnelPath.length-17,'海底隧道 · 通往家园']]){
@@ -98,7 +101,7 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
       B.box(0,6.1,0,12.2,.65,.8,teal);
     });transitSign(B,planes,p.x,p.y+6.4,p.z-.42,text,0x246577,p.heading,8);
   }
-  for(const r of platformRects)B.box((r.x0+r.x1)/2,-.25,(r.z0+r.z1)/2,r.x1-r.x0,.28,r.z1-r.z0,concrete);
+  for(const r of platformRects)B.box((r.x0+r.x1)/2,-.25,(r.z0+r.z1)/2,r.x1-r.x0,.28,r.z1-r.z0,r.look??concrete);
   const paint=(x,y,z,w,d,look)=>segment({x,y,z:z-d/2,heading:0},{x,y,z:z+d/2,heading:0},0,w,0,0,look);
   const stationGlass=buildTransitStations(B,planes,paint,shell.material);
   // Station panes and the tunnel use the same clear glass pass, retaining

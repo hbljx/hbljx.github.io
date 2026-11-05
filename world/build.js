@@ -65,8 +65,8 @@ export function build({ grid, layer, materials, stage }) {
   const transit=buildSeaTransit({B:furn.batches.static,planes:furn.planes,layer,materials,scene:stage.scene});
   const carrier = buildCarrier(layer, furn.batches.static);
   const submarine = buildSubmarine(furn.batches.static, furn.planes);
-  const offshore = buildOffshore(furn.batches.static, layer, materials);
-  stage.scene.add(offshore.rotor);
+  const offshore = buildOffshore();
+  stage.scene.add(offshore.group);
   const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch,transit.tunnel.path);
   for(const mesh of deepBatch.build(materials)){mesh.castShadow=false;oceanLife.deepGroup.add(mesh);}
   stage.scene.add(oceanLife.deepGroup,oceanLife.tunnelGroup);
@@ -124,7 +124,7 @@ export function setup(app) {
       const cutaway = world.hidden.has('roof');
       world.oceanLife.update(dt,world.carrier,stage.camera);
       world.aircraftFleet.update(cutaway);
-      world.offshore.rotor.rotation.z -= dt * 0.8;
+      world.offshore.rotor.rotation.z -= dt * 0.42;
       const dx = app.player.pos.x - world.offshore.x, dz = app.player.pos.z - world.offshore.z;
       const distance = Math.hypot(dx, dz);
       app.sound.wind(distance < 36 ? 1 - distance / 36 : 0);
