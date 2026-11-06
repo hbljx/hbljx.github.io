@@ -34,7 +34,12 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
     if(y<-30){mesh.material=deepMaterial;deepCreatures.push(mesh);deepGroup.add(mesh);}else if(inTunnelGarden){mesh.material=deepMaterial;tunnelCreatures.push(mesh);tunnelGroup.add(mesh);}else creatures.push(mesh);
   }
   for(const [x,z] of reefs)animal('reef',x,-4.28,z,0,0,0);
-  animal('whale',-24,-2.5,64,16,8,.055);animal('whale',-75,-3,12,8,18,.045,2);
+  const shoreCorals=new THREE.Mesh(createOceanModel('shore-corals'));
+  shoreCorals.name='ocean-shore-corals';shoreCorals.userData={kind:'reef'};
+  shoreCorals.updateMatrixWorld(true);creatures.push(shoreCorals);
+  // Keep nearshore whales close to the waterline so their backs and breaches
+  // read clearly from the house and beach.
+  animal('whale',-24,-1.8,64,16,8,.055);animal('whale',-75,-2,12,8,18,.045,2);
   animal('shark',-65,-3.4,-5,9,15,.12);animal('shark',26,-3,61,11,8,.1,2);
   for(let i=0;i<3;i++)animal('dolphin',4,-1.8,48,12,5,.18,i*.7);
   for(const [i,x]of [-45,-12,23].entries())animal('fish-school',x,-2.6,i===0?17:39,3,2,.22,i);

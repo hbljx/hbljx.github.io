@@ -20,19 +20,32 @@ export function createTunnelGlazing(path){
 
 // Clip water only INSIDE the dry tube. Keep the ocean above submerged glass.
 export function maskTunnelWater(coast,path){
-  const size=512,bounds={x0:20,z0:8,x1:164,z1:186},data=new Uint8Array(size*size),p={};
+  const size=512,bounds={x0:Infinity,z0:Infinity,x1:-Infinity,z1:-Infinity},data=new Uint8Array(size*size),p={};
+  // Derive coverage from the current route, including both shore ramps.
+  // Fixed map coordinates leave water inside the tube when an entrance moves.
+  const border=TUNNEL_RADIUS+1;
+  for(const point of path.samples){
+    bounds.x0=Math.min(bounds.x0,point.x-border);bounds.x1=Math.max(bounds.x1,point.x+border);
+    bounds.z0=Math.min(bounds.z0,point.z-border);bounds.z1=Math.max(bounds.z1,point.z+border);
+  }
+  const spanX=bounds.x1-bounds.x0,spanZ=bounds.z1-bounds.z0;
+  // Cover the whole texel at the glass boundary, not only its centre. This
+  // prevents thin water slivers on curved walls and sloping roof sections.
+  const padding=Math.hypot(spanX/size,spanZ/size)/2+.08,radius=TUNNEL_RADIUS+padding;
   const waterY=coast.sea.position.y;
   for(let j=0;j<size;j++)for(let i=0;i<size;i++){
     const x=bounds.x0+(i+.5)/size*(bounds.x1-bounds.x0),z=bounds.z0+(j+.5)/size*(bounds.z1-bounds.z0);
     path.near(x,z,p);const h=waterY-p.y;
-    data[j*size+i]=p.distance<=TUNNEL_RADIUS+.08&&h>=-.08&&h<=tunnelCeiling(p.side)+.08?255:0;
+    const ceiling=tunnelCeiling(Math.max(0,Math.abs(p.side)-padding)),verticalPadding=.08+padding*Math.abs(p.slope);
+    data[j*size+i]=p.distance<=radius&&h>=-verticalPadding&&h<=ceiling+verticalPadding?255:0;
   }
   const mask=new THREE.DataTexture(data,size,size,THREE.RedFormat);mask.needsUpdate=true;
   const material=coast.sea.material,compile=material.onBeforeCompile;
   material.onBeforeCompile=function(shader,renderer){
     compile.call(this,shader,renderer);shader.uniforms.uTunnelDryMask={value:mask};
-    shader.fragmentShader='uniform sampler2D uTunnelDryMask;\n'+shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nvec2 dryUV=(vOceanXZ-vec2(20.,8.))/vec2(144.,178.);\nif(all(greaterThanEqual(dryUV,vec2(0.)))&&all(lessThanEqual(dryUV,vec2(1.)))&&texture2D(uTunnelDryMask,dryUV).r>.5)discard;');
+    shader.uniforms.uTunnelDryBounds={value:new THREE.Vector4(bounds.x0,bounds.z0,spanX,spanZ)};
+    shader.fragmentShader='uniform sampler2D uTunnelDryMask;\nuniform vec4 uTunnelDryBounds;\n'+shader.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nvec2 dryUV=(vOceanXZ-uTunnelDryBounds.xy)/uTunnelDryBounds.zw;\nif(all(greaterThanEqual(dryUV,vec2(0.)))&&all(lessThanEqual(dryUV,vec2(1.)))&&texture2D(uTunnelDryMask,dryUV).r>.5)discard;');
   };
-  material.customProgramCacheKey=()=> 'ocean-tunnel-dry-mask-v1';material.needsUpdate=true;coast.sea.renderOrder=1;
+  material.customProgramCacheKey=()=> 'ocean-tunnel-dry-mask-v2';material.needsUpdate=true;coast.sea.renderOrder=1;
   return {mask,bounds,waterY};
 }

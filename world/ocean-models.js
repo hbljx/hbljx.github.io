@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { appendCoral, SHALLOW_REEFS } from './coral-models.js';
 
 // Sculpted, vertex-coloured geometry still joins the existing fleet draw.
 // Tails and limbs taper their animation weights to zero at their attachment.
@@ -12,7 +13,8 @@ export function createOceanModel(kind,{fishCount=18}={}){
       const x=g.attributes.position.getX(i),y=g.attributes.position.getY(i),z=g.attributes.position.getZ(i);
       data.position.push(x+offset[0],y+offset[1],z+offset[2]);
       data.normal.push(g.attributes.normal.getX(i),g.attributes.normal.getY(i),g.attributes.normal.getZ(i));
-      color.setHex(typeof tint==='function'?tint(x,y,z):tint);
+      if(tint===undefined&&g.attributes.color)color.fromBufferAttribute(g.attributes.color,i);
+      else color.setHex(typeof tint==='function'?tint(x,y,z):tint);
       data.color.push(color.r,color.g,color.b);data.swimWeight.push(typeof weight==='function'?weight(x,y,z):weight);data.swimAxis.push(...axis);
     }
     if(g!==geometry)g.dispose();geometry.dispose();
@@ -206,14 +208,21 @@ export function createOceanModel(kind,{fishCount=18}={}){
       }
     }
     for(let i=0;i<4;i++){
-      const x=-2.7+i*1.8,z=-2.1+(i%2)*-.3,tint=[0xd89080,0xb573a1,0xe3b66c,0xdd8a9d][i];
-      tube([[x,0,z],[x+.03,.45,z],[x-.08,.95,z]],.08,tint,0,undefined,6,5);
-      for(const side of [-1,1])for(let j=0;j<2;j++)tube([[x,.3+j*.2,z],[x+side*.25,.5+j*.22,z+.05],[x+side*(.35+j*.1),.75+j*.23,z+.12]],.045,tint,0,undefined,6,5);
+      appendCoral(append,{x:-2.7+i*1.8,z:-2.1-(i%2)*.3,height:1.1+(i%2)*.2,
+        width:1.15,yaw:i*.8,kind:i%3,tint:[0xdf908b,0xb987bd,0xe6b879,0xde8da4][i]});
     }
     for(let i=0;i<3;i++){
       const x=-2+i*1.7,z=-2.6;
       ell(x,.07,z,.52,.15,.44,0xdfc4a0,0,undefined,8);
       for(let rib=-2;rib<=2;rib++)tube([[x,.11,z-.16],[x+rib*.075,.16,z],[x+rib*.09,.09,z+.16]],.012,0xf6dec3,0,undefined,4,4);
+    }
+  }
+  if(kind==='shore-corals'){
+    for(const [i,[x,z]] of SHALLOW_REEFS.entries())for(let j=0;j<5;j++){
+      const a=i*.71+j*2.4;
+      appendCoral(append,{x:x+Math.cos(a)*(2+j%2),y:-8.55,z:z+Math.sin(a)*(1.8+j%3),
+        height:2.8+(i+j*2)%4*.65,width:2.3+(j%2)*.5,yaw:a,kind:(i+j)%3,
+        tint:[0x63cdb4,0xe895a8,0x88b9df,0xe9bb79,0xb29bd8][(i+j)%5]});
     }
   }
   const result=new THREE.BufferGeometry();

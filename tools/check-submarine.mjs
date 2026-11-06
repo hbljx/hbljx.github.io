@@ -74,7 +74,44 @@ try {
       check('seaExitDefers', a.stop() === false && a.current === 'submarine' && a.dive.status().exitPending);
       window.dispatchEvent(new Event('blur')); a.pause();
       check('blurPreservesDeferredExit', a.dive.status().mode === 'return' && a.dive.status().exitPending);
-      for (let i = 0; i < 18000 && a.active; i++) a.update(.05);
+      const returnPhases = [], metro = h.world.transit.services.metro.path, piers = [];
+      for (let s = 48; s < metro.length - 35; s += 24) piers.push(metro.sample(s, {}));
+      let prior = a.dive.status(), movingTurn = false, steadyCrossing = true, slowTurn = true, alignedDocking = true;
+      let pierClearance = Infinity, deckClearance = Infinity;
+      for (let i = 0; i < 18000 && a.active; i++) {
+        a.update(.05);
+        const state = a.dive.status(), phase = state.returnStage;
+        if (returnPhases.at(-1) !== phase) returnPhases.push(phase);
+        const step = Math.hypot(state.x - prior.x, state.z - prior.z);
+        const turn = Math.abs(Math.atan2(Math.sin(state.heading - prior.heading), Math.cos(state.heading - prior.heading)));
+        if (phase === 'bridge-crossing' && prior.returnStage === phase) steadyCrossing &&= turn < .0001 && step > 0;
+        if (phase === 'harbor-align' && prior.returnStage === phase) {
+          movingTurn ||= turn > .001 && step > .01;
+          slowTurn &&= turn < .01 && step > 0;
+        }
+        if (phase === 'docking' && prior.returnStage === phase && step > 0) alignedDocking &&= Math.abs(state.x - sub.home.x) < .001 && Math.abs(state.heading) < .001 && state.z < prior.z && state.speed >= -3.001;
+        if ((phase === 'bridge-crossing' || phase === 'harbor-align') && i % 4 === 0) {
+          const c = Math.cos(state.heading), s = Math.sin(state.heading);
+          // Conservative full-length rectangle also covers fins and propeller.
+          for (const pier of piers) {
+            const dx = pier.x - state.x, dz = pier.z - state.z;
+            const side = Math.max(0, Math.abs(dx * c - dz * s) - 6.5);
+            const along = Math.max(0, Math.abs(dx * s + dz * c) - 34);
+            pierClearance = Math.min(pierClearance, Math.hypot(side, along));
+          }
+          for (let z = -34; z <= 31; z += 2) for (const x of [-6.5, 0, 6.5]) {
+            const near = metro.project(state.x + x * c + z * s, state.z - x * s + z * c, {});
+            if (near.distance < 2.2) deckClearance = Math.min(deckClearance, near.y + state.depth);
+          }
+        }
+        prior = state;
+      }
+      check('diagonalThenTurnThenDock', returnPhases.filter(p => ['bridge-crossing', 'harbor-align', 'docking'].includes(p)).join(',') === 'bridge-crossing,harbor-align,docking');
+      check('holdsDiagonalThroughBridge', steadyCrossing);
+      check('turnsSlowlyWhileMoving', movingTurn && slowTurn);
+      check('alignedLowSpeedDocking', alignedDocking);
+      check('fullHullClearsBridgePiers', pierClearance > 1.1);
+      check('fullHullClearsBridgeDeck', deckClearance >= 12);
       check('returnAndDisembark', !a.active && sub.docked() && sub.canBoard(p));
       const home = { x: .5, y: 0, z: 5.8 };
       // Return from different headings, depths, boundaries and below the pier.

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SHALLOW_REEFS } from './coral-models.js';
 
 export const DEEP_LANDMARKS = [
   { name: '荧光珊瑚林', x: -350, z: 285, depth: 260, color: '#67edce' },
@@ -16,20 +17,34 @@ export function seabedAt(x, z) {
 
 export function buildDeepSea(shallow, B) {
   const rock = { tex: 'stone', tint: 0x417d8b, emissive: .12 };
-  const sand = { tex: 'sand', tint: 0x83b3ac, emissive: .22 };
+  const seabed = { tex: 'paint', tint: 0x83b3ac, emissive: .22 };
   // Retain the shallow reefs, opening only the western harbor and trench.
   shallow.box(115, -10, -74, 130, .5, 212, { tex: 'paint', tint: 0x327e94 });
-  shallow.box(115, -23.5, 106, 130, .5, 148, sand);
+  shallow.box(115, -23.5, 106, 130, .5, 148, seabed);
   shallow.box(4, -10, -74, 92, .5, 212, { tex: 'paint', tint: 0x327e94 });
   shallow.box(-111, -10, -74, 138, .5, 212, { tex: 'paint', tint: 0x327e94 });
-  shallow.box(-45, -35, 366, 190, 1, 668, sand);
-  B.box(-600, -421, 366, 600, 1, 668, sand);
+  // A visible shelf immediately offshore gives swimmers a recognizable
+  // seabed before the western trench begins.
+  shallow.box(-8, -10, 73, 150, .5, 86, seabed);
+  for (const [i, reef] of SHALLOW_REEFS.entries()) {
+    const [x,z] = reef, turn = i * .71;
+    shallow.box(x, -9.35, z, 10 + i % 3 * 2, .8, 8 + i % 2 * 2, rock, { ry: turn });
+    shallow.box(x - 1, -8.85, z + 1, 7, .22, 6, seabed, { ry: turn });
+    // Sculpted coral colonies join the ocean geometry batch.
+    for (let j = 0; j < 3; j++) {
+      const a = turn + j * 2.1, px = x + Math.cos(a) * 5.4, pz = z + Math.sin(a) * 4.4;
+      shallow.box(px, -6.3 + j % 2 * .5, pz, .45, 5.8 + j % 2, .45,
+        { tex: 'paint', tint: j % 2 ? 0x43a99b : 0x7ac9a8, emissive: .2 }, { rz: Math.sin(a) * .08 });
+    }
+  }
+  shallow.box(-45, -35, 366, 190, 1, 668, seabed);
+  B.box(-600, -421, 366, 600, 1, 668, seabed);
   const slope = Math.atan2(386, 160), length = Math.hypot(386, 160);
   shallow.box(-220 + Math.sin(slope) / 2, -227 - Math.cos(slope) / 2 - .5, 366, length, 1, 668, rock, { rz: slope });
   for (let i = 0; i < 34; i++) {
     const x = -330 - (i * 83 % 490), z = 90 + (i * 137 % 560), h = 6 + i % 6 * 3;
     B.box(x, -420, z, 15 + i % 4 * 5, h, 14 + i % 3 * 6, rock);
-    B.box(x + 2, -420 + h, z - 1, 9, 4, 9, sand);
+    B.box(x + 2, -420 + h, z - 1, 9, 4, 9, seabed);
   }
   // Terraced gardens frame the circuit with a sandy channel between them.
   // Even the highest branches remain below the full-depth hull envelope.
@@ -38,7 +53,7 @@ export function buildDeepSea(shallow, B) {
   for (const [n, garden] of gardens.entries()) {
     const [gx,gz] = garden, base = -390 + n % 3 * 6;
     B.box(gx,-420,gz,68,base+420,53,rock,{ry:n*.31});
-    B.box(gx,base,gz,56,2,43,sand,{ry:n*.31});
+    B.box(gx,base,gz,56,2,43,seabed,{ry:n*.31});
     for(let i=0;i<11;i++) {
       const a=i*2.4, x=gx+Math.cos(a)*(8+i*1.4), z=gz+Math.sin(a)*(7+i), y=base+2;
       const coral={tex:'paint',tint:palette[(n+i)%palette.length],emissive:.55};
@@ -69,7 +84,7 @@ export function buildDeepSea(shallow, B) {
   }
   for(let i=0;i<90;i++){
     const x=-345-(i*79%365),z=190+(i*131%415);
-    B.box(x,-419.9,z,9+i%4*3,.16,1.2,{tex:'sand',tint:0xb2cdc0,emissive:.28},{ry:.3});
+    B.box(x,-419.9,z,9+i%4*3,.16,1.2,seabed,{ry:.3});
     if(i%3===0){
       B.box(x,-420,z+5,3,2,3,{tex:'paint',tint:palette[i%5],emissive:.7});
       B.box(x,-418,z+5,1,2.8,1,{tex:'paint',tint:0xd0fff3,emissive:.9});
@@ -92,7 +107,7 @@ export function buildDeepSea(shallow, B) {
     for (let j = 0; j < 5; j++) B.box(x + Math.sin(j) * 2, -416 + h + j * 4, z, 1.5 + j * .6, 1, 1.5 + j * .6, { tex: 'paint', tint: 0x6c9398, emissive: .2 });
   }
   B.box(-430, -420, 570, 40, 5, 30, rock);
-  B.box(-430, -415, 570, 28, 4, 20, sand);
+  B.box(-430, -415, 570, 28, 4, 20, seabed);
   for (const x of [-441, -419]) B.box(x, -411, 570, 4, 45, 4, rock);
   B.box(-430, -368, 570, 28, 4, 6, rock);
   B.box(-430, -405, 570, 6, 28, 5, { tex: 'paint', tint: 0x9ac9f4, emissive: .75 });

@@ -3,7 +3,7 @@ import { SEA_BRIDGE, SUBMARINE_ACCESS, SUBMARINE_HOME, SUBMARINE_SCALE } from '.
 import { bridgeHeight } from './sea-bridge.js';
 import { canvasTexture } from '@engine/world/textures.js';
 import { DEEP_LANDMARKS, seabedAt, installDeepSeaView } from './deep-sea.js';
-import { PATROL_BOUNDS, PATROL_LENGTH, samplePatrol } from './submarine-path.js';
+import { PATROL_BOUNDS, PATROL_LENGTH, samplePatrol, RETURN_ENTRY, RETURN_LENGTH, sampleReturn } from './submarine-path.js';
 
 const HOME = { ...SUBMARINE_HOME, y: 0 }, MODEL_DECK = 4.4, DECK = MODEL_DECK * SUBMARINE_SCALE, MAX_DEPTH = 320;
 const PIER = { x0: HOME.x + 5 * SUBMARINE_SCALE, x1: SEA_BRIDGE.x - 4, z: HOME.z, width: SUBMARINE_ACCESS.width };
@@ -146,7 +146,8 @@ export function buildSubmarine(B, planes) {
 
 export function createDive({ world, player, stage }) {
   const sub = world.submarine, mesh = sub.mesh, visited = new Set();
-  let active = false, mode = 'manual', route = [], speed = 0, distance = 0, exitPending = false, message = '已靠港 · 舱门开启', lap = 0, patrolDistance = 0, patrolling = false;
+  let active = false, mode = 'manual', route = [], speed = 0, distance = 0, exitPending = false, message = '已靠港 · 舱门开启', lap = 0, patrolDistance = 0, patrolling = false, returnDistance = -1;
+  const returnPoint = sampleReturn(0, {});
   const patrolPoint = samplePatrol(0, {}), entry = { ...patrolPoint };
   const samples = [];
   for (let z = -65; z <= 61; z += 6) for (const x of [-13, 0, 13]) samples.push([x * SUBMARINE_SCALE, z * SUBMARINE_SCALE]);
@@ -162,7 +163,7 @@ export function createDive({ world, player, stage }) {
     return true;
   }
   const anchor = () => player.anchor(mesh.position.x, mesh.position.y + SUBMARINE_SCALE, mesh.position.z, mesh.rotation.y);
-  function takeOver() { route = []; mode = 'manual'; patrolling = false; exitPending = false; message = '手动航行'; }
+  function takeOver() { returnDistance = -1; route = []; mode = 'manual'; patrolling = false; exitPending = false; message = '手动航行'; }
   function leaveBasin() {
     // Stay below the pier until the half-scale hull is clear, even when
     // returning from a manual dive or interrupting another automatic route.
@@ -175,16 +176,15 @@ export function createDive({ world, player, stage }) {
     if (mode === 'return') return;
     if (sub.docked()) { route = []; mode = 'manual'; patrolling = false; speed = 0; message = '已靠港 · 可以下艇'; return; }
     speed = 0; mode = 'return'; patrolling = false; message = '自动上浮返港';
-    // Approach west of the metro arc, then cross beneath its naturally raised
-    // midpoint instead of cutting diagonally through the low northern rail.
-    const metroClearance = { x: HOME.x - 115, y: 0, z: HOME.z };
-    route = [...leaveBasin(), { x: metroClearance.x, y: 0, z: 260 },
-      metroClearance,
-      { ...HOME, yaw: 0 }];
+    returnDistance = -1; sampleReturn(0, returnPoint);
+    route = [...leaveBasin(), { x: RETURN_ENTRY.x, y: 0, z: 260 },
+      { ...RETURN_ENTRY, yaw: undefined, stage: 'bridge-approach' },
+      { ...RETURN_ENTRY, enterHarbor: true, stage: 'bridge-approach' },
+      { ...HOME, yaw: 0, reverse: true, maxSpeed: 3, stage: 'docking' }];
   }
   function togglePatrol() {
     if (mode === 'patrol') { takeOver(); speed = 0; message = '巡视已暂停 · 保持当前深度'; return; }
-    exitPending = false; mode = 'patrol'; patrolling = false; speed = 0; patrolDistance = 0; message = '离港前往深海巡视';
+    returnDistance = -1; exitPending = false; mode = 'patrol'; patrolling = false; speed = 0; patrolDistance = 0; message = '离港前往深海巡视';
     const p = mesh.position;
     route = p.x > PATROL_BOUNDS.x1 || p.z < 110 ? [...leaveBasin(),
       { x: entry.x, y: 0, z: entry.z }, { ...entry },
@@ -211,6 +211,19 @@ export function createDive({ world, player, stage }) {
         patrolDistance = next % PATROL_LENGTH; distance += step;
         p.set(patrolPoint.x, patrolPoint.y, patrolPoint.z); mesh.rotation.y = patrolPoint.yaw;
       } else recoverRoute();
+    } else if (returnDistance >= 0 && mode === 'return') {
+      sampleReturn(returnDistance, returnPoint);
+      const remaining = RETURN_LENGTH - returnDistance;
+      const targetSpeed = Math.min(returnPoint.speed, Math.sqrt(2 * remaining));
+      speed += clamp(targetSpeed - speed, -3 * dt, 3 * dt);
+      const step = Math.min(remaining, Math.max(.02, speed) * dt);
+      sampleReturn(returnDistance + step, returnPoint);
+      if (canSail(returnPoint.x, 0, returnPoint.z, returnPoint.yaw)) {
+        returnDistance += step; distance += step;
+        p.set(returnPoint.x, 0, returnPoint.z); mesh.rotation.y = returnPoint.yaw;
+        message = returnPoint.stage === 'bridge-crossing' ? '自动返港 · 斜穿桥洞' : '自动返港 · 缓慢转向调正身位';
+        if (remaining <= step) { returnDistance = -1; speed = 0; }
+      } else recoverRoute();
     } else if (route.length) {
       const target = route[0], dx = target.x - p.x, dz = target.z - p.z, horizontal = Math.hypot(dx, dz), dy = target.y - p.y;
       const yaw = target.yaw ?? (horizontal > .001 ? Math.atan2(dx, dz) : mesh.rotation.y);
@@ -221,15 +234,20 @@ export function createDive({ world, player, stage }) {
         if (canSail(p.x, p.y, p.z, nextYaw)) mesh.rotation.y = nextYaw;
         else recoverRoute();
       } else if (horizontal > .001 || Math.abs(dy) > .001) {
-        speed = Math.min(18, speed + 5 * dt); const step = Math.min(horizontal, speed * dt);
+        const limit = target.maxSpeed ?? 18;
+        const wanted = target.reverse ? Math.min(limit, Math.sqrt(6 * horizontal)) : limit;
+        const magnitude = Math.abs(speed) + clamp(wanted - Math.abs(speed), -3 * dt, 5 * dt);
+        speed = target.reverse ? -magnitude : magnitude;
+        const step = Math.min(horizontal, Math.max(.02, magnitude) * dt);
         const x = p.x + (horizontal ? dx / horizontal * step : 0), z = p.z + (horizontal ? dz / horizontal * step : 0);
         const y = p.y + clamp(dy, -9 * dt, 9 * dt);
-        message = mode === 'return' ? (dy > .01 ? '自动返港 · 正在上浮' : '自动返港 · 沿安全航道靠港')
+        message = mode === 'return' ? (target.reverse ? '自动返港 · 已对正泊位，低速靠泊' : dy > .01 ? '自动返港 · 正在上浮' : '自动返港 · 沿安全航道靠港')
           : (dy < -.01 ? '正在下潜至巡视深度' : '正在前往椭圆巡视航线');
         if (canSail(x, y, z, yaw)) { p.set(x, y, z); distance += step; mesh.rotation.y = yaw; }
         else recoverRoute();
       } else {
         p.set(target.x, target.y, target.z); mesh.rotation.y = yaw; route.shift(); speed = 0;
+        if (target.enterHarbor) returnDistance = 0;
         if (!route.length && mode === 'return') { p.set(HOME.x, 0, HOME.z); mesh.rotation.y = 0; mode = 'manual'; message = '已靠港 · 舱门开启'; }
         else if (!route.length && mode === 'patrol') {
           patrolling = true; patrolDistance = 0; message = '椭圆连续巡视 · 第 ' + (lap + 1) + ' 圈';
@@ -264,6 +282,6 @@ export function createDive({ world, player, stage }) {
     releaseControls() { if (mode === 'manual') speed = 0; },
     get automatic() { return mode !== 'manual'; }, get readyToExit() { return exitPending && sub.docked(); },
     status: () => ({ x: mesh.position.x, z: mesh.position.z, depth: -mesh.position.y, heading: mesh.rotation.y, speed, distance, maxDepth: MAX_DEPTH,
-      mode, message, docked: sub.docked(), exitPending, visited: [...visited], lap, patrolling }),
+      mode, message, returnStage: mode !== 'return' ? 'idle' : returnDistance >= 0 ? returnPoint.stage : route[0]?.stage || 'approach', docked: sub.docked(), exitPending, visited: [...visited], lap, patrolling }),
   };
 }

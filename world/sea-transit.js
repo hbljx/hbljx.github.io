@@ -98,7 +98,7 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
   // A single apron reaches the arrival court's z=150 edge across its full
   // length, including the one-metre strip beside the tunnel mouth. These
   // same bounds supply the walking and driving floor.
-  const approachRects=[{x0:30,x1:66,z0:150,z1:165},{x0:8,x1:17,z0:150,z1:160}];
+  const approachRects=[{x0:30,x1:66,z0:150,z1:170},{x0:8,x1:17,z0:150,z1:160}];
   // The bridge owns the arrival court's y=0 surface. Subtract it and earlier
   // approach slabs before drawing: coplanar blue pavement fights the snowy
   // bridge on both sides. Keep the full rectangles below for navigation.
