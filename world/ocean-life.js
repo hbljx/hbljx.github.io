@@ -22,13 +22,13 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
   }
   const cache=new Map();let tunnelSchool;
   function createSpoutGeometry(){
-    const positions=[],indices=[],rings=8,sides=7,height=1.15;
+    const positions=[],indices=[],rings=8,sides=7,height=4.2;
     for(let branch=0;branch<3;branch++){
       const angle=branch*Math.PI*2/3;
       const start=positions.length/3;
       for(let ring=0;ring<=rings;ring++){
-        const t=ring/rings,radius=(.025+.21*Math.sin(Math.PI*t)**.8)*(1-.28*t);
-        const cx=Math.cos(angle)*.2*t*t,cz=Math.sin(angle)*.2*t*t;
+        const t=ring/rings,radius=(.045+.38*Math.sin(Math.PI*t)**.8)*(1-.28*t);
+        const cx=Math.cos(angle)*.45*t*t,cz=Math.sin(angle)*.45*t*t;
         for(let side=0;side<=sides;side++){
           const a=side/sides*Math.PI*2;
           positions.push(cx+Math.cos(a)*radius,height*t,cz+Math.sin(a)*radius);
@@ -56,7 +56,7 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
     const mesh=new THREE.Mesh(geometry);mesh.name=`ocean-${kind}-${creatures.length}`;
     mesh.userData={kind,x,y,z,rx,rz,speed,phase};mesh.position.set(x,y,z);mesh.updateMatrixWorld(true);
     if(kind==='whale'){
-      const material=new THREE.MeshLambertMaterial({color:0xc7f4f3,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide});
+      const material=new THREE.MeshLambertMaterial({color:0xe8ffff,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide});
       const spout=new THREE.Mesh(spoutGeometry,material);spout.name='whale-spout';spout.visible=false;effectsGroup.add(spout);
       const phase=(whaleCount++%4)*2.25;
       mesh.userData.whalePhase=phase;
@@ -116,7 +116,7 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
   };
   deepGroup.add(new THREE.Points(moteGeometry,moteMaterial));
   const allCreatures=[...creatures,...deepCreatures,...tunnelCreatures];
-  function update(dt,carrier,camera,sound){
+  function update(dt,carrier,camera){
     if(camera)tunnelGroup.visible=camera.position.y<-.5&&camera.position.x>40&&camera.position.x<190&&camera.position.z>25&&camera.position.z<190;
     time.value+=Math.min(dt,.1);
     for(const mesh of allCreatures){const a=mesh.userData;if(a.kind==='reef')continue;const t=time.value*a.speed+a.phase;
@@ -140,16 +140,15 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
       const action=(time.value+phase)%9,jumping=action>=4.5&&action<7.05;
       if(cycle>=active||jumping||source.userData.whaleBlocked){mesh.visible=false;continue;}
       const progress=cycle/active,edge=Math.min(1,progress/.32,(1-progress)/.34);
-      const eased=edge*edge*(3-2*edge),size=.08+.92*eased;
+      const eased=edge*edge*(3-2*edge),size=.12+1.15*eased;
       nozzle.set(0,1.02,3.9).applyMatrix4(source.matrixWorld);
-      mesh.position.copy(nozzle);mesh.rotation.set(0,source.rotation.y,0);mesh.visible=true;mesh.scale.set(size,size,size);material.opacity=.78*eased;
+      mesh.position.copy(nozzle);mesh.rotation.set(0,source.rotation.y,0);mesh.visible=true;mesh.scale.set(size,size,size);material.opacity=.95*eased;
     }
     for(const effect of breaches){
       const action=(time.value+effect.phase)%9,cycle=Math.floor((time.value+effect.phase)/9);
       if(dt>0&&action>=6.8&&action<7.15&&effect.cycle!==cycle&&!effect.source.userData.whaleBlocked){
         effect.cycle=cycle;effect.started=time.value;effect.x=effect.source.position.x;effect.z=effect.source.position.z;
         effect.y=effect.source.userData.y<-30?effect.source.userData.y:0.03;
-        sound?.play('splash',1.2);
       }
       const age=time.value-effect.started,visible=age>=0&&age<1.7;
       effect.ring.visible=visible;effect.droplets.visible=visible;

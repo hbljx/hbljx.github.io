@@ -122,7 +122,7 @@ export function setup(app) {
       household.update(dt);
       world.carrier.updateCabin(app.player,stage.camera);
       const cutaway = world.hidden.has('roof');
-      world.oceanLife.update(dt,world.carrier,stage.camera,app.sound);
+      world.oceanLife.update(dt,world.carrier,stage.camera);
       world.aircraftFleet.update(cutaway);
       world.offshore.rotor.rotation.z -= dt * 0.42;
       const dx = app.player.pos.x - world.offshore.x, dz = app.player.pos.z - world.offshore.z;
