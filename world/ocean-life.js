@@ -102,10 +102,12 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
   }
   function configureSea(coast){
     whaleWater.setWaterHeight(coast.sea.position.y);
-    const material=coast.sea.material;material.transparent=true;material.depthWrite=false;
+    // Use one opaque surface so seabed colors and distance cannot split the ocean into bands.
+    const material=coast.sea.material;material.transparent=false;material.opacity=1;material.depthWrite=true;
     material.onBeforeCompile=shader=>{
       shader.vertexShader='varying vec2 vOceanXZ;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvOceanXZ=(modelMatrix*vec4(position,1.)).xz;');
-      shader.fragmentShader='varying vec2 vOceanXZ;\n'+shader.fragmentShader.replace('#include <opaque_fragment>','diffuseColor.a=mix(.54,1.,smoothstep(95.,155.,length(vOceanXZ)));\n#include <opaque_fragment>');
+      // Keep world coordinates for the tunnel entrance water mask.
+      shader.fragmentShader='varying vec2 vOceanXZ;\n'+shader.fragmentShader;
     };
     material.needsUpdate=true;
   }

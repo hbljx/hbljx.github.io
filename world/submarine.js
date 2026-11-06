@@ -175,7 +175,11 @@ export function createDive({ world, player, stage }) {
     if (mode === 'return') return;
     if (sub.docked()) { route = []; mode = 'manual'; patrolling = false; speed = 0; message = '已靠港 · 可以下艇'; return; }
     speed = 0; mode = 'return'; patrolling = false; message = '自动上浮返港';
-    route = [...leaveBasin(), { x: HOME.x, y: 0, z: 260 },
+    // Approach west of the metro arc, then cross beneath its naturally raised
+    // midpoint instead of cutting diagonally through the low northern rail.
+    const metroClearance = { x: HOME.x - 115, y: 0, z: HOME.z };
+    route = [...leaveBasin(), { x: metroClearance.x, y: 0, z: 260 },
+      metroClearance,
       { ...HOME, yaw: 0 }];
   }
   function togglePatrol() {

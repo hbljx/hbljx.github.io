@@ -29,7 +29,8 @@ try{
    // sides of the seams, so removing the overlap cannot leave a hole.
    const pavementRay=new THREE.Raycaster(),pavementSamples=[];
    h.stage.scene.updateMatrixWorld(true);
-   for(const [x,z]of [[16,151],[32,151],[16,156],[32,156],[35,156],[12,151],[36,151],[14.95,153.3],[15.05,153.3],[32.95,153.3],[33.05,153.3],[35,154.95],[35,155.05],[53.95,157.3],[54.05,157.3]]){
+   const exitShoulders=[150.05,150.95,151.25,153.3,162.7,164.75].flatMap(z=>[33.05,39.95,40.05,46.3,53.95,54.05,65.95].map(x=>[x,z]));
+   for(const [x,z]of [...exitShoulders,[16,151],[32,151],[16,156],[32,156],[35,156],[12,151],[36,150.95],[36,151.05],[14.95,153.3],[15.05,153.3],[32.95,153.3],[33.05,153.3],[35,154.95],[35,155.05],[53.95,157.3],[54.05,157.3]]){
     pavementRay.set(new THREE.Vector3(x,.2,z),new THREE.Vector3(0,-1,0));
     const faces=pavementRay.intersectObjects(h.stage.scene.children,true).filter(hit=>Math.abs(hit.point.y)<.001);
     const floor=h.world.ground.surfaceAt(x,z,0);
@@ -38,6 +39,7 @@ try{
    details.mountainPavement=pavementSamples;
    check('mountainPavementSingleSurface',pavementSamples.every(s=>s.faces===1));
    check('mountainPavementWalkable',pavementSamples.every(s=>s.walkable));
+   check('tunnelExitShouldersDrivable',exitShoulders.every(([x,z])=>t.approach.driveHeight(x,z)===0));
    const tick=()=>{a.update(.05);house.update(.05);};
    const walk=(x,y,z)=>{const ok=h.navigate(x,z,y);let flew=false;for(let i=0;i<5000&&p.travelling;i++){p.update(.05,empty,0);flew ||=p.flying;}return ok&&!flew&&!p.travelling&&Math.hypot(p.pos.x-x,p.pos.z-z)<.3&&Math.abs(p.y-y)<.2;};
    const ride=(id,abort=false)=>{

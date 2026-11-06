@@ -22,7 +22,6 @@ import { buildOffshore } from './offshore.js';
 import { createHousehold } from './household.js';
 import { flattenGlazing, flattenBatchGlazing } from './glazing.js';
 import { buildSeaTransit } from './sea-transit.js';
-import { createMythicGuardians } from './mythic-guardians.js';
 
 export function build({ grid, layer, materials, stage }) {
   // Flat glass panes need one two-sided pass rather than separate front/back
@@ -68,7 +67,6 @@ export function build({ grid, layer, materials, stage }) {
   const submarine = buildSubmarine(furn.batches.static, furn.planes);
   const offshore = buildOffshore();
   stage.scene.add(offshore.group);
-  const mythicGuardians = createMythicGuardians(stage.scene);
   const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch,transit.tunnel.path);
   for(const mesh of deepBatch.build(materials)){mesh.castShadow=false;oceanLife.deepGroup.add(mesh);}
   stage.scene.add(oceanLife.deepGroup,oceanLife.tunnelGroup,oceanLife.effectsGroup);
@@ -82,7 +80,7 @@ export function build({ grid, layer, materials, stage }) {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
     sites: [outer, mountain, furn.stairs, third.source, carrier, submarine, furn.partitions, seaBridge,transit.platform,transit.approach,transit.tunnel], sitesAfter: [roofAccess],
-    named: { seaBridge, transit, seaTunnel:transit.tunnel, drawTransitMap:transit.drawMap, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, mythicGuardians, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
+    named: { seaBridge, transit, seaTunnel:transit.tunnel, drawTransitMap:transit.drawMap, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
   };
 }
 
@@ -128,7 +126,6 @@ export function setup(app) {
       world.oceanLife.update(dt,world.carrier,stage.camera);
       world.aircraftFleet.update(cutaway);
       world.offshore.rotor.rotation.z -= dt * 0.42;
-      world.mythicGuardians.update(dt);
       const dx = app.player.pos.x - world.offshore.x, dz = app.player.pos.z - world.offshore.z;
       const distance = Math.hypot(dx, dz);
       app.sound.wind(distance < 36 ? 1 - distance / 36 : 0);

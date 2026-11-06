@@ -94,8 +94,11 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
   // Match the court-facing link to the adjoining blue pavement, through the bend.
   // Stop at the pool deck's west edge (x = -14); extending to -13 leaves a
   // one-metre coplanar overlap that flickers against the pool coping.
-  const platformRects=[{x0:-42,x1:-14,z0:26,z1:31},{x0:-44,x1:-15,z0:168,z1:173},{x0:-16,x1:10,z0:168,z1:172},{x0:6,x1:10,z0:159,z1:170},{x0:6,x1:20,z0:155,z1:159,look:{tex:'paint',tint:0x3c4b58}}];
-  const approachRects=[{x0:30,x1:54,z0:155,z1:161},{x0:54,x1:66,z0:151,z1:165},{x0:31,x1:40,z0:150,z1:161},{x0:8,x1:17,z0:150,z1:160}];
+  const platformRects=[{x0:-42,x1:-14,z0:26,z1:31},{x0:-44,x1:-15,z0:168,z1:173},{x0:-16,x1:10,z0:168,z1:172},{x0:6,x1:10,z0:159,z1:170},{x0:10,x1:20,z0:159,z1:168},{x0:6,x1:20,z0:155,z1:159,look:{tex:'paint',tint:0x3c4b58}}];
+  // A single apron reaches the arrival court's z=150 edge across its full
+  // length, including the one-metre strip beside the tunnel mouth. These
+  // same bounds supply the walking and driving floor.
+  const approachRects=[{x0:30,x1:66,z0:150,z1:165},{x0:8,x1:17,z0:150,z1:160}];
   // The bridge owns the arrival court's y=0 surface. Subtract it and earlier
   // approach slabs before drawing: coplanar blue pavement fights the snowy
   // bridge on both sides. Keep the full rectangles below for navigation.

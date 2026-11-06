@@ -79,11 +79,20 @@ try {
       const home = { x: .5, y: 0, z: 5.8 };
       // Return from different headings, depths, boundaries and below the pier.
       const returnCases = [[sub.home.x - 28,-18.5,sub.home.z,Math.PI/2],[-650,-320,520,2.5],[sub.home.x,0,590,Math.PI],[-300,-160,330,-1.2],[-130,-19,98,Math.PI/2],[-750,-320,600,-2],[-360,-300,110,0]];
+      const metroPath=h.world.transit.services.metro.path;
+      const metroCrossing=metroPath.project(sub.home.x-56.5,sub.home.z,{});
+      check('returnCorridorUnderHighMetro',metroCrossing.distance<2&&metroCrossing.y>=17.5);
       for (let n=0;n<returnCases.length;n++) {
         a.start('submarine'); const [x,y,z,yaw]=returnCases[n]; sub.mesh.position.set(x,y,z); sub.mesh.rotation.y=yaw;
         check('returnStart'+n,a.dive.canSail(x,y,z,yaw)); a.dive.update(.01,new Set()); a.stop();
-        for(let i=0;i<16000 && a.active;i++)a.update(.05);
+        let returnMetroClearance=Infinity;
+        for(let i=0;i<16000 && a.active;i++){
+          a.update(.05);
+          const position=sub.mesh.position,nearest=metroPath.project(position.x,position.z,{});
+          if(nearest.distance<3)returnMetroClearance=Math.min(returnMetroClearance,nearest.y-position.y);
+        }
         check('returnCase'+n,!a.active && sub.docked() && sub.canBoard(p));
+        check('returnMetroClearance'+n,returnMetroClearance>=12);
         if(a.active)break;
       }
       check('walkHome', h.navigate(home.x,home.z,home.y) && finishWalk(home));
