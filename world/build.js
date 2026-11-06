@@ -69,7 +69,7 @@ export function build({ grid, layer, materials, stage }) {
   stage.scene.add(offshore.group);
   const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch,transit.tunnel.path);
   for(const mesh of deepBatch.build(materials)){mesh.castShadow=false;oceanLife.deepGroup.add(mesh);}
-  stage.scene.add(oceanLife.deepGroup,oceanLife.tunnelGroup);
+  stage.scene.add(oceanLife.deepGroup,oceanLife.tunnelGroup,oceanLife.effectsGroup);
   const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster,submarine.mesh]);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
@@ -122,7 +122,7 @@ export function setup(app) {
       household.update(dt);
       world.carrier.updateCabin(app.player,stage.camera);
       const cutaway = world.hidden.has('roof');
-      world.oceanLife.update(dt,world.carrier,stage.camera);
+      world.oceanLife.update(dt,world.carrier,stage.camera,app.sound);
       world.aircraftFleet.update(cutaway);
       world.offshore.rotor.rotation.z -= dt * 0.42;
       const dx = app.player.pos.x - world.offshore.x, dz = app.player.pos.z - world.offshore.z;
