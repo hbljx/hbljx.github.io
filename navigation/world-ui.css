@@ -3,8 +3,8 @@
 #li-brand span{font-size:13px}
 #li-brand[hidden]{display:none}
 body.reading #li-brand{visibility:hidden}
-/* The site hides the engine's credit badge, but keeps its portal control. */
-#minimap .badge.credit{display:none!important}
+/* The portal remains available at its 3D gate, not as a fixed HUD button. */
+#portalButton,#minimap .badge.credit{display:none!important}
 .li-help{background:#f5efde;color:#324232;padding:30px;line-height:1.9}
 .li-help a{color:#466d36;text-decoration:underline}
 @media(max-width:650px){
