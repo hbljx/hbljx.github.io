@@ -4,10 +4,11 @@
 import * as THREE from 'three';
 import { createJetExhaust } from './jet-car.js';
 import { buildCarCabin } from './car-cabin.js';
+import { chooseVehicleColor } from './vehicle-colors.js';
 
 export function createCar(B, x, z) {
   const position = [], normals = [], colors = [], finishes = [], emissions = [];
-  const paint = 0x343434, glass = 0xc9d6dc, rubber = 0x101010;
+  const paint = chooseVehicleColor('tesla'), glass = 0xc9d6dc, rubber = 0x101010;
   const dark = 0x080808, alloy = 0x595959;
   const a = new THREE.Vector3(), b = new THREE.Vector3(), n = new THREE.Vector3();
   function vertex(p, normal, color, finish, emission = 0) {
@@ -263,11 +264,11 @@ export function createCar(B, x, z) {
     shader.fragmentShader = 'varying float vCarFinish; varying float vCarEmission;\n' + shader.fragmentShader
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vCarEmission;')
       .replace('#include <opaque_fragment>', /* glsl */`
-      // Keep this black car neutral under the scene's coloured ambient light.
+      // Keep the selected body paint vivid under the scene's coloured ambient light.
       // Lamp colours are separate, so the red rear bar retains its saturation.
       if (vCarFinish >= 0.0) {
         float paintFill = step(.5, vCarFinish) * (1.0 - step(1.5, vCarFinish));
-        outgoingLight = vec3(dot(outgoingLight, vec3(.2126, .7152, .0722)) + paintFill * .032);
+        outgoingLight *= 1.0 + paintFill * .08;
       }
       if (vCarFinish > 0.5) {
         vec3 view = normalize(vViewPosition);

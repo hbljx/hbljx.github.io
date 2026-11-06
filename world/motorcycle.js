@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { chooseVehicleColor } from './vehicle-colors.js';
 
 // A small voxel road bike, facing local +X. All parts share one draw call.
 export function createMotorcycle(x, z) {
@@ -13,7 +14,7 @@ export function createMotorcycle(x, z) {
     g.dispose();
   }
   const box = (x, y, z, w, h, d, c, rz = 0) => part(new THREE.BoxGeometry(w, h, d), c, x, y, z, 0, 0, rz);
-  const tire = 0x20252a, steel = 0x9da5aa, dark = 0x343c40, orange = 0xd77e32;
+  const tire = 0x20252a, steel = 0x9da5aa, dark = 0x343c40, orange = chooseVehicleColor('motorcycle');
   for (const axle of [-.84, .84]) {
     part(new THREE.CylinderGeometry(.37, .37, .23, 12), tire, axle, .37, 0, Math.PI / 2);
     for (const side of [-1, 1]) {

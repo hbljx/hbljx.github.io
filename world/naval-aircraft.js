@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { createCanopy } from './aircraft.js';
+import { chooseVehicleColor } from './vehicle-colors.js';
 
 export function createNavalAircraft(spec){
   const positions=[],normals=[],colors=[],parts=[],pivots=[],shade=new THREE.Color();
-  const light=0xaebbc1,gray=0x798991,dark=0x29373f;
+  const light=chooseVehicleColor('aircraft'),gray=0x798991,dark=0x29373f;
   function append(g,color,propeller=null){
     const geo=g.index?g.toNonIndexed():g;if(!geo.attributes.normal)geo.computeVertexNormals();
     positions.push(...geo.attributes.position.array);normals.push(...geo.attributes.normal.array);shade.setHex(color);

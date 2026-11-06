@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ROOF_PARKING, MOUNTAIN_SITE } from './layout.js';
+import { chooseVehicleColor } from './vehicle-colors.js';
 
 const FLIGHT_SOUTH = MOUNTAIN_SITE.z + MOUNTAIN_SITE.r + 40;
 
@@ -59,7 +60,7 @@ export function createAirplane() {
     for (let i = 0; i < g.attributes.position.count; i++) colors.push(color.r, color.g, color.b);
     g.dispose();
   }
-  const white = 0xe8e5d9, navy = 0x294b59, gold = 0xe3ae4e, black = 0x252b30;
+  const white = chooseVehicleColor('aircraft'), navy = 0x294b59, gold = 0xe3ae4e, black = 0x252b30;
   const blue = 0x527985, glass = 0x8bb9c0, red = 0xb64c43;
   // Layered blocks give the small rooftop aircraft a clearer silhouette.
   box(0, 1, 0, 1.05, .55, 4.8, white);

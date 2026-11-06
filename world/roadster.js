@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import { chooseVehicleColor } from './vehicle-colors.js';
 
 // A white, open-top Rolls-Royce with a long bonnet, upright chrome grille,
 // coach doors and a warm leather/wood cabin. Geometry joins the fleet batch.
 export function createRoadster(x=22,z=-17){
   const positions=[],normals=[],colors=[],wheelParts=[],wheelPivots=[],matrix=new THREE.Matrix4(),rotation=new THREE.Euler(),q=new THREE.Quaternion();
   let wheelPivot=null;
-  const white=0xf0eee8,chrome=0xb7c4ca,leather=0x9c623f,black=0x202a30,wood=0x704931;
+  const white=chooseVehicleColor('roadster'),chrome=0xb7c4ca,leather=0x9c623f,black=0x202a30,wood=0x704931;
   function part(source,color,x,y,z,rx=0,ry=0,rz=0){
     const g=source.index?source.toNonIndexed():source;
     rotation.set(rx,ry,rz);q.setFromEuler(rotation);matrix.compose(new THREE.Vector3(x,y,z),q,new THREE.Vector3(1,1,1));g.applyMatrix4(matrix);
