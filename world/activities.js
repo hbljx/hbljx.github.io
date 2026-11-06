@@ -14,6 +14,7 @@ import { createRoadsterLights } from './roadster.js';
 import { createJetCar } from './jet-car.js';
 import { CARRIER_HOME, SUBMARINE_HOME, SUBMARINE_SCALE } from './layout.js';
 import { TRANSIT_STOPS } from './transit-layout.js';
+import { tunnelCeiling } from './tunnel-glazing.js';
 import { createTransitRides } from './transit-rides.js';
 
 export const ACTIVITY_SPOTS = [
@@ -100,6 +101,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     driving: { mesh: world.animated.car, obstacle: world.animated.carObstacle, halfLength: 2.85, halfWidth: 1.12, home: [15.5, -6.5], distance: 0 },
     motorcycle: { mesh: world.animated.motorcycle, obstacle: world.animated.motorcycleObstacle, halfLength: 1.25, halfWidth: .52, home: [14.5, 1], distance: 0 },
   };
+  const tunnelProjection = {};
   for (const [id,vehicle] of Object.entries(vehicles)) {
     vehicle.id=id;vehicle.passengerReady=false;
     vehicle.samples = [];
@@ -601,7 +603,12 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     for (const p of vehicle.samples) {
       const px = x + c * p[0] - s * p[1], pz = z + s * p[0] + c * p[1];
       const tunnel=world.seaTunnel.driveHeight(px,pz,.35);
-      if(tunnel!==null){if(Math.abs(tunnel-y)>1.8)return false;continue;}
+      if(tunnel!==null){
+        if(Math.abs(tunnel-y)>1.8)return false;
+        const section=world.seaTunnel.path.near(px,pz,tunnelProjection);
+        if(y+2.05>section.y+tunnelCeiling(section.side)-.08)return false;
+        continue;
+      }
       if(world.transit.approach.driveHeight(px,pz,.35)!==null&&Math.abs(y)<.5)continue;
       const ship=world.carrier.driveHeight(px,pz,.35);
       if(ship!==null){if(Math.abs(ship-y)>1.1)return false;continue;}

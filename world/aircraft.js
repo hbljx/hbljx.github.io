@@ -60,24 +60,47 @@ export function createAirplane() {
     g.dispose();
   }
   const white = 0xe8e5d9, navy = 0x294b59, gold = 0xe3ae4e, black = 0x252b30;
+  const blue = 0x527985, glass = 0x8bb9c0, red = 0xb64c43;
+  // Layered blocks give the small rooftop aircraft a clearer silhouette.
   box(0, 1, 0, 1.05, .55, 4.8, white);
+  box(0, 1.08, -.08, 1.075, .2, 3.55, blue);
+  box(0, 1.13, 1.65, 1.08, .15, .48, gold);
+  box(0, .9, 2.18, .82, .14, .58, white);
   box(0, 1.23, 1.35, .94, .45, 1.55, navy);
   box(0, 1.25, 2.3, .62, .32, .65, gold);
+  box(0, 1.46, 2.55, .48, .1, .18, glass);
+  box(0, .9, 2.63, .72, .12, .22, navy);
   box(0, 1, -2.6, .55, .4, 1.2, navy);
   box(0, 1.1, -.35, 7.4, .14, 1.5, white);
+  box(0, 1.18, -.35, 6.75, .045, .34, navy);
+  box(0, 1.205, -.35, 5.8, .025, .1, gold);
+  box(0, 1.18, -1.04, 1.05, .04, .12, blue);
+  box(0, 1.18, .34, 1.05, .04, .12, blue);
   for (const s of [-1, 1]) {
     box(s * 3.35, 1.12, -.35, .58, .17, 1.52, gold);
+    box(s * 2.4, 1.19, -.35, .52, .025, .22, navy);
+    box(s * 3.35, 1.205, -.35, .16, .02, .78, white);
+    box(s * 3.49, 1.22, -.35, .07, .035, .26, red);
     box(s * .62, 1.53, -.3, .15, .65, 1.45, navy);
+    box(s * .62, 1.87, -.3, .17, .06, .72, gold);
     box(s * .8, .49, .65, .08, .75, .09, navy);
     box(s * .8, .24, .65, .24, .48, .45, black);
+    box(s * .8, .24, .65, .26, .16, .47, navy);
     box(s * .1, .175, -2.65, .12, .35, .32, black);
+    box(s * .1, .175, -2.65, .15, .12, .34, navy);
+    for (const z of [-1.62, -1.08, -.54, 0, .54, 1.08]) {
+      box(s * .535, 1.12, z, .035, .16, .25, glass);
+      box(s * .558, 1.12, z, .018, .19, .03, navy);
+    }
   }
   // Rear gear reaches from the fuselage down to the axle between the two wheels.
   box(0,.56,-2.65,.10,.77,.12,navy);box(0,.175,-2.65,.38,.08,.10,navy);
   box(0, 1.5, -.55, .75, .12, .68, black);
   box(0, 1.82, -.9, .78, .55, .12, navy);
   box(0, 1.93, -2.6, .13, 1.6, .85, navy);
+  box(0, 1.96, -2.6, .16, 1.25, .12, red);
   box(0, 1.45, -2.65, 2.55, .11, .75, gold);
+  box(0, 1.52, -2.65, 1.18, .035, .48, white);
   const propellerStart=positions.length/3;
   box(0,1.25,2.7,.13,2.05,.1,black);
   const g = new THREE.BufferGeometry();

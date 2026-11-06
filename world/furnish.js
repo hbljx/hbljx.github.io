@@ -116,7 +116,7 @@ export function furnish({ layer }) {
     [HOUSE.z0, garageGlassNorth, 0, HOUSE.height],
     [garageGlassSouth, HOUSE.z1, 0, HOUSE.height],
     [garageGlassNorth, garageGlassSouth, shutterTop+hoodHeight, HOUSE.height-shutterTop-hoodHeight],
-  ]) batches.wallE.box(HOUSE.x1+.02,bottom,(a+b)/2,.055,height,b-a,
+  ]) batches.wallE.box(HOUSE.x1+(bottom===0?.02:.08),bottom,(a+b)/2,.055,height,b-a,
     {tex:'glass',glass:true},{tag:'garage-facade-glazing'});
   // A raised roller shutter: ribbed metal slats retract into the headbox.
   // Keep the original four-metre vehicle clearance and batch every fitting.
