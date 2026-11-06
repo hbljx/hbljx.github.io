@@ -357,10 +357,6 @@ async function boot() {
   function openPortal() {
     extras.stop?.();
     if (isTravelling() || portal?.busy) return;
-    // A configured destination applies to the button, F and the physical gate.
-    // Without one, keep the template's shared world directory.
-    const destination = config.portal.url && pageURL(config.portal.url);
-    if (destination) { window.open(destination.href, '_blank', 'noopener,noreferrer'); return; }
     togglePhone(false); toggleWeatherMenu(false); minimap.toggleBig(false); rig.skipIntro();
     openStation = 'portal'; pageKeepsScene = false; panel.dataset.station = 'portal'; panel.dataset.kind = '';
     $('#panelTitle').textContent = t('传送门', 'Portal');

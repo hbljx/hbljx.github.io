@@ -110,9 +110,9 @@ body.reading #activity-controls,body.phone-on #activity-controls{display:none!im
   #activity-ui:is([data-activity=reading],[data-activity=library]) .activity-buttons button{font-size:13px;padding:8px}
 }
 
-/* Reserve the left end of the same row for the brand, including narrow phones. */
+/* Keep the brand on the controls row; world-ui.css reserves room for the portal. */
 @media(max-width:720px),(max-height:520px){
-  #li-brand{left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));height:40px;align-items:center}
+  #li-brand{top:max(12px,env(safe-area-inset-top));height:40px;align-items:center}
   #li-brand span{display:none}
   #li-brand b{font-size:23px;line-height:1}
   #minimap{bottom:calc(92px + env(safe-area-inset-bottom))}

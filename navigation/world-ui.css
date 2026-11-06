@@ -1,14 +1,14 @@
-#li-brand{position:fixed;left:24px;top:27px;z-index:14;display:flex;gap:10px;align-items:center;color:white;text-shadow:2px 2px #243927;font-family:system-ui}
+#li-brand{position:fixed;left:max(72px,calc(env(safe-area-inset-left) + 56px));top:27px;z-index:14;display:flex;gap:10px;align-items:center;color:white;text-shadow:2px 2px #243927;font-family:system-ui}
 #li-brand b{font-size:27px;color:#ffdf8e}
 #li-brand span{font-size:13px}
 #li-brand[hidden]{display:none}
 body.reading #li-brand{visibility:hidden}
-/* Hide these during startup; world-ui.js removes the generated elements. */
-#portalButton,#minimap .badge.credit{display:none!important}
+/* The site hides the engine's credit badge, but keeps its portal control. */
+#minimap .badge.credit{display:none!important}
 .li-help{background:#f5efde;color:#324232;padding:30px;line-height:1.9}
 .li-help a{color:#466d36;text-decoration:underline}
 @media(max-width:650px){
-  #li-brand{top:20px;left:18px}
+  #li-brand{top:20px;left:max(68px,calc(env(safe-area-inset-left) + 52px))}
   #li-brand span{display:none}
   #li-brand b{font-size:23px}
   #hotbar{max-width:calc(100vw - 16px);gap:2px}

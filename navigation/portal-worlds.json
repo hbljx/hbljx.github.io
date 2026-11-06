@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "worlds": [
+    {
+      "name": "Terry's Home",
+      "url": "https://terryhu.cn/",
+      "owner": "Terry",
+      "logo": "https://terryhu.cn/assets/terry-logo-pixel-v2.png",
+      "intro": "Welcome! It's all good!",
+      "lang": ["zh", "en"],
+      "homecraft": true
+    }
+  ]
+}

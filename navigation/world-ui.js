@@ -2,7 +2,6 @@ const brand=document.querySelector('#li-brand');
 const ready=setInterval(()=>{
   if(window.__home?.player){
     clearInterval(ready);brand.hidden=false;
-    document.querySelector('#portalButton')?.remove();
     document.querySelector('#minimap .badge.credit')?.remove();
   }
   else if(window.__homeStartupError){clearInterval(ready);}
