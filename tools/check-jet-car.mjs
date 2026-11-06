@@ -71,7 +71,7 @@ try {
       tick(.9); check('flip-recovers-upright', a.jet.status().maneuver === null && new THREE.Vector3(0, 1, 0).applyQuaternion(car.quaternion).y > .9);
       const beforeTurn = a.jet.heading; down('x'); tick(1.5);
       check('uturn-180-degrees', Math.abs(a.jet.heading - beforeTurn - Math.PI) < .01);
-      hold(' ', 20); check('altitude-ceiling', Math.abs(car.position.y - 120) < .01);
+      hold(' ', 20); check('altitude-has-no-ceiling', car.position.y > 120);
       down('Shift'); tick(.3); dispatchEvent(new Event('blur')); tick(.1);
       check('blur-releases-boost', a.jet.speed === 0 && !a.jet.status().boosting);
       // Ocean landing must keep the occupants safely aboard.

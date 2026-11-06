@@ -3,7 +3,7 @@ import { MOUNTAIN_SITE } from './layout.js';
 import { CAR_SEAT } from './car-cabin.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const TAU = Math.PI * 2, MAX_HEIGHT = 120;
+const TAU = Math.PI * 2;
 const SOUTH = MOUNTAIN_SITE.z + MOUNTAIN_SITE.r + 60;
 
 // Six plumes share one draw call, without lights or per-frame geometry.
@@ -145,7 +145,7 @@ export function createJetCar({ mesh, world, player, sound, canDrive, driveHeight
         heading = previousHeading; stunt = null; progress = 0; speed = throttle = 0;
         notice = '转向空间不足，请先升高';
       }
-      p.y = clamp(p.y + vertical * dt, clearance(p.x, p.z) + reserve, MAX_HEIGHT);
+      p.y = Math.max(clearance(p.x, p.z) + reserve, p.y + vertical * dt);
       const x = p.x + Math.sin(heading) * speed * dt, z = p.z + Math.cos(heading) * speed * dt;
       if (x < -170 || x > 170 || z < -185 || z > SOUTH) { speed = throttle = 0; notice = '已到飞行边界，请转向或掉头'; }
       else if (p.y < clearance(x, z) + reserve) { speed = throttle = 0; notice = '前方有障碍，请升高后继续飞行'; }
@@ -176,6 +176,6 @@ export function createJetCar({ mesh, world, player, sound, canDrive, driveHeight
     },
     get airborne() { return phase !== 'ground'; }, get phase() { return phase; },
     get heading() { return heading; }, get speed() { return speed; }, get stepDistance() { return stepDistance; },
-    status: () => ({ phase, speed, altitude: mesh.position.y, heading, hovering: phase === 'flying' && speed < .1, boosting, maneuver: stunt, notice, maxHeight: MAX_HEIGHT }),
+    status: () => ({ phase, speed, altitude: mesh.position.y, heading, hovering: phase === 'flying' && speed < .1, boosting, maneuver: stunt, notice }),
   };
 }

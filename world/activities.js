@@ -65,7 +65,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   }
   ui.querySelector('.activity-buttons').after(jetButtons);
   const boostButton = document.createElement('button'); boostButton.type = 'button'; boostButton.dataset.key = 'shift';
-  boostButton.textContent = '加速'; boostButton.setAttribute('aria-label', '按住喷气加速'); boostButton.hidden = true;
+  boostButton.textContent = '加速'; boostButton.setAttribute('aria-label', '按住加速'); boostButton.hidden = true;
   ui.querySelector('.activity-pad').append(boostButton);
   const controls = document.createElement('div'); controls.id = 'activity-controls'; controls.hidden = true;
   controls.setAttribute('aria-label', '人物操作'); controls.setAttribute('role', 'group');
@@ -392,7 +392,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (['carrier','submarine'].includes(active.id) && k==='p') { if(!e.repeat)primaryAction(); return true; }
     if (k === 'escape') { stop(); return true; }
     if (k === 'f') { return stop(true) === false; }
-    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k) || (['airplane','submarine'].includes(active.id) && k === 'c') || (active.id === 'driving' && jet.airborne && ['c','shift'].includes(k))) {
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k) || (active.id === 'carrier' && k === 'shift') || (['airplane','submarine'].includes(active.id) && k === 'c') || (active.id === 'driving' && jet.airborne && ['c','shift'].includes(k))) {
       if(isDriving()){tunnelGuide=0;tunnelArrived=false;}
       if(active.id==='submarine'){if(dive.automatic && e.repeat)return true;dive.takeOver();}
       if(active.id==='carrier' && cruise.automatic && e.repeat)return true;
@@ -493,7 +493,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       case 'tea': primary.hidden = false; primary.textContent = '泡茶品茗 空格'; hint.textContent = '坐在茶桌旁，按空格泡一杯茶 · 拖拽欣赏三楼景色'; break;
       case 'cinema': hint.textContent = '两人已在沙发上 · 一起观看动画电影'; toggle.textContent = '结束观影 E'; break;
       case 'airplane': pad.hidden = primary.hidden = secondary.hidden = summit.hidden = carrierLand.hidden = false; primary.textContent = '起飞'; secondary.textContent = '回三楼 R'; toggle.textContent = '下机 E'; hint.textContent = 'V 悬停/继续 · W/S 调速 · A/D 转向 · 空格/C 升降 · R 回三楼 · L 山顶 · H 降落航母'; break;
-      case 'carrier': pad.hidden = primary.hidden = secondary.hidden = false; secondary.textContent = '自动返港 R'; toggle.textContent = '停船离舵 E'; hint.textContent = 'P 自动巡航 · R 返港 · W/S 前进倒航 · A/D 转向 · 空格刹车'; break;
+      case 'carrier': pad.hidden = primary.hidden = secondary.hidden = false; secondary.textContent = '自动返港 R'; toggle.textContent = '停船离舵 E'; hint.textContent = 'P 自动巡航 · R 返港 · W/S 前进倒航 · Shift / 按住加速键加速 · A/D 转向 · 空格刹车'; break;
       case 'submarine': pad.hidden = primary.hidden = secondary.hidden = false; secondary.textContent = '上浮返港 R'; hint.textContent = 'P 下潜巡视 · W/S 前后航行 · A/D 转向 · C 下潜 / 空格上浮 · E 返港下艇'; break;
       case 'basketball': primary.hidden = meter.hidden = false; primary.textContent = '按住蓄力 / 松手投篮'; hint.textContent = '按住空格蓄力，绿色区松手投篮 · E 退出'; break;
       case 'sleep': toggle.textContent = '起床 E'; break;
@@ -511,7 +511,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     }
     if(s.service){toggle.textContent='取消候车 E';hint.textContent='进站开门后一起上车 · 停稳后按 E 下车 · 行驶中按 E 预约下一站下车';}
     if (!hint.textContent.includes('点击地面') && !['airplane','submarine'].includes(s.id)&&!s.service) hint.textContent += ' · 点击地面结束';
-    for (const b of pad.children) b.hidden = b.dataset.key === 'shift' || (b.dataset.key === 'c' && !['airplane','submarine'].includes(s.id)) || (s.id === 'gaming' && b.dataset.key !== 'a' && b.dataset.key !== 'd');
+    for (const b of pad.children) b.hidden = (b.dataset.key === 'shift' && !['airplane','carrier'].includes(s.id)) || (b.dataset.key === 'c' && !['airplane','submarine'].includes(s.id)) || (s.id === 'gaming' && b.dataset.key !== 'a' && b.dataset.key !== 'd');
+    boostButton.setAttribute('aria-label', s.id === 'airplane' ? '按住喷气加速' : '按住加速');
     pad.querySelector('[data-key=" "]').textContent = s.id === 'airplane' ? '升高' : '刹车';
     pad.querySelector('[data-key=" "]').setAttribute('aria-label', s.id === 'airplane' ? '升高' : '刹车');
     pad.querySelector('[data-key="w"]').setAttribute('aria-label', s.id === 'airplane' ? '加速' : '前进');

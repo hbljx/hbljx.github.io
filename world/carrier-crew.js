@@ -123,16 +123,19 @@ export function createDeckCrew(parent,gangway){
   for(let i=0;i<parts.length;i++)mesh.setColorAt(i,color.setHex(parts[i].color));
   // The deployed bridge keeps sharing this one draw with all nine people.
   const boardingLink=new THREE.Object3D();boardingLink.name='carrier-retractable-gangway';
-  const linkX=(gangway.fixedEnd+gangway.x1)/2-parent.position.x,linkLength=gangway.x1-gangway.fixedEnd;
-  const linkParts=[[linkX,3.28,0,linkLength,.24,gangway.width]];
-  for(const side of [-1,1])for(const y of [.48,1])linkParts.push([linkX,3.4+y,side*(gangway.width/2-.08),linkLength,.08,.08]);
+  const linkLength=gangway.x1-gangway.fixedEnd,linkEdge=gangway.x1-parent.position.x;
+  const linkParts=[[3.28,0,.24,gangway.width]];
+  for(const side of [-1,1])for(const y of [.48,1])linkParts.push([3.4+y,side*(gangway.width/2-.08),.08,.08]);
   for(let i=0;i<5;i++)mesh.setColorAt(parts.length+i,color.setHex(0xb6c0bc));
-  let deployed=null;
-  function syncBoarding(){
-    if(deployed===boardingLink.visible)return;deployed=boardingLink.visible;
+  let boardingProgress=-1;
+  function setBoardingProgress(value){
+    const progress=Math.max(0,Math.min(1,value));
+    if(Math.abs(progress-boardingProgress)<.002)return;
+    boardingProgress=progress;boardingLink.visible=progress>.001;
+    const length=linkLength*progress,x=linkEdge-length/2;
     for(let i=0;i<linkParts.length;i++){
-      const [x,y,z,w,h,d]=linkParts[i];pose.position.set(x,y,z);pose.rotation.set(0,0,0);
-      if(deployed)pose.scale.set(w,h,d);else pose.scale.set(0,0,0);
+      const [y,z,h,d]=linkParts[i];pose.position.set(x,y,z);pose.rotation.set(0,0,0);
+      pose.scale.set(length,h,d);
       pose.updateMatrix();mesh.setMatrixAt(parts.length+i,pose.matrix);
     }
     mesh.instanceMatrix.needsUpdate=true;
@@ -206,5 +209,5 @@ export function createDeckCrew(parent,gangway){
     }
     mesh.instanceMatrix.needsUpdate=true;
   }
-  syncBoarding();update(0);return {mesh,crew,boardingLink,syncBoarding,update};
+  setBoardingProgress(1);update(0);return {mesh,crew,boardingLink,setBoardingProgress,update};
 }

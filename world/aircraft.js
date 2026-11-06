@@ -206,7 +206,7 @@ export function createFlight({ mesh, world, player, stage, sound }) {
       if(launchRun>=end)phase='launch-climb';
     } else if(phase==='launch-climb'){
       const targetPitch=launchMode==='catapult'?.3:.36;pitch+=(targetPitch-pitch)*Math.min(1,dt*4);
-      p.y=Math.min(78,p.y+dt*9);
+      p.y+=dt*9;
       const x=p.x+Math.sin(heading)*speed*dt,z=p.z+Math.cos(heading)*speed*dt;
       // Clear nearby land before moving horizontally when the bow faces shore.
       if(p.y>=terrainHeight(x,z,true)+2.5&&x>-170&&x<170&&z>-185&&z<FLIGHT_SOUTH){p.x=x;p.z=z;distance+=speed*dt;}
@@ -221,7 +221,7 @@ export function createFlight({ mesh, world, player, stage, sound }) {
       const x = p.x + Math.sin(heading) * speed * dt, z = p.z + Math.cos(heading) * speed * dt;
       const floor = clearance(x, z);
       const lift = hovering?0:Number(keys.has(' ')) - Number(keys.has('control') || keys.has('c'));
-      p.y = clamp(p.y + (p.y < floor ? 6 : lift * 5) * dt, Math.min(p.y, floor), 78);
+      p.y = Math.max(Math.min(p.y, floor), p.y + (p.y < floor ? 6 : lift * 5) * dt);
       if (p.y >= floor - .05 && x > -170 && x < 170 && z > -185 && z < FLIGHT_SOUTH) { p.x = x; p.z = z; distance += speed * dt; }
       else if (p.y >= floor - .05) heading += dt;
       // Sea-level decks are below the free-flight safety floor, so allow the

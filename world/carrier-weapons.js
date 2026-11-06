@@ -23,14 +23,14 @@ function gun() {
   box(turret, 0, .58, 0, .78, .36, .86, 'hull'); box(turret, 0, .8, -.08, .62, .12, .56, 'trim');
   cylinder(turret, 0, .61, .48, .13, .18, .38, 'dark', [Math.PI / 2, 0, 0]); cylinder(turret, 0, .63, .85, .095, .12, .58, 'barrel', [Math.PI / 2, 0, 0]); cylinder(turret, 0, .63, 1.13, .12, .12, .12, 'trim', [Math.PI / 2, 0, 0]);
   for (const x of [-.18, -.06, .06, .18]) cylinder(turret, x, .76, .22, .035, .035, .44, 'dark', [Math.PI / 2, 0, 0], 8);
-  root.add(base.mesh(), turret.mesh()); root.userData.pivot = root.children[1]; return root;
+  root.add(base.mesh(), turret.mesh()); root.userData.pivot = root.children[1]; root.scale.setScalar(1.7); return root;
 }
 
 function missile() {
   const root = new THREE.Group(), base = builder(), pod = builder();
   cylinder(base, 0, .12, 0, .56, .68, .24, 'dark', [0, 0, 0], 16); cylinder(base, 0, .29, 0, .46, .55, .12, 'trim', [0, 0, 0], 16); cylinder(base, 0, .4, 0, .38, .44, .14, 'hull', [0, 0, 0], 12);
   for (const x of [-.23, .23]) { box(pod, x, .72, 0, .27, .22, .74, 'hull', [-.36, 0, 0]); cylinder(pod, x, .84, .11, .105, .105, .82, 'dark', [-.36, 0, 0], 10); cylinder(pod, x, .84, .35, .075, .075, .1, 'trim', [-.36, 0, 0], 10); cylinder(pod, x, .84, -.3, .09, .09, .08, 'yellow', [-.36, 0, 0], 10); }
-  box(pod, 0, .57, -.08, .66, .16, .56, 'dark'); root.add(base.mesh(), pod.mesh()); root.userData.pivot = root.children[1]; return root;
+  box(pod, 0, .57, -.08, .66, .16, .56, 'dark'); root.add(base.mesh(), pod.mesh()); root.userData.pivot = root.children[1]; root.scale.setScalar(1.7); return root;
 }
 
 function radar() {
@@ -38,7 +38,7 @@ function radar() {
   cylinder(mast, 0, .48, 0, .12, .19, .96, 'dark'); cylinder(mast, 0, .94, 0, .25, .25, .12, 'trim', [0, 0, 0], 12);
   for (const x of [-.26, .26]) box(mast, x, .98, 0, .12, .08, .16, 'yellow');
   box(dish, 0, 0, 0, 1.32, .08, .18, 'radome'); box(dish, 0, 0, .12, .96, .045, .08, 'trim'); cylinder(dish, 0, 0, 0, .1, .1, .32, 'dark', [Math.PI / 2, 0, 0]);
-  const rotor = new THREE.Group(); rotor.add(dish.mesh()); rotor.position.y = 1.05; root.add(mast.mesh(), rotor); root.userData.rotor = rotor; return root;
+  const rotor = new THREE.Group(); rotor.add(dish.mesh()); rotor.position.y = 1.05; root.add(mast.mesh(), rotor); root.userData.rotor = rotor; root.scale.setScalar(1.5); return root;
 }
 
 export function createCarrierWeapons(carrier) {

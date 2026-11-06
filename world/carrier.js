@@ -4,6 +4,7 @@ import { SEA_BRIDGE, CARRIER_ACCESS, CARRIER_HOME } from './layout.js';
 import { bridgeHeight } from './sea-bridge.js';
 import { createDeckCrew } from './carrier-crew.js';
 import { createCarrierWeapons } from './carrier-weapons.js';
+import { createCarrierWake } from './carrier-wake.js';
 import { createSailingArea, SAIL_BOUNDS, CARRIER_PATROL, sampleCarrierPatrol } from './carrier-navigation.js';
 
 const DOCK_Z=CARRIER_ACCESS.z;
@@ -137,8 +138,10 @@ function carrierMesh(){
 export function buildCarrier(layer,staticBatch){
   const mesh=carrierMesh(),B=new BoxBatch(layer),steel={tex:'steel',tint:0x89989c},floor={tex:'travertine',tint:0xc5c3b5};
   const weapons=createCarrierWeapons(mesh);
+  const wake=createCarrierWake(mesh);
   let planeObstacle=()=>false;
   const crew=createDeckCrew(mesh,GANGWAY);
+  let boardingProgress=1;
   const onGangway=(x,z,margin=0)=>withinGangway(x,z,margin)&&(docked()||x<=GANGWAY.fixedEnd);
   const boardingLink=crew.boardingLink;
   const foot={x:GANGWAY.x0-1,y:bridgeHeight(DOCK_Z),z:DOCK_Z},local=new THREE.Vector3(),hit=new THREE.Vector3();
@@ -190,7 +193,12 @@ export function buildCarrier(layer,staticBatch){
   }
   return{
     mesh,boardingLink,crew,
-    update(dt,camera){boardingLink.visible=docked();weapons.update(dt);crew.syncBoarding();if(!camera||camera.position.distanceToSquared(mesh.position)<240*240)crew.update(dt);},
+    update(dt,camera){
+      const target=docked()?1:0;
+      boardingProgress=dt<=0?target:boardingProgress+Math.sign(target-boardingProgress)*Math.min(Math.abs(target-boardingProgress),dt*1.5);
+      crew.setBoardingProgress(boardingProgress);
+      weapons.update(dt);wake.update(dt);if(!camera||camera.position.distanceToSquared(mesh.position)<240*240)crew.update(dt);
+    },
     foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,deckAircraft,ramp:RAMP,gangway:GANGWAY,
     driveHeight(x,z,margin=0){
       if(onGangway(x,z,margin)&& (docked()||x<GANGWAY.x1-margin))return gangwayHeight(x);
@@ -351,7 +359,7 @@ export function createCruise({world,player}){
       if(!canSail(mesh.position.x,mesh.position.z,yaw)){route=null;mode='manual';message='航线受阻，已停船';return;}
       mesh.rotation.y=yaw;
     }else if(d>.0001){
-      const v=Math.min(7,Math.abs(speed)+2*dt),step=Math.min(d,v*dt),x=mesh.position.x+dx/d*step,z=mesh.position.z+dz/d*step;
+      const v=Math.min(10,Math.abs(speed)+3.5*dt),step=Math.min(d,v*dt),x=mesh.position.x+dx/d*step,z=mesh.position.z+dz/d*step;
       if(!canSail(x,z,p.yaw)){route=null;mode='manual';speed=0;message='航线受阻，已停船';return;}
       mesh.rotation.y=p.yaw;mesh.position.set(x,0,z);distance+=step;speed=v*(dx*Math.sin(p.yaw)+dz*Math.cos(p.yaw)>=0?1:-1);
     }else{
@@ -370,7 +378,7 @@ export function createCruise({world,player}){
       if(!canSail(mesh.position.x,mesh.position.z,yaw)){mode='manual';speed=0;message='航线受阻，已停船';return;}
       mesh.rotation.y=yaw;speed=0;return;
     }
-    speed=Math.min(7,speed+2*dt);
+    speed=Math.min(10,speed+3.5*dt);
     const derivative=Math.hypot(CARRIER_PATROL.rx*Math.sin(patrolAngle),CARRIER_PATROL.rz*Math.cos(patrolAngle));
     const da=speed*dt/derivative;
     sampleCarrierPatrol(patrolAngle+da,patrolPoint);
@@ -385,8 +393,10 @@ export function createCruise({world,player}){
     if(forward||back||left||right||brake){route=null;mode='manual';message='手动驾驶';}
     if(mode==='patrol'&&patrolReady){orbit(dt);mesh.updateMatrixWorld(true);anchor();return;}
     if(route){autopilot(dt);mesh.updateMatrixWorld(true);anchor();return;}
-    let target=brake?0:forward?8:back?-3:0,turn=Number(left)-Number(right),yaw=mesh.rotation.y;
-    speed+=Math.max(-(brake?7:2)*dt,Math.min((brake?7:2)*dt,target-speed));
+    const boost=keys.has('shift');
+    let target=brake?0:forward?(boost?18:12):back?-4:speed,turn=Number(left)-Number(right),yaw=mesh.rotation.y;
+    const acceleration=brake?8:boost&&forward?6:3.5;
+    speed+=Math.max(-acceleration*dt,Math.min(acceleration*dt,target-speed));
     const nextYaw=yaw+turn*.32*dt*(speed<-.1?-1:1);if(turn&&canSail(mesh.position.x,mesh.position.z,nextYaw))yaw=nextYaw;
     const travel=speed*dt,x=mesh.position.x+Math.sin(yaw)*travel,z=mesh.position.z+Math.cos(yaw)*travel;
     if(!travel||canSail(x,z,yaw)){mesh.rotation.y=yaw;mesh.position.set(x,0,z);distance+=Math.abs(travel);}
@@ -394,7 +404,7 @@ export function createCruise({world,player}){
     mesh.updateMatrixWorld(true);anchor();
   }
   return{
-    start(){active=true;speed=0;route=null;mode='manual';message=carrier.docked()?'已靠港，准备启航':'已接管航母';anchor();},
+    start(){active=true;speed=carrier.docked()?0:4;route=null;mode='manual';message=carrier.docked()?'已靠港，准备启航':'已接管航母';anchor();},
     stop(){active=false;route=null;mode='manual';speed=0;return{...carrier.helm(),heading:mesh.rotation.y};},
     pause(){speed=0;},returnHome:planReturn,togglePatrol,update,canSail,
     takeOver(){route=null;mode='manual';message='手动驾驶';},

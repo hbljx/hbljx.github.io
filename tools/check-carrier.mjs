@@ -82,6 +82,12 @@ try{
         for(const person of c.crew.crew)safe&&=Math.abs(person.x-local.x)>plane.userData.halfSpan+.45||Math.abs(person.z-local.z)>plane.userData.halfLength+.45;
       }
     }
+    if(started&&flight.status().phase==='flying'&&mode==='vertical'&&plane===f.planes[1]){
+      const climb=new Set([' ']);for(let i=0;i<500;i++)flight.update(.05,climb);
+      launches.push({plane:plane.name,mode,started,flying:true,crewClear:safe,altitude:plane.position.y});
+      check('aircraft-altitude-has-no-ceiling',plane.position.y>78);
+      flight.park();flight.leave();continue;
+    }
     launches.push({plane:plane.name,mode,started,flying:flight.status().phase==='flying',crewClear:safe});flight.park();flight.leave();
   }
   details.launches=launches;check('allTwelveLaunchesComplete',launches.every(l=>l.started&&l.flying));check('crewClearDuringTaxiAndLaunch',launches.every(l=>l.crewClear));
