@@ -9,7 +9,7 @@ import { createMotorcycle } from './motorcycle.js';
 import { createRoadster } from './roadster.js';
 import { buildSharedRooms } from './shared-rooms.js';
 import { buildFloorPlants } from './plants.js';
-import { HOUSE, COURT, RIM, VERTEC, LOFT, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, STUDIO_WALL_END } from './layout.js';
+import { HOUSE, COURT, RIM, VERTEC, LOFT, BED, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, STUDIO_WALL_END } from './layout.js';
 
 const L = {
   // Two interior wood finishes: the existing floor and the wall-panel timber.
@@ -547,7 +547,7 @@ export function furnish({ layer }) {
   B.box(-4.5, LOFT.y + 2.93, bedroomDoorZ, 3, .07, .1, L.steel);
   openDoor(B, -6, LOFT.y, bedroomDoorZ, 2.75, Math.PI, 3);
   foot(-7.38, bedroomDoorZ, 2.85, .15, 1);
-  const bedX = -12, bedZ = -13.61, bedY = LOFT.y;
+  const { x: bedX, z: bedZ, y: bedY } = BED;
   B.box(bedX, bedY, bedZ + 1.2, 7.4, .025, 6.4, L.linen);
   B.box(bedX, bedY, bedZ - 2.21, 6.8, 2.3, .1, L.panel);
   B.box(bedX, bedY + .3, bedZ - 2.14, 4.9, 1.5, .07, L.marble);

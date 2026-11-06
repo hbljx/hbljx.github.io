@@ -37,6 +37,8 @@ export const VERTEC = { x: -5.6, z: 15.05, yaw: Math.PI / 2 };
 
 // A full-floor master suite, reached by a broad stair along its east edge.
 export const LOFT = { x0: -26, x1: -3, z0: -16, z1: -4, y: 4 };
+// Furniture, sleeping poses and bedding share the same bed origin.
+export const BED = { x: -12, y: LOFT.y, z: -13.61 };
 // A broad straight stair beside the court, rising north into the mezzanine.
 // Eight metres of run for four metres of rise replaces the old 45-degree ladder.
 export const STAIRS = { x0: -6.8, x1: -3, z0: -4, z1: 4 };

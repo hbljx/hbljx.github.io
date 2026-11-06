@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BED } from './layout.js';
 
 // A continuous double quilt: one cloth surface and one small pixel print.
 export function createSharedQuilt(){
@@ -26,6 +27,6 @@ export function createSharedQuilt(){
   }
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.computeVertexNormals();
   const mesh=new THREE.Mesh(geometry,new THREE.MeshLambertMaterial({map:texture,side:THREE.DoubleSide}));
-  mesh.name='shared-sky-quilt';mesh.position.set(-12,4.9,-8.98);mesh.receiveShadow=true;mesh.visible=false;
+  mesh.name='shared-sky-quilt';mesh.position.set(BED.x,BED.y+.9,BED.z+.32);mesh.receiveShadow=true;mesh.visible=false;
   return mesh;
 }

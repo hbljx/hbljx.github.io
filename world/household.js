@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { outfits } from './wardrobe.js';
+import { BED } from './layout.js';
 import { createPlayer } from '@engine/world/player.js';
 import { createFemaleRoutine } from './female-routine.js';
 import { createSharedQuilt } from './quilt.js';
 import { createNpcNavigator } from './npc-navigation.js';
 import { LIBRARY, CINEMA, BATH, createShower } from './shared-rooms.js';
 
-const BED={x:-9.8,y:4,z:-9.3},IDLE={x:0,z:0,run:false},FIVE_MINUTES=300000;
+const BED_APPROACH={x:BED.x+2.2,y:BED.y,z:BED.z+.35},IDLE={x:0,z:0,run:false},FIVE_MINUTES=300000;
 const hours=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',hourCycle:'h23'});
 
 // Articulated blocks share one instanced draw, including the face and long hair.
@@ -84,7 +85,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
     if(message.textContent!==text)message.textContent=text;
     const cancelText=maleSleep?'起床 · E':'取消 · E';if(cancel.textContent!==cancelText)cancel.textContent=cancelText;
   }
-  function sleepingPose(a,x){a.root.position.set(x,4.78,-8.55);a.root.rotation.set(0,0,0);if(a===avatar)for(const limb of limbs)limb.rotation.set(0,0,0);a.body.rotation.set(-Math.PI/2,0,0);a.body.position.set(0,Math.sin(clock*1.3)*.008,0);}
+  function sleepingPose(a,x){a.root.position.set(x,BED.y+.78,BED.z+.75);a.root.rotation.set(0,0,0);if(a===avatar)for(const limb of limbs)limb.rotation.set(0,0,0);a.body.rotation.set(-Math.PI/2,0,0);a.body.position.set(0,Math.sin(clock*1.3)*.008,0);}
   function resetBath(){shower.update(0,false);avatar.setBathing(false);femaleAvatar.setSwimsuit(false);sound.loop(null);}
   function leaveReading(){
     if(!reading)return;const wasSeated=readArrived;reading=readArrived=false;woman.cancel();if(wasSeated)woman.restore(LIBRARY.approach.x,0,LIBRARY.approach.z,0);femaleAvatar.update(0,still);routine.resume();
@@ -94,13 +95,13 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   }
   function wakeWoman(){
     const inBed=femaleSleep;femaleSleep=false;femaleWakeAt=0;woman.cancel();femaleAvatar.setEyesClosed(false);femaleAvatar.body.rotation.set(0,0,0);femaleAvatar.body.position.set(0,0,0);
-    if(inBed)woman.restore(BED.x,4,BED.z,0);routine.resume();
+    if(inBed)woman.restore(BED_APPROACH.x,BED_APPROACH.y,BED_APPROACH.z,0);routine.resume();
   }
   function wakeMale(){
     lastMove=Date.now();nightDismissed=true;
     if(phase==='idle'&&!maleSleep)return false;
     phase='idle';player.cancel();resetBath();
-    if(maleSleep){maleSleep=false;avatar.body.rotation.set(0,0,0);avatar.body.position.set(0,0,0);avatar.update(0,still);player.restore(BED.x,4,BED.z,0);rig.recenter(player,true);}
+    if(maleSleep){maleSleep=false;avatar.body.rotation.set(0,0,0);avatar.body.position.set(0,0,0);avatar.update(0,still);player.restore(BED_APPROACH.x,BED_APPROACH.y,BED_APPROACH.z,0);rig.recenter(player,true);}
     else avatar.update(0,still);
     if(femaleSleep)femaleWakeAt=Date.now()+5000;else wakeWoman();
     rig.setFirstPerson(bedtimeFirstPerson,player.heading);covers();return true;
@@ -122,7 +123,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   addEventListener('resize',frameBath);
   function guide(){
     if(phase!=='to-bath'&&phase!=='to-bed')return;
-    const male=phase==='to-bath'?BATH.male:BED,female=phase==='to-bath'?BATH.female:BED;
+    const male=phase==='to-bath'?BATH.male:BED_APPROACH,female=phase==='to-bath'?BATH.female:BED_APPROACH;
     if(!maleSleep&&!player.travelling&&!reached(player,male))window.__home?.navigate(male.x,male.z,male.y);
     if(!femaleSleep&&!woman.travelling&&!reached(woman,female))navigateWoman(female.x,female.y,female.z);
   }
@@ -241,8 +242,8 @@ routeClock+=dt;const now=Date.now();
           phase='bathing';bathStarted=now;avatar.setBathing(true);femaleAvatar.setSwimsuit(true);frameBath();
         }
         if(phase==='to-bed'){
-          if(!maleSleep&&reached(player,BED)){player.cancel();maleSleep=true;player.anchor(-11.24,4,-9.3,0);rig.recenter(player,true);rig.showcase(innerWidth<720&&innerHeight>innerWidth?[-3,11,3]:[-6.5,8.7,-4.9],[-12,4.9,-9.3],{interactive:true});}
-          if(!femaleSleep&&reached(woman,BED)){woman.cancel();femaleSleep=true;woman.anchor(-12.76,4,-9.3,0);femaleAvatar.update(0,still);}
+          if(!maleSleep&&reached(player,BED_APPROACH)){player.cancel();maleSleep=true;player.anchor(BED.x+.76,BED.y,BED.z+.35,0);rig.recenter(player,true);rig.showcase(innerWidth<720&&innerHeight>innerWidth?[BED.x+9,BED.y+7,BED.z+12.3]:[BED.x+5.5,BED.y+4.7,BED.z+4.4],[BED.x,BED.y+.9,BED.z+.35],{interactive:true});}
+          if(!femaleSleep&&reached(woman,BED_APPROACH)){woman.cancel();femaleSleep=true;woman.anchor(BED.x-.76,BED.y,BED.z+.35,0);femaleAvatar.update(0,still);}
           if(maleSleep&&femaleSleep)phase='sleeping';
         }
       }else if(phase==='idle'&&!femaleSleep&&!femaleWakeAt)routine.update(dt);
@@ -251,7 +252,7 @@ routeClock+=dt;const now=Date.now();
       bathingPose(dt);
       if(now-bathStarted>=BATH.duration){resetBath();phase='to-bed';routeClock=1;avatar.update(0,still);guide();}
     }
-    if(maleSleep)sleepingPose(avatar,-11.24);if(femaleSleep)sleepingPose(femaleAvatar,-12.76);covers();
+    if(maleSleep)sleepingPose(avatar,BED.x+.76);if(femaleSleep)sleepingPose(femaleAvatar,BED.x-.76);covers();
   }
   return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,shower,
     get sleeping(){return maleSleep;},get bathing(){return phase==='bathing';},get walking(){return phase!=='idle'&&phase!=='sleeping';},
