@@ -57,7 +57,8 @@ try {
         minX = Math.min(minX,s.x); maxX = Math.max(maxX,s.x); minZ = Math.min(minZ,s.z); maxZ = Math.max(maxZ,s.z); previous = s;
       }
       check('threeContinuousLaps', continuous && previous.lap >= 3);
-      check('rectangularCircuit', Math.abs(minX + 610) < .01 && Math.abs(maxX + 360) < .01 && Math.abs(minZ - 260) < .01 && Math.abs(maxZ - 540) < .01);
+      check('ellipticalCircuit', minX > -696 && maxX < -274 && minZ > 234 && maxZ < 596);
+      check('landmarksInsideCircuit', h.world.submarine.landmarks.every(site => ((site.x + 485) / 210) ** 2 + ((site.z - 415) / 180) ** 2 < 1));
       check('wholeHullClearance', clearance);
       a.keyDown(key('p')); const held = a.dive.status();
       for (let i = 0; i < 30; i++) a.update(.05);

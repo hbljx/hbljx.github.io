@@ -21,15 +21,16 @@ export const TUNNEL_HOME={x:36,y:0,z:-6.5};
 export const TUNNEL_HOME_RELEASE={x:33,y:0,z:TUNNEL_HOME.z};
 export const TUNNEL_POINTS = [
   // A straight, level entry lets cars leave the garage without steering.
-  // One continuous C-shaped bend connects the level approaches. Its 94 m
-  // seaward reach keeps the outer wall clear of the entire carrier berth.
+  // One continuous C-shaped bend connects the level approaches. Keep the
+  // outer wall clear of the carrier berth without an oversized seaward loop.
   [TUNNEL_HOME.x,0,TUNNEL_HOME.z],[44,0,TUNNEL_HOME.z],
-  ...seaArc([52,TUNNEL_HOME.z],[72,158],1,-15,94),
+  ...seaArc([52,TUNNEL_HOME.z],[72,158],1,-15,75),
   [60,0,158],
 ];
 export const METRO_POINTS = [
   [-15,0,33],[-28,0,33],[-42,0,33],
-  ...seaArc([-45,33],[-45,166],-1,6),
+  // Keep the open-water rail well above the submarine's deep patrol depth.
+  ...seaArc([-45,33],[-45,166],-1,18),
   [-30,0,166],[-15,0,166],
 ];
 export const TRANSIT_STOPS = [

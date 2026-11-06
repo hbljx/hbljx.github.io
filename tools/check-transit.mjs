@@ -53,6 +53,7 @@ try{
     check(label+'-together',Math.hypot(p.pos.x-w.pos.x,p.pos.z-w.pos.z)<1.5&&Math.abs(p.y-w.y)<.3);house.routine.pause();
    };
    check('referenceSides',t.tunnel.path.samples.every(v=>v.x>24)&&t.services.metro.path.samples.every(v=>v.x<24));
+   check('metroRailAboveSubmarinePatrol',Math.max(...t.services.metro.path.samples.map(v=>v.y))>17.5);
    const garageCenter=(GARAGE.door.z0+GARAGE.door.z1)/2,entry=t.tunnel.path.sample(0,{}),entryAhead=t.tunnel.path.sample(8,{});
    check('garageFacesTunnel',Math.abs(entry.z-garageCenter)<.01&&Math.abs(entry.heading-Math.PI/2)<.01&&entry.x-GARAGE.x1<=6);
    check('straightLevelTunnelEntry',Math.abs(entryAhead.z-garageCenter)<.01&&entryAhead.y===0);

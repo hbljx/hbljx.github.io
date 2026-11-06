@@ -73,7 +73,7 @@ export function build({ grid, layer, materials, stage }) {
   const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster,submarine.mesh]);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
-  stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh);
+  stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh, carrier.boardingLink);
   for(const batch of Object.values(furn.batches))flattenBatchGlazing(batch);
   for(const group of [outer.group,mountain.group,roofAccess.group])group.traverse(mesh=>flattenGlazing(mesh,materials.boxGlass));
   return {
@@ -121,6 +121,7 @@ export function setup(app) {
       activities.update(dt);
       household.update(dt);
       world.carrier.updateCabin(app.player,stage.camera);
+      world.carrier.update(dt,stage.camera);
       const cutaway = world.hidden.has('roof');
       world.oceanLife.update(dt,world.carrier,stage.camera);
       world.aircraftFleet.update(cutaway);

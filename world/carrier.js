@@ -1,14 +1,17 @@
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
-import { ISLAND, SEA_BRIDGE, CARRIER_ACCESS, CARRIER_HOME } from './layout.js';
+import { SEA_BRIDGE, CARRIER_ACCESS, CARRIER_HOME } from './layout.js';
 import { bridgeHeight } from './sea-bridge.js';
+import { createDeckCrew } from './carrier-crew.js';
+import { createCarrierWeapons } from './carrier-weapons.js';
+import { createSailingArea, SAIL_BOUNDS, CARRIER_PATROL, sampleCarrierPatrol } from './carrier-navigation.js';
 
 const DOCK_Z=CARRIER_ACCESS.z;
 const HOME={...CARRIER_HOME,heading:0},DECK=3.4;
-const GANGWAY={x0:SEA_BRIDGE.x+SEA_BRIDGE.width/2,x1:HOME.x-7.6,flat:33,rampEnd:52,z:DOCK_Z,width:CARRIER_ACCESS.width};
+const GANGWAY={x0:SEA_BRIDGE.x+SEA_BRIDGE.width/2,x1:HOME.x-7.6,fixedEnd:HOME.x-40,flat:33,rampEnd:52,z:DOCK_Z,width:CARRIER_ACCESS.width};
 const gangwayHeight=x=>bridgeHeight(DOCK_Z)+(DECK-bridgeHeight(DOCK_Z))*THREE.MathUtils.clamp((x-GANGWAY.flat)/(GANGWAY.rampEnd-GANGWAY.flat),0,1);
-const onGangway=(x,z,margin=0)=>x>=GANGWAY.x0&&x<=GANGWAY.x1&&Math.abs(z-DOCK_Z)<=GANGWAY.width/2-margin;
-const STERN=-32,BOW=33,TURN_RADIUS=36,PORT_CLEARANCE=40;
+const withinGangway=(x,z,margin=0)=>x>=GANGWAY.x0&&x<=GANGWAY.x1&&Math.abs(z-DOCK_Z)<=GANGWAY.width/2-margin;
+const STERN=-32,BOW=33;
 const sections=[[STERN,5.9],[-29,9.5],[-21,9.5],[-18,7.6],[22,7.6],[29,6.3],[BOW,4.8]];
 const deckY=()=>DECK;
 const RAMP={x0:-4.4,x1:1.9,z0:23,z1:33,height:2.3};
@@ -133,10 +136,14 @@ function carrierMesh(){
 
 export function buildCarrier(layer,staticBatch){
   const mesh=carrierMesh(),B=new BoxBatch(layer),steel={tex:'steel',tint:0x89989c},floor={tex:'travertine',tint:0xc5c3b5};
+  const weapons=createCarrierWeapons(mesh);
   let planeObstacle=()=>false;
+  const crew=createDeckCrew(mesh,GANGWAY);
+  const onGangway=(x,z,margin=0)=>withinGangway(x,z,margin)&&(docked()||x<=GANGWAY.fixedEnd);
+  const boardingLink=crew.boardingLink;
   const foot={x:GANGWAY.x0-1,y:bridgeHeight(DOCK_Z),z:DOCK_Z},local=new THREE.Vector3(),hit=new THREE.Vector3();
   const path=[foot,{x:GANGWAY.flat,y:foot.y,z:DOCK_Z},{x:GANGWAY.rampEnd,y:DECK,z:DOCK_Z},{x:HOME.x-7.1,y:DECK,z:DOCK_Z}];
-  const spans=[[GANGWAY.x0,GANGWAY.flat],[GANGWAY.flat,GANGWAY.rampEnd],[GANGWAY.rampEnd,GANGWAY.x1]];
+  const spans=[[GANGWAY.x0,GANGWAY.flat],[GANGWAY.flat,GANGWAY.rampEnd],[GANGWAY.rampEnd,GANGWAY.fixedEnd]];
   // A wide, continuous road descends from the bridge to the flight deck.
   // The analytic surface below is also used for walking, driving and picking.
   for(const [a,b] of spans){
@@ -146,7 +153,7 @@ export function buildCarrier(layer,staticBatch){
     for(const side of [-1,1]) B.box((a+b)/2+t*Math.sin(angle)/2,(ya+yb)/2-t*Math.cos(angle)/2+.012,DOCK_Z+side*(GANGWAY.width/2-.34),Math.hypot(b-a,yb-ya),.018,.08,stripeTint,{rz:angle});
     for(const side of [-1,1])for(const up of [.48,1])B.box((a+b)/2,(ya+yb)/2+up-.04,DOCK_Z+side*(GANGWAY.width/2-.08),Math.hypot(b-a,yb-ya),.08,.08,steel,{rz:angle});
   }
-  for(let x=GANGWAY.x0+1;x<GANGWAY.x1-1;x+=2)for(const side of [-1,1]){
+  for(let x=GANGWAY.x0+1;x<GANGWAY.fixedEnd-1;x+=2)for(const side of [-1,1]){
     const y=gangwayHeight(x),z=DOCK_Z+side*(GANGWAY.width/2-.08);
     B.box(x,-2.3,z,.14,y+3.38,.14,steel);
     if(x%4===0)B.box(x,y+1.04,z,.22,.12,.22,{tex:'paint',tint:0xffdf9b,emissive:.65});
@@ -182,7 +189,9 @@ export function buildCarrier(layer,staticBatch){
     if(toDeck)points.push(...deckRoute(-7.1,0,b.x,b.z));else points.push({x:bx,y:by,z:bz});return points;
   }
   return{
-    mesh,foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,deckAircraft,ramp:RAMP,gangway:GANGWAY,
+    mesh,boardingLink,crew,
+    update(dt,camera){boardingLink.visible=docked();weapons.update(dt);crew.syncBoarding();if(!camera||camera.position.distanceToSquared(mesh.position)<240*240)crew.update(dt);},
+    foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,deckAircraft,ramp:RAMP,gangway:GANGWAY,
     driveHeight(x,z,margin=0){
       if(onGangway(x,z,margin)&& (docked()||x<GANGWAY.x1-margin))return gangwayHeight(x);
       const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y),lx=dx*c-dz*s,lz=dx*s+dz*c;
@@ -217,7 +226,7 @@ export function buildCarrier(layer,staticBatch){
     obstructed(x,z,y){const p=toLocal(x,z);return planeObstacle(x,z,y)||y>=DECK-.1&&y<6.3&&obstacles.some(o=>p.x>o.x0-.05&&p.x<o.x1+.05&&p.z>o.z0-.05&&p.z<o.z1+.05)||y>=6.3&&y<8.4&&p.x>2.4&&p.x<6.9&&p.z>-3.4&&p.z<8.4;},
     collides(x,y,z){const p=toLocal(x,z);return onGangway(x,z)&&y<gangwayHeight(x)-.02&&y+1.8>gangwayHeight(x)-.24||onDeck(p.x,p.z)&&y<surfaceY(p.x,p.z)-.02&&y+1.8>-2.8||this.obstructed(x,z,y);},
     pick(ray){
-      let best=null;for(const [a,b] of spans){const slope=(gangwayHeight(b)-gangwayHeight(a))/(b-a),plane=new THREE.Plane(new THREE.Vector3(-slope,1,0),slope*a-gangwayHeight(a));if(ray.intersectPlane(plane,hit)&&hit.x>=a&&hit.x<=b&&onGangway(hit.x,hit.z)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:hit.clone(),site:'carrier'};}}
+      let best=null;const pickSpans=docked()?[...spans,[GANGWAY.fixedEnd,GANGWAY.x1]]:spans;for(const [a,b] of pickSpans){const slope=(gangwayHeight(b)-gangwayHeight(a))/(b-a),plane=new THREE.Plane(new THREE.Vector3(-slope,1,0),slope*a-gangwayHeight(a));if(ray.intersectPlane(plane,hit)&&hit.x>=a&&hit.x<=b&&onGangway(hit.x,hit.z)){const t=hit.distanceTo(ray.origin);if(!best||t<best.t)best={t,point:hit.clone(),site:'carrier'};}}
       const o=toLocal(ray.origin.x,ray.origin.z),c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y),dz=ray.direction.x*s+ray.direction.z*c,dx=ray.direction.x*c-ray.direction.z*s;
       if(ray.direction.y<0){const t=(DECK-ray.origin.y)/ray.direction.y,z=o.z+dz*t,x=o.x+dx*t;if(t>=0&&onDeck(x,z)&&(!best||t<best.t))best={t,point:ray.at(t,local).clone(),site:'carrier'};}
       const slope=RAMP.height/(RAMP.z1-RAMP.z0),denominator=ray.direction.y-slope*dz;
@@ -232,25 +241,11 @@ export function buildCarrier(layer,staticBatch){
 // the first leg keeps its heading and can back out before making a turn.
 export function createCruise({world,player}){
   const carrier=world.carrier,mesh=carrier.mesh;
-  let speed=0,distance=0,route=null,mode='manual',message='已靠港',active=false,lap=0,patrolIndex=0,patrolStart=0,patrolReady=false;
-  const patrol=[[88,76],[-96,76],[-96,-128],[88,-128]];
-  const samples=[];for(let z=STERN;z<=BOW;z++)for(const f of [-1,-.5,0,.5,1])samples.push([f*(widthAt(z)*.88+.25),z]);
-  const bounds=(x,z)=>Math.abs(x)<=145&&z>=-145&&z<=125;
-  function water(x,z){return !(x>ISLAND.x0-1&&x<ISLAND.x1+1&&z>ISLAND.z0-1&&z<ISLAND.z1+1)&&!(x>-48.5&&x<-31&&z>-.9&&z<7.1)&&!(x>35&&x<56.45&&z>6.4&&z<9.6)&&!(world.mountain.heightAt(x,z)>-1.6);}
-  function canSail(x,z,yaw){
-    if(!bounds(x,z))return false;const c=Math.cos(yaw),s=Math.sin(yaw);
-    for(const [lx,lz]of samples)if(!water(x+lx*c+lz*s,z-lx*s+lz*c))return false;
-    return true;
-  }
-  function turnSafe(x,z){
-    if(!bounds(x,z))return false;
-    for(const [x0,x1,z0,z1]of [[ISLAND.x0-1,ISLAND.x1+1,ISLAND.z0-1,ISLAND.z1+1],[-48.5,-31,-.9,7.1],[35,56.45,6.4,9.6]]){
-      if(Math.hypot(Math.max(x0-x,0,x-x1),Math.max(z0-z,0,z-z1))<TURN_RADIUS)return false;
-    }
-    // Enclose the peak and both shoulders, including their submerged skirts.
-    const mountain=world.mountain.mapShape;
-    return Math.hypot(x-mountain.x,z-mountain.z)>TURN_RADIUS+mountain.r;
-  }
+  let speed=0,distance=0,route=null,mode='manual',message='已靠港',active=false,lap=0,patrolIndex=0,patrolReady=false;
+  const patrol=Array.from({length:128},(_,i)=>{const p=sampleCarrierPatrol(i*Math.PI*2/128,{});return[p.x,p.z];});
+  let patrolAngle=0,patrolProgress=0;
+  const patrolPoint={};
+  const {canSail,turnSafe}=createSailingArea(world,GANGWAY);
   function canTurn(x,z,from,to){
     const angle=turnAngle(to-from),n=Math.max(1,Math.ceil(Math.abs(angle)/.02));
     for(let i=1;i<=n;i++)if(!canSail(x,z,from+angle*i/n))return false;
@@ -280,8 +275,8 @@ export function createCruise({world,player}){
   function openRoute(start,goal){
     const heading=Math.atan2(goal.x-start.x,goal.z-start.z);
     if(canTravel(start.x,start.z,goal.x,goal.z,heading))return[{x:goal.x,z:goal.z}];
-    const step=8,nx=37,nz=34,count=nx*nz,valid=new Int8Array(count);
-    const pos=k=>({x:-144+(k%nx)*step,z:-144+Math.floor(k/nx)*step});
+    const step=12,nx=Math.floor((SAIL_BOUNDS.x1-SAIL_BOUNDS.x0)/step)+1,nz=Math.floor((SAIL_BOUNDS.z1-SAIL_BOUNDS.z0)/step)+1,count=nx*nz,valid=new Int8Array(count);
+    const pos=k=>({x:SAIL_BOUNDS.x0+(k%nx)*step,z:SAIL_BOUNDS.z0+Math.floor(k/nx)*step});
     const open=k=>{if(!valid[k]){const p=pos(k);valid[k]=turnSafe(p.x,p.z)?1:-1;}return valid[k]===1;};
     function nearest(p){
       let best=-1,d=Infinity;
@@ -302,9 +297,8 @@ export function createCruise({world,player}){
     const points=[];for(let k=last;k!==-1;k=parents[k])points.unshift(pos(k));
     return points.filter((p,i)=>!i||i===points.length-1||p.x-points[i-1].x!==points[i+1].x-p.x||p.z-points[i-1].z!==points[i+1].z-p.z).concat({x:goal.x,z:goal.z});
   }
-  function planTo(goals){
+  function planTo(goals,options=escapeOptions()){
     let best=null,bestCost=Infinity;
-    const options=escapeOptions();
     for(const start of options)for(const goal of goals){
       const path=openRoute(start,goal);if(!path)continue;
       const legs=start.legs.slice();let x=start.x,z=start.z,yaw=start.yaw,cost=start.cost,valid=true;
@@ -330,6 +324,16 @@ export function createCruise({world,player}){
     // dangerous U-turn beside the pier or the mountain.
     if(Math.abs(mesh.position.x-HOME.x)<.001&&canTurn(mesh.position.x,mesh.position.z,mesh.rotation.y,0)&&canTravel(mesh.position.x,mesh.position.z,HOME.x,HOME.z,0))route=[{...HOME,yaw:0}];
     else route=planTo([{x:HOME.x,z:HOME.z-22,dock:true},{x:HOME.x,z:HOME.z+22,dock:true}]);
+    if(!route){
+      // Approach from the open eastern water before aligning with the berth.
+      // A grid shortcut from the other quadrants can reach a shallow tunnel
+      // mouth with no room left for the final docking turn.
+      const staging=planTo([{x:HOME.x+128,z:HOME.z}]);
+      if(staging?.length){
+        const end=staging.at(-1),approach=planTo([{x:HOME.x,z:HOME.z-22,dock:true},{x:HOME.x,z:HOME.z+22,dock:true}],[{...end,legs:[],cost:0}]);
+        if(approach)route=staging.concat(approach);
+      }
+    }
     if(!route){message='航线受阻，请稍作挪船后重试';return false;}
     mode='return';message='自动返港中';return true;
   }
@@ -338,7 +342,7 @@ export function createCruise({world,player}){
     patrolIndex=patrol.reduce((best,p,i)=>Math.hypot(p[0]-mesh.position.x,p[1]-mesh.position.z)<Math.hypot(patrol[best][0]-mesh.position.x,patrol[best][1]-mesh.position.z)?i:best,0);
     route=planTo([{x:patrol[patrolIndex][0],z:patrol[patrolIndex][1]}]);speed=0;
     if(!route){mode='manual';message='航线受阻，请稍作挪船后重试';return false;}
-    mode='patrol';lap=0;patrolStart=patrolIndex;patrolReady=false;message='自动巡航中';return true;
+    mode='patrol';lap=0;patrolAngle=patrolIndex*Math.PI*2/patrol.length;patrolProgress=0;patrolReady=route.length===0;if(patrolReady)route=null;message='自动巡航中';return true;
   }
   function autopilot(dt){
     const p=route[0],dx=p.x-mesh.position.x,dz=p.z-mesh.position.z,d=Math.hypot(dx,dz),angle=turnAngle(p.yaw-mesh.rotation.y);
@@ -354,21 +358,34 @@ export function createCruise({world,player}){
       mesh.position.set(p.x,0,p.z);mesh.rotation.y=p.yaw;route.shift();speed=0;
       if(!route.length){
         if(mode==='return'){mesh.position.set(HOME.x,0,HOME.z);mesh.rotation.y=0;route=null;mode='manual';message='已靠港';}
-        else{if(patrolReady&&patrolIndex===patrolStart)lap++;patrolReady=true;patrolIndex=(patrolIndex+1)%patrol.length;const [x,z]=patrol[patrolIndex];route=[{x,z,yaw:Math.atan2(x-mesh.position.x,z-mesh.position.z)}];message='自动巡航中';}
+        else{patrolReady=true;route=null;message='外围椭圆巡航中';}
       }
     }
+  }
+  function orbit(dt){
+    sampleCarrierPatrol(patrolAngle,patrolPoint);
+    const angle=turnAngle(patrolPoint.yaw-mesh.rotation.y);
+    if(Math.abs(angle)>.02){
+      const yaw=mesh.rotation.y+Math.max(-.32*dt,Math.min(.32*dt,angle));
+      if(!canSail(mesh.position.x,mesh.position.z,yaw)){mode='manual';speed=0;message='航线受阻，已停船';return;}
+      mesh.rotation.y=yaw;speed=0;return;
+    }
+    speed=Math.min(7,speed+2*dt);
+    const derivative=Math.hypot(CARRIER_PATROL.rx*Math.sin(patrolAngle),CARRIER_PATROL.rz*Math.cos(patrolAngle));
+    const da=speed*dt/derivative;
+    sampleCarrierPatrol(patrolAngle+da,patrolPoint);
+    if(!canSail(patrolPoint.x,patrolPoint.z,patrolPoint.yaw)){mode='manual';speed=0;message='航线受阻，已停船';return;}
+    distance+=Math.hypot(patrolPoint.x-mesh.position.x,patrolPoint.z-mesh.position.z);
+    patrolAngle=(patrolAngle+da)%(Math.PI*2);patrolProgress+=da;lap=Math.floor(patrolProgress/(Math.PI*2));
+    mesh.position.set(patrolPoint.x,0,patrolPoint.z);mesh.rotation.y=patrolPoint.yaw;
   }
   function update(dt,keys){
     if(!active)return;dt=Math.min(dt,.05);
     const forward=keys.has('w')||keys.has('arrowup'),back=keys.has('s')||keys.has('arrowdown'),left=keys.has('a')||keys.has('arrowleft'),right=keys.has('d')||keys.has('arrowright'),brake=keys.has(' ');
     if(forward||back||left||right||brake){route=null;mode='manual';message='手动驾驶';}
+    if(mode==='patrol'&&patrolReady){orbit(dt);mesh.updateMatrixWorld(true);anchor();return;}
     if(route){autopilot(dt);mesh.updateMatrixWorld(true);anchor();return;}
     let target=brake?0:forward?8:back?-3:0,turn=Number(left)-Number(right),yaw=mesh.rotation.y;
-    if(Math.abs(mesh.position.x-HOME.x)<.5&&Math.abs(mesh.position.z-HOME.z)<PORT_CLEARANCE&&Math.abs(turnAngle(yaw))<.7){
-      const angle=turnAngle(-yaw);turn=Math.max(-1,Math.min(1,angle*6));
-      if(Math.abs(angle)>.005)target=0;else{yaw=0;turn=0;}
-      if(left||right||Math.abs(angle)>.005)message=forward||back?'正在直线离港，驶离码头后可转向':'先按 W/S 驶离码头，再转向';
-    }
     speed+=Math.max(-(brake?7:2)*dt,Math.min((brake?7:2)*dt,target-speed));
     const nextYaw=yaw+turn*.32*dt*(speed<-.1?-1:1);if(turn&&canSail(mesh.position.x,mesh.position.z,nextYaw))yaw=nextYaw;
     const travel=speed*dt,x=mesh.position.x+Math.sin(yaw)*travel,z=mesh.position.z+Math.cos(yaw)*travel;

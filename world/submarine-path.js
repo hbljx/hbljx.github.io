@@ -1,32 +1,28 @@
-// A rectangular patrol with tangent quarter-circle turns: no stops at corners.
-export const PATROL_BOUNDS = Object.freeze({ x0: -610, x1: -360, z0: 260, z1: 540, radius: 48, depth: 300 });
-const { x0, x1, z0, z1, radius: r, depth } = PATROL_BOUNDS;
-const w = x1 - x0 - 2 * r, h = z1 - z0 - 2 * r, arc = Math.PI * r / 2;
-export const PATROL_LENGTH = 2 * (w + h) + 4 * arc;
+// A deep-sea ellipse encloses the landmark field and stays west of transit.
+export const PATROL_BOUNDS = Object.freeze({ cx: -485, cz: 415, rx: 210, rz: 180, x0: -695, x1: -275, z0: 235, z1: 595, depth: 300 });
+const { cx, cz, rx, rz, depth } = PATROL_BOUNDS;
+const SEGMENTS = 512;
+const distances = new Float64Array(SEGMENTS + 1);
+for (let i = 1; i <= SEGMENTS; i++) {
+  const a = (i - 1) * Math.PI * 2 / SEGMENTS, b = i * Math.PI * 2 / SEGMENTS;
+  distances[i] = distances[i - 1] + Math.hypot(rx * (Math.cos(b) - Math.cos(a)), rz * (Math.sin(b) - Math.sin(a)));
+}
+export const PATROL_LENGTH = distances[SEGMENTS];
+
 export function samplePatrol(distance, out) {
-  let s = ((distance % PATROL_LENGTH) + PATROL_LENGTH) % PATROL_LENGTH;
-  out.y = -depth;
-  if (s < w) { out.x = x1 - r - s; out.z = z0; out.yaw = -Math.PI / 2; return out; }
-  s -= w;
-  let cx, cz, a;
-  if (s < arc) { cx = x0 + r; cz = z0 + r; a = -Math.PI / 2 - s / r; }
-  else {
-    s -= arc;
-    if (s < h) { out.x = x0; out.z = z0 + r + s; out.yaw = 0; return out; }
-    s -= h;
-    if (s < arc) { cx = x0 + r; cz = z1 - r; a = Math.PI - s / r; }
-    else {
-      s -= arc;
-      if (s < w) { out.x = x0 + r + s; out.z = z1; out.yaw = Math.PI / 2; return out; }
-      s -= w;
-      if (s < arc) { cx = x1 - r; cz = z1 - r; a = Math.PI / 2 - s / r; }
-      else {
-        s -= arc;
-        if (s < h) { out.x = x1; out.z = z1 - r - s; out.yaw = Math.PI; return out; }
-        s -= h; cx = x1 - r; cz = z0 + r; a = -s / r;
-      }
-    }
+  const s = ((distance % PATROL_LENGTH) + PATROL_LENGTH) % PATROL_LENGTH;
+  let lo = 0, hi = SEGMENTS;
+  while (lo + 1 < hi) {
+    const mid = (lo + hi) >> 1;
+    if (distances[mid] <= s) lo = mid;
+    else hi = mid;
   }
-  out.x = cx + Math.cos(a) * r; out.z = cz + Math.sin(a) * r;
-  out.yaw = Math.atan2(Math.sin(a), -Math.cos(a)); return out;
+  const a = lo * Math.PI * 2 / SEGMENTS, b = hi * Math.PI * 2 / SEGMENTS;
+  const t = (s - distances[lo]) / (distances[hi] - distances[lo]);
+  const angle = a + (b - a) * t;
+  out.x = cx + rx * Math.cos(angle);
+  out.z = cz + rz * Math.sin(angle);
+  out.y = -depth;
+  out.yaw = Math.atan2(-rx * Math.sin(angle), rz * Math.cos(angle));
+  return out;
 }

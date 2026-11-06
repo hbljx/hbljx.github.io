@@ -203,7 +203,7 @@ export function createDive({ world, player, stage }) {
       const step = speed * dt, next = patrolDistance + step;
       samplePatrol(next, patrolPoint);
       if (canSail(patrolPoint.x, patrolPoint.y, patrolPoint.z, patrolPoint.yaw)) {
-        if (next >= PATROL_LENGTH) { lap++; message = '长方形连续巡视 · 第 ' + (lap + 1) + ' 圈'; }
+        if (next >= PATROL_LENGTH) { lap++; message = '椭圆连续巡视 · 第 ' + (lap + 1) + ' 圈'; }
         patrolDistance = next % PATROL_LENGTH; distance += step;
         p.set(patrolPoint.x, patrolPoint.y, patrolPoint.z); mesh.rotation.y = patrolPoint.yaw;
       } else recoverRoute();
@@ -221,14 +221,14 @@ export function createDive({ world, player, stage }) {
         const x = p.x + (horizontal ? dx / horizontal * step : 0), z = p.z + (horizontal ? dz / horizontal * step : 0);
         const y = p.y + clamp(dy, -9 * dt, 9 * dt);
         message = mode === 'return' ? (dy > .01 ? '自动返港 · 正在上浮' : '自动返港 · 沿安全航道靠港')
-          : (dy < -.01 ? '正在下潜至巡视深度' : '正在前往长方形巡视航线');
+          : (dy < -.01 ? '正在下潜至巡视深度' : '正在前往椭圆巡视航线');
         if (canSail(x, y, z, yaw)) { p.set(x, y, z); distance += step; mesh.rotation.y = yaw; }
         else recoverRoute();
       } else {
         p.set(target.x, target.y, target.z); mesh.rotation.y = yaw; route.shift(); speed = 0;
         if (!route.length && mode === 'return') { p.set(HOME.x, 0, HOME.z); mesh.rotation.y = 0; mode = 'manual'; message = '已靠港 · 舱门开启'; }
         else if (!route.length && mode === 'patrol') {
-          patrolling = true; patrolDistance = 0; message = '长方形连续巡视 · 第 ' + (lap + 1) + ' 圈';
+          patrolling = true; patrolDistance = 0; message = '椭圆连续巡视 · 第 ' + (lap + 1) + ' 圈';
         }
       }
     } else {
