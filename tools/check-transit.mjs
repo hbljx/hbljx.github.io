@@ -18,6 +18,12 @@ try{
    const {TUNNEL_RADIUS}=await import('@world/tunnel-glazing.js');
    const checks={},details={},check=(name,ok)=>checks[name]=!!ok,key=k=>({key:k,repeat:false});
    h.rig.skipIntro();h.setTimeMode('day');h.setWeatherMode('clear');house.routine.pause();
+   const vehicleColors=[0xf0eee8,0x252a30,0x8b969c,0xb82f36,0x285a91,0x176b59,0xd5ad3f,0xc86b32,0x694b82,0x52615e];
+   const metroColors=t.services.metro.cars.map(car=>car.paintColor),busColor=t.services.bus.cars[0].paintColor;
+   details.transitColors={metro:metroColors,bus:busColor};
+   check('metroUsesOneOfTenColors',metroColors.every(color=>vehicleColors.includes(color)));
+   check('metroCarsShareColor',metroColors.every(color=>color===metroColors[0]));
+   check('busUsesOneOfTenColors',vehicleColors.includes(busColor));
    // Snow exposes coplanar approach/bridge faces as flashing dark stripes.
    // Each sampled road point needs exactly one y=0 face, including both
    // sides of the seams, so removing the overlap cannot leave a hole.
@@ -136,7 +142,7 @@ try{
    }
    return{checks,details,failures:Object.entries(checks).filter(([,ok])=>!ok).map(([name])=>name)};
   });
-  console.log(name+': '+JSON.stringify(result));failed ||=!!result.startup||!!result.failures?.length;
+  failed ||=!!result.startup||!!result.failures?.length;
   // Check the garage-to-tunnel alignment at both desktop and phone sizes.
   await page.evaluate(()=>{const h=__home;h.rig.showcase([68,30,-36],[38,0,-6.5]);for(let i=0;i<80;i++)h.rig.update(.05,h.player);});
   await page.screenshot({path:out+'transit-'+name+'-garage.png'});
@@ -144,6 +150,13 @@ try{
   await page.evaluate(()=>{const h=__home;h.rig.showcase([-45,12,12],[-28,1,32]);for(let i=0;i<80;i++)h.rig.update(.05,h.player);});
   await page.screenshot({path:out+'transit-'+name+'-station.png'});
   await page.locator('#minimap .expand').click();await page.waitForTimeout(200);await page.screenshot({path:out+'transit-'+name+'-map.png'});
+  await page.reload();await page.waitForFunction(()=>window.__home||window.__homeStartupError,null,{timeout:60000});
+  const reloadedColors=await page.evaluate(()=>({metro:__home.world.transit.services.metro.cars.map(car=>car.paintColor),bus:__home.world.transit.services.bus.cars[0].paintColor}));
+  result.details.transitColorsAfterReload=reloadedColors;
+  result.checks.metroChangesOnReload=reloadedColors.metro[0]!==result.details.transitColors.metro[0];
+  result.checks.busChangesOnReload=reloadedColors.bus!==result.details.transitColors.bus;
+  result.failures=Object.entries(result.checks).filter(([,ok])=>!ok).map(([check])=>check);
+  console.log(name+': '+JSON.stringify(result));failed ||=!!result.failures.length;
   const stats=await page.evaluate(()=>__home.stats());console.log(name+' stats: '+JSON.stringify(stats));console.log(name+' errors: '+JSON.stringify(errors));
   writeFileSync(out+'transit-'+name+'.json',JSON.stringify({result,stats,errors},null,2));failed ||=!!errors.length;
   await context.close();

@@ -131,7 +131,7 @@ export function furnish({ layer }) {
     batches.wallE.box(.04,shutterBottom,0,.18,.07,width,garageFrame);
     batches.wallE.box(0,shutterTop,0,.72,hoodHeight,garageDoorWidth+.28,garageFrame);
     batches.wallE.box(.37,shutterTop+.09,0,.035,hoodHeight-.18,garageDoorWidth+.08,L.paint(0x626e76));
-    batches.wallE.box(0,shutterTop+hoodHeight-.04,0,.78,.04,garageDoorWidth+.32,metal);
+    batches.wallE.box(0,shutterTop+hoodHeight-.05,0,.78,.04,garageDoorWidth+.32,metal);
   });
   // Keep the doorway jambs; omit the two crosswise bars that projected into
   // the garage and out over the shore instead of following the opening.

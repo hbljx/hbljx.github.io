@@ -5,6 +5,7 @@ import { createTransitVehicle,transitSign } from './transit-models.js';
 import { createTunnelGlazing,maskTunnelWater,tunnelCeiling } from './tunnel-glazing.js';
 import { SEA_BRIDGE,bridgeHeight,onBridge } from './sea-bridge.js';
 import { buildTransitStations } from './transit-stations.js';
+import { chooseVehicleColor } from './vehicle-colors.js';
 
 export function buildSeaTransit({B,planes,layer,materials,scene}){
   const metroPath=createTransitPath(METRO_POINTS),tunnelPath=createTransitPath(TUNNEL_POINTS);
@@ -165,8 +166,9 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
   // The bridge has piecewise-linear ramps; curved horizontal interpolation
   // must not lift the bus above or push it below that exact driving surface.
   for(const p of busPath.samples)p.y=bridgeHeight(p.z);
-  const metroCars=Array.from({length:3},(_,index)=>createTransitVehicle(layer,materials,{index}));
-  const bus=createTransitVehicle(layer,materials,{bus:true});
+  const metroColor=chooseVehicleColor('metro'),busColor=chooseVehicleColor('bus');
+  const metroCars=Array.from({length:3},(_,index)=>createTransitVehicle(layer,materials,{index,color:metroColor}));
+  const bus=createTransitVehicle(layer,materials,{bus:true,color:busColor});
   for(const car of [...metroCars,bus])scene.add(car.root);
   const services={metro:{id:'metro',path:metroPath,cars:metroCars,speed:0,maxSpeed:13,accel:2.5,direction:1,dwell:8,stops:[],s:0,index:0,next:1},
     bus:{id:'bus',path:busPath,cars:[bus],speed:0,maxSpeed:6,accel:1.8,direction:1,dwell:7,stops:[],s:0,index:0,next:1}};

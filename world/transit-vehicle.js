@@ -2,10 +2,10 @@ import * as THREE from 'three';
 
 // Two draws per vehicle: a merged body and real two-sided glazing. Door
 // frames and their panes share the same sliding transform on the GPU.
-export function createTransitVehicle(layer,materials,{bus=false,index=0}={}){
+export function createTransitVehicle(layer,materials,{bus=false,index=0,color}={}){
   const root=new THREE.Group();root.name=bus?'sea-bridge-bus':'metro-carriage-'+(index+1);
   const length=bus?6.2:7.6,width=bus?2.5:2.8,end=length/2;
-  const paint=bus?0x327b6c:0xe3e9e6,accent=bus?0xe8c77f:0x248b9d,dark=0x203741,trim=0xc6d9d9;
+  const paint=color??(bus?0x327b6c:0xe3e9e6),accent=bus?0xe8c77f:0x248b9d,dark=0x203741,trim=0xc6d9d9;
   const solid={position:[],normal:[],color:[],doorSlide:[]},glass={position:[],normal:[],color:[],doorSlide:[]};
   const tint=new THREE.Color(),doors={value:0};
   function append(source,color,data=solid,slide=0){
@@ -92,5 +92,5 @@ export function createTransitVehicle(layer,materials,{bus=false,index=0}={}){
   const body=mesh(solid,new THREE.MeshPhongMaterial({vertexColors:true,shininess:40,specular:0x354c52}),'transit-body');
   const glazing=mesh(glass,new THREE.MeshPhongMaterial({color:0x9ed5df,shininess:100,specular:0xaad5db,transparent:true,opacity:.32,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true}),'transit-window-glass');glazing.renderOrder=3;
   function setDoors(amount){doors.value=Math.max(0,Math.min(1,amount));}
-  return {root,roof:body,glazing,length,width,setDoors,get doorOpen(){return doors.value;}};
+  return {root,roof:body,glazing,length,width,paintColor:paint,setDoors,get doorOpen(){return doors.value;}};
 }
