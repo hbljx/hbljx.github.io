@@ -44,8 +44,8 @@ export function build({ grid, layer, materials, stage }) {
   const third = buildThirdFloor({ grid, layer });
   // Clear the three trees inside the new outside stair's footprint.
   const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>=19&&x<=38&&z>=10&&z<=33)&&!(x>=-43&&x<=-12&&z>=20&&z<=35)&&!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));
-  const furn = furnish({ layer });
-  stage.scene.add(furn.animated.roomDoor.mesh);
+  const furn = furnish({ layer, additionalDoors: third.source.doors });
+  for (const door of furn.animated.doors.roots) stage.scene.add(door);
   furn.planes.push(third.skylights);
   const mergeBatch = (into, from) => {
     for (const kind of Object.keys(into.items)) into.items[kind].push(...from.items[kind]);
@@ -125,7 +125,7 @@ export function setup(app) {
     keyDown: e => {
       const key = e.key.toLowerCase();
       if(household.sleeping||household.walking){household.wakeMale();if(['e','escape'].includes(key))return true;}
-      if (key === 'e' && !activities.active && world.animated.roomDoor.interact(app.player.pos)) return true;
+      if (key === 'e' && !activities.active && world.animated.doors.interact(app.player, app.nav)) return true;
       return activities.keyDown(e);
     },
     keyUp: e => activities.keyUp(e),
@@ -135,7 +135,7 @@ export function setup(app) {
       world.outer.update(dt, stage.camera);
       activities.update(dt);
       household.update(dt);
-      world.animated.roomDoor.update(dt);
+      world.animated.doors.update(dt, app.nav);
       world.carrier.updateCabin(app.player,stage.camera);
       world.carrier.update(dt,stage.camera);
       const cutaway = world.hidden.has('roof');

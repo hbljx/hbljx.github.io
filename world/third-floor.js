@@ -54,12 +54,20 @@ export function buildThirdFloor({ grid, layer }) {
   }
   wall((room.x0-12)/2,6,-12-room.x0,.18);wall((-10+room.x1)/2,6,room.x1+10,.18);
   for(const x of [room.x0,-20,-16,-12,-10,-7,room.x1])B.box(x,11,6,.10,3.7,.18,dark);
-  // Open wooden door leaves sit beside the two-metre opening.
-  for (const x of [-12.55, -9.45]) {
-    B.box(x, 11, 5.86, 1.02, 3.1, .13, wood);
-    B.box(x, 11.45, 5.78, .78, 2.2, .04, glass);
-    B.box(x + (x < -11 ? .35 : -.35), 12.2, 5.7, .06, .42, .06, china);
+  const roomDoorBarrier = { x0: -12, x1: -10, z0: 5.78, z1: 5.94 };
+  function setRoomDoorBarrier(blocked) {
+    const index = barriers.indexOf(roomDoorBarrier);
+    if (blocked && index < 0) barriers.push(roomDoorBarrier);
+    else if (!blocked && index >= 0) barriers.splice(index, 1);
   }
+  const roomDoors = [
+    { id: 'roof-room-left', controlGroup: 'roof-room', x: -12, z: 5.86, y: 9.45, interactY: 11, width: 1, height: 3.1,
+      closedYaw: 0, openYaw: -Math.PI / 2, color: 0x76583f, level: 1, bounds: { x0: -12, x1: -11, z0: 5.74, z1: 5.98 },
+      onBlockingChange: blocked => setRoomDoorBarrier(blocked) },
+    { id: 'roof-room-right', controlGroup: 'roof-room', x: -10, z: 5.86, y: 9.45, interactY: 11, width: 1, height: 3.1,
+      closedYaw: Math.PI, openYaw: Math.PI / 2, color: 0x76583f, level: 1, bounds: { x0: -11, x1: -10, z0: 5.74, z1: 5.98 },
+      onBlockingChange: blocked => setRoomDoorBarrier(blocked) },
+  ];
   skylight(ceiling,roomRoof.min.x,roomRoof.max.x,roomRoof.min.z,roomRoof.max.z,14.7,.24,dark,[room.x0+1,room.x1-1,room.z0+1,room.z1-1]);
   for (const x of [room.x0+.4,room.x1-.4]) ceiling.box(x,14.60,(room.z0+room.z1)/2,.12,.1,room.z1-room.z0-.4,wood);
   // Tea table, tray, kettle, cups and four armchairs.
@@ -173,7 +181,7 @@ export function buildThirdFloor({ grid, layer }) {
     return tagged;
   }
   const source={
-    foot,exit,room,seats,route,roofRoute,insideRoom,setPlaneObstacle(fn){planeObstacle=fn;},
+    foot,exit,room,seats,route,roofRoute,insideRoom,doors: roomDoors,setPlaneObstacle(fn){planeObstacle=fn;},
     flightHeight(x,z){return overRoomRoof(x,z)?roomRoof.max.y:onDeck(x,z,1)?12:0;},
     levels(x,z,out){
       // A separate site keeps rooftop clicks from routing through the tea room.

@@ -109,10 +109,12 @@ export function buildShell(grid) {
   grid.fill(LOFT.x0, LOFT.y - 1, LOFT.z0, LOFT.x1, LOFT.y, LOFT.z1, 'loft');
   // The save room keeps its existing collision/door identity, with quiet wood
   // panels. A single curated bookcase is built as furniture beside the desk.
-  grid.fill(SECRET.x1, LOFT.y, SECRET.z0, SECRET.x1 + 1, LOFT.y + 3, SECRET.z1 + 1, 'bookshelf');
+  grid.fill(SECRET.x1, LOFT.y, SECRET.z0, SECRET.x1 + 1, LOFT.y + 3, SECRET.door, 'bookshelf');
+  grid.fill(SECRET.x1, LOFT.y, SECRET.door + 1, SECRET.x1 + 1, LOFT.y + 3, SECRET.z1 + 1, 'bookshelf');
   grid.fill(SECRET.x0, LOFT.y, SECRET.z1, SECRET.x1, LOFT.y + 3, SECRET.z1 + 1, 'bookshelf');
   grid.fill(SECRET.x0, LOFT.y + 3, SECRET.z0, SECRET.x1 + 1, LOFT.y + 4, SECRET.z1 + 1, 'loft', 'secretTop');
-  for (let y = LOFT.y; y < LOFT.y + 2; y++) grid.set(SECRET.x1, y, SECRET.door, 'bookshelf', 'secretDoor');
+  // The hidden bookshelf door is a movable mesh; its opening stays clear so
+  // the shared door collider controls walking and navigation.
   // Standalone feature walls support the existing court and studio as the
   // outer glazed envelope expands around them.
   grid.fill(-21,0,-3,-20,7,7,'wall');

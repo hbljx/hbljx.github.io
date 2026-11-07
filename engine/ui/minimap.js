@@ -247,15 +247,49 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     bctx.restore();
     // Room markers are keyed to the fixed legend, whose labels stay clear at
     // every map zoom and viewport size.
+    const roomLabels = [];
+    const roomLegend = bigRoot.querySelector('.room-map-legend')?.getBoundingClientRect();
+    const occupied = roomLegend ? [{
+      left: (roomLegend.left - big.getBoundingClientRect().left) * dpr,
+      top: (roomLegend.top - big.getBoundingClientRect().top) * dpr,
+      right: (roomLegend.right - big.getBoundingClientRect().left) * dpr,
+      bottom: (roomLegend.bottom - big.getBoundingClientRect().top) * dpr,
+    }] : [];
+    bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;
     for (const room of [
-      { x: 17.6, z: 6.2, color: '#bd7055' },
-      { x: 7.4, z: -19.55, color: '#566b91' },
-      { x: -8.3, z: 11.8, color: '#559477' },
+      { x: 17.6, z: 6.2, color: '#bd7055', label: '厨房' },
+      { x: 7.4, z: -19.55, color: '#566b91', label: '电影院' },
+      { x: -8.3, z: 11.8, color: '#559477', label: '健身房' },
     ]) {
       const [x, y] = P(room.x, room.z);
       bctx.beginPath(); bctx.arc(x, y, 6 * dpr, 0, Math.PI * 2);
       bctx.fillStyle = room.color; bctx.strokeStyle = '#fff'; bctx.lineWidth = 2 * dpr;
       bctx.fill(); bctx.stroke();
+      const width = bctx.measureText(room.label).width + 12 * dpr, height = 22 * dpr, gap = 9 * dpr;
+      const options = [
+        [x + gap, y - height / 2], [x - gap - width, y - height / 2],
+        [x - width / 2, y - height - gap], [x - width / 2, y + gap],
+        [x + gap, y - height - gap], [x - gap - width, y - height - gap],
+        [x + gap, y + gap], [x - gap - width, y + gap],
+      ];
+      const box = options.map(([left, top]) => ({ left, top, right: left + width, bottom: top + height }))
+        .find(candidate => candidate.left >= 4 * dpr && candidate.top >= 4 * dpr && candidate.right <= W - 4 * dpr && candidate.bottom <= H - 4 * dpr
+          && !occupied.some(other => candidate.left < other.right + 4 * dpr && candidate.right + 4 * dpr > other.left && candidate.top < other.bottom + 4 * dpr && candidate.bottom + 4 * dpr > other.top));
+      if (box) {
+        occupied.push(box);
+        roomLabels.push({ room, x, y, box, width });
+      }
+    }
+    bctx.textBaseline = 'middle';
+    for (const { room, x, y, box, width } of roomLabels) {
+      const lx = Math.max(box.left, Math.min(x, box.right));
+      const ly = Math.max(box.top, Math.min(y, box.bottom));
+      bctx.strokeStyle = room.color; bctx.lineWidth = 2 * dpr;
+      bctx.beginPath(); bctx.moveTo(x, y); bctx.lineTo(lx, ly); bctx.stroke();
+      bctx.fillStyle = 'rgba(12, 14, 16, .88)'; bctx.fillRect(box.left, box.top, width, box.bottom - box.top);
+      bctx.strokeStyle = room.color; bctx.lineWidth = 1.5 * dpr; bctx.strokeRect(box.left, box.top, width, box.bottom - box.top);
+      bctx.fillStyle = '#fff'; bctx.textAlign = 'left';
+      bctx.fillText(room.label, box.left + 6 * dpr, (box.top + box.bottom) / 2);
     }
     bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));bctx.stroke();
     if(L.SEA_BRIDGE){const b=L.SEA_BRIDGE;const bx=b.x,by=harborZ;bctx.strokeStyle='#526477';bctx.lineWidth=10*s*mapXScale;bctx.beginPath();bctx.moveTo(...P(bx,b.z0));bctx.lineTo(...P(bx,b.z1-10));bctx.stroke();bctx.fillStyle='#526477';rect(bx-9,150,18,20);bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('海上观景大桥',...P(bx,130));

@@ -9,6 +9,7 @@ import { createMotorcycle } from './motorcycle.js';
 import { createRoadster } from './roadster.js';
 import { buildSharedRooms } from './shared-rooms.js';
 import { buildFloorPlants } from './plants.js';
+import { createIslandDoors } from './doors.js';
 import { HOUSE, COURT, RIM, VERTEC, LOFT, BED, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, STUDIO_WALL_END } from './layout.js';
 
 const L = {
@@ -21,7 +22,7 @@ const L = {
   light: (tint, emissive = 1) => ({ tex: 'paint', tint, emissive }),
 };
 
-export function furnish({ layer }) {
+export function furnish({ layer, additionalDoors = [] }) {
   const B = new BoxBatch(layer), roof = new BoxBatch(layer);
   const batches = { static: B, roof, wallN: new BoxBatch(layer), wallS: new BoxBatch(layer), wallE: new BoxBatch(layer), wallW: new BoxBatch(layer) };
   const obstacles = [], lights = [], lighting = [], hotspots = [], planes = [], animated = {}, surfaces = {};
@@ -59,64 +60,7 @@ export function furnish({ layer }) {
     }
     for (const y of [bottom, ...(height > 5 ? [bottom + height / 2] : []), bottom + height - 0.07]) for(let i=0;i<count;i++)batch.box(-width/2+width*(i+.5)/count,y,0,width/count-.07,.07,.1,L.steel);
   });
-  const openDoor = (batch, x, y, z, width, ry, height = 2.8) => batch.at(x, y, z, ry, () => {
-    batch.box(width / 2, 0, 0, width, height, 0.12, L.panel);
-    batch.box(width - 0.2, height * .4, 0.075, 0.035, 0.3, 0.04, L.paint(0xc0b49a));
-    batch.box(width - 0.18, height * .4 + .05, 0.11, 0.07, 0.04, 0.04, L.steel);
-  });
-  const roomDoor = (() => {
-    const pivot = new THREE.Group();
-    pivot.position.set(-6, LOFT.y, -3.88);
-    const wood = new THREE.MeshLambertMaterial({ color: 0x76583f });
-    const metal = new THREE.MeshLambertMaterial({ color: 0xb8b9b3 });
-    const panel = new THREE.Mesh(new THREE.BoxGeometry(2.68, 2.88, 0.1), wood);
-    panel.position.set(1.34, 1.44, 0);
-    panel.castShadow = false;
-    pivot.add(panel);
-    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), metal);
-    knob.position.set(2.42, 1.42, 0.09);
-    knob.castShadow = false;
-    pivot.add(knob);
-    const date = new Date(), chinaClock = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Shanghai', hour: '2-digit', hourCycle: 'h23' });
-    const chinaHour = timestamp => {
-      date.setTime(timestamp);
-      return Number(chinaClock.format(date));
-    };
-    const initialHour = chinaHour(Date.now());
-    let scheduledClosed = initialHour >= 18 || initialHour < 7;
-    let target = scheduledClosed ? 0 : Math.PI, angle = target, transition = null;
-    pivot.rotation.y = angle;
-    let lastSchedule = scheduledClosed, checkedMinute = Math.floor(Date.now() / 60000);
-
-    function setOpen(open) {
-      target = open ? Math.PI : 0;
-      transition = { from: angle, to: target, elapsed: 0 };
-    }
-    function update(dt) {
-      const minute = Math.floor(Date.now() / 60000);
-      if (minute !== checkedMinute) {
-        checkedMinute = minute;
-        const hour = chinaHour(minute * 60000);
-        const closed = hour >= 18 || hour < 7;
-        if (closed !== lastSchedule) {
-          lastSchedule = closed;
-          setOpen(!closed);
-        }
-      }
-      if (!transition) return;
-      transition.elapsed = Math.min(1, transition.elapsed + dt / 0.42);
-      const t = transition.elapsed * transition.elapsed * (3 - 2 * transition.elapsed);
-      angle = transition.from + (transition.to - transition.from) * t;
-      pivot.rotation.y = angle;
-      if (transition.elapsed === 1) { angle = transition.to; transition = null; }
-    }
-    function interact(position) {
-      if (position.y < LOFT.y - 0.4 || Math.hypot(position.x + 4.63, position.z + 3.98) > 2.35) return false;
-      setOpen(target < Math.PI / 2);
-      return true;
-    }
-    return { mesh: pivot, update, interact };
-  })();
+  const doors = createIslandDoors(obstacles, additionalDoors);
 
   // Slim black structure frames the warm wood walls and uninterrupted glazing.
   for (const x of [HOUSE.x0+.5, 10, HOUSE.x1-.5]) {
@@ -173,19 +117,7 @@ export function furnish({ layer }) {
     {tex:'glass',glass:true},{tag:'garage-facade-glazing'});
   // A raised roller shutter: ribbed metal slats retract into the headbox.
   // Keep the original four-metre vehicle clearance and batch every fitting.
-  batches.wallE.at(HOUSE.x1+.02,0,garageDoorCenter,0,()=>{
-    const width=garageDoorWidth-.1,metal=L.paint(0xb4bec4);
-    batches.wallE.box(-.015,shutterBottom,0,.07,shutterTop-shutterBottom,width,garageFrame);
-    for(let i=0;i<slatCount;i++) {
-      const y=shutterBottom+i*slatPitch;
-      batches.wallE.box(.035,y+.012,0,.11,slatPitch-.024,width,metal);
-      batches.wallE.box(.1,y+.035,0,.035,.028,width,L.paint(0xd1d8dc));
-    }
-    batches.wallE.box(.04,shutterBottom,0,.18,.07,width,garageFrame);
-    batches.wallE.box(0,shutterTop,0,.72,hoodHeight,garageDoorWidth+.28,garageFrame);
-    batches.wallE.box(.37,shutterTop+.09,0,.035,hoodHeight-.18,garageDoorWidth+.08,L.paint(0x626e76));
-    batches.wallE.box(0,shutterTop+hoodHeight-.05,0,.78,.04,garageDoorWidth+.32,metal);
-  });
+  batches.wallE.box(HOUSE.x1 + .02, shutterTop + hoodHeight / 2, garageDoorCenter, .72, hoodHeight, garageDoorWidth + .28, garageFrame);
   // Keep the doorway jambs; omit the two crosswise bars that projected into
   // the garage and out over the shore instead of following the opening.
   for(const [a,b] of [[GARAGE.z0,GARAGE.glassDoor.z0],[GARAGE.glassDoor.z1,GARAGE.z1]])glazing(B,GARAGE.x0-.02,(a+b)/2,b-a,0,10,Math.PI/2);
@@ -194,21 +126,13 @@ export function furnish({ layer }) {
   // without protruding past them or leaving a visible slit.
   const garageSideSpan = GARAGE.glassDoor.z1 - GARAGE.glassDoor.z0;
   const garageSidePane = garageSideSpan - .07;
-  B.box(GARAGE.x0-.02,0,-2,.055,10,garageSidePane,{tex:'glass',glass:true});
+  B.box(GARAGE.x0-.02,2.8,-2,.055,HOUSE.height-2.8,garageSidePane,{tex:'glass',glass:true});
   glazing(B,GARAGE.x0-.02,-2,garageSideSpan,0,10,Math.PI/2,true);
   glazing(B,(GARAGE.x0-1+GARAGE.x1)/2,GARAGE.z1+.02,GARAGE.x1-GARAGE.x0+1,3,7);
-  // Garage access is an actual open, framed glass door.
-  B.at(GARAGE.x0 - 0.02, 0, GARAGE.glassDoor.z0, 0, () => {
-    B.box(0.92, 0.1, 0, 1.77, 2.6, 0.055, { tex: 'glass', glass: true });
-    for (const x of [0, 1.85]) B.box(x, 0, 0, 0.07, 2.8, 0.09, L.steel);
-    for (const y of [0, 2.73]) B.box(0.92, y, 0, 1.85, 0.07, 0.09, L.steel);
-    B.box(1.62, 1.05, 0.09, 0.04, 0.45, 0.04, L.paint(0xa5afb0));
-  }); foot(GARAGE.x0 + 0.9, GARAGE.glassDoor.z0, 1.95, 0.14);
-  // Visible open doors, with clear entry circulation and no door animation.
+  // Keep the entrance frame separate from the animated leaves to avoid
+  // coplanar geometry during the scheduled swing.
   for (const x of [ENTRANCE.x0, ENTRANCE.x1]) batches.wallS.box(x, 0, 16.21, 0.16, 3, 0.16, L.steel);
   batches.wallS.box(0.5, 2.9, 16.21, 4.84, 0.1, 0.16, L.steel);
-  openDoor(batches.wallS, ENTRANCE.x0, 0, 16.3, 2.35, -Math.PI / 2);
-  openDoor(batches.wallS, ENTRANCE.x1, 0, 16.3, 2.35, -Math.PI / 2);
   foot(ENTRANCE.x0, 17.35, 0.16, 2.4); foot(ENTRANCE.x1, 17.35, 0.16, 2.4);
   // Two subdued realtime lights support moving characters. All localized
   // architectural/task light is baked, with the same fittings on phones.
@@ -598,7 +522,6 @@ export function furnish({ layer }) {
   const bedroomDoorZ = -3.98;
   for (const x of [-6, -3]) B.box(x, LOFT.y, bedroomDoorZ, .07, 3, .1, L.steel);
   B.box(-4.5, LOFT.y + 2.93, bedroomDoorZ, 3, .07, .1, L.steel);
-  animated.roomDoor = roomDoor;
   foot(-7.38, bedroomDoorZ, 2.85, .15, 1);
   const { x: bedX, z: bedZ, y: bedY } = BED;
   B.box(bedX, bedY, bedZ + 1.2, 7.4, .025, 6.4, L.linen);
@@ -713,6 +636,7 @@ export function furnish({ layer }) {
       return { t: distance, point, site: 'stairs' };
     },
   };
+  animated.doors = doors;
   return { batches, obstacles, lights, lighting, hotspots, planes, animated, surfaces, stairs, partitions };
 }
 

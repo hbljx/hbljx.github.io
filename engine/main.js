@@ -597,6 +597,8 @@ async function boot() {
     // A tap during the opening shot only cuts it short; it does not send
     // the player towards wherever the far-away view happened to be touched.
     if (rig.introActive) { rig.skipIntro(); return; }
+    if (!wasInteracting && target.spot?.id === 'mailbox') { useTarget('mailbox'); return; }
+    if (!wasInteracting && target.spot) { activate(target.spot.id); return; }
     // Lying on the pool's floor looking up, a tap only brings them up again.
     if (player.gazing) { player.toggleDive(); return; }
     if (webMode && !wasInteracting) {
@@ -829,7 +831,7 @@ async function boot() {
     blocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy || !!extras.locked,
     pointerBlocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy,
     shortcutsBlocked: () => minimap.isBigOpen() || weatherMenuOpen() || isTravelling() || !!portal?.busy || !!extras.locked,
-    keydown: e => extras.keyDown?.(e),
+    keydown: e => e.key.toLowerCase() === 'e' && !extras.locked && nearestTarget() ? false : extras.keyDown?.(e),
     keyup: e => extras.keyUp?.(e),
     run: () => extras.running,
     escape: () => { if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
