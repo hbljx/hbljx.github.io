@@ -45,6 +45,7 @@ export function build({ grid, layer, materials, stage }) {
   // Clear the three trees inside the new outside stair's footprint.
   const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>=19&&x<=38&&z>=10&&z<=33)&&!(x>=-43&&x<=-12&&z>=20&&z<=35)&&!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));
   const furn = furnish({ layer });
+  stage.scene.add(furn.animated.roomDoor.mesh);
   furn.planes.push(third.skylights);
   const mergeBatch = (into, from) => {
     for (const kind of Object.keys(into.items)) into.items[kind].push(...from.items[kind]);
@@ -63,6 +64,14 @@ export function build({ grid, layer, materials, stage }) {
   const outer = buildOuter(layer, materials, furn.batches.static), mountain = buildMountain(layer, materials), roofAccess = buildRoofAccess(layer, materials);
   const seaBridge=buildSeaBridge(furn.batches.static,furn.obstacles,furn.lighting);
   const transit=buildSeaTransit({B:furn.batches.static,planes:furn.planes,layer,materials,scene:stage.scene});
+  // Break up the exposed east-coast corner beyond the garage approach with a
+  // low, submerged shelf and a few uneven rocks. Keep the driveable strip clear.
+  const shore = furn.batches.static;
+  const shoreRock = { tex: 'stone', tint: 0x82948e };
+  shore.box(35.1, -2.15, 30.85, 5.4, .45, 2.8, { ...shoreRock, tint: 0x718781 }, { shadow: false });
+  shore.box(33.7, -1.6, 30.45, 1.8, 1.05, 1.45, shoreRock, { ry: .22, shadow: false });
+  shore.box(35.25, -1.45, 31.05, 1.35, .85, 1.1, { ...shoreRock, tint: 0x718781 }, { ry: -.31, shadow: false });
+  shore.box(36.55, -1.72, 30.62, 1.65, 1.2, 1.3, shoreRock, { ry: .18, shadow: false });
   const carrier = buildCarrier(layer, furn.batches.static);
   const submarine = buildSubmarine(furn.batches.static, furn.planes);
   stage.scene.add(submarine.crew.group);
@@ -71,7 +80,7 @@ export function build({ grid, layer, materials, stage }) {
   const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch,transit.tunnel.path);
   for(const mesh of deepBatch.build(materials)){mesh.castShadow=false;oceanLife.deepGroup.add(mesh);}
   stage.scene.add(oceanLife.deepGroup,oceanLife.tunnelGroup,oceanLife.effectsGroup);
-  const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster,submarine.mesh]);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
+  const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster,submarine.mesh],stage);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh, carrier.boardingLink);
@@ -113,7 +122,12 @@ export function setup(app) {
     activities,household,
     get locked() { return activities.active || household.sleeping || household.bathing; },
     get running() { return activities.running; },
-    keyDown: e => { if(household.sleeping||household.walking){household.wakeMale();if(['e','escape'].includes(e.key.toLowerCase()))return true;}return activities.keyDown(e); },
+    keyDown: e => {
+      const key = e.key.toLowerCase();
+      if(household.sleeping||household.walking){household.wakeMale();if(['e','escape'].includes(key))return true;}
+      if (key === 'e' && !activities.active && world.animated.roomDoor.interact(app.player.pos)) return true;
+      return activities.keyDown(e);
+    },
     keyUp: e => activities.keyUp(e),
     stop: (force = true) => { household.wakeMale();return activities.stop(force); },
     pause: () => activities.pause(),
@@ -121,6 +135,7 @@ export function setup(app) {
       world.outer.update(dt, stage.camera);
       activities.update(dt);
       household.update(dt);
+      world.animated.roomDoor.update(dt);
       world.carrier.updateCabin(app.player,stage.camera);
       world.carrier.update(dt,stage.camera);
       const cutaway = world.hidden.has('roof');

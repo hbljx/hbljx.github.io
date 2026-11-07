@@ -57,12 +57,11 @@ export const MOODS = {
 const CALM = { cloud: 0, rain: 0, snow: 0, fog: 0, haze: 0, wind: 0, storm: 0 };
 const DECK = { grey: 0x9cafae, rain: 0x86999a, storm: 0x6c7d7d, snow: 0xb7c4c8, fog: 0xb6c4bd, haze: 0xb0ac98 };
 
-// The cloud map: 64×64 cells of smooth noise, ranked so that a coverage of
-// 0.3 clouds over 30% of the sky. Square cells, no filtering, as Minecraft.
+// A tileable cloud field with broad bodies and smaller rounded lobes.
 function cloudTexture() {
-  const N = 64, random = rng(1337), values = new Float32Array(N * N);
+  const N = 128, random = rng(1337), values = new Float32Array(N * N);
   const fade = t => t * t * (3 - 2 * t);
-  const octaves = [4, 8].map((n, i) => ({ n, weight: i ? 0.15 : 0.85, grid: Float32Array.from({ length: n * n }, random) }));
+  const octaves = [[4, .42], [8, .3], [16, .19], [32, .09]].map(([n, weight]) => ({ n, weight, grid: Float32Array.from({ length: n * n }, random) }));
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     let v = 0;
     for (const { n, weight, grid } of octaves) {
@@ -72,8 +71,7 @@ function cloudTexture() {
     }
     values[x + y * N] = v;
   }
-  // Merge tiny islands before ranking. The rendered cells stay crisp;
-  // only the authored cloud silhouette becomes broader and more coherent.
+  // Merge isolated noise into coherent cloud bodies before ranking coverage.
   const soft = new Float32Array(N * N);
   for (let pass = 0; pass < 2; pass++) {
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -88,7 +86,7 @@ function cloudTexture() {
   const texture = new THREE.DataTexture(data, N, N, THREE.RedFormat, THREE.UnsignedByteType);
   texture.name = 'clouds';
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.minFilter = texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = texture.magFilter = THREE.LinearFilter;
   texture.generateMipmaps = false; texture.unpackAlignment = 1; texture.needsUpdate = true;
   return texture;
 }
@@ -127,13 +125,13 @@ const SKY_FRAGMENT = /* glsl */`
     float h = d.y;
     vec3 col = mix(uHorizon, uTop, smoothstep(0.0, 0.55, h));
     col = mix(col, uBottom, smoothstep(0.02, -0.35, h));
-    // Minecraft's clouds: one flat layer of square puffs drifting with the
-    // wind, 160 m up and 16 m to a cell. Coverage chooses how many cells are cloud.
+    // A drifting, flat cloud layer with soft, rounded edges.
     float puff = 0.0, v = 0.0;
     if (h > 0.015 && uCover > 0.0) {
       float lift = max(0.0, 160.0 - uCamPos.y), t = lift / h;
       v = texture2D(uClouds, (uCamPos.xz + d.xz * t + uCloudShift) / 1024.0).r;
-      puff = step(1.0 - uCover, v) * smoothstep(0.035, 0.26, h) * exp(-t * 0.0015) * smoothstep(0.0, 16.0, lift);
+      float edge = smoothstep(1.0 - uCover - 0.055, 1.0 - uCover + 0.025, v);
+      puff = edge * smoothstep(0.035, 0.26, h) * exp(-t * 0.0015) * smoothstep(0.0, 16.0, lift);
     }
     float clear = (1.0 - uCloud) * (1.0 - puff);
     // A square sun or moon, as it should be in a block world, with a soft halo.

@@ -93,3 +93,43 @@ export function createRoadsterLights(scene,car){
   const mesh=new THREE.Mesh(g,m);mesh.name='roadster-driving-lights';mesh.visible=false;scene.add(mesh);
   return{mesh,update(dt,on,speed){mesh.visible=on;if(!on)return;uniforms.time.value+=dt;uniforms.speed.value=Math.min(1,speed/8);mesh.position.copy(car.position);mesh.rotation.copy(car.rotation);}};
 }
+
+export function createVehicleHeadlightBeam(scene, car, { front, width, reach, color = 0xdceeff }) {
+  const positions = [], uvs = [];
+  for (const side of [-1, 1]) {
+    const inner = side * width * .16, outer = side * width;
+    const edgeUv = side < 0 ? 0 : 1;
+    for (const [x, z, u, v] of [
+      [front, inner, 0, .5], [front + reach, inner, 1, .5],
+      [front + reach, outer, 1, edgeUv], [front, outer, 0, edgeUv],
+    ]) { positions.push(x, .045, z); uvs.push(u, v); }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]);
+  const material = new THREE.ShaderMaterial({
+    uniforms: { beamColor: { value: new THREE.Color(color) } },
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader: `uniform vec3 beamColor;varying vec2 vUv;void main(){
+      float sideFade=smoothstep(0.,.22,vUv.y)*(1.-smoothstep(.78,1.,vUv.y));
+      float reachFade=pow(1.-vUv.x,1.35)*(.72+.28*smoothstep(0.,.18,vUv.x));
+      float a=sideFade*reachFade*.34;
+      gl_FragColor=vec4(beamColor,a);
+    }`,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = `${car.name}-headlight-beam`; mesh.visible = false; mesh.frustumCulled = false;
+  scene.add(mesh);
+  return {
+    mesh,
+    update(on) {
+      mesh.visible = on;
+      if (!on) return;
+      mesh.position.copy(car.position);
+      mesh.rotation.copy(car.rotation);
+    },
+  };
+}

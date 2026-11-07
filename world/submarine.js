@@ -13,103 +13,103 @@ const angle = a => Math.atan2(Math.sin(a), Math.cos(a));
 const clamp = THREE.MathUtils.clamp;
 
 function createCrew(mesh) {
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
-  // Use an unlit high-visibility color so the small crew stays readable on
-  // the dark deck and in the distant overview.
-  const material = new THREE.MeshBasicMaterial({ color: 0xf6c453, toneMapped: false });
-  const PARTS_PER_PERSON = 17;
-  const crew = new THREE.InstancedMesh(geometry, material, 5 * PARTS_PER_PERSON);
-  crew.name = 'submarine-deck-crew';
-  // The submarine hull is folded into the aircraft-fleet batch, so child
-  // meshes are not rendered through the original hull object. Keep the crew
-  // in its own scene group and mirror the hull transform below.
-  const group = new THREE.Group();
-  group.name = 'submarine-deck-crew-root'; group.add(crew);
-  const uniforms = [
-    [0x345b70, 0x26394a, 0xd8a17b, 0xe2bb67], [0x465f76, 0x303c4d, 0xe5b58e, 0xd9e5e8],
-    [0x38665f, 0x293b42, 0xb98262, 0xc8d8ce], [0x6d5942, 0x354253, 0xe0b990, 0xd8bd83],
-    [0x554e70, 0x3b394d, 0xc58b6c, 0xd8d1bb],
-  ];
-  const parts = [];
-  for (const [shirt, pants, skin, cap] of uniforms) {
-    const accent = new THREE.Color(shirt).multiplyScalar(.72).getHex();
-    parts.push(
-      [0, 1.95, 0, .68, 1.02, .4, shirt], [0, 2.85, .015, .53, .55, .52, skin],
-      [0, 3.17, 0, .59, .15, .57, cap],
-      [-.2, .76, 0, .25, 1.02, .28, pants], [.2, .76, 0, .25, 1.02, .28, pants],
-      [-.2, .13, .045, .32, .24, .43, 0x202b35], [.2, .13, .045, .32, .24, .43, 0x202b35],
-      [-.47, 1.98, 0, .23, .9, .27, shirt], [.47, 1.98, 0, .23, .9, .27, shirt],
-      [0, 1.99, .207, .39, .72, .035, accent], [0, 2.45, .22, .31, .11, .045, 0xd7d6c8],
-      [-.12, 1.9, .239, .105, .13, .035, 0xc7b77e], [.12, 1.9, .239, .105, .13, .035, 0xc7b77e],
-      [0, 1.43, .212, .66, .09, .035, 0x202b35], [0, 2.29, .246, .075, .12, .025, 0xdcc77f],
-      [-.47, 1.43, 0, .22, .22, .25, skin], [.47, 1.43, 0, .22, .22, .25, skin]);
-  }
-  const dummy = new THREE.Object3D(), color = new THREE.Color(), transform = new THREE.Matrix4();
-  const patrolPoints = [[-5, -37], [4, -29], [-4, -21], [4, -8], [-4, 2]];
+  const patrolPoints = [[-1.8, -38], [1.8, -28], [-1.8, -17], [1.8, -5], [-1.8, 7]];
+  const patrolWidth = 1.7, patrolLength = 4.6, crewScale = 1.5;
   const seatPoints = [[-2.3, -12], [-1.15, -12], [0, -12], [1.15, -12], [2.3, -12]];
-  // Individual gaits and inspection poses: lookout, pointing, two-handed
-  // checking, radio gesture, and low inspection. Pauses are staggered.
-  const motions = [
-    { pace: 3.5, stride: .28, swing: .38, offset: .2, period: 12, armX: [-.18, -2.55], armZ: [-.08, .32], stance: [.06, -.1] },
-    { pace: 4.2, stride: .36, swing: .48, offset: 2.6, period: 14, armX: [-1.65, -.3], armZ: [-.38, .12], stance: [-.16, .08] },
-    { pace: 2.8, stride: .2, swing: .23, offset: 5.1, period: 11, armX: [-1.12, -1.32], armZ: [.18, -.18], stance: [.12, -.06] },
-    { pace: 3.8, stride: .3, swing: .32, offset: 7.5, period: 15, armX: [-2.35, -.12], armZ: [-.25, .14], stance: [-.08, .18] },
-    { pace: 3.1, stride: .24, swing: .43, offset: 9.8, period: 13, armX: [-.55, -.95], armZ: [-.3, .4], stance: [.2, -.14] },
+  const uniforms = [
+    [0x284d63, 0x202f40, 0xd8a17b, 0xe2bb67], [0x385b75, 0x26384b, 0xe5b58e, 0xd9e5e8],
+    [0x315f59, 0x253943, 0xb98262, 0xc8d8ce], [0x65553f, 0x2c3e50, 0xe0b990, 0xd8bd83],
+    [0x4d4d68, 0x303848, 0xc58b6c, 0xd8d1bb],
   ];
-  const travel = new Float64Array(uniforms.length);
-  function place(target, sitting, time, dt = 0) {
-    for (let i = 0; i < uniforms.length; i++) {
-      const m = motions[i], cycle = (time + m.offset) % m.period;
-      // Ease into a stop, then resume from the same route position.
-      const inspect = sitting ? 0 : THREE.MathUtils.smoothstep(cycle, 0, .8)
-        * (1 - THREE.MathUtils.smoothstep(cycle, 3.1, 4));
-      const walking = 1 - inspect;
-      if (!sitting) travel[i] += dt * walking;
-      const phase = travel[i] * m.pace + m.offset;
-      const routePhase = travel[i] * (.48 + i * .035) + i * 1.7;
-      const points = sitting ? seatPoints : patrolPoints;
-      const px = points[i][0], pz = points[i][1];
-      const x = sitting ? px : px + Math.sin(routePhase * .42) * 1.05;
-      const z = sitting ? pz : pz + Math.cos(routePhase * .31) * 2.2;
-      const yaw = sitting ? 0 : Math.atan2(.42 * 1.05 * Math.cos(routePhase * .42), -.31 * 2.2 * Math.sin(routePhase * .31));
-      for (let j = 0; j < PARTS_PER_PERSON; j++) {
-        const p = parts[i * PARTS_PER_PERSON + j], leg = j === 3 || j === 4, boot = j === 5 || j === 6;
-        const arm = j === 7 || j === 8, hand = j === 15 || j === 16;
-        const side = j === 4 || j === 6 || j === 8 || j === 16 ? 1 : 0;
-        const step = Math.sin(phase + side * Math.PI);
-        dummy.position.set(p[0], p[1], p[2]); dummy.scale.set(p[3], p[4], p[5]); dummy.rotation.set(0, 0, 0);
-        if (!sitting && (leg || boot)) {
-          // Leg and boot share the hip pivot so they stay joined.
-          const rx = step * m.stride * walking + m.stance[side] * inspect;
-          const dy = p[1] - 1.27;
-          dummy.rotation.x = rx;
-          dummy.position.y = 1.27 + dy * Math.cos(rx) - p[2] * Math.sin(rx);
-          dummy.position.z = dy * Math.sin(rx) + p[2] * Math.cos(rx);
-        }
-        if (arm || hand) {
-          const gesture = Math.sin(time * (1.6 + i * .23) + side * 1.3) * .09 * inspect;
-          const rx = sitting ? -1.05 : -step * m.swing * walking + (m.armX[side] + gesture) * inspect;
-          const rz = sitting ? 0 : (side ? .06 : -.06) * walking + m.armZ[side] * inspect;
-          const dy = p[1] - 2.43;
-          // Hands follow the sleeves around the shoulder through every gesture.
-          dummy.rotation.set(rx, 0, rz, 'ZYX');
-          dummy.position.x = p[0] - dy * Math.cos(rx) * Math.sin(rz);
-          dummy.position.y = 2.43 + dy * Math.cos(rx) * Math.cos(rz) + (sitting ? -.18 : .05);
-          dummy.position.z = dy * Math.sin(rx);
-        }
-        if (!sitting && (j === 1 || j === 2)) {
-          dummy.rotation.y = Math.sin(time * (.65 + i * .12) + m.offset) * .32 * inspect;
-          dummy.rotation.x = (i === 4 ? .25 : -.08) * inspect;
-        }
-        if (sitting && leg) { dummy.position.y = .7; dummy.position.z += .28; dummy.rotation.x = -Math.PI / 2; }
-        if (boot && sitting) { dummy.position.y = .53; dummy.position.z = .52; }
-        dummy.updateMatrix(); transform.makeRotationY(yaw); transform.setPosition(x, MODEL_DECK + (sitting ? .2 : .02), z);
-        transform.multiply(dummy.matrix); target.setMatrixAt(i * PARTS_PER_PERSON + j, transform);
-        target.setColorAt(i * PARTS_PER_PERSON + j, color.setHex(p[6]));
+  const parts = [], people = [], helper = new THREE.Object3D(), color = new THREE.Color(), matrix = new THREE.Matrix4();
+  function add(person, bone, x, y, z, w, h, d, tint, gear = '') {
+    helper.position.set(x, y, z); helper.rotation.set(0, 0, 0); helper.scale.set(w, h, d); helper.updateMatrix();
+    parts.push({ person, bone, local: helper.matrix.clone(), tint, gear });
+  }
+  function joint(parent, x, y, z) { const bone = new THREE.Object3D(); bone.position.set(x, y, z); parent.add(bone); return bone; }
+  for (let i = 0; i < uniforms.length; i++) {
+    const root = new THREE.Object3D(), pelvis = joint(root, 0, .82, 0), torso = joint(pelvis, 0, .1, 0), head = joint(torso, 0, .53, 0);
+    root.scale.setScalar(crewScale);
+    const left = joint(torso, -.29, .38, 0), right = joint(torso, .29, .38, 0), elbowL = joint(left, 0, -.25, 0), elbowR = joint(right, 0, -.25, 0);
+    const hipL = joint(pelvis, -.12, 0, 0), hipR = joint(pelvis, .12, 0, 0), kneeL = joint(hipL, 0, -.39, 0), kneeR = joint(hipR, 0, -.39, 0);
+    const ankleL = joint(kneeL, 0, -.34, 0), ankleR = joint(kneeR, 0, -.34, 0);
+    const [shirt, pants, skin, helmet] = uniforms[i], vest = color.setHex(shirt).multiplyScalar(.7).getHex();
+    const person = { root, pelvis, torso, head, left, right, elbowL, elbowR, hipL, hipR, kneeL, kneeR, ankleL, ankleR,
+      x: patrolPoints[i][0], z: patrolPoints[i][1], yaw: 0, routePhase: i * 1.7, time: i * 2.35, first: parts.length, count: 0, duty: i };
+    people.push(person);
+    const p = (bone, x, y, z, w, h, d, tint, gear = '') => add(person, bone, x, y, z, w, h, d, tint, gear);
+    // Navy work suit, flotation vest, reflective tape, pockets and belt kit.
+    p(torso, 0, .15, 0, .56, .7, .34, shirt); p(torso, 0, .15, .18, .47, .58, .08, vest);
+    p(torso, 0, -.29, .05, .56, .15, .36, pants); p(torso, 0, .15, .229, .025, .52, .018, 0xe6d7a2);
+    p(torso, -.17, .02, .235, .15, .15, .05, vest); p(torso, .17, .02, .235, .15, .15, .05, vest);
+    p(torso, -.17, .095, .264, .1, .018, .015, 0xe6d7a2); p(torso, .17, .095, .264, .1, .018, .015, 0xe6d7a2);
+    p(torso, 0, -.24, .198, .05, .12, .045, 0xc7b77e); p(torso, -.25, -.28, 0, .09, .14, .12, 0x52605c);
+    // Helmet, ear cups, broad visor and small headlamp are legible at distance.
+    p(head, 0, .02, .015, .34, .37, .34, skin); p(head, 0, .25, -.015, .48, .25, .47, helmet);
+    p(head, 0, .16, .218, .4, .105, .06, 0x263b47); p(head, 0, .175, .253, .31, .04, .018, 0x83b9bc);
+    p(head, -.25, .015, -.01, .12, .22, .18, vest); p(head, .25, .015, -.01, .12, .22, .18, vest);
+    p(head, .1, .355, .115, .09, .055, .08, 0xf2d988);
+    for (const side of [-1, 1]) {
+      const arm = side < 0 ? left : right, elbow = side < 0 ? elbowL : elbowR, hip = side < 0 ? hipL : hipR;
+      const knee = side < 0 ? kneeL : kneeR, ankle = side < 0 ? ankleL : ankleR;
+      p(arm, 0, -.11, 0, .19, .27, .21, shirt); p(arm, 0, -.09, .11, .2, .035, .02, 0xe6d7a2);
+      p(elbow, 0, -.13, 0, .17, .25, .19, shirt); p(elbow, 0, -.28, .025, .15, .12, .16, skin);
+      p(hip, 0, -.19, 0, .2, .4, .26, pants); p(knee, 0, -.18, .02, .2, .36, .25, pants);
+      p(knee, 0, -.05, .15, .18, .12, .05, vest); p(ankle, 0, .015, .07, .23, .15, .34, 0x202a33);
+    }
+    // Handheld items follow the hands and appear only during their matching duty.
+    p(elbowR, 0, -.36, .03, .065, .17, .07, 0x27353a, 'radio');
+    p(elbowR, 0, -.28, .075, .09, .055, .025, 0x9ac7c4, 'radio');
+    p(elbowL, 0, -.31, .065, .25, .34, .045, 0x344e59, 'clipboard');
+    p(elbowL, 0, -.31, .094, .21, .28, .014, 0xe1dfcc, 'clipboard');
+    p(elbowL, 0, -.4, 0, .3, .22, .18, 0x526b73, 'tool'); p(elbowR, 0, -.4, .05, .06, .25, .06, 0xc4cfcd, 'tool');
+    p(head, -.12, .17, .28, .12, .11, .1, 0x263b47, 'binoculars'); p(head, .12, .17, .28, .12, .11, .1, 0x263b47, 'binoculars');
+    person.count = parts.length - person.first;
+    root.position.set(person.x, MODEL_DECK + .02, person.z);
+  }
+  const crew = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(), parts.length);
+  crew.name = 'submarine-deck-crew'; crew.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  const group = new THREE.Group(); group.name = 'submarine-deck-crew-root'; group.add(crew);
+  for (let i = 0; i < parts.length; i++) crew.setColorAt(i, color.setHex(parts[i].tint));
+  const walkTime = new Float64Array(people.length);
+  function place(sitting, time, dt = 0) {
+    for (let i = 0; i < people.length; i++) {
+      const person = people[i], root = person.root, idle = sitting ? 1 : THREE.MathUtils.smoothstep((time + i * 2.35) % 14, 0, .8) * (1 - THREE.MathUtils.smoothstep((time + i * 2.35) % 14, 3.5, 4.3));
+      const walking = !sitting && idle < .98, stride = walkTime[i] * 3.8 + i * 2.1;
+      if (walking) walkTime[i] += dt;
+      person.routePhase += walking ? dt * (.44 + i * .025) : 0;
+      if (!sitting) {
+        person.x = patrolPoints[i][0] + Math.sin(person.routePhase * .42) * patrolWidth;
+        person.z = patrolPoints[i][1] + Math.cos(person.routePhase * .31) * patrolLength;
+        const yaw = Math.atan2(.42 * patrolWidth * Math.cos(person.routePhase * .42), -.31 * patrolLength * Math.sin(person.routePhase * .31));
+        person.yaw += Math.atan2(Math.sin(yaw - person.yaw), Math.cos(yaw - person.yaw)) * Math.min(1, dt * 4);
+      } else { person.x = seatPoints[i][0]; person.z = seatPoints[i][1]; person.yaw = 0; }
+      root.position.set(person.x, MODEL_DECK + (sitting ? .2 : .02), person.z); root.rotation.set(0, person.yaw, 0);
+      const gait = walking ? Math.sin(stride) * .42 : 0, task = sitting ? 0 : i;
+      person.pelvis.position.y = .82 + (walking ? Math.abs(Math.sin(stride * 2)) * .035 : 0) - (task === 3 ? .2 * idle : 0);
+      person.pelvis.rotation.set(sitting ? -.08 : 0, 0, 0);
+      person.torso.rotation.set(task === 3 ? .42 * idle : 0, Math.sin(time * .65 + i) * .045 * idle, Math.sin(time * .8 + i) * .018);
+      person.head.rotation.set(task === 4 ? .18 * idle : 0, Math.sin(time * .7 + i * 1.3) * (task === 0 ? .26 : .13) * idle, 0);
+      person.left.rotation.set(walking ? -gait : 0, 0, task === 1 ? -.25 * idle : 0);
+      person.right.rotation.set(walking ? gait : 0, 0, task === 1 ? .25 * idle : 0);
+      person.elbowL.rotation.set(task === 4 ? -.9 * idle : sitting ? -1.05 : task === 3 ? -.55 * idle : 0, 0, 0);
+      person.elbowR.rotation.set(task === 2 ? -1.5 * idle : sitting ? -1.05 : task === 3 ? -.55 * idle : 0, 0, 0);
+      person.left.rotation.x += task === 4 ? -1.8 * idle : task === 2 ? -.75 * idle : task === 3 ? -.55 * idle : sitting ? -.5 : 0;
+      person.right.rotation.x += task === 2 ? -.65 * idle : task === 3 ? -.6 * idle : sitting ? -.5 : 0;
+      person.hipL.rotation.x = sitting ? -1.35 : task === 3 ? -.55 * idle : gait * .75; person.hipR.rotation.x = sitting ? -1.35 : task === 3 ? -.55 * idle : -gait * .75;
+      person.kneeL.rotation.x = sitting ? 1.45 : task === 3 ? 1.05 * idle : Math.max(0, -gait) * .75; person.kneeR.rotation.x = sitting ? 1.45 : task === 3 ? 1.05 * idle : Math.max(0, gait) * .75;
+      person.ankleL.rotation.x = sitting ? -.1 : -gait * .2; person.ankleR.rotation.x = sitting ? -.1 : gait * .2;
+      root.updateMatrixWorld(true);
+      for (let j = person.first; j < person.first + person.count; j++) {
+        const item = parts[j];
+        const showGear = item.gear === '' || (!sitting && ((item.gear === 'radio' && task === 2) || (item.gear === 'clipboard' && task === 4) || (item.gear === 'tool' && task === 3) || (item.gear === 'binoculars' && task === 0)));
+        if (showGear) matrix.multiplyMatrices(item.bone.matrixWorld, item.local); else matrix.makeScale(0, 0, 0);
+        crew.setMatrixAt(j, matrix);
       }
     }
-    target.instanceMatrix.needsUpdate = true; target.instanceColor.needsUpdate = true;
+    crew.instanceMatrix.needsUpdate = true;
   }
+  const dummy = new THREE.Object3D();
   const console = new THREE.Mesh(new THREE.BoxGeometry(6.2, .55, 1.8), new THREE.MeshLambertMaterial({ color: 0x344c53 }));
   console.name = 'submarine-command-console'; console.position.set(0, MODEL_DECK + .28, -15); mesh.add(console);
   const cabin = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0x526a70 }), 3);
@@ -124,13 +124,13 @@ function createCrew(mesh) {
   mesh.add(chairs);
   let clock = 0, engaged = false;
   group.position.copy(mesh.position); group.rotation.copy(mesh.rotation); group.scale.copy(mesh.scale);
-  group.visible = true; console.visible = cabin.visible = chairs.visible = false; place(crew, false, 0);
+  group.visible = true; console.visible = cabin.visible = chairs.visible = false; place(false, 0);
   function update(dt, active) {
     clock += Math.min(dt, .05);
     if (engaged !== active) { engaged = active; console.visible = cabin.visible = chairs.visible = active; }
     group.position.copy(mesh.position); group.rotation.copy(mesh.rotation); group.scale.copy(mesh.scale);
     group.visible = !active;
-    place(crew, active, clock, Math.min(dt, .05));
+    place(active, clock, Math.min(dt, .05));
   }
   return { group, update, status: () => ({ active: engaged, patrolCount: engaged ? 0 : uniforms.length, seatedCount: engaged ? uniforms.length : 0 }) };
 }

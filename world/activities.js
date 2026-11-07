@@ -10,12 +10,13 @@ import { createCruise } from './carrier.js';
 import { createDive } from './submarine.js';
 import { PATROL_LENGTH, samplePatrol } from './submarine-path.js';
 import { LIBRARY, CINEMA } from './shared-rooms.js';
-import { createRoadsterLights } from './roadster.js';
+import { createRoadsterLights, createVehicleHeadlightBeam } from './roadster.js';
 import { createJetCar } from './jet-car.js';
 import { CARRIER_HOME, SUBMARINE_HOME, SUBMARINE_SCALE } from './layout.js';
 import { TRANSIT_STOPS } from './transit-layout.js';
 import { tunnelCeiling } from './tunnel-glazing.js';
 import { createTransitRides } from './transit-rides.js';
+import { createVertec } from './vertec.js';
 
 export const ACTIVITY_SPOTS = [
   ...TRANSIT_STOPS.map(s=>({...s,title:s.name+' · 双人候车',radius:1.8})),
@@ -83,6 +84,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   const meter = $('.activity-meter'), fill = meter.querySelector('i'), book = $('.activity-book'), canvas = $('.activity-game'), pad = $('.activity-pad');
   const visuals = createActivityVisuals(stage.scene, avatar, canvas);
   const lifeVisuals = createLifeVisuals(stage.scene, avatar), seats = getSeats(world);
+  const vertec = createVertec({ avatar, sound }); stage.scene.add(vertec.mesh);
   const flights = world.aircraftFleet.planes.map(mesh=>createFlight({mesh,world,player,stage,sound}));
   let flight=flights[0];
   const cruise = createCruise({ world, player });
@@ -95,6 +97,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   const allSpots = [...ACTIVITY_SPOTS, ...seats], life = createLifeActions(sound, () => refreshUI());
   const limbs = [avatar.armL, avatar.armR, avatar.legL, avatar.legR];
   const roadsterLights=createRoadsterLights(stage.scene,world.animated.roadster);
+  const teslaHeadlights=createVehicleHeadlightBeam(stage.scene,world.animated.car,{front:2.42,width:1.24,reach:6.6,color:0xe7f3ff});
+  const motorcycleHeadlights=createVehicleHeadlightBeam(stage.scene,world.animated.motorcycle,{front:1.02,width:.72,reach:4.8,color:0xffe9bd});
   let bedtimeHandler=null,sharedStatus='';
   const vehicles = {
     roadster:{mesh:world.animated.roadster,obstacle:world.animated.roadsterObstacle,halfLength:2.82,halfWidth:1.27,home:[22,-17],homeHeading:0,distance:0},
@@ -110,7 +114,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   let vehicle = vehicles.driving, car = vehicle.mesh, carObstacle = vehicle.obstacle;
   const isDriving = () => !!vehicles[active?.id];
   const keys = new Set();
-  let active = null, near = null, nearSeat = null, nearTitle = '', time = 0, uiClock = 0, screenClock = 0, entered = 0;
+  let active = null, near = null, nearSeat = null, nearTitle = '', time = 0, uiClock = 0, screenClock = 0, entered = 0, vertecReps = 0;
   let runMode = false, collapsed = false, controlsReady = false, stepDistance = 0, lastX = player.pos.x, lastZ = player.pos.z, lastMode = player.mode, breathClock = 0;
   let firstPerson = false, saved = null, pageIndex = 0, flip = 0, sip = 0, sips = 0;
   let tvChannel = 0, tvTime = 0, tvPaused = false, cinemaTime = 0, carSpeed = 0, carHeading = Math.PI / 2, driveDistance = 0, notice = '';
@@ -259,6 +263,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (spot.id === 'tv') sound.effect('tv');
     if (isReading(spot.id)) sound.effect('page');
     life.start(spot.id);
+    if (spot.id === 'gym-vertec') vertecReps = 0;
     document.body.classList.add('activity-active'); document.body.classList.toggle('activity-sleep', spot.id === 'sleep');
     refreshUI(); pose(0); sound.effect(spot.kind === 'seat' ? 'sit' : 'start'); return true;
   }
@@ -284,7 +289,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     }
     const wasSeat = active.kind === 'seat';
     if (active.id === 'driving') { jet.reset(); jetExitPending = false; }
-    active = null; roadsterLights.update(0,false,0); keys.clear(); carSpeed = 0; shot.charging = shot.flight = false;
+    active = null; roadsterLights.update(0,false,0); teslaHeadlights.update(false); motorcycleHeadlights.update(false); keys.clear(); carSpeed = 0; shot.charging = shot.flight = false;
     life.stop(); lifeVisuals.hide(); sound.effect(wasSeat ? 'stand' : 'stop');
     for (const p of [visuals.ball, visuals.book, visuals.page, visuals.mug, visuals.tv.mesh, visuals.cinema.mesh, visuals.monitor.mesh]) p.visible = false;
     document.body.classList.remove('activity-active', 'activity-sleep');
@@ -524,6 +529,12 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       case 'fishing': primary.hidden = false; primary.textContent = life.fishing.phase === 'bite' ? '立即收线！空格' : life.fishing.phase === 'waiting' ? '提竿 空格' : '抛竿 空格'; hint.textContent = '空格抛竿 · 浮漂下沉后 2.5 秒内按空格收线'; break;
       case 'cooking': primary.hidden = false; primary.textContent = life.cooking.phase === 'prep' ? '切菜 空格' : life.cooking.phase === 'cooking' ? '翻炒 空格' : '再做一份 空格'; hint.textContent = '切菜 3 次 → 翻炒 3 次 → 等待出锅 · E 结束'; break;
       case 'treadmill': primary.hidden = secondary.hidden = false; primary.textContent = life.treadmill.paused ? '继续跑 空格' : '暂停 空格'; secondary.textContent = '调速度 R'; hint.textContent = '空格暂停 / 继续 · R 调速 · E 下跑步机'; break;
+      case 'gym-bike': hint.textContent = '正在骑行动感单车 · E 结束训练'; break;
+      case 'gym-pullup': hint.textContent = '正在进行引体向上 · E 结束训练'; break;
+      case 'gym-bench': hint.textContent = '正在进行卧推训练 · E 结束训练'; break;
+      case 'gym-dumbbells': hint.textContent = '正在进行哑铃弯举 · E 结束训练'; break;
+      case 'gym-cable': hint.textContent = '正在进行拉力器训练 · E 结束训练'; break;
+      case 'gym-vertec': hint.textContent = '正在弹跳摸高 · E 结束训练'; break;
     }
     if(s.service){toggle.textContent='取消候车 E';hint.textContent='进站开门后一起上车 · 停稳后按 E 下车 · 行驶中按 E 预约下一站下车';}
     if (!hint.textContent.includes('点击地面') && !['airplane','submarine'].includes(s.id)&&!s.service) hint.textContent += ' · 点击地面结束';
@@ -571,6 +582,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     else if (id === 'fishing') status.textContent = `${life.fishing.catches} 条鱼 · ${life.fishing.message}`;
     else if (id === 'cooking') status.textContent = life.cooking.phase === 'prep' ? `备菜 ${life.cooking.chops} / 3` : life.cooking.phase === 'cooking' ? `翻炒 ${Math.min(3, life.cooking.stirs)} / 3 · ${life.cooking.elapsed < 6 ? `还需 ${Math.ceil(6 - life.cooking.elapsed)} 秒` : '食材已熟，完成翻炒即可出锅'}` : `做好了！已完成 ${life.cooking.dishes} 份料理`;
     else if (id === 'treadmill') status.textContent = `${life.treadmill.paused ? '已暂停' : `${(life.treadmill.speed * 6).toFixed(1)} km/h`} · ${Math.round(life.treadmill.distance)} 米 · ${Math.floor(life.treadmill.elapsed)} 秒`;
+    else if (id.startsWith('gym-')) status.textContent = `训练 ${life.workout.reps} 次 · ${Math.floor(life.workout.elapsed)} 秒`;
   }
   function drawSonar(d) {
     const home = world.submarine.home;
@@ -786,6 +798,39 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       avatar.armL.rotation.x = c.phase === 'prep' ? -1.3 + Math.sin(motion * Math.PI) * .12 : c.phase === 'cooking' ? -1.62 + Math.sin(motion * Math.PI) * .12 : -.7;
       avatar.armL.rotation.z = c.phase === 'prep' ? .4 : c.phase === 'cooking' ? -.2 : 0; avatar.head.rotation.x = .25;
       lifeVisuals.cooking(time, c.phase, Math.min(1, c.elapsed / 6));
+    } else if (id === 'gym-bike') {
+      const cadence = Math.sin(time * 8);
+      avatar.root.position.y += .18;
+      avatar.legL.rotation.x = cadence * .7; avatar.legR.rotation.x = -cadence * .7;
+      avatar.armL.rotation.x = avatar.armR.rotation.x = -.95;
+      avatar.body.rotation.x = .12;
+    } else if (id === 'gym-pullup') {
+      const pull = (Math.sin(time * 3.2) + 1) / 2;
+      avatar.root.position.y += .12 + pull * .24;
+      avatar.armL.rotation.x = avatar.armR.rotation.x = -2.45 + pull * .3;
+      avatar.legL.rotation.x = avatar.legR.rotation.x = -.32;
+      avatar.body.rotation.x = .12;
+    } else if (id === 'gym-bench') {
+      const press = (Math.sin(time * 3.4) + 1) / 2;
+      avatar.root.position.y -= .08;
+      avatar.legL.rotation.x = avatar.legR.rotation.x = -Math.PI / 2;
+      avatar.armL.rotation.x = avatar.armR.rotation.x = -1.2 + press * .65;
+      avatar.body.rotation.x = -.12;
+    } else if (id === 'gym-dumbbells') {
+      const curl = Math.sin(time * 4);
+      avatar.armL.rotation.x = -.5 - Math.max(0, curl) * .9;
+      avatar.armR.rotation.x = -.5 - Math.max(0, -curl) * .9;
+      avatar.armL.rotation.z = -.12; avatar.armR.rotation.z = .12;
+    } else if (id === 'gym-cable') {
+      const pull = (Math.sin(time * 3.6) + 1) / 2;
+      avatar.armL.rotation.x = avatar.armR.rotation.x = -.35 - pull * .9;
+      avatar.armL.rotation.z = -.22; avatar.armR.rotation.z = .22;
+      avatar.body.rotation.x = .08;
+    } else if (id === 'gym-vertec') {
+      const jump = Math.max(0, Math.sin(time * 3.2));
+      avatar.root.position.y += jump * .38;
+      avatar.armL.rotation.x = avatar.armR.rotation.x = -2.6;
+      avatar.legL.rotation.x = avatar.legR.rotation.x = -.25;
     } else if (id === 'treadmill') {
       const t = life.treadmill, stride = t.paused ? 0 : Math.sin(t.elapsed * t.speed * 12);
       avatar.legL.rotation.x = stride * .85; avatar.legR.rotation.x = -stride * .85;
@@ -815,6 +860,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     }
     time += dt; uiClock += dt; screenClock += dt;
     transit.update(dt);
+    vertec.update(dt, active?.id === 'gym-vertec' ? null : player);
     if(active?.service&&transit.readyToExit){stop();return;}
     for(const f of flights)f.syncParked();
     ambientScreens(dt);
@@ -823,6 +869,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (isDriving()) drive(dt);
     if (active.id === 'driving' && jetExitPending && !jet.airborne) { stop(); return; }
     roadsterLights.update(dt,active?.id==='roadster',Math.abs(carSpeed));
+    teslaHeadlights.update(active?.id==='driving');
+    motorcycleHeadlights.update(active?.id==='motorcycle');
     if (active.id === 'carrier') {cruise.update(dt, keys);for(const f of flights)f.syncParked();}
     if (active.id === 'submarine') { dive.update(dt, keys); if (dive.readyToExit) { stop(); return; } }
     if (active.id === 'airplane') {
@@ -832,6 +880,9 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (active.id === 'basketball') basketball(dt);
     if (active.id === 'gaming') gaming(dt);
     life.update(dt);
+    if (active.id === 'gym-vertec' && life.workout.reps > vertecReps) {
+      vertecReps = life.workout.reps; vertec.exercise(); sound.play('vane');
+    }
     if (active.id === 'tv') { if (!tvPaused) tvTime += dt; sound.loop(tvPaused ? null : 'tv', .5); }
     if (active.id === 'cinema') cinemaTime += dt;
     if (active.id === 'sleep') { breathClock += dt; if (breathClock > 3) { breathClock = 0; sound.effect('sleep'); } }

@@ -3,7 +3,7 @@ import { HOUSE, ROOF_PARKING } from './layout.js';
 import { AIRFIELD,createAirplane,aircraftObstacle } from './aircraft.js';
 import { createNavalAircraft } from './naval-aircraft.js';
 
-export function createAircraftFleet(carrier,oceanLife,vehicles=[]){
+export function createAircraftFleet(carrier,oceanLife,vehicles=[],stage=null){
   const first=createAirplane();Object.assign(first.userData,{label:'领地飞机',halfSpan:3.7,halfLength:3.2,seat:[0,.92,0]});
   const planes=[first,...carrier.deckAircraft.map(createNavalAircraft)],fields=new Map();
   fields.set(first,carrier.airfield);
@@ -51,6 +51,23 @@ export function createAircraftFleet(carrier,oceanLife,vehicles=[]){
   body.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking});poseShader(body.customDepthMaterial,bodyMatrices,shadow);
   const canopyMaterial=new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true});poseShader(canopyMaterial,canopyMatrices,visible);
   const canopies=new THREE.Mesh(combined(true),canopyMaterial);canopies.name='fleet-canopies';canopies.frustumCulled=false;canopies.renderOrder=3;
+  const glowPositions=new Float32Array(planes.length*12),glowColors=new Float32Array(planes.length*12),glowSizes=new Float32Array(planes.length*4),glowPulse=new Float32Array(planes.length*4);
+  const glowGeometry=new THREE.BufferGeometry();
+  glowGeometry.setAttribute('position',new THREE.BufferAttribute(glowPositions,3).setUsage(THREE.DynamicDrawUsage));
+  glowGeometry.setAttribute('aColor',new THREE.BufferAttribute(glowColors,3));
+  glowGeometry.setAttribute('aSize',new THREE.BufferAttribute(glowSizes,1));
+  glowGeometry.setAttribute('aPulse',new THREE.BufferAttribute(glowPulse,1));
+  const glowShader=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uNight:{value:0},uTime:{value:0}},vertexShader:`attribute vec3 aColor; attribute float aSize; attribute float aPulse; uniform float uNight; uniform float uTime; varying vec3 vColor; varying float vAlpha; void main(){ vec4 mv=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mv; gl_PointSize=aSize*(260.0/max(1.0,-mv.z)); vColor=aColor; float blink=aPulse>.5?step(.28,fract(uTime*1.25)):1.0; vAlpha=uNight*blink; }`,fragmentShader:`varying vec3 vColor; varying float vAlpha; void main(){ float r=length(gl_PointCoord-.5)*2.0; float glow=exp(-r*r*12.0)*(1.0-smoothstep(.82,1.0,r)); if(glow<.015)discard; gl_FragColor=vec4(vColor*1.8,glow*vAlpha); }`});
+  const glow=new THREE.Points(glowGeometry,glowShader);glow.name='aircraft-navigation-lights';glow.frustumCulled=false;glow.renderOrder=4;
+  const lightSpecs=planes.map(p=>p.userData.kind==='fighter'
+    ? [[-p.userData.halfSpan,1.25,-.7,0xff3f48,.48,0],[p.userData.halfSpan,1.25,-.7,0x42ffb7,.48,0],[0,1.15,2.9,0xfff2c4,.58,0],[0,1.85,-1.5,0xff3544,.72,1]]
+    : p.userData.kind==='awacs'
+      ? [[-p.userData.halfSpan,1.25,-.2,0xff3f48,.5,0],[p.userData.halfSpan,1.25,-.2,0x42ffb7,.5,0],[0,1.1,3.35,0xfff2c4,.62,0],[0,3.3,-1,0xff3544,.85,1]]
+      : [[-3.5,1.25,-.35,0xff3f48,.5,0],[3.5,1.25,-.35,0x42ffb7,.5,0],[0,1.35,3.15,0xfff2c4,.62,0],[0,2.5,-2.6,0xff3544,.85,1]]);
+  lightSpecs.forEach((specs,i)=>specs.forEach(([x,y,z,color,size,pulse],j)=>{
+    const k=i*4+j;glowColors.set(new THREE.Color(color).toArray(),k*3);glowSizes[k]=size;glowPulse[k]=pulse;
+  }));
+  const lampPosition=new THREE.Vector3();
   const collisions=planes.map(aircraftObstacle);
   function update(cutaway=false){
     carrier.mesh.updateMatrixWorld(true);
@@ -59,7 +76,13 @@ export function createAircraftFleet(carrier,oceanLife,vehicles=[]){
       const p=planes[i],v=p.position;p.updateMatrixWorld(true);angles[i]=p.userData.propeller.rotation.z;
       visible[i]=cutaway&&v.y<14&&v.x>HOUSE.x0-1&&v.x<HOUSE.x1+1&&v.z>HOUSE.z0-1&&v.z<HOUSE.z1+1?0:1;
       shadow[i]=visible[i]&&p.castShadow?1:0;
+      for(let j=0;j<4;j++){
+        const [x,y,z]=lightSpecs[i][j];lampPosition.set(x,y,z).applyMatrix4(p.matrixWorld);glowPositions.set(lampPosition.toArray(),(i*4+j)*3);
+      }
     }
+    glowGeometry.attributes.position.needsUpdate=true;
+    glowShader.uniforms.uNight.value=stage?.night??1;
+    glowShader.uniforms.uTime.value=performance.now()*.001;
   }
   function fits(plane,x,y,z,yaw){
     const w=plane.userData.halfSpan,d=plane.userData.halfLength,c=Math.cos(yaw),s=Math.sin(yaw);
@@ -96,5 +119,5 @@ export function createAircraftFleet(carrier,oceanLife,vehicles=[]){
     return points;
   }
   update();
-  return{planes,draws:[body,canopies],update,fieldFor:plane=>fields.get(plane),resolveField,taxiRoute,obstructed:(x,z,y)=>collisions.some(hit=>hit(x,z,y))};
+  return{planes,draws:[body,canopies,glow],update,fieldFor:plane=>fields.get(plane),resolveField,taxiRoute,obstructed:(x,z,y)=>collisions.some(hit=>hit(x,z,y))};
 }

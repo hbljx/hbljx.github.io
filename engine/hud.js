@@ -70,6 +70,7 @@ const HUD = `
 
 <div id="bigmap" hidden>
   <canvas aria-label="大地图，点哪里就走到哪里" data-en-label="Map: tap anywhere to walk there"></canvas>
+  <aside class="room-map-legend" aria-label="房间地图图例"><strong>房间图例</strong><span><i class="kitchen"></i>厨房</span><span><i class="cinema"></i>电影院</span><span><i class="gym"></i>健身房</span></aside>
   <button class="close" aria-label="关闭地图" data-en-label="Close the map">×</button>
 </div>
 

@@ -5,6 +5,7 @@ import { createPlayer } from '@engine/world/player.js';
 import { createFemaleRoutine } from './female-routine.js';
 import { createSharedQuilt } from './quilt.js';
 import { createNpcNavigator } from './npc-navigation.js';
+import { createParents } from './parents.js';
 import { LIBRARY, CINEMA, BATH, createShower } from './shared-rooms.js';
 
 const BED_APPROACH={x:BED.x+2.2,y:BED.y,z:BED.z+.35},IDLE={x:0,z:0,run:false},FIVE_MINUTES=300000;
@@ -61,6 +62,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   stage.scene.add(femaleAvatar.root);woman.restore(-1.5,0,5.8,Math.PI);
   const navigateWoman=createNpcNavigator(woman,world,nav);
   const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities,world,nav,stage,navigate:navigateWoman});
+  const parents=createParents({stage,world,nav},activities,routine);
   const quilts=createSharedQuilt(),shower=createShower(stage.scene);stage.scene.add(quilts);
   const panel=document.createElement('aside');panel.id='shared-routine';panel.hidden=true;
   panel.innerHTML='<strong>睡前时光</strong><p role="status"></p><button type="button">取消 · E</button>';document.body.append(panel);
@@ -217,6 +219,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   }
   function update(dt){
     clock+=dt;
+    parents.update(dt);
     const firstFrame=startup;startup=false;
     if(sharedTransit(dt)||sharedRide(dt)){lastMove=Date.now();covers();return;}
 routeClock+=dt;const now=Date.now();
@@ -254,10 +257,10 @@ routeClock+=dt;const now=Date.now();
     }
     if(maleSleep)sleepingPose(avatar,BED.x+.76);if(femaleSleep)sleepingPose(femaleAvatar,BED.x-.76);covers();
   }
-  return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,shower,
+  return{update,wakeMale,begin,woman,femaleAvatar,quilts,routine,parents,shower,
     get sleeping(){return maleSleep;},get bathing(){return phase==='bathing';},get walking(){return phase!=='idle'&&phase!=='sleeping';},
     status:()=>({phase,male:maleSleep?'sleeping':phase==='idle'?'awake':phase==='to-bath'?'going-to-bath':phase==='to-bed'?'going-to-bed':phase,
       female:transitSession?`transit-${transitSession.phase}`:riding?(riding.passengerReady?'riding':'boarding'):femaleSleep?'sleeping':reading?(readArrived?'reading':'going-to-library'):watching?(watchArrived?'watching-movie':'going-to-cinema'):phase==='idle'?'awake':phase,
       bathRemaining:phase==='bathing'?Math.max(0,(BATH.duration-(Date.now()-bathStarted))/1000):null,bathDuration:BATH.duration/1000,
-      femaleWakeIn:femaleWakeAt?Math.max(0,(femaleWakeAt-Date.now())/1000):null,femaleActivity:routine.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
+      femaleWakeIn:femaleWakeAt?Math.max(0,(femaleWakeAt-Date.now())/1000):null,femaleActivity:routine.status(),parents:parents.status(),reason,idleMs:Date.now()-lastMove,night:lastNight})};
 }

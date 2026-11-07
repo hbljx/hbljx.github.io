@@ -9,9 +9,9 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
   const creatures=[],tunnelCreatures=[],time={value:0};
   const whaleWater=createWhaleWaterEffects(time),effectsGroup=whaleWater.group;
   const tunnelGroup=new THREE.Group();tunnelGroup.name='tunnel-ocean-gardens';tunnelGroup.visible=false;let inTunnelGarden=false;
-  const sand={tex:'sand',tint:0xb1b99c},rock={tex:'stone',tint:0x6f9287};
-  buildDeepSea(B,deepBatch);
   const deepGroup=new THREE.Group(),deepCreatures=[];deepGroup.name='deep-sea-scenery';deepGroup.visible=false;
+  const sand={tex:'sand',tint:0xb1b99c},rock={tex:'stone',tint:0x6f9287};
+  buildDeepSea(B,deepBatch,deepGroup);
   const deepMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
   deepMaterial.onBeforeCompile=shader=>{shader.uniforms.uOceanTime=time;
     shader.vertexShader='attribute float swimWeight; attribute vec3 swimAxis; uniform float uOceanTime;'+String.fromCharCode(10)+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>'+String.fromCharCode(10)+'transformed+=swimAxis*swimWeight*sin(uOceanTime*3.+position.z*2.);');

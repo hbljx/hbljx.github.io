@@ -34,27 +34,29 @@ export function createVertec({ avatar, sound }) {
   let jump = null, grounded = true, settled = 0;
 
   function update(dt, player) {
-    const air = player.mode === 'air', { x, z } = player.pos;
-    // A jump from the floor right under the vanes: he reaches with the arm on
-    // their side, and knocks them away from himself.
-    if (air && grounded && Math.hypot(x - tip.x, z - tip.z) < 0.9) {
-      const h = player.heading, right = (tip.x - x) * -Math.cos(h) + (tip.z - z) * Math.sin(h);
-      avatar.reach(right >= 0 ? 'R' : 'L');
-      const side = (x - VERTEC.x) * swing.x + (z - VERTEC.z) * swing.z;
-      jump = { spin: side > 0 ? -1 : 1, top: player.y, extra: Math.random() * 0.05 };
-    }
-    grounded = player.mode === 'ground';
-    if (jump && !air) jump = null;
-    else if (jump && player.y >= jump.top) {
-      jump.top = player.y;
-      const hand = player.y + HAND + jump.extra;
-      let hits = 0;
-      for (const v of vanes) {
-        if (v.goal || v.y > hand) continue;
-        v.goal = jump.spin * (1.2 + Math.random() * 0.6); v.speed = jump.spin * 12; hits++;
+    if (player) {
+      const air = player.mode === 'air', { x, z } = player.pos;
+      // A jump from the floor right under the vanes: he reaches with the arm on
+      // their side, and knocks them away from himself.
+      if (air && grounded && Math.hypot(x - tip.x, z - tip.z) < 0.9) {
+        const h = player.heading, right = (tip.x - x) * -Math.cos(h) + (tip.z - z) * Math.sin(h);
+        avatar.reach(right >= 0 ? 'R' : 'L');
+        const side = (x - VERTEC.x) * swing.x + (z - VERTEC.z) * swing.z;
+        jump = { spin: side > 0 ? -1 : 1, top: player.y, extra: Math.random() * 0.05 };
       }
-      if (hits) sound.play('vane');
-    } else if (jump) jump.top = Infinity; // Past the peak, the hand reaches no further.
+      grounded = player.mode === 'ground';
+      if (jump && !air) jump = null;
+      else if (jump && player.y >= jump.top) {
+        jump.top = player.y;
+        const hand = player.y + HAND + jump.extra;
+        let hits = 0;
+        for (const v of vanes) {
+          if (v.goal || v.y > hand) continue;
+          v.goal = jump.spin * (1.2 + Math.random() * 0.6); v.speed = jump.spin * 12; hits++;
+        }
+        if (hits) sound.play('vane');
+      } else if (jump) jump.top = Infinity;
+    }
 
     if (!jump && vanes.some(v => v.goal)) {
       settled += dt;
@@ -74,5 +76,15 @@ export function createVertec({ avatar, sound }) {
     if (moving) draw();
   }
 
-  return { mesh, update, get reached() { return vanes.filter(v => v.goal).length; } };
+  function exercise() {
+    if (vanes.some(v => v.goal)) return;
+    for (let i = 0; i < vanes.length; i++) {
+      const v = vanes[i];
+      v.goal = i % 2 ? -1.35 : 1.35;
+      v.speed = v.goal * 12;
+    }
+    settled = 0;
+  }
+
+  return { mesh, update, exercise, get reached() { return vanes.filter(v => v.goal).length; } };
 }

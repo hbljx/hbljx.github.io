@@ -175,6 +175,12 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
   for(const car of [...metroCars,bus])scene.add(car.root);
   const services={metro:{id:'metro',path:metroPath,cars:metroCars,speed:0,maxSpeed:13,accel:2.5,direction:1,dwell:8,stops:[],s:0,index:0,next:1},
     bus:{id:'bus',path:busPath,cars:[bus],speed:0,maxSpeed:6,accel:1.8,direction:1,dwell:7,stops:[],s:0,index:0,next:1}};
+  const headlights={};
+  for(const service of Object.values(services)){
+    const light=new THREE.SpotLight(0xffedc2,24,30,Math.PI/5,.6,1.25),target=new THREE.Object3D();
+    light.name=`${service.id}-headlight`;light.castShadow=false;light.target=target;
+    scene.add(light,target);headlights[service.id]={light,target,origin:new THREE.Vector3(),forward:new THREE.Vector3()};
+  }
   for(const service of Object.values(services)){
     service.stops=TRANSIT_STOPS.filter(s=>s.service===service.id).map(stop=>({...stop,s:service.path.project(...stop.track,{}).s})).sort((a,b)=>a.s-b.s);
     service.s=service.stops[0].s;
@@ -184,6 +190,12 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
       const car=service.cars[i];service.path.sample(service.s+(i-1)*8.15*(service.id==='metro'?1:0),p);
       car.root.position.set(p.x,p.y,p.z);car.root.rotation.set(-Math.atan(p.slope),p.heading,0,'YXZ');car.root.updateMatrixWorld(true);
     }
+    const lead=service.id==='metro'?service.cars[service.direction>0?2:0]:service.cars[0];
+    const facing=service.id==='metro'?(service.direction>0?1:-1):1;
+    const {light,target,origin,forward}=headlights[service.id];
+    origin.set(0,1.02,facing*(lead.length/2+.12));lead.root.localToWorld(origin);
+    forward.set(0,-.035,facing).transformDirection(lead.root.matrixWorld);
+    light.position.copy(origin);target.position.copy(origin).addScaledVector(forward,24);light.target.updateMatrixWorld();
   }
   Object.values(services).forEach(place);
   return {services,tunnel,platform,approach,place,stationGlass,stops:TRANSIT_STOPS,

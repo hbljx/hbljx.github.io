@@ -181,6 +181,14 @@ body.quiet #hud { opacity: 0; pointer-events: none; transition: opacity 1.6s eas
 #bigmap canvas { width: min(92vw, 1100px); height: min(84vh, 860px); border-radius: 14px; box-shadow: 0 0 0 3px rgba(0, 0, 0, .8), 0 20px 60px rgba(0, 0, 0, .5); cursor: grab; touch-action: none; }
 #bigmap canvas:active { cursor: grabbing; }
 #bigmap .close { position: fixed; top: 18px; right: 18px; width: 44px; height: 44px; border: 0; border-radius: 10px; background: rgba(0, 0, 0, .6); color: #fff; font: 600 26px/1 var(--text); }
+#bigmap .room-map-legend { position: fixed; left: max(18px, env(safe-area-inset-left)); bottom: max(18px, env(safe-area-inset-bottom)); z-index: 1; display: grid; grid-template-columns: repeat(3, auto); align-items: center; gap: 8px 14px; padding: 10px 14px; color: #fff; background: rgba(12, 18, 20, .92); border: 2px solid #fff; box-shadow: 4px 4px 0 #0007; font: 600 14px/1.35 var(--text); }
+#bigmap .room-map-legend strong { grid-column: 1 / -1; color: #ffe6a1; }
+#bigmap .room-map-legend span { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+#bigmap .room-map-legend i { width: 12px; height: 12px; border: 1px solid #fff; }
+#bigmap .room-map-legend .kitchen { background: #bd7055; }
+#bigmap .room-map-legend .cinema { background: #566b91; }
+#bigmap .room-map-legend .gym { background: #559477; }
+@media (max-width: 520px) { #bigmap .room-map-legend { left: 10px; bottom: 10px; gap: 6px 9px; padding: 8px 10px; font-size: 12px; } }
 
 /* ---------- Tooltip ---------- */
 #tooltip {

@@ -4,6 +4,7 @@ export function createLifeActions(sound, changed) {
   const fishing = { phase: 'idle', elapsed: 0, wait: 0, catches: 0, message: '按空格抛竿，留意浮漂' };
   const cooking = { phase: 'prep', chops: 0, stirs: 0, elapsed: 0, cooldown: 0, dishes: 0 };
   const treadmill = { paused: false, speed: 1, elapsed: 0, distance: 0, stride: 0 };
+  const workout = { elapsed: 0, reps: 0 };
   let current = null;
   const change = () => changed?.();
   function start(id) {
@@ -11,6 +12,7 @@ export function createLifeActions(sound, changed) {
     if (id === 'fishing') { fishing.phase = 'idle'; fishing.elapsed = 0; fishing.message = '按空格抛竿，留意浮漂'; }
     if (id === 'cooking') { cooking.phase = 'prep'; cooking.chops = cooking.stirs = cooking.elapsed = cooking.cooldown = 0; }
     if (id === 'treadmill') { treadmill.paused = false; treadmill.elapsed = treadmill.distance = treadmill.stride = 0; }
+    if (id.startsWith('gym-')) { workout.elapsed = workout.reps = 0; }
   }
   function primary() {
     if (current === 'fishing') {
@@ -52,6 +54,10 @@ export function createLifeActions(sound, changed) {
         c.elapsed += dt; sound.loop('sizzle', .65);
         if (c.elapsed >= 6 && c.stirs >= 3) { c.phase = 'ready'; c.dishes++; sound.loop(null); sound.effect('ready'); change(); }
       }
+    } else if (current?.startsWith('gym-')) {
+      workout.elapsed += dt;
+      const reps = Math.floor(workout.elapsed / 1.5);
+      if (reps !== workout.reps) { workout.reps = reps; change(); }
     } else if (current === 'treadmill') {
       const t = treadmill;
       sound.loop(t.paused ? null : 'treadmill', t.speed / 1.3);
@@ -61,5 +67,5 @@ export function createLifeActions(sound, changed) {
       }
     }
   }
-  return { fishing, cooking, treadmill, start, primary, secondary, update, stop() { current = null; sound.loop(null); } };
+  return { fishing, cooking, treadmill, workout, start, primary, secondary, update, stop() { current = null; sound.loop(null); } };
 }

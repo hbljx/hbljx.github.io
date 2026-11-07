@@ -161,5 +161,5 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     }else animate(dt);
     if(target&&!ride&&elapsed>=duration){completed++;leave();}
   }
-  return{update,start,pause(){if(!paused){leave();paused=true;}},resume(){paused=false;waiting=.1;},status:()=>({phase:paused?'paused':phase,activity:target?.id||null,elapsed,duration,completed,ride:ride?.stage||null,outfit:avatar.outfit})};
+  return{update,start,pause(){if(!paused){leave();paused=true;}},resume(){paused=false;waiting=.1;},get activity(){return target?.id||null;},status:()=>({phase:paused?'paused':phase,activity:target?.id||null,elapsed,duration,completed,ride:ride?.stage||null,outfit:avatar.outfit})};
 }

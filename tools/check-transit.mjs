@@ -94,6 +94,10 @@ try{
    for(let d=0;d<bp.length;d+=.2){const p=bp.sample(d,{}),si=Math.sin(p.heading),co=Math.cos(p.heading);for(const o of fixtures){const x=(o.x0+o.x1)/2-p.x,z=(o.z0+o.z1)/2-p.z,w=(o.x1-o.x0)/2,l=(o.z1-o.z0)/2;if(Math.abs(x)>3.1*Math.abs(si)+1.25*Math.abs(co)+w||Math.abs(z)>3.1*Math.abs(co)+1.25*Math.abs(si)+l||Math.abs(x*si+z*co)>3.1+w*Math.abs(si)+l*Math.abs(co)||Math.abs(x*co-z*si)>1.25+w*Math.abs(co)+l*Math.abs(si))continue;busHits++;}}
    check('busClearsPlatformBenches',busHits===0);
    check('vehicleGlass',[...t.services.metro.cars,...t.services.bus.cars].every(c=>c.glazing&&c.glazing.material.transparent&&c.glazing.geometry.attributes.position.count>60));
+   const headlights=h.stage.scene.children.filter(object=>object.isSpotLight&&object.name?.endsWith('-headlight'));
+   check('transitHeadlightsWithinLightBudget',headlights.length===2&&headlights.every(light=>!light.castShadow&&light.distance>=24));
+   check('busHeadlightAimsForward',(()=>{const light=headlights.find(value=>value.name==='bus-headlight'),root=t.services.bus.cars[0].root;if(!light)return false;const forward=new THREE.Vector3(0,0,1).applyQuaternion(root.quaternion),beam=light.target.position.clone().sub(light.position).normalize();return forward.dot(beam)>.98;})());
+   check('metroHeadlightFollowsTravelDirection',(()=>{const light=headlights.find(value=>value.name==='metro-headlight'),lead=t.services.metro.cars[2].root;if(!light)return false;const forward=new THREE.Vector3(0,0,1).applyQuaternion(lead.quaternion),beam=light.target.position.clone().sub(light.position).normalize(),offset=light.position.clone().sub(lead.position);return beam.dot(forward)>.98&&offset.dot(forward)>3.8;})());
    const bm=t.stops.find(s=>s.id==='bus-mountain'),br=t.stops.find(s=>s.id==='bus-mountain-return'),mm=t.stops.find(s=>s.id==='metro-mountain');
    check('spacedMountainStations',Math.hypot(bm.at[0]-t.tunnel.exit.x,bm.at[1]-t.tunnel.exit.z)>23&&Math.hypot(...mm.at.map((v,i)=>v-br.at[i]))>40&&Math.abs(bm.at[0]-br.at[0])>=25);
    const mask=t.tunnel.waterMask,texture=mask.mask.image;let wet=0;

@@ -64,6 +64,59 @@ export function furnish({ layer }) {
     batch.box(width - 0.2, height * .4, 0.075, 0.035, 0.3, 0.04, L.paint(0xc0b49a));
     batch.box(width - 0.18, height * .4 + .05, 0.11, 0.07, 0.04, 0.04, L.steel);
   });
+  const roomDoor = (() => {
+    const pivot = new THREE.Group();
+    pivot.position.set(-6, LOFT.y, -3.88);
+    const wood = new THREE.MeshLambertMaterial({ color: 0x76583f });
+    const metal = new THREE.MeshLambertMaterial({ color: 0xb8b9b3 });
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(2.68, 2.88, 0.1), wood);
+    panel.position.set(1.34, 1.44, 0);
+    panel.castShadow = false;
+    pivot.add(panel);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), metal);
+    knob.position.set(2.42, 1.42, 0.09);
+    knob.castShadow = false;
+    pivot.add(knob);
+    const date = new Date(), chinaClock = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Shanghai', hour: '2-digit', hourCycle: 'h23' });
+    const chinaHour = timestamp => {
+      date.setTime(timestamp);
+      return Number(chinaClock.format(date));
+    };
+    const initialHour = chinaHour(Date.now());
+    let scheduledClosed = initialHour >= 18 || initialHour < 7;
+    let target = scheduledClosed ? 0 : Math.PI, angle = target, transition = null;
+    pivot.rotation.y = angle;
+    let lastSchedule = scheduledClosed, checkedMinute = Math.floor(Date.now() / 60000);
+
+    function setOpen(open) {
+      target = open ? Math.PI : 0;
+      transition = { from: angle, to: target, elapsed: 0 };
+    }
+    function update(dt) {
+      const minute = Math.floor(Date.now() / 60000);
+      if (minute !== checkedMinute) {
+        checkedMinute = minute;
+        const hour = chinaHour(minute * 60000);
+        const closed = hour >= 18 || hour < 7;
+        if (closed !== lastSchedule) {
+          lastSchedule = closed;
+          setOpen(!closed);
+        }
+      }
+      if (!transition) return;
+      transition.elapsed = Math.min(1, transition.elapsed + dt / 0.42);
+      const t = transition.elapsed * transition.elapsed * (3 - 2 * transition.elapsed);
+      angle = transition.from + (transition.to - transition.from) * t;
+      pivot.rotation.y = angle;
+      if (transition.elapsed === 1) { angle = transition.to; transition = null; }
+    }
+    function interact(position) {
+      if (position.y < LOFT.y - 0.4 || Math.hypot(position.x + 4.63, position.z + 3.98) > 2.35) return false;
+      setOpen(target < Math.PI / 2);
+      return true;
+    }
+    return { mesh: pivot, update, interact };
+  })();
 
   // Slim black structure frames the warm wood walls and uninterrupted glazing.
   for (const x of [HOUSE.x0+.5, 10, HOUSE.x1-.5]) {
@@ -545,7 +598,7 @@ export function furnish({ layer }) {
   const bedroomDoorZ = -3.98;
   for (const x of [-6, -3]) B.box(x, LOFT.y, bedroomDoorZ, .07, 3, .1, L.steel);
   B.box(-4.5, LOFT.y + 2.93, bedroomDoorZ, 3, .07, .1, L.steel);
-  openDoor(B, -6, LOFT.y, bedroomDoorZ, 2.75, Math.PI, 3);
+  animated.roomDoor = roomDoor;
   foot(-7.38, bedroomDoorZ, 2.85, .15, 1);
   const { x: bedX, z: bedZ, y: bedY } = BED;
   B.box(bedX, bedY, bedZ + 1.2, 7.4, .025, 6.4, L.linen);

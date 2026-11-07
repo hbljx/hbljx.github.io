@@ -245,6 +245,18 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     bctx.save();bctx.translate(W,H);bctx.rotate(Math.PI);
     bctx.drawImage(mapImage, ox, oz, mapImage.width * s * mapXScale / PPM, mapImage.height * s / PPM);
     bctx.restore();
+    // Room markers are keyed to the fixed legend, whose labels stay clear at
+    // every map zoom and viewport size.
+    for (const room of [
+      { x: 17.6, z: 6.2, color: '#bd7055' },
+      { x: 7.4, z: -19.55, color: '#566b91' },
+      { x: -8.3, z: 11.8, color: '#559477' },
+    ]) {
+      const [x, y] = P(room.x, room.z);
+      bctx.beginPath(); bctx.arc(x, y, 6 * dpr, 0, Math.PI * 2);
+      bctx.fillStyle = room.color; bctx.strokeStyle = '#fff'; bctx.lineWidth = 2 * dpr;
+      bctx.fill(); bctx.stroke();
+    }
     bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));bctx.stroke();
     if(L.SEA_BRIDGE){const b=L.SEA_BRIDGE;const bx=b.x,by=harborZ;bctx.strokeStyle='#526477';bctx.lineWidth=10*s*mapXScale;bctx.beginPath();bctx.moveTo(...P(bx,b.z0));bctx.lineTo(...P(bx,b.z1-10));bctx.stroke();bctx.fillStyle='#526477';rect(bx-9,150,18,20);bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('海上观景大桥',...P(bx,130));
       const carrier=L.CARRIER_HOME||{x:64,z:by},sub=L.SUBMARINE_HOME,subScale=L.SUBMARINE_SCALE??1;bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(bx+b.width/2,by));bctx.lineTo(...P(carrier.x-7.6,by));if(sub){bctx.moveTo(...P(bx-b.width/2,by));bctx.lineTo(...P(sub.x+5*subScale,by));}bctx.stroke();
