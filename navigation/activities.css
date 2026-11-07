@@ -95,7 +95,7 @@ body.reading #activity-controls,body.phone-on #activity-controls{display:none!im
   #activity-ui[data-activity=airplane] strong{font-size:16px}
   #activity-ui[data-activity=airplane] .activity-hint{font-size:12px;line-height:1.4;margin:5px 0}
   #activity-ui[data-activity=airplane] .activity-status{font-size:13px;line-height:1.4;min-height:18px;margin:5px 0}
-  #activity-ui[data-activity=airplane] .activity-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:7px}
+  #activity-ui[data-activity=airplane] .activity-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}
   #activity-ui[data-activity=airplane] .activity-buttons button{font-size:12px;padding:6px 3px;min-height:40px}
   #activity-ui[data-activity=airplane] .activity-pad{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:8px}
   #activity-ui[data-activity=airplane] .activity-pad button{min-width:0;padding:4px 1px;font-size:15px}

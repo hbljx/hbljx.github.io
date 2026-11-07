@@ -14,7 +14,7 @@ const clamp = THREE.MathUtils.clamp;
 
 function createCrew(mesh) {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const material = new THREE.MeshLambertMaterial();
   const crew = new THREE.InstancedMesh(geometry, material, 30);
   crew.name = 'submarine-deck-crew'; mesh.add(crew);
   const uniforms = [

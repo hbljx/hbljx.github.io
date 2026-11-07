@@ -386,6 +386,10 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (!active) return false;
     if(isDriving()&&k==='t'){if(!e.repeat)toggleTunnelGuide();return true;}
     if(active.id==='airplane'&&k==='v'){if(!e.repeat){flight.toggleHover();refreshUI();}return true;}
+    if(active.id==='airplane'&&flight.parked&&['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){
+      if(!e.repeat){keys.clear();flight.takeoff('vertical');refreshUI();}
+      keys.add(k);return true;
+    }
     if (active.id==='airplane' && k==='l') { if(!e.repeat){flight.landAt('summit');refreshUI();} return true; }
     if (active.id==='airplane' && k==='h') { if(!e.repeat){flight.landAt('carrier');refreshUI();} return true; }
     if (active.id==='airplane' && ['1','2','3'].includes(k)) { if(!e.repeat){keys.clear();flight.takeoff({'1':'vertical','2':'catapult','3':'ski-jump'}[k]);refreshUI();} return true; }
