@@ -17,7 +17,7 @@ function createCrew(mesh) {
   // Use an unlit high-visibility color so the small crew stays readable on
   // the dark deck and in the distant overview.
   const material = new THREE.MeshBasicMaterial({ color: 0xf6c453, toneMapped: false });
-  const PARTS_PER_PERSON = 15;
+  const PARTS_PER_PERSON = 17;
   const crew = new THREE.InstancedMesh(geometry, material, 5 * PARTS_PER_PERSON);
   crew.name = 'submarine-deck-crew';
   // The submarine hull is folded into the aircraft-fleet batch, so child
@@ -41,25 +41,67 @@ function createCrew(mesh) {
       [-.47, 1.98, 0, .23, .9, .27, shirt], [.47, 1.98, 0, .23, .9, .27, shirt],
       [0, 1.99, .207, .39, .72, .035, accent], [0, 2.45, .22, .31, .11, .045, 0xd7d6c8],
       [-.12, 1.9, .239, .105, .13, .035, 0xc7b77e], [.12, 1.9, .239, .105, .13, .035, 0xc7b77e],
-      [0, 1.43, .212, .66, .09, .035, 0x202b35], [0, 2.29, .246, .075, .12, .025, 0xdcc77f]);
+      [0, 1.43, .212, .66, .09, .035, 0x202b35], [0, 2.29, .246, .075, .12, .025, 0xdcc77f],
+      [-.47, 1.43, 0, .22, .22, .25, skin], [.47, 1.43, 0, .22, .22, .25, skin]);
   }
   const dummy = new THREE.Object3D(), color = new THREE.Color(), transform = new THREE.Matrix4();
   const patrolPoints = [[-5, -37], [4, -29], [-4, -21], [4, -8], [-4, 2]];
   const seatPoints = [[-2.3, -12], [-1.15, -12], [0, -12], [1.15, -12], [2.3, -12]];
-  function place(target, sitting, time) {
+  // Individual gaits and inspection poses: lookout, pointing, two-handed
+  // checking, radio gesture, and low inspection. Pauses are staggered.
+  const motions = [
+    { pace: 3.5, stride: .28, swing: .38, offset: .2, period: 12, armX: [-.18, -2.55], armZ: [-.08, .32], stance: [.06, -.1] },
+    { pace: 4.2, stride: .36, swing: .48, offset: 2.6, period: 14, armX: [-1.65, -.3], armZ: [-.38, .12], stance: [-.16, .08] },
+    { pace: 2.8, stride: .2, swing: .23, offset: 5.1, period: 11, armX: [-1.12, -1.32], armZ: [.18, -.18], stance: [.12, -.06] },
+    { pace: 3.8, stride: .3, swing: .32, offset: 7.5, period: 15, armX: [-2.35, -.12], armZ: [-.25, .14], stance: [-.08, .18] },
+    { pace: 3.1, stride: .24, swing: .43, offset: 9.8, period: 13, armX: [-.55, -.95], armZ: [-.3, .4], stance: [.2, -.14] },
+  ];
+  const travel = new Float64Array(uniforms.length);
+  function place(target, sitting, time, dt = 0) {
     for (let i = 0; i < uniforms.length; i++) {
-      const [px, pz] = sitting ? seatPoints[i] : patrolPoints[i];
-      const phase = time * (i % 2 ? 1.4 : 1.8) + i * 1.7;
-      const x = sitting ? px : px + Math.sin(phase * .42) * 1.05;
-      const z = sitting ? pz : pz + Math.cos(phase * .31) * 2.2;
-      const yaw = sitting ? 0 : Math.atan2(Math.cos(phase * .31), -Math.sin(phase * .42));
+      const m = motions[i], cycle = (time + m.offset) % m.period;
+      // Ease into a stop, then resume from the same route position.
+      const inspect = sitting ? 0 : THREE.MathUtils.smoothstep(cycle, 0, .8)
+        * (1 - THREE.MathUtils.smoothstep(cycle, 3.1, 4));
+      const walking = 1 - inspect;
+      if (!sitting) travel[i] += dt * walking;
+      const phase = travel[i] * m.pace + m.offset;
+      const routePhase = travel[i] * (.48 + i * .035) + i * 1.7;
+      const points = sitting ? seatPoints : patrolPoints;
+      const px = points[i][0], pz = points[i][1];
+      const x = sitting ? px : px + Math.sin(routePhase * .42) * 1.05;
+      const z = sitting ? pz : pz + Math.cos(routePhase * .31) * 2.2;
+      const yaw = sitting ? 0 : Math.atan2(.42 * 1.05 * Math.cos(routePhase * .42), -.31 * 2.2 * Math.sin(routePhase * .31));
       for (let j = 0; j < PARTS_PER_PERSON; j++) {
-        const p = parts[i * PARTS_PER_PERSON + j], leg = j === 3 || j === 4, boot = j === 5 || j === 6, arm = j === 7 || j === 8;
+        const p = parts[i * PARTS_PER_PERSON + j], leg = j === 3 || j === 4, boot = j === 5 || j === 6;
+        const arm = j === 7 || j === 8, hand = j === 15 || j === 16;
+        const side = j === 4 || j === 6 || j === 8 || j === 16 ? 1 : 0;
+        const step = Math.sin(phase + side * Math.PI);
         dummy.position.set(p[0], p[1], p[2]); dummy.scale.set(p[3], p[4], p[5]); dummy.rotation.set(0, 0, 0);
-        if (leg && !sitting) dummy.rotation.x = Math.sin(phase + (j === 4 ? Math.PI : 0)) * .22;
-        if (arm) { dummy.position.y += sitting ? -.18 : .05; dummy.rotation.x = sitting ? -1.05 : Math.sin(phase + Math.PI) * .3; }
+        if (!sitting && (leg || boot)) {
+          // Leg and boot share the hip pivot so they stay joined.
+          const rx = step * m.stride * walking + m.stance[side] * inspect;
+          const dy = p[1] - 1.27;
+          dummy.rotation.x = rx;
+          dummy.position.y = 1.27 + dy * Math.cos(rx) - p[2] * Math.sin(rx);
+          dummy.position.z = dy * Math.sin(rx) + p[2] * Math.cos(rx);
+        }
+        if (arm || hand) {
+          const gesture = Math.sin(time * (1.6 + i * .23) + side * 1.3) * .09 * inspect;
+          const rx = sitting ? -1.05 : -step * m.swing * walking + (m.armX[side] + gesture) * inspect;
+          const rz = sitting ? 0 : (side ? .06 : -.06) * walking + m.armZ[side] * inspect;
+          const dy = p[1] - 2.43;
+          // Hands follow the sleeves around the shoulder through every gesture.
+          dummy.rotation.set(rx, 0, rz, 'ZYX');
+          dummy.position.x = p[0] - dy * Math.cos(rx) * Math.sin(rz);
+          dummy.position.y = 2.43 + dy * Math.cos(rx) * Math.cos(rz) + (sitting ? -.18 : .05);
+          dummy.position.z = dy * Math.sin(rx);
+        }
+        if (!sitting && (j === 1 || j === 2)) {
+          dummy.rotation.y = Math.sin(time * (.65 + i * .12) + m.offset) * .32 * inspect;
+          dummy.rotation.x = (i === 4 ? .25 : -.08) * inspect;
+        }
         if (sitting && leg) { dummy.position.y = .7; dummy.position.z += .28; dummy.rotation.x = -Math.PI / 2; }
-        if (boot && !sitting) dummy.rotation.x = Math.sin(phase + (j === 6 ? Math.PI : 0)) * .12;
         if (boot && sitting) { dummy.position.y = .53; dummy.position.z = .52; }
         dummy.updateMatrix(); transform.makeRotationY(yaw); transform.setPosition(x, MODEL_DECK + (sitting ? .2 : .02), z);
         transform.multiply(dummy.matrix); target.setMatrixAt(i * PARTS_PER_PERSON + j, transform);
@@ -88,7 +130,7 @@ function createCrew(mesh) {
     if (engaged !== active) { engaged = active; console.visible = cabin.visible = chairs.visible = active; }
     group.position.copy(mesh.position); group.rotation.copy(mesh.rotation); group.scale.copy(mesh.scale);
     group.visible = !active;
-    place(crew, active, clock);
+    place(crew, active, clock, Math.min(dt, .05));
   }
   return { group, update, status: () => ({ active: engaged, patrolCount: engaged ? 0 : uniforms.length, seatedCount: engaged ? uniforms.length : 0 }) };
 }
