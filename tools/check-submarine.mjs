@@ -27,11 +27,13 @@ try {
       };
       h.setTimeMode('day'); h.setWeatherMode('clear'); h.rig.skipIntro();
       check('oppositeHarbors', sub.home.x < h.world.seaBridge.foot.x && h.world.carrier.home.x > h.world.seaBridge.foot.x && sub.home.z === h.world.carrier.home.z && Math.abs((h.world.carrier.home.x-h.world.seaBridge.foot.x)-(h.world.seaBridge.foot.x-sub.home.x)) < .01);
+      check('crewPatrolsBeforeStart', sub.crew.status().patrolCount === 5 && sub.crew.status().seatedCount === 0);
       p.teleport(.5, 5.8);
       check('homeToHatch', h.navigate(sub.board.x, sub.board.z, sub.board.y) && finishWalk(sub.board));
       check('canBoard', sub.canBoard(p));
       check('board', a.start('submarine'));
       if (!a.active) return { checks, failures, player: { x:p.pos.x,y:p.y,z:p.pos.z,mode:p.mode,island:p.island } };
+      check('crewSeatsAfterStart', sub.crew.status().patrolCount === 0 && sub.crew.status().seatedCount === 5);
       a.dive.togglePatrol(); a.dive.returnHome();
       for(let i=0;i<60;i++)a.update(.05);
       check('returnCancelsQueuedDeparture', sub.docked() && !a.dive.automatic);

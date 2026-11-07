@@ -418,7 +418,9 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   function keyUp(e) { keys.delete(e.key.toLowerCase()); if (e.key === ' ') releaseShot(); }
   function syncMovement() {
     const mode = player.swimming ? 'dive' : player.flying ? 'fly' : runMode ? 'run' : 'walk';
-    const label = mode === 'fly' ? '飞行' : mode === 'run' ? '跑步' : mode === 'dive' ? '游泳' : '走路';
+    const insideTunnel = !active && world.seaTunnel?.contains(player.pos.x, player.pos.z);
+    const action = mode === 'fly' ? '飞行' : mode === 'run' ? '跑步' : mode === 'dive' ? '游泳' : '走路';
+    const label = insideTunnel ? '隧道内 · ' + action : action;
     if (mode === 'walk' || mode === 'run') setActivityControl(movementButton, mode, label);
     else if (movementButton.dataset.icon !== mode) {
       movementButton.dataset.icon = mode;
@@ -430,7 +432,17 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   function cycleMovement() {
     if (active && !stop()) return;
     rig.skipIntro();
-    if (player.flying) { runMode = false; player.stopFlying(); }
+    if (player.flying) {
+      runMode = false;
+      player.stopFlying();
+      // The tunnel is a custom walkable surface. If the generic flight solver
+      // cannot classify its curved floor, snap to the nearest tunnel sample so
+      // cycling the movement mode always returns to walking.
+      if (player.flying && world.seaTunnel?.contains(player.pos.x, player.pos.z)) {
+        const floor = world.seaTunnel.path.near(player.pos.x, player.pos.z, {});
+        if (!player.restore(floor.x, floor.y, floor.z, player.heading)) player.anchor(floor.x, floor.y, floor.z, player.heading);
+      }
+    }
     else if (runMode || player.swimming) { runMode = false; player.startFlying(); }
     else runMode = true;
     sound.effect('click'); syncMovement(); movementButton.blur();
@@ -802,7 +814,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if(active?.service&&transit.readyToExit){stop();return;}
     for(const f of flights)f.syncParked();
     ambientScreens(dt);
-    if (!active) { walkingSounds(); if (uiClock > .15) { uiClock = 0; const seat = nearest(seats), next = nearest() || seat; if (near !== next || nearSeat !== seat || nearTitle !== next?.title) { near = next; nearSeat = seat; nearTitle = next?.title; refreshUI(); } } return; }
+    if (!active) { world.submarine.crew.update(dt, false); walkingSounds(); if (uiClock > .15) { uiClock = 0; const seat = nearest(seats), next = nearest() || seat; if (near !== next || nearSeat !== seat || nearTitle !== next?.title) { near = next; nearSeat = seat; nearTitle = next?.title; refreshUI(); } } return; }
     if (document.querySelector('dialog[open]')) { stop(true); return; }
     if (isDriving()) drive(dt);
     if (active.id === 'driving' && jetExitPending && !jet.airborne) { stop(); return; }

@@ -12,6 +12,66 @@ const onPier = (x, z, margin = 0) => x >= PIER.x0 && x <= PIER.x1 && Math.abs(z 
 const angle = a => Math.atan2(Math.sin(a), Math.cos(a));
 const clamp = THREE.MathUtils.clamp;
 
+function createCrew(mesh) {
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const crew = new THREE.InstancedMesh(geometry, material, 30);
+  crew.name = 'submarine-deck-crew'; mesh.add(crew);
+  const uniforms = [
+    [0x3d91a6, 0x263d4d, 0xd8a17b, 0xf0c35e], [0xc45b4e, 0x35464b, 0xe5b58e, 0xf0eee2],
+    [0x71945c, 0x293a43, 0xb98262, 0xd9e4dc], [0xd0a146, 0x354253, 0xe0b990, 0x46677a],
+    [0x766a9d, 0x3b394d, 0xc58b6c, 0xe1d4b4],
+  ];
+  const parts = [];
+  for (const [shirt, pants, skin, cap] of uniforms) parts.push(
+    [0, 1.95, 0, .72, 1.05, .42, shirt], [0, 2.85, .015, .57, .57, .55, skin],
+    [0, 3.19, 0, .64, .13, .62, cap], [-.2, .75, 0, .27, 1.05, .3, pants],
+    [.2, .75, 0, .27, 1.05, .3, pants], [-.49, 1.98, 0, .25, .92, .28, shirt]);
+  const dummy = new THREE.Object3D(), color = new THREE.Color(), transform = new THREE.Matrix4();
+  const patrolPoints = [[-5, -37], [4, -29], [-4, -21], [4, -8], [-4, 2]];
+  const seatPoints = [[-2.3, -12], [-1.15, -12], [0, -12], [1.15, -12], [2.3, -12]];
+  function place(target, sitting, time) {
+    for (let i = 0; i < uniforms.length; i++) {
+      const [px, pz] = sitting ? seatPoints[i] : patrolPoints[i];
+      const phase = time * (i % 2 ? 1.4 : 1.8) + i * 1.7;
+      const x = sitting ? px : px + Math.sin(phase * .42) * 1.05;
+      const z = sitting ? pz : pz + Math.cos(phase * .31) * 2.2;
+      const yaw = sitting ? 0 : Math.atan2(Math.cos(phase * .31), -Math.sin(phase * .42));
+      for (let j = 0; j < 6; j++) {
+        const p = parts[i * 6 + j], leg = j === 3 || j === 4, arm = j === 5;
+        dummy.position.set(p[0], p[1], p[2]); dummy.scale.set(p[3], p[4], p[5]); dummy.rotation.set(0, 0, 0);
+        if (leg && !sitting) dummy.rotation.x = Math.sin(phase + (j === 4 ? Math.PI : 0)) * .22;
+        if (arm) { dummy.position.y += sitting ? -.18 : .05; dummy.rotation.x = sitting ? -1.05 : Math.sin(phase + Math.PI) * .3; }
+        if (sitting && leg) { dummy.position.y = .7; dummy.position.z += .28; dummy.rotation.x = -Math.PI / 2; }
+        dummy.updateMatrix(); transform.makeRotationY(yaw); transform.setPosition(x, MODEL_DECK + (sitting ? .2 : .02), z);
+        transform.multiply(dummy.matrix); target.setMatrixAt(i * 6 + j, transform);
+        target.setColorAt(i * 6 + j, color.setHex(p[6]));
+      }
+    }
+    target.instanceMatrix.needsUpdate = true; target.instanceColor.needsUpdate = true;
+  }
+  const console = new THREE.Mesh(new THREE.BoxGeometry(6.2, .55, 1.8), new THREE.MeshLambertMaterial({ color: 0x344c53 }));
+  console.name = 'submarine-command-console'; console.position.set(0, MODEL_DECK + .28, -15); mesh.add(console);
+  const cabin = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0x526a70 }), 3);
+  cabin.name = 'submarine-open-cutaway-cabin';
+  for (const [i, x, z, w, h, d] of [[0, -3.35, -13, .22, 3.6, 5.2], [1, 3.35, -13, .22, 3.6, 5.2], [2, 0, -15.6, 6.7, 3.6, .22]]) {
+    dummy.position.set(x, MODEL_DECK + 1.8, z); dummy.scale.set(w, h, d); dummy.updateMatrix(); cabin.setMatrixAt(i, dummy.matrix);
+  }
+  mesh.add(cabin);
+  const chairs = new THREE.InstancedMesh(new THREE.BoxGeometry(.9, .35, .8), new THREE.MeshLambertMaterial({ color: 0x263b42 }), 5);
+  chairs.name = 'submarine-command-seats';
+  for (let i = 0; i < 5; i++) { dummy.position.set(seatPoints[i][0], MODEL_DECK + .05, seatPoints[i][1]); dummy.updateMatrix(); chairs.setMatrixAt(i, dummy.matrix); }
+  mesh.add(chairs);
+  let clock = 0, engaged = false;
+  console.visible = cabin.visible = chairs.visible = false; place(crew, false, 0);
+  function update(dt, active) {
+    clock += Math.min(dt, .05);
+    if (engaged !== active) { engaged = active; console.visible = cabin.visible = chairs.visible = active; }
+    place(crew, active, clock);
+  }
+  return { update, status: () => ({ active: engaged, patrolCount: engaged ? 0 : uniforms.length, seatedCount: engaged ? uniforms.length : 0 }) };
+}
+
 // This 126 m pressure hull shares the existing fleet's vertex-colored draw.
 function createSubmarineMesh() {
   const positions = [], colors = [], parts = [], pivots = [], tint = new THREE.Color();
@@ -82,6 +142,7 @@ function createSubmarineMesh() {
 
 export function buildSubmarine(B, planes) {
   const mesh = createSubmarineMesh(), spans = [[PIER.x0, PIER.x1]];
+  const crew = createCrew(mesh);
   const deck = { tex: 'deck', tint: 0x879c9a }, rail = { tex: 'paint', tint: 0xb4c9c6 }, cyan = { tex: 'paint', tint: 0x74e7d9, emissive: .8 };
   for (const [a, b] of spans) {
     const ya = pierHeight(a), yb = pierHeight(b), slope = Math.atan2(yb - ya, b - a), length = Math.hypot(b - a, yb - ya), t = .28;
@@ -123,7 +184,7 @@ export function buildSubmarine(B, planes) {
     if (to) points.push({ x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: HOME.z }, { x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: bz });
     points.push({ x: bx, y: by, z: bz }); return points;
   }
-  return { mesh, home: HOME, foot, board, pier: PIER, docked, route, maxDepth: MAX_DEPTH, landmarks: DEEP_LANDMARKS,
+  return { mesh, crew, home: HOME, foot, board, pier: PIER, docked, route, maxDepth: MAX_DEPTH, landmarks: DEEP_LANDMARKS,
     canBoard: p => docked() && Math.abs(p.y - DECK) < .7 * SUBMARINE_SCALE && Math.hypot(p.pos.x - board.x, p.pos.z - board.z) < 2.2 * SUBMARINE_SCALE,
     levels(x, z, out) { if (onPier(x, z)) out.push({ y: pierHeight(x), site: 'submarine' }); else if (onDeck(x, z)) out.push({ y: DECK, site: 'submarine' }); },
     obstructed(x, z, y) { return onDeck(x, z) && y < 11.7 * SUBMARINE_SCALE && Math.abs(x - HOME.x) < 2.65 * SUBMARINE_SCALE && z > HOME.z + 7.7 * SUBMARINE_SCALE && z < HOME.z + 24.3 * SUBMARINE_SCALE; },
@@ -200,6 +261,7 @@ export function createDive({ world, player, stage }) {
     message = '正在调整安全航线';
   }
   function update(dt, keys) {
+    sub.crew.update(dt, active);
     if (!active) return; dt = Math.min(dt, .05);
     const p = mesh.position;
     if (patrolling && mode === 'patrol') {
@@ -275,13 +337,13 @@ export function createDive({ world, player, stage }) {
     mesh.userData.wheelAngle = (mesh.userData.wheelAngle || 0) + speed * dt * .8; mesh.updateMatrixWorld(true); anchor();
   }
   return {
-    start() { active = true; takeOver(); speed = 0; message = '核动力在线 · 按 P 自动下潜巡视'; anchor(); },
-    stop() { if (!sub.docked()) { returnHome(true); return null; } active = false; route = []; speed = 0; mode = 'manual'; message = '已靠港 · 舱门开启'; exitPending = false; return { ...sub.board, heading: Math.PI / 2 }; },
+    start() { active = true; sub.crew.update(0, true); takeOver(); speed = 0; message = '核动力在线 · 按 P 自动下潜巡视'; anchor(); },
+    stop() { if (!sub.docked()) { returnHome(true); return null; } active = false; sub.crew.update(0, false); route = []; speed = 0; mode = 'manual'; message = '已靠港 · 舱门开启'; exitPending = false; return { ...sub.board, heading: Math.PI / 2 }; },
     update, togglePatrol, returnHome, takeOver, canSail,
     pause() { takeOver(); speed = 0; message = '航行暂停 · 保持深度'; },
     releaseControls() { if (mode === 'manual') speed = 0; },
     get automatic() { return mode !== 'manual'; }, get readyToExit() { return exitPending && sub.docked(); },
-    status: () => ({ x: mesh.position.x, z: mesh.position.z, depth: -mesh.position.y, heading: mesh.rotation.y, speed, distance, maxDepth: MAX_DEPTH,
+    status: () => ({ x: mesh.position.x, z: mesh.position.z, depth: -mesh.position.y, heading: mesh.rotation.y, speed, distance, maxDepth: MAX_DEPTH, crew: sub.crew.status(),
       mode, message, returnStage: mode !== 'return' ? 'idle' : returnDistance >= 0 ? returnPoint.stage : route[0]?.stage || 'approach', docked: sub.docked(), exitPending, visited: [...visited], lap, patrolling }),
   };
 }

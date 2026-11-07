@@ -84,8 +84,14 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
   };
   deepGroup.add(new THREE.Points(moteGeometry,moteMaterial));
   const allCreatures=[...creatures,...deepCreatures,...tunnelCreatures];
+  const tunnelView={};
   function update(dt,carrier,camera){
-    if(camera)tunnelGroup.visible=camera.position.y<-.5&&camera.position.x>40&&camera.position.x<190&&camera.position.z>25&&camera.position.z<190;
+    // Follow the actual tunnel path so the glass scenery is also visible near
+    // both portals, instead of relying on a rectangular world-space cutoff.
+    if(camera&&tunnelPath){
+      tunnelPath.near(camera.position.x,camera.position.z,tunnelView);
+      tunnelGroup.visible=camera.position.y<-.5&&tunnelView.distance<6;
+    }
     time.value+=Math.min(dt,.1);
     for(const mesh of allCreatures){const a=mesh.userData;if(a.kind==='reef')continue;const t=time.value*a.speed+a.phase;
       let x=a.x+Math.cos(t)*a.rx,z=a.z+Math.sin(t)*a.rz,y=a.y;

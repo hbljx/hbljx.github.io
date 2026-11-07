@@ -75,6 +75,33 @@ export function createTransitVehicle(layer,materials,{bus=false,index=0,color}={
     if(!bus&&!front)box(0,.36,z+direction*.22,.38,.16,.4,dark);
   }
   if(bus)for(const side of [-1,1]){box(side*(width/2+.17),1.72,end-.2,.35,.06,.06,dark);box(side*(width/2+.32),1.65,end-.2,.08,.28,.2,dark);}
+  // Coloured seated passengers share the body draw, keeping the interior
+  // visible through the side glazing without adding per-passenger draw calls.
+  const passengerColors=[0xe35f55,0x54a9d1,0xe6b84e,0x7bb36b,0xb17ac4,0xe58d50];
+  const hairColors=[0x382820,0x171b22,0x67452e,0x9b6334,0x302d45,0x533a35];
+  const trimColors=[0xf1d88b,0xf4eee2,0x324653,0xdcebd5,0xffd2a2,0x293b4a];
+  const skinColors=[0xf0c4a1,0xd99b78,0xf2d1b0,0xb97858,0xe5b18a,0xc88766];
+  const passengerCount=bus?4:3;
+  for(let i=0;i<passengerCount;i++){
+    const side=i%2?1:-1,z=-2.15+i*(bus?1.35:1.05),x=side*.67,c=passengerColors[(i+index*2+(bus?3:0))%passengerColors.length];
+    const style=(i+index*2+(bus?3:0))%passengerColors.length,hair=hairColors[style],detail=trimColors[style],skin=skinColors[style];
+    box(x,1.24,z,.31,.48,.27,c);
+    box(x,1.66,z,.14,.13,.14,skin);
+    box(x,1.72,z,.26,.29,.25,skin);
+    box(x,1.97,z,.29,.08,.28,hair);
+    box(x+side*.075,1.91,z,.16,.075,.255,hair);
+    box(x+side*.151,1.85,z-.045,.018,.027,.018,0x292827);
+    box(x+side*.151,1.85,z+.045,.018,.027,.018,0x292827);
+    box(x+side*.155,1.82,z,.025,.035,.035,skin);
+    if(style%2===0)box(x+side*.13,1.79,z+.095,.055,.16,.09,hair);
+    box(x,1.58,z,.33,.085,.285,detail);
+    for(const armSide of [-1,1]){
+      box(x+armSide*.205,1.31,z,.105,.31,.15,c);
+      box(x+armSide*.205,1.24,z,.09,.11,.12,skin);
+    }
+    box(x,.69,z+side*.12,.22,.34,.15,0x314957);
+    box(x,.65,z+side*.2,.23,.09,.2,0x293238);
+  }
   // Panoramic skylight: the roof remains present while passengers ride.
   for(const z of [-end+.17,end-.17])box(0,2.48,z,width-.3,.2,.34,paint);
   pane(0,2.66,0,width-.65,length-.72,0,-Math.PI/2);
