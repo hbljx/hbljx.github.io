@@ -5,6 +5,26 @@ const CLOSE_HOUR = 18, OPEN_HOUR = 7, TRANSITION_SECONDS = 0.48;
 const solidDoor = new THREE.MeshLambertMaterial({ color: 0xffffff });
 const glassDoor = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.38 });
 
+function makeShutterMaterial() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  const slatHeight = 18;
+  for (let y = 0; y < canvas.height; y += slatHeight) {
+    ctx.fillStyle = '#b7c1c6';
+    ctx.fillRect(0, y, canvas.width, slatHeight - 1);
+    ctx.fillStyle = '#8e9ba2';
+    ctx.fillRect(0, y + slatHeight - 2, canvas.width, 1);
+    ctx.fillStyle = '#d5dde0';
+    ctx.fillRect(0, y, canvas.width, 1);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  return new THREE.MeshLambertMaterial({ map: texture, side: THREE.DoubleSide });
+}
+
 function scheduledClosed(timestamp) {
   const hour = Number(new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Shanghai', hour: '2-digit', hourCycle: 'h23',
@@ -81,8 +101,17 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     door.blocking = closedBySchedule;
     if (door.blocking) obstacles.push(door.obstacle);
     door.onBlockingChange?.(door.blocking, door.obstacle);
-    bySurface.get(door.surface).push(door);
+    if (door.kind !== 'shutter') bySurface.get(door.surface).push(door);
   }
+
+  const garage = doors.find(door => door.kind === 'shutter');
+  const shutterFace = new THREE.Mesh(new THREE.PlaneGeometry(garage.width, garage.height), makeShutterMaterial());
+  shutterFace.rotation.y = Math.PI / 2;
+  shutterFace.position.set(0.052, garage.height / 2, 0);
+  shutterFace.castShadow = false;
+  shutterFace.receiveShadow = false;
+  shutterFace.visible = garage.renderVisible;
+  garage.root.add(shutterFace);
 
   const unitBox = new THREE.BoxGeometry(1, 1, 1), instanceMeshes = [];
   const matrix = new THREE.Matrix4(), center = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
@@ -102,6 +131,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   }
 
   function syncMesh(door) {
+    if (!door.instanceMesh) return;
     if (door.kind === 'shutter') {
       center.set(0, door.renderVisible ? door.height / 2 : door.height / 2 + 12, 0).add(door.root.position);
       rotation.setFromAxisAngle(up, Math.PI / 2);
@@ -118,8 +148,9 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     matrix.compose(center, rotation, scale);
     door.instanceMesh.setMatrixAt(door.instanceIndex, matrix);
   }
-  for (const door of doors) syncMesh(door);
+  for (const door of doors) if (door.instanceMesh) syncMesh(door);
   for (const mesh of instanceMeshes) mesh.instanceMatrix.needsUpdate = true;
+  instanceMeshes.push(garage.root);
 
   function setBlocking(door, blocked) {
     if (door.blocking === blocked) return false;
@@ -137,7 +168,10 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     door.from = door.pose;
     door.to = open ? door.openPose : door.closedPose;
     door.elapsed = 0;
-    if (door.kind === 'shutter' && !open) door.renderVisible = true;
+    if (door.kind === 'shutter' && !open) {
+      door.renderVisible = true;
+      door.root.children[0].visible = true;
+    }
     return setBlocking(door, !open);
   }
 
@@ -181,11 +215,14 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
         else if (door.kind === 'sliding') door.root.position.x = door.originX + door.pose;
         else door.root.rotation.y = door.pose;
         if (door.elapsed === TRANSITION_SECONDS) {
-          if (door.kind === 'shutter' && door.targetOpen) door.renderVisible = false;
+          if (door.kind === 'shutter' && door.targetOpen) {
+            door.renderVisible = false;
+            door.root.children[0].visible = false;
+          }
           navChanged = setBlocking(door, !door.targetOpen) || navChanged;
         }
         syncMesh(door);
-        door.instanceMesh.instanceMatrix.needsUpdate = true;
+        if (door.instanceMesh) door.instanceMesh.instanceMatrix.needsUpdate = true;
       }
       if (navChanged) nav?.rebuild();
     },
