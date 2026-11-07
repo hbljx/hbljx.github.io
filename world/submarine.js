@@ -17,7 +17,8 @@ function createCrew(mesh) {
   // Use an unlit high-visibility color so the small crew stays readable on
   // the dark deck and in the distant overview.
   const material = new THREE.MeshBasicMaterial({ color: 0xf6c453, toneMapped: false });
-  const crew = new THREE.InstancedMesh(geometry, material, 30);
+  const PARTS_PER_PERSON = 15;
+  const crew = new THREE.InstancedMesh(geometry, material, 5 * PARTS_PER_PERSON);
   crew.name = 'submarine-deck-crew';
   // The submarine hull is folded into the aircraft-fleet batch, so child
   // meshes are not rendered through the original hull object. Keep the crew
@@ -25,15 +26,23 @@ function createCrew(mesh) {
   const group = new THREE.Group();
   group.name = 'submarine-deck-crew-root'; group.add(crew);
   const uniforms = [
-    [0x3d91a6, 0x263d4d, 0xd8a17b, 0xf0c35e], [0xc45b4e, 0x35464b, 0xe5b58e, 0xf0eee2],
-    [0x71945c, 0x293a43, 0xb98262, 0xd9e4dc], [0xd0a146, 0x354253, 0xe0b990, 0x46677a],
-    [0x766a9d, 0x3b394d, 0xc58b6c, 0xe1d4b4],
+    [0x345b70, 0x26394a, 0xd8a17b, 0xe2bb67], [0x465f76, 0x303c4d, 0xe5b58e, 0xd9e5e8],
+    [0x38665f, 0x293b42, 0xb98262, 0xc8d8ce], [0x6d5942, 0x354253, 0xe0b990, 0xd8bd83],
+    [0x554e70, 0x3b394d, 0xc58b6c, 0xd8d1bb],
   ];
   const parts = [];
-  for (const [shirt, pants, skin, cap] of uniforms) parts.push(
-    [0, 1.95, 0, .72, 1.05, .42, shirt], [0, 2.85, .015, .57, .57, .55, skin],
-    [0, 3.19, 0, .64, .13, .62, cap], [-.2, .75, 0, .27, 1.05, .3, pants],
-    [.2, .75, 0, .27, 1.05, .3, pants], [-.49, 1.98, 0, .25, .92, .28, shirt]);
+  for (const [shirt, pants, skin, cap] of uniforms) {
+    const accent = new THREE.Color(shirt).multiplyScalar(.72).getHex();
+    parts.push(
+      [0, 1.95, 0, .68, 1.02, .4, shirt], [0, 2.85, .015, .53, .55, .52, skin],
+      [0, 3.17, 0, .59, .15, .57, cap],
+      [-.2, .76, 0, .25, 1.02, .28, pants], [.2, .76, 0, .25, 1.02, .28, pants],
+      [-.2, .13, .045, .32, .24, .43, 0x202b35], [.2, .13, .045, .32, .24, .43, 0x202b35],
+      [-.47, 1.98, 0, .23, .9, .27, shirt], [.47, 1.98, 0, .23, .9, .27, shirt],
+      [0, 1.99, .207, .39, .72, .035, accent], [0, 2.45, .22, .31, .11, .045, 0xd7d6c8],
+      [-.12, 1.9, .239, .105, .13, .035, 0xc7b77e], [.12, 1.9, .239, .105, .13, .035, 0xc7b77e],
+      [0, 1.43, .212, .66, .09, .035, 0x202b35], [0, 2.29, .246, .075, .12, .025, 0xdcc77f]);
+  }
   const dummy = new THREE.Object3D(), color = new THREE.Color(), transform = new THREE.Matrix4();
   const patrolPoints = [[-5, -37], [4, -29], [-4, -21], [4, -8], [-4, 2]];
   const seatPoints = [[-2.3, -12], [-1.15, -12], [0, -12], [1.15, -12], [2.3, -12]];
@@ -44,15 +53,17 @@ function createCrew(mesh) {
       const x = sitting ? px : px + Math.sin(phase * .42) * 1.05;
       const z = sitting ? pz : pz + Math.cos(phase * .31) * 2.2;
       const yaw = sitting ? 0 : Math.atan2(Math.cos(phase * .31), -Math.sin(phase * .42));
-      for (let j = 0; j < 6; j++) {
-        const p = parts[i * 6 + j], leg = j === 3 || j === 4, arm = j === 5;
+      for (let j = 0; j < PARTS_PER_PERSON; j++) {
+        const p = parts[i * PARTS_PER_PERSON + j], leg = j === 3 || j === 4, boot = j === 5 || j === 6, arm = j === 7 || j === 8;
         dummy.position.set(p[0], p[1], p[2]); dummy.scale.set(p[3], p[4], p[5]); dummy.rotation.set(0, 0, 0);
         if (leg && !sitting) dummy.rotation.x = Math.sin(phase + (j === 4 ? Math.PI : 0)) * .22;
         if (arm) { dummy.position.y += sitting ? -.18 : .05; dummy.rotation.x = sitting ? -1.05 : Math.sin(phase + Math.PI) * .3; }
         if (sitting && leg) { dummy.position.y = .7; dummy.position.z += .28; dummy.rotation.x = -Math.PI / 2; }
+        if (boot && !sitting) dummy.rotation.x = Math.sin(phase + (j === 6 ? Math.PI : 0)) * .12;
+        if (boot && sitting) { dummy.position.y = .53; dummy.position.z = .52; }
         dummy.updateMatrix(); transform.makeRotationY(yaw); transform.setPosition(x, MODEL_DECK + (sitting ? .2 : .02), z);
-        transform.multiply(dummy.matrix); target.setMatrixAt(i * 6 + j, transform);
-        target.setColorAt(i * 6 + j, color.setHex(p[6]));
+        transform.multiply(dummy.matrix); target.setMatrixAt(i * PARTS_PER_PERSON + j, transform);
+        target.setColorAt(i * PARTS_PER_PERSON + j, color.setHex(p[6]));
       }
     }
     target.instanceMatrix.needsUpdate = true; target.instanceColor.needsUpdate = true;
