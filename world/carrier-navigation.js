@@ -45,7 +45,7 @@ export function createSailingArea(world,gangway){
   }
   // Convex envelope of the stepped flight deck, expanded by 0.6 m.
   // Its tapered bow fits the berth without discarding stern overhangs.
-  const hull=[[-6.5,-32.6],[6.5,-32.6],[10.1,-29],[10.1,-21],[8.2,22],[6.9,29],[5.4,33.6],[-5.4,33.6],[-6.9,29],[-8.2,22],[-10.1,-21],[-10.1,-29]];
+  const hull=[[-6.5,-32.6],[6.5,-32.6],[10.1,-29],[10.1,-21],[8.2,22],[8.6,29],[7.4,33.6],[-7.4,33.6],[-8.6,29],[-8.2,22],[-10.1,-21],[-10.1,-29]];
   const axes=hull.map((a,i)=>{
     const b=hull[(i+1)%hull.length],x=-(b[1]-a[1]),z=b[0]-a[0];let min=Infinity,max=-Infinity;
     for(const p of hull){const v=p[0]*x+p[1]*z;min=Math.min(min,v);max=Math.max(max,v);}

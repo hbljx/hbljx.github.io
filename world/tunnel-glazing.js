@@ -13,12 +13,15 @@ export function createTunnelGlazing(path){
     if(i)for(let j=0;j<cross.length-1;j++){const a=(i-1)*cross.length+j,b=a+cross.length;indices.push(a,b,a+1,a+1,b,b+1);}
   }
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();
-  const material=new THREE.MeshPhongMaterial({color:0xa6dce0,specular:0x9bd9e3,shininess:85,transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true});
+  // Keep exterior water and scenery from showing through the tunnel's road
+  // space; the sea remains visible outside the solid inner lining.
+  const material=new THREE.MeshPhongMaterial({color:0x71999b,specular:0x527779,shininess:28,side:THREE.DoubleSide});
   const shell=new THREE.Mesh(geometry,material);shell.name='undersea-tunnel-glazing';shell.renderOrder=2;
   return {shell,cross};
 }
 
-// Clip water only INSIDE the dry tube. Keep the ocean above submerged glass.
+// Remove the sea surface across the full tunnel footprint, including sections
+// where the tunnel roof is below the ocean plane.
 export function maskTunnelWater(coast,path){
   const size=512,bounds={x0:Infinity,z0:Infinity,x1:-Infinity,z1:-Infinity},data=new Uint8Array(size*size),p={};
   // Derive coverage from the current route, including both shore ramps.
@@ -36,8 +39,7 @@ export function maskTunnelWater(coast,path){
   for(let j=0;j<size;j++)for(let i=0;i<size;i++){
     const x=bounds.x0+(i+.5)/size*(bounds.x1-bounds.x0),z=bounds.z0+(j+.5)/size*(bounds.z1-bounds.z0);
     path.near(x,z,p);const h=waterY-p.y;
-    const ceiling=tunnelCeiling(Math.max(0,Math.abs(p.side)-padding)),verticalPadding=.08+padding*Math.abs(p.slope);
-    data[j*size+i]=p.distance<=radius&&h>=-verticalPadding&&h<=ceiling+verticalPadding?255:0;
+    data[j*size+i]=p.distance<=radius?255:0;
   }
   const mask=new THREE.DataTexture(data,size,size,THREE.RedFormat);mask.needsUpdate=true;
   const material=coast.sea.material,compile=material.onBeforeCompile;

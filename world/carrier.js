@@ -13,7 +13,8 @@ const GANGWAY={x0:SEA_BRIDGE.x+SEA_BRIDGE.width/2,x1:HOME.x-7.6,fixedEnd:HOME.x-
 const gangwayHeight=x=>bridgeHeight(DOCK_Z)+(DECK-bridgeHeight(DOCK_Z))*THREE.MathUtils.clamp((x-GANGWAY.flat)/(GANGWAY.rampEnd-GANGWAY.flat),0,1);
 const withinGangway=(x,z,margin=0)=>x>=GANGWAY.x0&&x<=GANGWAY.x1&&Math.abs(z-DOCK_Z)<=GANGWAY.width/2-margin;
 const STERN=-32,BOW=33;
-const sections=[[STERN,5.9],[-29,9.5],[-21,9.5],[-18,7.6],[22,7.6],[29,6.3],[BOW,4.8]];
+// Broaden the forward deck to leave a flat weapon platform beside the ski jump.
+const sections=[[STERN,5.9],[-29,9.5],[-21,9.5],[-18,7.6],[22,7.6],[29,8],[BOW,6.8]];
 const deckY=()=>DECK;
 const RAMP={x0:-4.4,x1:1.9,z0:23,z1:33,height:2.3};
 const onRamp=(x,z)=>x>=RAMP.x0&&x<=RAMP.x1&&z>=RAMP.z0&&z<=RAMP.z1;

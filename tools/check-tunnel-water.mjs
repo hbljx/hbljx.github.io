@@ -22,8 +22,8 @@ try{
     const p=path.sample(s,{}),h=waterY-p.y;
     for(let side=-5.1;side<=5.1;side+=.3){
      const x=p.x+Math.cos(p.heading)*side,z=p.z-Math.sin(p.heading)*side;
-     if(h>.2&&h<tunnelCeiling(side)-.2){rampSamples[s<path.length/2?0:1]++;if(!dry(x,z))leaks.push({s,side,x,z});}
-     if(h>tunnelCeiling(side)+1){overheadSamples++;if(dry(x,z))lostOcean.push({s,side,kind:'above-roof'});}
+     rampSamples[s<path.length/2?0:1]++;if(!dry(x,z))leaks.push({s,side,x,z});
+     if(h>tunnelCeiling(side)+1)overheadSamples++;
     }
     for(const side of [-TUNNEL_RADIUS-1,TUNNEL_RADIUS+1]){
      const x=p.x+Math.cos(p.heading)*side,z=p.z-Math.sin(p.heading)*side;

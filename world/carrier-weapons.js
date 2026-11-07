@@ -7,7 +7,11 @@ function builder() {
   return {
     add(geometry, color, position = [0, 0, 0], rotation = [0, 0, 0]) {
       geometry.rotateX(rotation[0]); geometry.rotateY(rotation[1]); geometry.rotateZ(rotation[2]); geometry.translate(...position); tint.setHex(COLORS[color]);
-      for (let i = 0; i < geometry.attributes.position.count; i++) { positions.push(geometry.attributes.position.getX(i), geometry.attributes.position.getY(i), geometry.attributes.position.getZ(i)); colors.push(tint.r, tint.g, tint.b); }
+      // Expand indexed primitives before concatenating their triangle vertices.
+      const triangles = geometry.index ? geometry.toNonIndexed() : geometry;
+      const positionAttribute = triangles.attributes.position;
+      for (let i = 0; i < positionAttribute.count; i++) { positions.push(positionAttribute.getX(i), positionAttribute.getY(i), positionAttribute.getZ(i)); colors.push(tint.r, tint.g, tint.b); }
+      if (triangles !== geometry) triangles.dispose();
       geometry.dispose();
     },
     mesh() { const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); geometry.computeVertexNormals(); return new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .42, metalness: .62 })); },
@@ -43,9 +47,10 @@ function radar() {
 
 export function createCarrierWeapons(carrier) {
   const group = new THREE.Group(); group.name = 'carrier-weapons';
-  const mounts = [{ object: gun(), x: -5.25, z: -30.1, rate: .34, phase: 0 }, { object: missile(), x: -4.65, z: 30.2, rate: .19, phase: 1.7 }];
+  const mounts = [{ object: gun(), x: -5.25, z: -30.1, rate: .34, phase: 0 }, { object: missile(), x: -6.2, z: 28.3, rate: .19, phase: 1.7 }];
   for (const mount of mounts) { mount.object.position.set(mount.x, 3.4, mount.z); group.add(mount.object); }
-  const radarUnit = radar(); radarUnit.position.set(6.4, 11.12, 4.63); group.add(radarUnit); carrier.add(group);
+  // Seat the radar mast on the upper island roof, clear of the flag and main mast.
+  const radarUnit = radar(); radarUnit.position.set(4.65, 8.34, 3.05); group.add(radarUnit); carrier.add(group);
   let time = 0;
   return { group, update(dt) { time += Math.min(dt, .05); for (const mount of mounts) { const pivot = mount.object.userData.pivot; pivot.rotation.y = Math.sin(time * mount.rate + mount.phase) * 1.05; pivot.rotation.x = mount.rate > .3 ? Math.sin(time * .7) * .035 : .16 + Math.sin(time * .45 + 1) * .05; } radarUnit.userData.rotor.rotation.y = time * 2.7; } };
 }

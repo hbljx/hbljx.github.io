@@ -19,7 +19,6 @@ export function buildDeepSea(shallow, B) {
   const rock = { tex: 'stone', tint: 0x417d8b, emissive: .12 };
   const seabed = { tex: 'paint', tint: 0x83b3ac, emissive: .22 };
   // Retain the shallow reefs, opening only the western harbor and trench.
-  shallow.box(115, -10, -74, 130, .5, 212, { tex: 'paint', tint: 0x327e94 });
   shallow.box(115, -23.5, 106, 130, .5, 148, seabed);
   shallow.box(4, -10, -74, 92, .5, 212, { tex: 'paint', tint: 0x327e94 });
   shallow.box(-111, -10, -74, 138, .5, 212, { tex: 'paint', tint: 0x327e94 });
