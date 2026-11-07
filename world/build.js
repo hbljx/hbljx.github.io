@@ -65,6 +65,7 @@ export function build({ grid, layer, materials, stage }) {
   const transit=buildSeaTransit({B:furn.batches.static,planes:furn.planes,layer,materials,scene:stage.scene});
   const carrier = buildCarrier(layer, furn.batches.static);
   const submarine = buildSubmarine(furn.batches.static, furn.planes);
+  stage.scene.add(submarine.crew.group);
   const offshore = buildOffshore();
   stage.scene.add(offshore.group);
   const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch,transit.tunnel.path);

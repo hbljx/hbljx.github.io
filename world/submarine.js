@@ -14,9 +14,16 @@ const clamp = THREE.MathUtils.clamp;
 
 function createCrew(mesh) {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const material = new THREE.MeshLambertMaterial();
+  // Use an unlit high-visibility color so the small crew stays readable on
+  // the dark deck and in the distant overview.
+  const material = new THREE.MeshBasicMaterial({ color: 0xf6c453, toneMapped: false });
   const crew = new THREE.InstancedMesh(geometry, material, 30);
-  crew.name = 'submarine-deck-crew'; mesh.add(crew);
+  crew.name = 'submarine-deck-crew';
+  // The submarine hull is folded into the aircraft-fleet batch, so child
+  // meshes are not rendered through the original hull object. Keep the crew
+  // in its own scene group and mirror the hull transform below.
+  const group = new THREE.Group();
+  group.name = 'submarine-deck-crew-root'; group.add(crew);
   const uniforms = [
     [0x3d91a6, 0x263d4d, 0xd8a17b, 0xf0c35e], [0xc45b4e, 0x35464b, 0xe5b58e, 0xf0eee2],
     [0x71945c, 0x293a43, 0xb98262, 0xd9e4dc], [0xd0a146, 0x354253, 0xe0b990, 0x46677a],
@@ -63,13 +70,16 @@ function createCrew(mesh) {
   for (let i = 0; i < 5; i++) { dummy.position.set(seatPoints[i][0], MODEL_DECK + .05, seatPoints[i][1]); dummy.updateMatrix(); chairs.setMatrixAt(i, dummy.matrix); }
   mesh.add(chairs);
   let clock = 0, engaged = false;
-  console.visible = cabin.visible = chairs.visible = false; place(crew, false, 0);
+  group.position.copy(mesh.position); group.rotation.copy(mesh.rotation); group.scale.copy(mesh.scale);
+  group.visible = true; console.visible = cabin.visible = chairs.visible = false; place(crew, false, 0);
   function update(dt, active) {
     clock += Math.min(dt, .05);
     if (engaged !== active) { engaged = active; console.visible = cabin.visible = chairs.visible = active; }
+    group.position.copy(mesh.position); group.rotation.copy(mesh.rotation); group.scale.copy(mesh.scale);
+    group.visible = !active;
     place(crew, active, clock);
   }
-  return { update, status: () => ({ active: engaged, patrolCount: engaged ? 0 : uniforms.length, seatedCount: engaged ? uniforms.length : 0 }) };
+  return { group, update, status: () => ({ active: engaged, patrolCount: engaged ? 0 : uniforms.length, seatedCount: engaged ? uniforms.length : 0 }) };
 }
 
 // This 126 m pressure hull shares the existing fleet's vertex-colored draw.
