@@ -34,14 +34,17 @@ export function createTransitVehicle(layer,materials,{bus=false,index=0,color}={
       for(const z of [a-.035,b+.035])box(x,1.29,z,.14,1.16,.07,dark);
       box(x,2.4,(a+b)/2,.14,.08,b-a,trim);
     }
+    // Offset the whole sliding leaf from the fixed window frames so their
+    // outer faces never share a depth when the doors overlap while opening.
+    const doorX=paneX+side*.02;
     // Lower door kick plates, slim frames and transparent upper leaves.
     for(const direction of [-1,1]){
       const z=-.85+direction*.3,slide=direction*.65;
-      box(paneX,.7,z,.08,.42,.58,accent,slide);
-      for(const edge of [-1,1])box(paneX,1.12,z+edge*.275,.09,1.3,.035,dark,slide);
-      box(paneX,2.38,z,.09,.06,.58,dark,slide);
-      pane(paneX+side*.015,1.75,z,.51,1.24,side*Math.PI/2,0,slide);
-      box(paneX+side*.035,1.28,z-direction*.18,.06,.28,.035,trim,slide);
+      box(doorX,.7,z,.08,.42,.58,accent,slide);
+      for(const edge of [-1,1])box(doorX,1.12,z+edge*.275,.09,1.3,.035,dark,slide);
+      box(doorX,2.38,z,.09,.06,.58,dark,slide);
+      pane(doorX+side*.015,1.75,z,.51,1.24,side*Math.PI/2,0,slide);
+      box(doorX+side*.035,1.28,z-direction*.18,.06,.28,.035,trim,slide);
     }
     for(const z of [-2,.75]){
       box(side*.81,.78,z,.62,.14,.95,accent);box(side*1.08,.92,z,.12,.62,.95,accent);
@@ -104,7 +107,8 @@ export function createTransitVehicle(layer,materials,{bus=false,index=0,color}={
   }
   // Panoramic skylight: the roof remains present while passengers ride.
   for(const z of [-end+.17,end-.17])box(0,2.48,z,width-.3,.2,.34,paint);
-  pane(0,2.66,0,width-.65,length-.72,0,-Math.PI/2);
+  // Keep the transparent skylight clear of the opaque roof's top face.
+  pane(0,2.67,0,width-.65,length-.72,0,-Math.PI/2);
   for(const z of [-1.55,1.55])box(0,2.63,z,width-.4,.06,.08,trim);
   box(0,2.69,-end+.56,width-.7,.16,.48,paint);
   for(const x of [-.45,0,.45])box(x,2.85,-end+.56,.2,.02,.3,dark);
