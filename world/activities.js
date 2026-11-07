@@ -33,10 +33,13 @@ export const ACTIVITY_SPOTS = [
   { id: 'sleep', title: '卧室 · 睡觉', at: [BED.x + 2.2, BED.z + .35], floor: BED.y, radius: 2, anchor: [BED.x, BED.y, BED.z + .35], yaw: 0, view: [BED.x + 4, BED.y + 4, BED.z + 3.65], look: [BED.x, BED.y + .8, BED.z + .15] },
   { id: 'reading', title: '灵感书房 · 看书', at: [-7.3, -6.7], floor: 4, radius: 2, anchor: [-8.8, 4, -6.85], yaw: 0, view: [-6.1, 7, -5], look: [-8.8, 5, -6.6] },
   { id: 'tv', title: '日常客厅 · 看电视', at: [1, -.3], floor: 0, radius: 3, anchor: [2.95, 0, -3.1], yaw: -Math.PI / 2, view: [9, 5, 2], look: [1.4, 1.1, -3.2] },
+  { id: 'tv-left', activityId: 'tv', title: '日常客厅 · 沙发看电视', at: [1.85, -4.15], floor: 0, radius: 1.2, anchor: [2.95, 0, -4.15], yaw: -Math.PI / 2 },
+  { id: 'tv-right', activityId: 'tv', title: '日常客厅 · 沙发看电视', at: [1.85, -2.25], floor: 0, radius: 1.2, anchor: [2.95, 0, -2.25], yaw: -Math.PI / 2 },
   { id: 'driving', title: '特斯拉 Model Y · 喷气汽车', at: [15.5, -4.5], floor: 0, radius: 1.1 },
   { id: 'motorcycle', title: '工具车库 · 骑摩托车', at: [14.5, -.15], floor: 0, radius: 1.25 },
   { id: 'coffee', title: '音乐咖啡吧 · 喝咖啡', at: [8, 13.3], floor: 0, radius: 2.1, anchor: [8.7, 0, 13.65], yaw: 0, view: [11.5, 3.6, 15.5], look: [8.5, 1.1, 13.65] },
   { id: 'gaming', title: 'AI 工作台 · 打游戏', at: [1.2, -8.3], floor: 0, radius: 2.1, anchor: [2.1, 0, -9.55], yaw: Math.PI, view: [-1, 3.2, -6.7], look: [2.1, 1.1, -10.35] },
+  { id: 'gaming-side', activityId: 'gaming', title: 'AI 工作台 · 双屏电脑打游戏', at: [3.8, -7.9], floor: 0, radius: 1.5, anchor: [4.05, 0, -9.1], yaw: Math.PI / 2 },
 ];
 const BOOK = [
   ['第一章 · 海边的小屋', '清晨，阳光落在木地板上。推开窗，海风带来新的一天。今天不必赶路，先把想做的事情，一件一件放进自己的小世界。'],

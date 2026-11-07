@@ -5,6 +5,88 @@ const CLOSE_HOUR = 18, OPEN_HOUR = 7, TRANSITION_SECONDS = 0.48;
 const solidDoor = new THREE.MeshLambertMaterial({ color: 0xffffff });
 const glassDoor = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.38 });
 
+function makeFrontDoorMaterial(style) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const black = style === 'blackwood';
+  const colors = black
+    ? { base: '#100f10', grain: '#211d1a', panel: '#171415', trim: '#b89a62', detail: '#e0c98d' }
+    : { base: '#4a1719', grain: '#692326', panel: '#571b1e', trim: '#c99b58', detail: '#eed093' };
+  ctx.fillStyle = colors.base;
+  ctx.fillRect(0, 0, 128, 128);
+
+  // Fine vertical grain keeps the lacquered timber visible beneath the carving.
+  for (let x = 3; x < 128; x += 7) {
+    ctx.fillStyle = x % 2 ? colors.grain : colors.base;
+    ctx.fillRect(x, 0, 1, 128);
+  }
+
+  ctx.strokeStyle = colors.trim;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(10, 8, 108, 112);
+  ctx.strokeStyle = colors.grain;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(15, 13, 98, 102);
+  ctx.fillStyle = colors.panel;
+  ctx.fillRect(19, 17, 90, 94);
+  ctx.strokeStyle = colors.trim;
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(19, 17, 90, 94);
+
+  // Mirrored botanical scrollwork gives the entrance a carved, formal center.
+  ctx.save();
+  ctx.translate(128, 0);
+  ctx.scale(-1, 1);
+  const drawScroll = () => {
+    ctx.beginPath();
+    ctx.moveTo(64, 27);
+    ctx.bezierCurveTo(48, 35, 49, 48, 64, 54);
+    ctx.bezierCurveTo(80, 60, 80, 72, 64, 81);
+    ctx.bezierCurveTo(52, 88, 53, 98, 64, 103);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(64, 39);
+    ctx.bezierCurveTo(53, 33, 42, 35, 39, 43);
+    ctx.bezierCurveTo(36, 50, 44, 54, 49, 49);
+    ctx.moveTo(64, 66);
+    ctx.bezierCurveTo(76, 58, 88, 61, 90, 69);
+    ctx.bezierCurveTo(92, 77, 83, 80, 79, 74);
+    ctx.moveTo(64, 91);
+    ctx.bezierCurveTo(53, 84, 43, 87, 42, 94);
+    ctx.bezierCurveTo(41, 101, 50, 103, 54, 98);
+    ctx.stroke();
+  };
+  ctx.strokeStyle = colors.trim;
+  ctx.lineWidth = 2;
+  drawScroll();
+  ctx.restore();
+  ctx.strokeStyle = colors.detail;
+  ctx.lineWidth = 1;
+  drawScroll();
+
+  ctx.fillStyle = colors.detail;
+  for (const y of [27, 54, 81, 103]) {
+    ctx.beginPath();
+    ctx.moveTo(64, y - 3);
+    ctx.lineTo(67, y);
+    ctx.lineTo(64, y + 3);
+    ctx.lineTo(61, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillStyle = colors.trim;
+  ctx.fillRect(100, 61, 4, 8);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.NearestMipmapLinearFilter;
+  texture.anisotropy = 4;
+  return new THREE.MeshLambertMaterial({ map: texture });
+}
+
 function makeShutterMaterial() {
   const canvas = document.createElement('canvas');
   canvas.width = 16;
@@ -33,12 +115,12 @@ function scheduledClosed(timestamp) {
 }
 
 function hinged({ id, controlGroup = id, x, z, y = 0, width, height, closedYaw = 0, openYaw,
-  kind = 'hinged', surface = 'solid', color = 0x343b40, level = 0, bounds, interactY = y, onBlockingChange }) {
+  kind = 'hinged', slideDirection = 1, surface = 'solid', color = 0x343b40, level = 0, bounds, interactY = y, onBlockingChange }) {
   const root = new THREE.Object3D();
   root.position.set(x, y, z);
   if (kind === 'hinged') root.rotation.y = closedYaw;
   return { id, controlGroup, root, kind, width, height, surface, color, closedPose: kind === 'sliding' ? 0 : closedYaw,
-    openPose: kind === 'sliding' ? width : openYaw, originX: x, level, interactY, bounds, onBlockingChange, angle: closedYaw };
+    openPose: kind === 'sliding' ? width * slideDirection : openYaw, originX: x, level, interactY, bounds, onBlockingChange, angle: closedYaw };
 }
 
 export function createIslandDoors(obstacles, additionalDoors = []) {
@@ -48,10 +130,10 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   // The two front leaves close the full entrance together.
   const entranceMid = (ENTRANCE.x0 + ENTRANCE.x1) / 2;
   add(hinged({ id: 'front-left', controlGroup: 'front', x: ENTRANCE.x0, z: HOUSE.z1 + 0.3, width: entranceMid - ENTRANCE.x0,
-    height: 2.8, openYaw: -Math.PI / 2, bounds: { x0: ENTRANCE.x0, x1: entranceMid, z0: HOUSE.z1 - 0.12, z1: HOUSE.z1 + 0.12 } }));
+    height: 2.8, surface: 'wood', color: 0xffffff, openYaw: -Math.PI / 2, bounds: { x0: ENTRANCE.x0, x1: entranceMid, z0: HOUSE.z1 - 0.12, z1: HOUSE.z1 + 0.12 } }));
   const right = hinged({ id: 'front-right', controlGroup: 'front', x: ENTRANCE.x1, z: HOUSE.z1 + 0.3, width: ENTRANCE.x1 - entranceMid,
     height: 2.8, closedYaw: Math.PI, openYaw: 3 * Math.PI / 2,
-    bounds: { x0: entranceMid, x1: ENTRANCE.x1, z0: HOUSE.z1 - 0.12, z1: HOUSE.z1 + 0.12 } });
+    surface: 'wood', color: 0xffffff, bounds: { x0: entranceMid, x1: ENTRANCE.x1, z0: HOUSE.z1 - 0.12, z1: HOUSE.z1 + 0.12 } });
   add(right);
 
   const garageDoorCenter = (GARAGE.door.z0 + GARAGE.door.z1) / 2;
@@ -70,7 +152,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     openYaw: -Math.PI / 2, color: 0x76583f,
     bounds: { x0: BACKDOOR.x0, x1: BACKDOOR.x1, z0: HOUSE.z0 - 1.12, z1: HOUSE.z0 - 0.88 } }));
 
-  add(hinged({ id: 'bedroom', x: -6, z: -3.88, y: LOFT.y, width: 2.9, height: 2.88, kind: 'sliding', surface: 'glass', color: 0x83aeb4, level: 1,
+  add(hinged({ id: 'bedroom', x: -6, z: -3.88, y: LOFT.y, width: 2.9, height: 2.88, kind: 'sliding', slideDirection: -1, surface: 'glass', color: 0x83aeb4, level: 1,
     bounds: { x0: -6, x1: -3.1, z0: -4.12, z1: -3.84 } }));
 
   // The hidden bookshelf door is part of the same timed and interactive set.
@@ -88,7 +170,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   const now = Date.now();
   let closedBySchedule = scheduledClosed(now);
   let checkedMinute = Math.floor(now / 60000);
-  const bySurface = new Map([['solid', []], ['glass', []]]);
+  const bySurface = new Map([['solid', []], ['glass', []], ['wood', []]]);
   for (const door of doors) {
     door.targetOpen = !closedBySchedule;
     door.pose = door.targetOpen ? door.openPose : door.closedPose;
@@ -114,11 +196,13 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   garage.root.add(shutterFace);
 
   const unitBox = new THREE.BoxGeometry(1, 1, 1), instanceMeshes = [];
+  const frontDoorStyle = Math.random() < 0.5 ? 'blackwood' : 'rosewood';
+  const woodDoor = makeFrontDoorMaterial(frontDoorStyle);
   const matrix = new THREE.Matrix4(), center = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
   for (const [surface, members] of bySurface) {
     if (!members.length) continue;
-    const material = surface === 'glass' ? glassDoor : solidDoor;
+    const material = surface === 'glass' ? glassDoor : surface === 'wood' ? woodDoor : solidDoor;
     const mesh = new THREE.InstancedMesh(unitBox, material, members.length);
     mesh.castShadow = false; mesh.receiveShadow = false;
     mesh.frustumCulled = false;

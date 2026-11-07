@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export const LIFE_SPOTS = [
   { id: 'fishing', title: '海边钓鱼台 · 垂钓', at: [-45.6, 2], floor: .2, radius: 2, anchor: [-46.7, .2, 2], yaw: -Math.PI / 2, view: [-42, 5, 9], look: [-47, 1, 2] },
   { id: 'cooking', title: '厨房 · 做饭', at: [17.6, 6.2], floor: 0, radius: 1.7, anchor: [17.6, 0, 5.45], yaw: Math.PI, view: [13.8, 4.2, 8.5], look: [17.6, 1.25, 4.6] },
-  { id: 'treadmill', title: '健身区 · 跑步机', at: [-8.3, 11.8], floor: 0, radius: 1.65, anchor: [-8.3, .265, 13.85], yaw: Math.PI, view: [-5, 3.8, 10.2], look: [-8.3, 1.2, 13.6] },
+  { id: 'treadmill', title: '健身区 · 跑步机', at: [-8.3, 11.8], floor: 0, radius: 1.65, anchor: [-8.3, .265, 13.85], yaw: 0, view: [-5, 3.8, 10.2], look: [-8.3, 1.2, 13.6] },
   { id: 'gym-bike', title: '健身区 · 动感单车', at: [-11.7, 11.35], floor: 0, radius: 1.35, anchor: [-11.7, 0, 12.2], yaw: Math.PI, view: [-8.5, 3.4, 10.2], look: [-11.7, 1, 12.2] },
   { id: 'gym-pullup', title: '健身区 · 引体向上', at: [-18.55, 12.55], floor: 0, radius: 1.35, anchor: [-18.55, 0, 13.8], yaw: Math.PI, view: [-15.5, 3.5, 11.5], look: [-18.55, 1.7, 13.8] },
   { id: 'gym-bench', title: '健身区 · 卧推训练凳', at: [-15.6, 11.45], floor: 0, radius: 1.25, anchor: [-15.6, 0, 12.7], yaw: Math.PI, view: [-12.5, 3.4, 10.5], look: [-15.6, .8, 12.7] },

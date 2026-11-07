@@ -2,17 +2,21 @@ import { RIM, GARAGE } from './layout.js';
 
 const IDLE={x:0,z:0,run:false};
 const ROUTINE=['cooking','tv','gaming','basketball','coffee','reading','fishing','treadmill'];
+const GYM_BACKUPS=['gym-bike','gym-pullup','gym-bench','gym-dumbbells','gym-cable','gym-vertec'];
 
 // Independent destinations use the same walkable routes as the player. The
 // visitor always has priority over a chair, screen, kitchen or basketball court.
 export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,stage}){
   const trail=world.mountain.trailhead;
   const spots=[...ROUTINE.map(id=>activities.spots.find(s=>s.id===id)),
+    ...activities.spots.filter(s=>s.activityId==='tv'||s.activityId==='gaming'),
+    ...GYM_BACKUPS.map(id=>activities.spots.find(s=>s.id===id)),
     {id:'roof-view',at:[-16,13],floor:11,anchor:[-16,11,13],yaw:0},
     {id:'motorcycle-view',at:[14.5,-.35],floor:0},
     {id:'swimming',at:[-6,23.2],floor:0}];
   const pose={activity:true,seated:false,left:0,right:0,speed:0};
   const bike=world.animated.motorcycle,bikeObstacle=world.animated.motorcycleObstacle;
+  let otherReserved=()=>false;
   const garage={x:14.5,y:0,z:1},savedObstacle={...bikeObstacle};let obstacleClock=0;
   function parkBike(){
     if(bike.userData.rider!=='female')return;
@@ -35,9 +39,11 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     woman.cancel();avatar.body.rotation.set(0,0,0);avatar.body.position.set(0,0,0);avatar.update(0,IDLE);
     avatar.setSwimsuit(false);ride=null;activities.setAmbientActivity(null);target=null;phase='waiting';elapsed=0;waiting=.4;
   }
-  const occupied=spot=>activities.current===spot.id||spot.id==='motorcycle-view'&&activities.current==='motorcycle';
+  const activityId=spot=>spot.activityId||spot.id;
+  const occupied=spot=>(activities.current===activityId(spot)&&spot.id===activityId(spot))||otherReserved(spot.id)||spot.id==='motorcycle-view'&&activities.current==='motorcycle';
   function start(id){
-    const spot=spots.find(s=>s.id===id);if(!spot||occupied(spot)||paused||woman.swimming)return false;
+    const options=id==='treadmill'?[id,...GYM_BACKUPS]:id==='tv'||id==='gaming'?[id,...spots.filter(s=>activityId(s)===id).map(s=>s.id)]:[id];
+    const spot=options.map(option=>spots.find(s=>s.id===option)).find(s=>s&&!occupied(s));if(!spot||paused||woman.swimming)return false;
     if(target)leave();
     if(id==='motorcycle-view'&&Math.hypot(bike.position.x-garage.x,bike.position.z-garage.z)>.5)return false;
     if(!navigate(spot.at[0],spot.floor,spot.at[1]))return false;
@@ -74,7 +80,7 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     woman.anchor(a[0],a[1],a[2],yaw);
   }
   function animate(dt){
-    const id=target.id,t=elapsed,cycle=t%6;
+    const id=activityId(target),t=elapsed,cycle=t%6;
     pose.activity=id!=='treadmill';pose.speed=id==='treadmill'?1.4:0;
     pose.seated=id==='tv'||id==='gaming'||id==='reading';pose.left=pose.right=-.65;
     if(id==='gaming'){pose.left=-1.2+Math.sin(t*13)*.12;pose.right=-1.2-Math.sin(t*13)*.12;}
@@ -84,7 +90,7 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     if(id==='basketball')pose.left=pose.right=cycle>1.2&&cycle<2.2?-2.3:-.65;
     if(id==='fishing'){pose.left=-.65;pose.right=-1.05-Math.max(0,Math.sin(cycle))* .3;}
     if(id==='roof-view')pose.left=pose.right=-.15;
-    avatar.root.position.set(woman.pos.x,woman.y+(pose.seated?-.1:0),woman.pos.z);avatar.root.rotation.set(0,woman.heading,0);
+    avatar.root.position.set(woman.pos.x,woman.y+(pose.seated&&id!=='tv'?-.1:0),woman.pos.z);avatar.root.rotation.set(0,woman.heading,0);
     avatar.update(dt,pose);avatar.beginProps();
     const box=avatar.prop;
     if(id==='coffee'){
@@ -161,5 +167,5 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     }else animate(dt);
     if(target&&!ride&&elapsed>=duration){completed++;leave();}
   }
-  return{update,start,pause(){if(!paused){leave();paused=true;}},resume(){paused=false;waiting=.1;},get activity(){return target?.id||null;},status:()=>({phase:paused?'paused':phase,activity:target?.id||null,elapsed,duration,completed,ride:ride?.stage||null,outfit:avatar.outfit})};
+  return{update,start,pause(){if(!paused){leave();paused=true;}},resume(){paused=false;waiting=.1;},setReservationCheck(check){otherReserved=check;},get activity(){return target?activityId(target):null;},get reservation(){return target?.id||null;},status:()=>({phase:paused?'paused':phase,activity:target?activityId(target):null,elapsed,duration,completed,ride:ride?.stage||null,outfit:avatar.outfit})};
 }

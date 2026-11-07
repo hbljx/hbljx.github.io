@@ -434,7 +434,7 @@ async function boot() {
   function useTarget(id) {
     if (id === 'portal') { openPortal(); return; }
     if (panel.open && openStation === id) closePage();
-    else openPage(id);
+    else openPage(id, { preserveScene: true });
   }
   promptEl.addEventListener('click', () => { if (promptFor) useTarget(promptFor); });
 
@@ -598,7 +598,7 @@ async function boot() {
     // the player towards wherever the far-away view happened to be touched.
     if (rig.introActive) { rig.skipIntro(); return; }
     if (!wasInteracting && target.spot?.id === 'mailbox') { useTarget('mailbox'); return; }
-    if (!wasInteracting && target.spot) { activate(target.spot.id); return; }
+    if (!wasInteracting && target.spot) { useTarget(target.spot.id); return; }
     // Lying on the pool's floor looking up, a tap only brings them up again.
     if (player.gazing) { player.toggleDive(); return; }
     if (webMode && !wasInteracting) {

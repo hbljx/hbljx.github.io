@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { createPlayer } from '@engine/world/player.js';
+import { RIM } from './layout.js';
 
 const IDLE = { x: 0, z: 0, run: false };
-const ACTIVITIES = ['reading', 'treadmill', 'basketball', 'cooking', 'tv', 'gaming'];
+const GYM_BACKUPS = ['gym-bike', 'gym-pullup', 'gym-bench', 'gym-dumbbells', 'gym-cable', 'gym-vertec'];
+const ACTIVITIES = ['reading', 'treadmill', 'basketball', 'cooking', 'tv', 'gaming', ...GYM_BACKUPS];
 const ACTIVITY_DURATION = 60;
 
 function createParentAvatar(name, colors) {
@@ -107,9 +109,10 @@ function createParentAvatar(name, colors) {
         let angle = Math.sin(phase + (p.limb > 0 ? 0 : Math.PI)) * Math.min(1, pose.speed || 0) * .6 * (leg ? 1 : -1);
         if (pose.activity) angle = leg ? (pose.seated ? -Math.PI / 2 : 0) : (p.limb > 0 ? pose.right : pose.left);
         if (pose.id === 'treadmill') angle = Math.sin(phase + (p.limb > 0 ? 0 : Math.PI)) * (leg ? .55 : -.4);
-        if (pose.id === 'basketball' && !leg) angle = p.limb > 0
-          ? -.5 - Math.max(0, Math.sin(phase * 1.8)) * .65
-          : -.82 + Math.sin(phase * 1.8 + .7) * .12;
+        if (pose.id === 'basketball' && !leg) {
+          const dribble = (1 - Math.cos(pose.elapsed * Math.PI * 2 / 1.05)) / 2;
+          angle = p.limb > 0 ? -1.05 + dribble * .72 : -.58 + dribble * .12;
+        }
         if (pose.id === 'cooking' && !leg) angle = p.limb > 0
           ? -.72 + Math.sin(phase * 2) * .22
           : -.52 + Math.sin(phase * 1.4 + .8) * .2;
@@ -150,10 +153,22 @@ export function createParents({ stage, world, nav }, activities, femaleRoutine) 
       pose: { activity: true, seated: false, speed: 0, left: -.65, right: -.65, id: null } };
   });
 
-  function occupied(id, self) {
-    if (activities.current === id || femaleRoutine.activity === id) return true;
-    for (const other of residents) if (other !== self && other.target?.id === id) return true;
+  function activityId(spot) { return spot.activityId || spot.id; }
+  function occupied(spot, self) {
+    const id = activityId(spot);
+    if (activities.current === id && spot.id === id) return true;
+    if (femaleRoutine.reservation === spot.id) return true;
+    for (const other of residents) if (other !== self && other.target?.id === spot.id) return true;
     return false;
+  }
+  function findAvailable(id, resident) {
+    const ids = id === 'treadmill' ? [id, ...GYM_BACKUPS] : [id];
+    for (const candidateId of ids) {
+      const spots = activities.spots.filter(candidate => activityId(candidate) === candidateId);
+      const spot = spots.find(candidate => !occupied(candidate, resident));
+      if (spot) return spot;
+    }
+    return null;
   }
   function choose(resident) {
     if (!resident.bag.length) {
@@ -166,8 +181,7 @@ export function createParents({ stage, world, nav }, activities, femaleRoutine) 
     }
     while (resident.bag.length) {
       const id = resident.bag.pop();
-      if (occupied(id, resident)) continue;
-      const spot = activities.spots.find(candidate => candidate.id === id);
+      const spot = findAvailable(id, resident);
       if (!spot || !resident.actor.goTo(spot.at[0], spot.at[1])) continue;
       resident.target = spot; resident.phase = 'walking'; resident.elapsed = 0;
       return;
@@ -176,11 +190,11 @@ export function createParents({ stage, world, nav }, activities, femaleRoutine) 
   }
   function animate(resident, dt) {
     const { actor, avatar, target } = resident;
-    const id = target.id, seated = id === 'reading' || id === 'tv' || id === 'gaming';
+    const id = activityId(target), seated = id === 'reading' || id === 'tv' || id === 'gaming' || id === 'gym-bike';
     const pose = resident.pose;
     pose.id = id; pose.seated = seated; pose.speed = id === 'treadmill' ? 1.35 : 0; pose.elapsed = resident.elapsed;
     pose.left = pose.right = id === 'reading' ? -.92 : id === 'gaming' ? -1.05 : -.62;
-    avatar.root.position.set(actor.pos.x, actor.y + (seated ? -.1 : 0), actor.pos.z);
+    avatar.root.position.set(actor.pos.x, actor.y + (seated && id !== 'tv' ? -.1 : 0), actor.pos.z);
     avatar.root.rotation.set(0, actor.heading, 0);
     avatar.update(dt, pose);
     avatar.beginProps();
@@ -189,14 +203,14 @@ export function createParents({ stage, world, nav }, activities, femaleRoutine) 
       avatar.prop(0, 1.066, .43, .52, .02, .32, 0xf4e8ca);
       avatar.prop(0, 1.082, .43, .025, .012, .32, 0xb89d75);
     } else if (id === 'basketball') {
-      const bounce = Math.abs(Math.sin(resident.elapsed * 4));
-      avatar.prop(.32, .3 + bounce * .72, .42, .28, .28, .28, 0xe27c35);
+      const bounce = (1 - Math.cos(resident.elapsed * Math.PI * 2 / 1.05)) / 2;
+      avatar.prop(.32, .14 + bounce * .82, .42, .28, .28, .28, 0xe27c35);
     }
     avatar.endProps();
   }
   function update(dt) {
     for (const resident of residents) {
-      if (resident.target && occupied(resident.target.id, resident)) {
+      if (resident.target && occupied(resident.target, resident)) {
         resident.actor.cancel(); resident.target = null; resident.phase = 'waiting'; resident.wait = .3;
       }
       if (resident.phase === 'waiting') {
@@ -212,7 +226,10 @@ export function createParents({ stage, world, nav }, activities, femaleRoutine) 
         if (Math.abs(resident.actor.y - spot.floor) < .25 && Math.hypot(resident.actor.pos.x - spot.at[0], resident.actor.pos.z - spot.at[1]) < .4) {
           resident.actor.cancel();
           const anchor = spot.anchor || [spot.at[0], spot.floor, spot.at[1]];
-          resident.actor.anchor(anchor[0], anchor[1], anchor[2], spot.yaw ?? 0);
+          const yaw = activityId(spot) === 'basketball'
+            ? Math.atan2(RIM.x - anchor[0], RIM.z - anchor[2])
+            : spot.yaw ?? 0;
+          resident.actor.anchor(anchor[0], anchor[1], anchor[2], yaw);
           resident.phase = 'active'; resident.elapsed = 0; resident.duration = ACTIVITY_DURATION;
           resident.lastActivity = spot.id;
         } else if (resident.elapsed > 60) {
@@ -226,5 +243,9 @@ export function createParents({ stage, world, nav }, activities, femaleRoutine) 
       }
     }
   }
-  return { update, status: () => residents.map(({ avatar, phase, target }) => ({ name: avatar.root.name, phase, activity: target?.id || null })) };
+  return {
+    update,
+    isReserved(id) { return residents.some(resident => resident.target?.id === id); },
+    status: () => residents.map(({ avatar, phase, target }) => ({ name: avatar.root.name, phase, activity: target ? activityId(target) : null })),
+  };
 }
