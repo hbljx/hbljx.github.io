@@ -54,7 +54,7 @@ function createParentAvatar(name, colors) {
     part(x, 1.665, .225, .13, .025, .028, colors.hair);
   }
   part(0, 1.49, .229, .09, .022, .025, colors.mouth);
-  if (name === '爸爸') part(0, 1.455, .228, .17, .045, .026, colors.hairLight);
+  if (name === '爸爸') part(0, 1.455, .25, .17, .045, .026, colors.hairLight);
   part(0, 1.347, .18, .22, .12, .055, colors.inner);
   for (const side of [-1, 1]) part(side * .052, 1.31, .212, .07, .08, .025, colors.shirt);
   for (const y of [.99, .85, .71]) part(0, y, .179, .025, .025, .018, colors.buttons);

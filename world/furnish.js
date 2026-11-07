@@ -522,6 +522,7 @@ export function furnish({ layer, additionalDoors = [] }) {
   const bedroomDoorZ = -3.98;
   for (const x of [-6, -3]) B.box(x, LOFT.y, bedroomDoorZ, .07, 3, .1, L.steel);
   B.box(-4.5, LOFT.y + 2.93, bedroomDoorZ, 3, .07, .1, L.steel);
+  B.box(-4.55, LOFT.y + 2.86, -3.88, 3.08, .045, .16, L.steel);
   foot(-7.38, bedroomDoorZ, 2.85, .15, 1);
   const { x: bedX, z: bedZ, y: bedY } = BED;
   B.box(bedX, bedY, bedZ + 1.2, 7.4, .025, 6.4, L.linen);

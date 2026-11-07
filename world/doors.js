@@ -13,11 +13,12 @@ function scheduledClosed(timestamp) {
 }
 
 function hinged({ id, controlGroup = id, x, z, y = 0, width, height, closedYaw = 0, openYaw,
-  surface = 'solid', color = 0x343b40, level = 0, bounds, interactY = y, onBlockingChange }) {
+  kind = 'hinged', surface = 'solid', color = 0x343b40, level = 0, bounds, interactY = y, onBlockingChange }) {
   const root = new THREE.Object3D();
   root.position.set(x, y, z);
-  root.rotation.y = closedYaw;
-  return { id, controlGroup, root, kind: 'hinged', width, height, surface, color, closedPose: closedYaw, openPose: openYaw, level, interactY, bounds, onBlockingChange, angle: closedYaw };
+  if (kind === 'hinged') root.rotation.y = closedYaw;
+  return { id, controlGroup, root, kind, width, height, surface, color, closedPose: kind === 'sliding' ? 0 : closedYaw,
+    openPose: kind === 'sliding' ? width : openYaw, originX: x, level, interactY, bounds, onBlockingChange, angle: closedYaw };
 }
 
 export function createIslandDoors(obstacles, additionalDoors = []) {
@@ -29,7 +30,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   add(hinged({ id: 'front-left', controlGroup: 'front', x: ENTRANCE.x0, z: HOUSE.z1 + 0.3, width: entranceMid - ENTRANCE.x0,
     height: 2.8, openYaw: -Math.PI / 2, bounds: { x0: ENTRANCE.x0, x1: entranceMid, z0: HOUSE.z1 - 0.12, z1: HOUSE.z1 + 0.12 } }));
   const right = hinged({ id: 'front-right', controlGroup: 'front', x: ENTRANCE.x1, z: HOUSE.z1 + 0.3, width: ENTRANCE.x1 - entranceMid,
-    height: 2.8, closedYaw: Math.PI, openYaw: Math.PI / 2,
+    height: 2.8, closedYaw: Math.PI, openYaw: 3 * Math.PI / 2,
     bounds: { x0: entranceMid, x1: ENTRANCE.x1, z0: HOUSE.z1 - 0.12, z1: HOUSE.z1 + 0.12 } });
   add(right);
 
@@ -49,7 +50,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     openYaw: -Math.PI / 2, color: 0x76583f,
     bounds: { x0: BACKDOOR.x0, x1: BACKDOOR.x1, z0: HOUSE.z0 - 1.12, z1: HOUSE.z0 - 0.88 } }));
 
-  add(hinged({ id: 'bedroom', x: -6, z: -3.88, y: LOFT.y, width: 2.9, height: 2.88, openYaw: -Math.PI / 2, color: 0x76583f, level: 1,
+  add(hinged({ id: 'bedroom', x: -6, z: -3.88, y: LOFT.y, width: 2.9, height: 2.88, kind: 'sliding', surface: 'glass', color: 0x83aeb4, level: 1,
     bounds: { x0: -6, x1: -3.1, z0: -4.12, z1: -3.84 } }));
 
   // The hidden bookshelf door is part of the same timed and interactive set.
@@ -72,6 +73,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     door.targetOpen = !closedBySchedule;
     door.pose = door.targetOpen ? door.openPose : door.closedPose;
     if (door.kind === 'shutter') door.root.position.y = door.pose;
+    else if (door.kind === 'sliding') door.root.position.x = door.originX + door.pose;
     else door.root.rotation.y = door.pose;
     door.elapsed = TRANSITION_SECONDS;
     door.renderVisible = !door.targetOpen;
@@ -104,6 +106,10 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
       center.set(0, door.renderVisible ? door.height / 2 : door.height / 2 + 12, 0).add(door.root.position);
       rotation.setFromAxisAngle(up, Math.PI / 2);
       scale.set(door.width, door.height, 0.1);
+    } else if (door.kind === 'sliding') {
+      center.set(door.width / 2, door.height / 2, 0).add(door.root.position);
+      rotation.identity();
+      scale.set(door.width, door.height, 0.1);
     } else {
       center.set(door.width / 2, door.height / 2, 0).applyQuaternion(door.root.quaternion).add(door.root.position);
       rotation.copy(door.root.quaternion);
@@ -132,7 +138,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     door.to = open ? door.openPose : door.closedPose;
     door.elapsed = 0;
     if (door.kind === 'shutter' && !open) door.renderVisible = true;
-    return open && setBlocking(door, false);
+    return setBlocking(door, !open);
   }
 
   return {
@@ -172,6 +178,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
         const t = door.elapsed / TRANSITION_SECONDS, eased = t * t * (3 - 2 * t);
         door.pose = door.from + (door.to - door.from) * eased;
         if (door.kind === 'shutter') door.root.position.y = door.pose;
+        else if (door.kind === 'sliding') door.root.position.x = door.originX + door.pose;
         else door.root.rotation.y = door.pose;
         if (door.elapsed === TRANSITION_SECONDS) {
           if (door.kind === 'shutter' && door.targetOpen) door.renderVisible = false;
