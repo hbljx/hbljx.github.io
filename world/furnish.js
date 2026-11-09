@@ -10,7 +10,7 @@ import { createRoadster } from './roadster.js';
 import { buildSharedRooms } from './shared-rooms.js';
 import { buildFloorPlants } from './plants.js';
 import { createIslandDoors } from './doors.js';
-import { HOUSE, COURT, RIM, VERTEC, LOFT, BED, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, STUDIO_WALL_END } from './layout.js';
+import { HOUSE, COURT, RIM, VERTEC, LOFT, LOFT_STAIR_DOOR, BED, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, STUDIO_WALL_END } from './layout.js';
 
 const L = {
   // Two interior wood finishes: the existing floor and the wall-panel timber.
@@ -512,12 +512,16 @@ export function furnish({ layer, additionalDoors = [] }) {
   const bedroomBottom=LOFT.y, bedroomHeight=3;
   B.box((LOFT.x0+LOFT.x1)/2,bedroomBottom,LOFT.z0+.06,LOFT.x1-LOFT.x0,bedroomHeight,.055,{tex:'glass',glass:true});
   glazing(B,(LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,bedroomBottom,bedroomHeight);
-  B.box(LOFT.x0+.02,bedroomBottom,(LOFT.z0+LOFT.z1)/2,.055,bedroomHeight,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
-  glazing(B,LOFT.x0+.02,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2,false,true);
+  const stairDoor = LOFT_STAIR_DOOR;
+  const westPaneWidth = stairDoor.z0 - LOFT.z0, westPaneZ = (LOFT.z0 + stairDoor.z0) / 2;
+  B.box(stairDoor.x,bedroomBottom,westPaneZ,.055,bedroomHeight,westPaneWidth,{tex:'glass',glass:true});
+  glazing(B,stairDoor.x,westPaneZ,westPaneWidth,bedroomBottom,bedroomHeight,Math.PI/2);
+  B.box(stairDoor.x,bedroomBottom,stairDoor.z1,.10,bedroomHeight,.07,L.steel);
+  B.box(stairDoor.x,bedroomBottom+bedroomHeight-.07,(stairDoor.z0+stairDoor.z1)/2,.10,.07,stairDoor.z1-stairDoor.z0,L.steel);
   B.box(LOFT.x1-.06,bedroomBottom,(LOFT.z0+LOFT.z1)/2,.055,bedroomHeight,LOFT.z1-LOFT.z0,{tex:'glass',glass:true});
   glazing(B,LOFT.x1-.06,(LOFT.z0+LOFT.z1)/2,LOFT.z1-LOFT.z0,bedroomBottom,bedroomHeight,Math.PI/2);
   foot((LOFT.x0+LOFT.x1)/2,LOFT.z0+.06,LOFT.x1-LOFT.x0,.12,1);
-  foot(LOFT.x0+.02,(LOFT.z0+LOFT.z1)/2,.12,LOFT.z1-LOFT.z0,1);
+  foot(stairDoor.x,westPaneZ,.12,westPaneWidth,1);
   foot(LOFT.x1-.06,(LOFT.z0+LOFT.z1)/2,.12,LOFT.z1-LOFT.z0,1);
   // Keep the bedroom door on its own plane behind the front glazing frame.
   // Matching the surrounding 3 m frame avoids a short lintel and coplanar

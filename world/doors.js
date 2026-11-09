@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { HOUSE, LOFT, SECRET, GARAGE, ENTRANCE, BACKDOOR, ROOF_LADDER } from './layout.js';
 
 const CLOSE_HOUR = 18, OPEN_HOUR = 7, TRANSITION_SECONDS = 0.48;
-const APPROACH_DISTANCE = 2.8, SHUTTER_APPROACH_DISTANCE = 4, JAMB_MARGIN = 0.45;
+const APPROACH_DISTANCE = 2.8, AUTOMATIC_APPROACH_DISTANCE = 3.4, SHUTTER_APPROACH_DISTANCE = 4, JAMB_MARGIN = 0.45;
 const solidDoor = new THREE.MeshLambertMaterial({ color: 0xffffff });
 const glassDoor = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.38 });
 
@@ -45,6 +45,24 @@ function makeFrontDoorMaterial(style) {
   ctx.lineWidth = 1.5;
   ctx.strokeRect(19, 17, 90, 94);
 
+  // Recessed moldings and stepped corner inlays frame the carved panel.
+  ctx.strokeStyle = colors.base;
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(22, 20, 84, 88);
+  ctx.strokeStyle = colors.trim;
+  ctx.lineWidth = 0.7;
+  ctx.strokeRect(24, 22, 80, 84);
+  const corner = new Path2D('M0 16V0h16 M3 13V3h10 M6 10V6h4v4H6');
+  for (const [x, sx] of [[26, 1], [102, -1]]) {
+    for (const [y, sy] of [[24, 1], [104, -1]]) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(sx, sy);
+      ctx.stroke(corner);
+      ctx.restore();
+    }
+  }
+
   // Mirrored botanical scrollwork gives the entrance a carved, formal center.
   ctx.save();
   ctx.translate(128, 0);
@@ -76,13 +94,32 @@ function makeFrontDoorMaterial(style) {
   ctx.lineWidth = 1;
   drawScroll();
 
+  // Paired leaves with engraved veins follow the mirrored vines.
+  const leaf = new Path2D('M0 0Q1-6 7-7Q6-2 0 0L5-5');
+  ctx.strokeStyle = colors.trim;
+  ctx.lineWidth = 0.8;
+  for (const [x, y] of [[42, 59], [47, 79], [51, 32]]) {
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.translate(64 + side * (64 - x), y);
+      ctx.scale(-side, 1);
+      ctx.stroke(leaf);
+      ctx.restore();
+    }
+  }
+
   // The two leaves share a vertical arrangement with 福 at the panel center.
   for (const [character, y] of [['禄', 38], ['福', 64], ['寿', 90]]) {
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(64, y, 11.5, 0, 2 * Math.PI);
     ctx.fillStyle = colors.base;
     ctx.fill();
     ctx.strokeStyle = colors.trim;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(64, y, 10, 0, 2 * Math.PI);
+    ctx.lineWidth = 0.55;
     ctx.stroke();
 
     ctx.save();
@@ -105,8 +142,14 @@ function makeFrontDoorMaterial(style) {
     ctx.closePath();
     ctx.fill();
   }
-  ctx.fillStyle = colors.trim;
-  ctx.fillRect(100, 61, 4, 8);
+  ctx.fillStyle = colors.base;
+  ctx.fillRect(97, 58, 9, 14);
+  ctx.strokeStyle = colors.trim;
+  ctx.strokeRect(97.5, 58.5, 8, 13);
+  ctx.strokeStyle = colors.detail;
+  ctx.beginPath();
+  ctx.ellipse(101.5, 65.5, 2.3, 4, 0, 0, 2 * Math.PI);
+  ctx.stroke();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -143,12 +186,12 @@ function scheduledClosed(timestamp) {
   return hour >= CLOSE_HOUR || hour < OPEN_HOUR;
 }
 
-function hinged({ id, controlGroup = id, x, z, y = 0, width, height, closedYaw = 0, openYaw,
+function hinged({ id, controlGroup = id, automatic = false, x, z, y = 0, width, height, closedYaw = 0, openYaw,
   kind = 'hinged', slideDirection = 1, surface = 'solid', color = 0x343b40, level = 0, bounds, interactY = y, onBlockingChange }) {
   const root = new THREE.Object3D();
   root.position.set(x, y, z);
   if (kind === 'hinged') root.rotation.y = closedYaw;
-  return { id, controlGroup, root, kind, width, height, surface, color, closedPose: kind === 'sliding' ? 0 : closedYaw,
+  return { id, controlGroup, automatic, root, kind, width, height, surface, color, closedPose: kind === 'sliding' ? 0 : closedYaw,
     openPose: kind === 'sliding' ? width * slideDirection : openYaw, originX: x, level, interactY, bounds, onBlockingChange, angle: closedYaw };
 }
 
@@ -158,7 +201,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     const key = door.controlGroup ?? door.id;
     let group = groupsById.get(key);
     if (!group) {
-      group = { doors: [], nearby: false };
+      group = { doors: [], nearby: false, automatic: door.automatic };
       groupsById.set(key, group);
     }
     group.doors.push(door);
@@ -213,7 +256,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   let checkedMinute = Math.floor(now / 60000);
   const bySurface = new Map([['solid', []], ['glass', []], ['wood', []]]);
   for (const door of doors) {
-    door.targetOpen = !closedBySchedule;
+    door.targetOpen = !door.automatic && !closedBySchedule;
     door.pose = door.targetOpen ? door.openPose : door.closedPose;
     if (door.kind === 'shutter') door.root.position.y = door.pose;
     else if (door.kind === 'sliding') door.root.position.x = door.originX + door.pose;
@@ -221,7 +264,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     door.elapsed = TRANSITION_SECONDS;
     door.renderVisible = !door.targetOpen;
     door.obstacle = { ...door.bounds, level: door.level };
-    door.blocking = closedBySchedule;
+    door.blocking = !door.targetOpen;
     if (door.blocking) obstacles.push(door.obstacle);
     door.onBlockingChange?.(door.blocking, door.obstacle);
     if (door.kind !== 'shutter') bySurface.get(door.surface).push(door);
@@ -297,7 +340,8 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
       door.renderVisible = true;
       door.root.children[0].visible = true;
     }
-    return setBlocking(door, !open);
+    // Keep the stair doorway solid until the glass leaf has swung clear.
+    return setBlocking(door, door.automatic || !open);
   }
 
   function approaching(door, actor) {
@@ -305,7 +349,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     if (Math.abs(actor.floorY - door.interactY) > 0.85) return false;
     const { x, z } = actor.pos, { x0, x1, z0, z1 } = door.bounds;
     const dx = Math.max(x0 - x, x - x1, 0), dz = Math.max(z0 - z, z - z1, 0);
-    const reach = door.kind === 'shutter' ? SHUTTER_APPROACH_DISTANCE : APPROACH_DISTANCE;
+    const reach = door.automatic ? AUTOMATIC_APPROACH_DISTANCE : door.kind === 'shutter' ? SHUTTER_APPROACH_DISTANCE : APPROACH_DISTANCE;
     return x1 - x0 >= z1 - z0 ? dx <= JAMB_MARGIN && dz <= reach : dz <= JAMB_MARGIN && dx <= reach;
   }
 
@@ -316,7 +360,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
       const y = player.floorY;
       let nearest = null, distance = 3.1;
       for (const door of doors) {
-        if (Math.abs(y - door.interactY) > 1.3) continue;
+        if (door.automatic || Math.abs(y - door.interactY) > 1.3) continue;
         const d = Math.hypot(player.pos.x - (door.originX ?? door.root.position.x), player.pos.z - door.root.position.z);
         if (d < distance) { distance = d; nearest = door; }
       }
@@ -347,9 +391,9 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
             if (nearby) break;
           }
         }
-        // Open on entry so a manual close can still hold until the next approach.
-        if (scheduleChanged || (nearby && !group.nearby)) {
-          const open = nearby || !closedBySchedule;
+        // Scheduled doors open on entry so a manual close can hold until the next approach.
+        if (group.automatic || scheduleChanged || (nearby && !group.nearby)) {
+          const open = nearby || (!group.automatic && !closedBySchedule);
           for (const door of group.doors) navChanged = setOpen(door, open) || navChanged;
         }
         if (actors) group.nearby = nearby;

@@ -30,14 +30,34 @@ try {
       check('crewPatrolsBeforeStart', sub.crew.status().patrolCount === 5 && sub.crew.status().seatedCount === 0);
       p.teleport(.5, 5.8);
       check('homeToHatch', h.navigate(sub.board.x, sub.board.z, sub.board.y) && finishWalk(sub.board));
+      p.restore(sub.foot.x + 2, sub.foot.y, sub.foot.z, -Math.PI / 2);
+      const walkWest = { x: -1, z: 0, run: true };
+      for (let i = 0; i < 1800 && p.pos.x > sub.pier.x0 - .5; i++) p.update(1 / 60, walkWest, 0);
+      check('walkAcrossGangway', p.island === 'submarine' && !p.flying && p.pos.x < sub.pier.x0 - .4 && Math.abs(p.y - sub.board.y) < .05);
+      check('walkToHatch', h.navigate(sub.board.x, sub.board.z, sub.board.y) && finishWalk(sub.board));
       check('canBoard', sub.canBoard(p));
       check('board', a.start('submarine'));
       if (!a.active) return { checks, failures, player: { x:p.pos.x,y:p.y,z:p.pos.z,mode:p.mode,island:p.island } };
       check('crewSeatsAfterStart', sub.crew.status().patrolCount === 0 && sub.crew.status().seatedCount === 5);
+      const berth = sub.mesh.position.clone(), rampX = (sub.pier.x0 + sub.pier.x1) / 2;
+      const atBerth = () => sub.mesh.position.equals(berth) && sub.mesh.rotation.y === 0 && a.dive.status().speed === 0;
+      const rampWalkable = () => h.world.ground.topAt(rampX, sub.pier.z)?.site === 'submarine';
+      a.keyDown(key('w'));
+      for (let i = 0; i < 25; i++) a.update(.05);
+      check('manualDepartureWaitsForGangway', atBerth() && sub.gangway.visible && sub.gangwayProgress > 0 && sub.gangwayProgress < .5);
+      check('movingGangwayIsClosedToWalkers', !rampWalkable());
+      a.keyUp(key('w'));
+      check('exitWaitsForGangwayToReopen', a.stop() === false && a.active);
+      for (let i = 0; i < 60 && a.active; i++) a.update(.05);
+      check('cancelledDepartureRestoresGangway', !a.active && sub.gangwayReady() && rampWalkable() && sub.canBoard(p));
+      a.start('submarine');
       a.dive.togglePatrol(); a.dive.returnHome();
       for(let i=0;i<60;i++)a.update(.05);
       check('returnCancelsQueuedDeparture', sub.docked() && !a.dive.automatic);
-      a.dive.togglePatrol(); for(let i=0;i<90;i++)a.update(.05);
+      a.dive.togglePatrol(); for(let i=0;i<35;i++)a.update(.05);
+      check('automaticDepartureWaitsForGangway', atBerth() && sub.gangwayProgress > 0 && sub.gangwayProgress < .25);
+      for(let i=0;i<55;i++)a.update(.05);
+      check('departureLeavesNoGangway', !sub.docked() && sub.gangwayProgress === 0 && !sub.gangway.visible && !rampWalkable());
       a.dive.returnHome(); a.dive.returnHome();
       for(let i=0;i<8000 && !sub.docked();i++)a.update(.05);
       check('returnDuringDeparture', sub.docked() && a.current === 'submarine');
@@ -79,10 +99,11 @@ try {
       const returnPhases = [], metro = h.world.transit.services.metro.path, piers = [];
       for (let s = 48; s < metro.length - 35; s += 24) piers.push(metro.sample(s, {}));
       let prior = a.dive.status(), movingTurn = false, steadyCrossing = true, slowTurn = true, alignedDocking = true;
-      let pierClearance = Infinity, deckClearance = Infinity;
+      let pierClearance = Infinity, deckClearance = Infinity, deployingBeforeExit = false;
       for (let i = 0; i < 18000 && a.active; i++) {
         a.update(.05);
         const state = a.dive.status(), phase = state.returnStage;
+        deployingBeforeExit ||= state.docked && state.exitPending && a.active && sub.gangwayProgress > 0 && !sub.gangwayReady() && !rampWalkable();
         if (returnPhases.at(-1) !== phase) returnPhases.push(phase);
         const step = Math.hypot(state.x - prior.x, state.z - prior.z);
         const turn = Math.abs(Math.atan2(Math.sin(state.heading - prior.heading), Math.cos(state.heading - prior.heading)));
@@ -114,7 +135,8 @@ try {
       check('alignedLowSpeedDocking', alignedDocking);
       check('fullHullClearsBridgePiers', pierClearance > 1.1);
       check('fullHullClearsBridgeDeck', deckClearance >= 12);
-      check('returnAndDisembark', !a.active && sub.docked() && sub.canBoard(p));
+      check('dockingDeploysGangwayBeforeExit', deployingBeforeExit);
+      check('returnAndDisembark', !a.active && sub.gangwayReady() && rampWalkable() && sub.canBoard(p));
       const home = { x: .5, y: 0, z: 5.8 };
       // Return from different headings, depths, boundaries and below the pier.
       const returnCases = [[sub.home.x - 28,-18.5,sub.home.z,Math.PI/2],[-650,-320,520,2.5],[sub.home.x,0,590,Math.PI],[-300,-160,330,-1.2],[-130,-19,98,Math.PI/2],[-750,-320,600,-2],[-360,-300,110,0]];

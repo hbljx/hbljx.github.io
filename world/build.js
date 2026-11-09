@@ -74,7 +74,7 @@ export function build({ grid, layer, materials, stage }) {
   shore.box(36.55, -1.72, 30.62, 1.65, 1.2, 1.3, shoreRock, { ry: .18, shadow: false });
   const carrier = buildCarrier(layer, furn.batches.static);
   const submarine = buildSubmarine(furn.batches.static, furn.planes);
-  stage.scene.add(submarine.crew.group);
+  stage.scene.add(submarine.crew.group, submarine.gangway);
   const offshore = buildOffshore();
   stage.scene.add(offshore.group);
   const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch,transit.tunnel.path);

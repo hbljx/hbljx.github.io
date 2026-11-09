@@ -7,11 +7,12 @@ import { DEEP_LANDMARKS, seabedAt, installDeepSeaView } from './deep-sea.js';
 import { PATROL_BOUNDS, PATROL_LENGTH, samplePatrol, RETURN_ENTRY, RETURN_LENGTH, sampleReturn } from './submarine-path.js';
 
 const HOME = { ...SUBMARINE_HOME, y: 0 }, MODEL_DECK = 4.4, DECK = MODEL_DECK * SUBMARINE_SCALE, MAX_DEPTH = 320;
-const PIER = { x0: HOME.x + 5 * SUBMARINE_SCALE, x1: SEA_BRIDGE.x - 4, z: HOME.z, width: SUBMARINE_ACCESS.width };
-const pierHeight = x => DECK + (bridgeHeight(HOME.z) - DECK) * THREE.MathUtils.clamp((x - PIER.x0) / (PIER.x1 - PIER.x0), 0, 1);
-const onPier = (x, z, margin = 0) => x >= PIER.x0 && x <= PIER.x1 && Math.abs(z - HOME.z) <= PIER.width / 2 - margin;
+const PIER = { x0: HOME.x + 5 * SUBMARINE_SCALE, x1: SEA_BRIDGE.x - SEA_BRIDGE.width / 2, z: HOME.z, width: SUBMARINE_ACCESS.width };
+const PIER_RUN = PIER.x1 - PIER.x0, PIER_RISE = bridgeHeight(PIER.z) - DECK;
+const GANGWAY_SECONDS = 2, GANGWAY_THICKNESS = .28;
 const angle = a => Math.atan2(Math.sin(a), Math.cos(a));
 const clamp = THREE.MathUtils.clamp;
+const pierHeight = x => DECK + PIER_RISE * clamp((x - PIER.x0) / PIER_RUN, 0, 1);
 
 function createCrew(mesh) {
   // Keep the patrol beside the hatch on the west side of the deck, clear of
@@ -223,65 +224,84 @@ function createSubmarineMesh() {
   mesh.name = 'territory-nuclear-submarine'; mesh.position.set(HOME.x, 0, HOME.z); mesh.scale.setScalar(SUBMARINE_SCALE); mesh.updateMatrixWorld(true); return mesh;
 }
 
+function createGangway() {
+  const length = Math.hypot(PIER_RUN, PIER_RISE), posts = Math.ceil(length / 4);
+  const gangway = new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshLambertMaterial(), 7 + posts * 2);
+  gangway.name = 'submarine-boarding-gangway';
+  gangway.position.set(PIER.x0, DECK, PIER.z);
+  gangway.rotation.z = Math.atan2(PIER_RISE, PIER_RUN);
+  const part = new THREE.Object3D(), color = new THREE.Color();
+  let index = 0;
+  function box(x, y, z, w, h, d, tint) {
+    part.position.set(x, y, z); part.scale.set(w, h, d); part.updateMatrix();
+    gangway.setMatrixAt(index, part.matrix); gangway.setColorAt(index++, color.setHex(tint));
+  }
+  box(length / 2, -GANGWAY_THICKNESS / 2, 0, length, GANGWAY_THICKNESS, PIER.width, 0x879c9a);
+  for (const x of [1, length - 1]) box(x, .012, 0, .28, .024, PIER.width - .4, 0xd7b56b);
+  for (const side of [-1, 1]) {
+    const z = side * (PIER.width / 2 - .1);
+    for (const y of [.5, 1.05]) box(length / 2, y, z, length, .09, .09, 0xb4c9c6);
+    for (let i = 0; i < posts; i++) box((i + .5) * length / posts, .54, z, .12, 1.08, .12, 0xb4c9c6);
+  }
+  return gangway;
+}
+
 export function buildSubmarine(B, planes) {
-  const mesh = createSubmarineMesh(), spans = [[PIER.x0, PIER.x1]];
-  const crew = createCrew(mesh);
-  const deck = { tex: 'deck', tint: 0x879c9a }, rail = { tex: 'paint', tint: 0xb4c9c6 }, cyan = { tex: 'paint', tint: 0x74e7d9, emissive: .8 };
-  for (const [a, b] of spans) {
-    const ya = pierHeight(a), yb = pierHeight(b), slope = Math.atan2(yb - ya, b - a), length = Math.hypot(b - a, yb - ya), t = .28;
-    B.box((a + b) / 2 + t * Math.sin(slope) / 2, (ya + yb) / 2 - t * Math.cos(slope) / 2 - t / 2, HOME.z, length, t, PIER.width, deck, { rz: slope });
-    for (const side of [-1, 1]) for (const h of [.5, 1.05]) B.box((a + b) / 2, (ya + yb) / 2 + h, HOME.z + side * (PIER.width / 2 - .1), length, .09, .09, rail, { rz: slope });
-  }
-  for (let x = PIER.x0 + 1; x < PIER.x1 - 1; x += 4) for (const side of [-1, 1]) {
-    const y = pierHeight(x), z = HOME.z + side * (PIER.width / 2 - .1);
-    B.box(x, y, z, .12, 1.1, .12, rail); B.box(x, y + 1.08, z, .23, .1, .23, cyan);
-    if (x > HOME.x + 16) B.box(x, -3, z, .32, y + 3, .32, { tex: 'steel', tint: 0x516d76 });
-  }
-  for (const x of [PIER.x1 - 6, PIER.x0 + 6]) {
-    // Stop the post at the board. It previously continued through the text
-    // with its front face at exactly the text's depth, causing z-fighting.
-    B.box(x, pierHeight(x), HOME.z - 3.2, .2, 2.3, .2, rail);
-    B.box(x, pierHeight(x) + 2.3, HOME.z - 3.2, 4.5, 1.1, .18, { tex: 'paint', tint: 0x173d49 });
-    const texture = canvasTexture(256, 64, (c, w, h) => {
-      c.fillStyle = '#173d49'; c.fillRect(0, 0, w, h); c.textAlign = 'center'; c.fillStyle = '#adfff0'; c.font = 'bold 23px sans-serif';
-      c.fillText('← 核潜艇 · 深海巡视', w / 2, 28); c.font = '14px sans-serif'; c.fillText('沿栈道登艇 · 舱盖旁按 E', w / 2, 51);
-    });
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.36, .98), new THREE.MeshBasicMaterial({ map: texture }));
-    sign.name = 'submarine-patrol-sign';
-    sign.position.set(x, pierHeight(x) + 2.85, HOME.z - 3.06); planes.push(sign);
-  }
-  const foot = { x: PIER.x1, y: bridgeHeight(HOME.z), z: HOME.z };
-  const path = [foot, { x: PIER.x1, y: pierHeight(PIER.x1), z: HOME.z }, { x: PIER.x0, y: DECK, z: HOME.z }, { x: HOME.x, y: DECK, z: HOME.z }];
-  const hit = new THREE.Vector3(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -DECK);
+  const mesh = createSubmarineMesh(), crew = createCrew(mesh), gangway = createGangway();
+  const foot = { x: PIER.x1 + .5, y: bridgeHeight(PIER.z), z: PIER.z };
+  const signZ = PIER.z - PIER.width / 2 - 2.5;
+  B.box(PIER.x1, foot.y, signZ, .2, 2.3, .2, { tex: 'paint', tint: 0xb4c9c6 });
+  B.box(PIER.x1, foot.y + 2.3, signZ, .18, 1.1, 4.5, { tex: 'paint', tint: 0x173d49 });
+  const texture = canvasTexture(256, 64, (c, w, h) => {
+    c.fillStyle = '#173d49'; c.fillRect(0, 0, w, h); c.textAlign = 'center'; c.fillStyle = '#adfff0'; c.font = 'bold 23px sans-serif';
+    c.fillText('← 核潜艇 · 深海巡视', w / 2, 28); c.font = '14px sans-serif'; c.fillText('甲板展开后登艇 · 舱盖旁按 E', w / 2, 51);
+  });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.36, .98), new THREE.MeshBasicMaterial({ map: texture }));
+  sign.name = 'submarine-patrol-sign'; sign.rotation.y = Math.PI / 2;
+  sign.position.set(PIER.x1 + .1, foot.y + 2.85, signZ); planes.push(sign);
+
+  const joints = [{ x: PIER.x1, y: foot.y, z: PIER.z }, { x: PIER.x0, y: DECK, z: PIER.z }];
+  const hit = new THREE.Vector3(), deckPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -DECK);
+  const rampPlane = new THREE.Plane(new THREE.Vector3(-PIER_RISE / PIER_RUN, 1, 0), PIER_RISE / PIER_RUN * PIER.x0 - DECK).normalize();
   const docked = () => Math.hypot(mesh.position.x - HOME.x, mesh.position.y, mesh.position.z - HOME.z) < .05 && Math.abs(angle(mesh.rotation.y)) < .005;
-  const onDeck = (x, z) => docked() && Math.abs(x - HOME.x) <= 5 * SUBMARINE_SCALE && z >= HOME.z - 48 * SUBMARINE_SCALE && z <= HOME.z + 30 * SUBMARINE_SCALE;
+  let gangwayProgress = 1;
+  const gangwayReady = () => gangwayProgress === 1 && docked();
+  function updateGangway(dt, extend) {
+    const next = docked() ? clamp(gangwayProgress + (extend ? dt : -dt) / GANGWAY_SECONDS, 0, 1) : 0;
+    if (next === gangwayProgress) return;
+    gangwayProgress = next; gangway.scale.x = next; gangway.visible = next > 0;
+  }
+  const onPier = (x, z, margin = 0) => x >= PIER.x0 && x <= PIER.x1 && Math.abs(z - PIER.z) <= PIER.width / 2 - margin;
+  const onDeck = (x, z) => Math.abs(x - HOME.x) <= 5 * SUBMARINE_SCALE && z >= HOME.z - 48 * SUBMARINE_SCALE && z <= HOME.z + 30 * SUBMARINE_SCALE;
   const board = { x: HOME.x, y: DECK, z: HOME.z - 10 * SUBMARINE_SCALE };
   function route(ax, ay, az, bx, by, bz) {
+    if (!gangwayReady()) return [];
     const from = onDeck(ax, az), to = onDeck(bx, bz);
-    if ((from || to) && !docked()) return [];
     const points = [], start = from ? HOME.x : ax, end = to ? HOME.x : bx;
     if (from) points.push({ x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: az }, { x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: HOME.z });
     points.push({ x: start, y: pierHeight(start), z: HOME.z });
-    const middle = path.filter(p => p.x > Math.min(start, end) && p.x < Math.max(start, end));
-    if (start > end) middle.reverse(); points.push(...middle, { x: end, y: pierHeight(end), z: HOME.z });
+    const middle = joints.filter(p => p.x > Math.min(start, end) && p.x < Math.max(start, end));
+    if (start < end) middle.reverse(); points.push(...middle, { x: end, y: pierHeight(end), z: HOME.z });
     if (to) points.push({ x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: HOME.z }, { x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: bz });
     points.push({ x: bx, y: by, z: bz }); return points;
   }
-  return { mesh, crew, home: HOME, foot, board, pier: PIER, docked, route, maxDepth: MAX_DEPTH, landmarks: DEEP_LANDMARKS,
-    canBoard: p => docked() && Math.abs(p.y - DECK) < .7 * SUBMARINE_SCALE && Math.hypot(p.pos.x - board.x, p.pos.z - board.z) < 2.2 * SUBMARINE_SCALE,
-    levels(x, z, out) { if (onPier(x, z)) out.push({ y: pierHeight(x), site: 'submarine' }); else if (onDeck(x, z)) out.push({ y: DECK, site: 'submarine' }); },
-    obstructed(x, z, y) { return onDeck(x, z) && y < 11.7 * SUBMARINE_SCALE && Math.abs(x - HOME.x) < 2.65 * SUBMARINE_SCALE && z > HOME.z + 7.7 * SUBMARINE_SCALE && z < HOME.z + 24.3 * SUBMARINE_SCALE; },
-    collides(x, y, z) { return onPier(x, z) && y < pierHeight(x) - .02 && y + 1.8 > pierHeight(x) - .28 || this.obstructed(x, z, y); },
+  return { mesh, crew, gangway, home: HOME, foot, board, pier: PIER, docked, route, maxDepth: MAX_DEPTH, landmarks: DEEP_LANDMARKS,
+    gangwayReady, updateGangway, get gangwayProgress() { return gangwayProgress; },
+    canBoard: p => gangwayReady() && Math.abs(p.y - DECK) < .7 * SUBMARINE_SCALE && Math.hypot(p.pos.x - board.x, p.pos.z - board.z) < 2.2 * SUBMARINE_SCALE,
+    levels(x, z, out) {
+      if (!gangwayReady()) return;
+      if (onPier(x, z)) out.push({ y: pierHeight(x), site: 'submarine' }); else if (onDeck(x, z)) out.push({ y: DECK, site: 'submarine' });
+    },
+    obstructed(x, z, y) { return docked() && onDeck(x, z) && y < 11.7 * SUBMARINE_SCALE && Math.abs(x - HOME.x) < 2.65 * SUBMARINE_SCALE && z > HOME.z + 7.7 * SUBMARINE_SCALE && z < HOME.z + 24.3 * SUBMARINE_SCALE; },
+    collides(x, y, z) {
+      return gangway.visible && onPier(x, z) && x <= PIER.x0 + PIER_RUN * gangwayProgress &&
+        y < pierHeight(x) - .02 && y + 1.8 > pierHeight(x) - GANGWAY_THICKNESS || this.obstructed(x, z, y);
+    },
     pick(ray) {
+      if (!gangwayReady()) return null;
       let best = null;
-      for (const [a, b] of spans) {
-        const slope = (pierHeight(b) - pierHeight(a)) / (b - a); plane.normal.set(-slope, 1, 0); plane.constant = slope * a - pierHeight(a);
-        if (ray.intersectPlane(plane, hit) && hit.x >= a && hit.x <= b && onPier(hit.x, hit.z, .3)) {
-          const t = hit.distanceTo(ray.origin); if (!best || t < best.t) best = { t, point: hit.clone(), site: 'submarine' };
-        }
-      }
-      plane.normal.set(0, 1, 0); plane.constant = -DECK;
-      if (docked() && ray.intersectPlane(plane, hit) && onDeck(hit.x, hit.z)) { const t = hit.distanceTo(ray.origin); if (!best || t < best.t) best = { t, point: hit.clone(), site: 'submarine' }; }
+      if (ray.intersectPlane(rampPlane, hit) && onPier(hit.x, hit.z, .3)) best = { t: hit.distanceTo(ray.origin), point: hit.clone(), site: 'submarine' };
+      if (ray.intersectPlane(deckPlane, hit) && onDeck(hit.x, hit.z)) { const t = hit.distanceTo(ray.origin); if (!best || t < best.t) best = { t, point: hit.clone(), site: 'submarine' }; }
       return best;
     },
     spots: () => [board],
@@ -309,8 +329,7 @@ export function createDive({ world, player, stage }) {
   const anchor = () => player.anchor(mesh.position.x, mesh.position.y + SUBMARINE_SCALE, mesh.position.z, mesh.rotation.y);
   function takeOver() { returnDistance = -1; route = []; mode = 'manual'; patrolling = false; exitPending = false; message = '手动航行'; }
   function leaveBasin() {
-    // Stay below the pier until the half-scale hull is clear, even when
-    // returning from a manual dive or interrupting another automatic route.
+    // Use the submerged harbor corridor when starting or interrupting a route.
     const p = mesh.position, y = -18.5, z = Math.max(p.z, 260);
     return [{ x: p.x, y, z: p.z, yaw: mesh.rotation.y },
       { x: p.x, y, z, yaw: mesh.rotation.y }, { x: p.x, y: 0, z, yaw: 0 }];
@@ -347,6 +366,20 @@ export function createDive({ world, player, stage }) {
     sub.crew.update(dt, active);
     if (!active) return; dt = Math.min(dt, .05);
     const p = mesh.position;
+    const throttle = Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'));
+    const vertical = Number(keys.has(' ')) - Number(keys.has('c'));
+    const atBerth = sub.docked(), previousGangway = sub.gangwayProgress;
+    const departing = mode === 'patrol' || mode === 'manual' && !exitPending && (throttle > 0 || vertical < 0);
+    const extend = atBerth && mode !== 'return' && !departing;
+    sub.updateGangway(dt, extend);
+    // Complete stowage before handing control to either sailing path.
+    if (atBerth && (extend || previousGangway > 0)) {
+      speed = 0;
+      if (!extend) message = '正在收回登艇甲板';
+      else if (!sub.gangwayReady()) message = '正在展开登艇甲板';
+      else if (previousGangway < 1) message = '已靠港 · 可以下艇';
+      return;
+    }
     if (patrolling && mode === 'patrol') {
       speed = Math.min(18, speed + 5 * dt);
       const step = speed * dt, next = patrolDistance + step;
@@ -399,12 +432,10 @@ export function createDive({ world, player, stage }) {
         }
       }
     } else {
-      const throttle = Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'));
       const turn = Number(keys.has('a') || keys.has('arrowleft')) - Number(keys.has('d') || keys.has('arrowright'));
-      const vertical = Number(keys.has(' ')) - Number(keys.has('c'));
       const target = throttle > 0 ? 18 : throttle < 0 ? -7 : 0; speed += clamp(target - speed, -5 * dt, 5 * dt);
       let yaw = mesh.rotation.y + turn * .38 * dt * (speed < -.1 ? -1 : 1);
-      if (p.x > -180 && p.z < 220 && p.y > -18 && turn) { yaw = mesh.rotation.y; message = '先按 W 直线离港，驶离栈道后转向'; }
+      if (p.x > -180 && p.z < 220 && p.y > -18 && turn) { yaw = mesh.rotation.y; message = '先按 W 直线驶出港区，再转向'; }
       if (!canSail(p.x, p.y, p.z, yaw)) yaw = mesh.rotation.y;
       const x = p.x + Math.sin(yaw) * speed * dt, z = p.z + Math.cos(yaw) * speed * dt;
       const y = clamp(p.y + vertical * 9 * dt, -MAX_DEPTH, 0);
@@ -420,13 +451,13 @@ export function createDive({ world, player, stage }) {
     mesh.userData.wheelAngle = (mesh.userData.wheelAngle || 0) + speed * dt * .8; mesh.updateMatrixWorld(true); anchor();
   }
   return {
-    start() { active = true; sub.crew.update(0, true); takeOver(); speed = 0; message = '核动力在线 · 按 P 自动下潜巡视'; anchor(); },
-    stop() { if (!sub.docked()) { returnHome(true); return null; } active = false; sub.crew.update(0, false); route = []; speed = 0; mode = 'manual'; message = '已靠港 · 舱门开启'; exitPending = false; return { ...sub.board, heading: Math.PI / 2 }; },
+    start() { active = true; sub.crew.update(0, true); takeOver(); speed = 0; message = '已靠港 · 按 P 开始深海巡视'; anchor(); },
+    stop() { if (!sub.gangwayReady()) { returnHome(true); return null; } active = false; sub.crew.update(0, false); route = []; speed = 0; mode = 'manual'; message = '已靠港 · 舱门开启'; exitPending = false; return { ...sub.board, heading: Math.PI / 2 }; },
     update, togglePatrol, returnHome, takeOver, canSail,
     pause() { takeOver(); speed = 0; message = '航行暂停 · 保持深度'; },
     releaseControls() { if (mode === 'manual') speed = 0; },
-    get automatic() { return mode !== 'manual'; }, get readyToExit() { return exitPending && sub.docked(); },
+    get automatic() { return mode !== 'manual'; }, get readyToExit() { return exitPending && sub.gangwayReady(); },
     status: () => ({ x: mesh.position.x, z: mesh.position.z, depth: -mesh.position.y, heading: mesh.rotation.y, speed, distance, maxDepth: MAX_DEPTH, crew: sub.crew.status(),
-      mode, message, returnStage: mode !== 'return' ? 'idle' : returnDistance >= 0 ? returnPoint.stage : route[0]?.stage || 'approach', docked: sub.docked(), exitPending, visited: [...visited], lap, patrolling }),
+      mode, message, returnStage: mode !== 'return' ? 'idle' : returnDistance >= 0 ? returnPoint.stage : route[0]?.stage || 'approach', docked: sub.docked(), gangwayReady: sub.gangwayReady(), exitPending, visited: [...visited], lap, patrolling }),
   };
 }

@@ -30,29 +30,30 @@ function createParentAvatar(name, colors) {
   }
   part(0, 1.385, 0, .16, .16, .18, skin);
   const headStart = parts.length;
+  // Keep overlapping hair and face details on separate planes to avoid z-fighting.
   part(0, 1.57, 0, .44, .44, .43, skin);
   part(0, 1.815, -.035, .48, .13, .47, colors.hair);
   part(0, 1.76, -.16, .39, .11, .34, colors.hairLight);
   part(-.13, 1.78, .145, .15, .07, .08, colors.hairLight);
   if (name === '爸爸') {
-    part(0, 1.46, -.222, .44, .2, .08, colors.hair);
+    part(0, 1.46, -.222, .46, .2, .08, colors.hair);
     for (const side of [-1, 1]) {
       part(side * .205, 1.53, .015, .075, .31, .37, colors.hair);
-      part(side * .205, 1.48, -.02, .075, .13, .18, colors.hairLight);
+      part(side * .205, 1.48, -.02, .095, .13, .18, colors.hairLight);
     }
-    part(-.205, 1.59, .206, .018, .1, .018, colors.hairLight);
-    part(.205, 1.59, .206, .018, .1, .018, colors.hairLight);
+    part(-.205, 1.59, .216, .018, .1, .018, colors.hairLight);
+    part(.205, 1.59, .216, .018, .1, .018, colors.hairLight);
     part(-.095, 1.48, .22, .095, .045, .025, colors.hair);
     part(.095, 1.48, .22, .095, .045, .025, colors.hair);
   } else {
     part(0, 1.47, -.22, .5, .38, .12, colors.hair);
     for (const side of [-1, 1]) {
       part(side * .215, 1.48, -.035, .09, .47, .42, colors.hair);
-      part(side * .215, 1.29, .02, .085, .13, .3, colors.hairLight);
+      part(side * .215, 1.29, .035, .11, .13, .3, colors.hairLight);
     }
-    part(-.15, 1.73, .17, .16, .12, .1, colors.hair);
-    part(0, 1.76, .18, .16, .11, .1, colors.hairLight);
-    part(.15, 1.73, .17, .16, .12, .1, colors.hair);
+    part(-.15, 1.742, .17, .16, .12, .1, colors.hair);
+    part(0, 1.772, .18, .16, .11, .1, colors.hairLight);
+    part(.15, 1.742, .17, .16, .12, .1, colors.hair);
     part(.205, 1.68, .22, .065, .035, .025, colors.accessory);
     part(-.222, 1.53, .19, .025, .07, .025, colors.accessory);
     part(.222, 1.53, .19, .025, .07, .025, colors.accessory);

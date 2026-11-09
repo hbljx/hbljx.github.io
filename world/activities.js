@@ -591,7 +591,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (id === 'submarine') {
       const d = dive.status();
       primary.textContent = d.mode === 'patrol' ? '暂停巡视 P' : '下潜巡视 P';
-      toggle.textContent = d.docked ? '下艇 E' : d.exitPending ? '返港后下艇…' : '返港下艇 E';
+      toggle.textContent = d.gangwayReady ? '下艇 E' : d.docked ? (d.exitPending ? '甲板展开后下艇…' : '展开甲板并下艇 E') : d.exitPending ? '返港后下艇…' : '返港下艇 E';
       status.textContent = d.message + ' · 深度 ' + Math.round(d.depth) + ' / ' + d.maxDepth + ' 米 · ' + Math.round(Math.abs(d.speed) * 3.6) + ' km/h · 巡视 ' + d.visited.length + '/3';
       drawSonar(d); return;
     }

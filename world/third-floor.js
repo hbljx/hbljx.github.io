@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
 import { makeSeat } from './seats.js';
-import { HOUSE, ROOF_ROOM, ROOF_GLASS, ROOF_PARKING } from './layout.js';
+import { HOUSE, LOFT_STAIR_DOOR, ROOF_ROOM, ROOF_GLASS, ROOF_PARKING } from './layout.js';
 
 export function buildThirdFloor({ grid, layer }) {
   const B = new BoxBatch(layer), ceiling = new BoxBatch(layer), stairs = new BoxBatch(layer);
@@ -60,9 +60,16 @@ export function buildThirdFloor({ grid, layer }) {
     if (blocked && index < 0) barriers.push(roomDoorBarrier);
     else if (!blocked && index >= 0) barriers.splice(index, 1);
   }
-  const roomDoors = [
+  const stairDoor = LOFT_STAIR_DOOR;
+  const stairDoorBounds = { x0: stairDoor.x - .06, x1: stairDoor.x + .06, z0: stairDoor.z0, z1: stairDoor.z1 };
+  let stairDoorBlocked = false;
+  const doors = [
+    { id: 'loft-stair', automatic: true, x: stairDoor.x, z: stairDoor.z0, y: stairDoor.y + .02, interactY: stairDoor.y,
+      width: stairDoor.z1 - stairDoor.z0, height: 2.88, closedYaw: -Math.PI / 2, openYaw: 0,
+      surface: 'glass', color: 0x83aeb4, level: 1, bounds: stairDoorBounds,
+      onBlockingChange: blocked => { stairDoorBlocked = blocked; } },
     { id: 'roof-room-left', controlGroup: 'roof-room', x: -12, z: 5.86, y: 9.45, interactY: 11, width: 1, height: 3.1,
-      closedYaw: 0, openYaw: -Math.PI / 2, color: 0x76583f, level: 1, bounds: { x0: -12, x1: -11, z0: 5.74, z1: 5.98 },
+      closedYaw: 0, openYaw: Math.PI / 2, color: 0x76583f, level: 1, bounds: { x0: -12, x1: -11, z0: 5.74, z1: 5.98 },
       onBlockingChange: blocked => setRoomDoorBarrier(blocked) },
     { id: 'roof-room-right', controlGroup: 'roof-room', x: -10, z: 5.86, y: 9.45, interactY: 11, width: 1, height: 3.1,
       closedYaw: Math.PI, openYaw: Math.PI / 2, color: 0x76583f, level: 1, bounds: { x0: -11, x1: -10, z0: 5.74, z1: 5.98 },
@@ -97,10 +104,10 @@ export function buildThirdFloor({ grid, layer }) {
     B.box(apronX,11.09,z,.12,.01,1.5,china);
   }
   // A two-flight outside stair links the existing second-floor landing to level three.
-  for(let y=4;y<7;y++)for(let z=-6;z<-4;z++)grid.set(HOUSE.x0-1,y,z,null,'wallW');
+  for(let y=stairDoor.y;y<stairDoor.y+3;y++)for(let z=stairDoor.z0;z<stairDoor.z1;z++)grid.set(HOUSE.x0-1,y,z,null,'wallW');
   // Keep the exposed sill as permanent floor, including when the west wall is
   // cut away. The landing must stop at its outer edge, not overlap its top.
-  for(let z=-6;z<-4;z++)grid.set(HOUSE.x0-1,3,z,'loft');
+  for(let z=stairDoor.z0;z<stairDoor.z1;z++)grid.set(HOUSE.x0-1,stairDoor.y-1,z,'loft');
   for(let z=-6;z<-4;z++)grid.set(HOUSE.x0-1,11,z,null,'roof');
   const stairShift=HOUSE.x0+20;
   function slab(x0,x1,z0,z1,y,drawEnd=x1) {
@@ -146,6 +153,8 @@ export function buildThirdFloor({ grid, layer }) {
   const pointAt=(x,y,z)=>({x,y,z,route:'third-stair',index:nearestIndex(x,y,z)});
   function nearestIndex(x,y,z){let best=0,d=Infinity;stairPoints.forEach((p,i)=>{const q=(p.x-x)**2+(p.z-z)**2+4*(p.y-y)**2;if(q<d){best=i;d=q;}});return best;}
   function obstructed(x,z,y){
+    if (stairDoorBlocked && Math.abs(y - stairDoor.y) < .85 &&
+        x >= stairDoorBounds.x0 && x <= stairDoorBounds.x1 && z >= stairDoorBounds.z0 && z <= stairDoorBounds.z1) return true;
     return planeObstacle(x,z,y) || y>=10.75&&y<14.7&&barriers.some(o=>x>o.x0-.04&&x<o.x1+.04&&z>o.z0-.04&&z<o.z1+.04);
   }
   const valid=(x,z)=>x>=HOUSE.x0+.5&&x<=HOUSE.x1-.5&&z>=HOUSE.z0+.5&&z<=HOUSE.z1-.5&&[-.35,0,.35].every(dx=>[-.35,0,.35].every(dz=>!obstructed(x+dx,z+dz,11)));
@@ -181,7 +190,7 @@ export function buildThirdFloor({ grid, layer }) {
     return tagged;
   }
   const source={
-    foot,exit,room,seats,route,roofRoute,insideRoom,doors: roomDoors,setPlaneObstacle(fn){planeObstacle=fn;},
+    foot,exit,room,seats,route,roofRoute,insideRoom,doors,setPlaneObstacle(fn){planeObstacle=fn;},
     flightHeight(x,z){return overRoomRoof(x,z)?roomRoof.max.y:onDeck(x,z,1)?12:0;},
     levels(x,z,out){
       // A separate site keeps rooftop clicks from routing through the tea room.
