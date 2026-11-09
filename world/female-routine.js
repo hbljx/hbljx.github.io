@@ -40,7 +40,7 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     avatar.setSwimsuit(false);ride=null;activities.setAmbientActivity(null);target=null;phase='waiting';elapsed=0;waiting=.4;
   }
   const activityId=spot=>spot.activityId||spot.id;
-  const occupied=spot=>(activities.current===activityId(spot)&&spot.id===activityId(spot))||otherReserved(spot.id)||spot.id==='motorcycle-view'&&activities.current==='motorcycle';
+  const occupied=spot=>activities.isUsingSpot(spot.id)||otherReserved(spot.id)||spot.id==='motorcycle-view'&&activities.current==='motorcycle';
   function start(id){
     const options=id==='treadmill'?[id,...GYM_BACKUPS]:id==='tv'||id==='gaming'?[id,...spots.filter(s=>activityId(s)===id).map(s=>s.id)]:[id];
     const spot=options.map(option=>spots.find(s=>s.id===option)).find(s=>s&&!occupied(s));if(!spot||paused||woman.swimming)return false;
@@ -120,7 +120,7 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     }else if(id==='treadmill'){
       for(let i=0;i<5;i++)box(-8.3,.28,13.2+((i*.3+t*1.8)%1.5),.8,.014,.045,0x6d7778,true);
     }
-    avatar.endProps();activities.setAmbientActivity(id==='tv'||id==='gaming'?id:null);
+    avatar.endProps();activities.setAmbientActivity(id==='tv'||id==='gaming'?target.id:null,'companion',t);
   }
   function rideBike(dt){
     const r=ride;

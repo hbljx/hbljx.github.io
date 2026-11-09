@@ -2,14 +2,14 @@ import * as THREE from 'three';
 
 export const LIFE_SPOTS = [
   { id: 'fishing', title: '海边钓鱼台 · 垂钓', at: [-45.6, 2], floor: .2, radius: 2, anchor: [-46.7, .2, 2], yaw: -Math.PI / 2, view: [-42, 5, 9], look: [-47, 1, 2] },
-  { id: 'cooking', title: '厨房 · 做饭', at: [17.6, 6.2], floor: 0, radius: 1.7, anchor: [17.6, 0, 5.45], yaw: Math.PI, view: [13.8, 4.2, 8.5], look: [17.6, 1.25, 4.6] },
-  { id: 'treadmill', title: '健身区 · 跑步机', at: [-8.3, 11.8], floor: 0, radius: 1.65, anchor: [-8.3, .265, 13.85], yaw: 0, view: [-5, 3.8, 10.2], look: [-8.3, 1.2, 13.6] },
-  { id: 'gym-bike', title: '健身区 · 动感单车', at: [-11.7, 11.35], floor: 0, radius: 1.35, anchor: [-11.7, 0, 12.2], yaw: Math.PI, view: [-8.5, 3.4, 10.2], look: [-11.7, 1, 12.2] },
-  { id: 'gym-pullup', title: '健身区 · 引体向上', at: [-18.55, 12.55], floor: 0, radius: 1.35, anchor: [-18.55, 0, 13.8], yaw: Math.PI, view: [-15.5, 3.5, 11.5], look: [-18.55, 1.7, 13.8] },
-  { id: 'gym-bench', title: '健身区 · 卧推训练凳', at: [-15.6, 11.45], floor: 0, radius: 1.25, anchor: [-15.6, 0, 12.7], yaw: Math.PI, view: [-12.5, 3.4, 10.5], look: [-15.6, .8, 12.7] },
-  { id: 'gym-dumbbells', title: '健身区 · 哑铃训练', at: [-15.6, 15.15], floor: 0, radius: 1.1, anchor: [-15.6, 0, 15.15], yaw: 0, view: [-12.5, 3.6, 17.2], look: [-15.6, 1, 14.5] },
-  { id: 'gym-cable', title: '健身区 · 拉力器训练', at: [-11.8, 15.2], floor: 0, radius: 1.15, anchor: [-11.8, 0, 15.2], yaw: Math.PI, view: [-8.5, 3.7, 17.2], look: [-11.8, 1.1, 14.4] },
-  { id: 'gym-vertec', title: '健身区 · 弹跳摸高', at: [-5.6, 14.05], floor: 0, radius: 1.3, anchor: [-5.6, 0, 14.5], yaw: Math.PI, view: [-2.7, 3.8, 12.3], look: [-5.6, 2, 14.5] },
+  { id: 'cooking', title: '厨房 · 做饭', at: [17.6, 6.2], floor: 0, radius: 1.7, anchor: [17.6, 0, 5.45], residentAnchor: [17.91, 0, 5.33], yaw: Math.PI, view: [13.8, 4.2, 8.5], look: [17.6, 1.25, 4.6] },
+  { id: 'treadmill', title: '健身区 · 跑步机', at: [-8.3, 11.8], floor: 0, radius: 1.65, anchor: [-8.3, .265, 13.85], yaw: Math.PI, view: [-5, 3.8, 10.2], look: [-8.3, 1.2, 13.6] },
+  { id: 'gym-bike', title: '健身区 · 动感单车', at: [-11.7, 11.35], residentAt: [-10.55, 12.55], floor: 0, radius: 1.35, anchor: [-11.7, 0, 12.2], residentAnchor: [-11.7, 0, 12.53], yaw: Math.PI, view: [-8.5, 3.4, 10.2], look: [-11.7, 1, 12.2] },
+  { id: 'gym-pullup', title: '健身区 · 引体向上', at: [-18.55, 12.55], floor: 0, radius: 1.35, anchor: [-18.55, 0, 13.8], residentAnchor: [-18.55, 0, 14.1], yaw: Math.PI, view: [-15.5, 3.5, 11.5], look: [-18.55, 1.7, 13.8] },
+  { id: 'gym-bench', title: '健身区 · 卧推训练凳', at: [-15.6, 11.45], residentAt: [-15.07, 11.95], floor: 0, radius: 1.25, anchor: [-15.6, 0, 12.7], residentAnchor: [-15.07, 0, 12.7], yaw: Math.PI, residentYaw: Math.PI / 2, view: [-12.5, 3.4, 10.5], look: [-15.6, .8, 12.7] },
+  { id: 'gym-dumbbells', title: '健身区 · 哑铃训练', at: [-15.6, 15.15], floor: 0, radius: 1.1, anchor: [-15.6, 0, 15.15], residentAnchor: [-15.6, .025, 15.33], yaw: 0, residentYaw: Math.PI, view: [-12.5, 3.6, 17.2], look: [-15.6, 1, 14.5] },
+  { id: 'gym-cable', title: '健身区 · 拉力器训练', at: [-11.8, 15.2], floor: 0, radius: 1.15, anchor: [-11.8, 0, 15.2], residentAnchor: [-11.8, .025, 15.36], yaw: Math.PI, view: [-8.5, 3.7, 17.2], look: [-11.8, 1.1, 14.4] },
+  { id: 'gym-vertec', title: '健身区 · 弹跳摸高', at: [-5.6, 14.05], residentAt: [-5.6, 13.45], floor: 0, radius: 1.3, anchor: [-5.6, 0, 14.5], residentAnchor: [-5.3, .025, 14.53], yaw: Math.PI, view: [-2.7, 3.8, 12.3], look: [-5.6, 2, 14.5] },
 ];
 
 // Each multi-colour prop is a single mesh. Everything is hidden outside its
@@ -76,6 +76,27 @@ export function createLifeVisuals(scene, avatar) {
   const belt = add(new THREE.Mesh(new THREE.PlaneGeometry(.8, 1.64), new THREE.MeshLambertMaterial({ map: beltTexture })));
   belt.rotation.x = -Math.PI / 2; belt.position.set(-8.3, .27, 13.85);
 
+  const crank = new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshLambertMaterial(), 5);
+  crank.name = 'gym-bike-crank'; scene.add(crank);
+  crank.boundingSphere = new THREE.Sphere(new THREE.Vector3(-11.7, .6, 12.26), .39);
+  const axle = new THREE.Object3D();
+  for (let i = 0; i < 5; i++) crank.setColorAt(i, new THREE.Color(i > 2 ? 0x242a2d : 0x747d80));
+  function crankBox(i, x, y, z, w, h, d, pitch = 0) {
+    axle.position.set(x, y, z); axle.rotation.x = pitch; axle.scale.set(w, h, d); axle.updateMatrix();
+    crank.setMatrixAt(i, axle.matrix);
+  }
+  crankBox(0, -11.7, .6, 12.26, .48, .045, .045);
+  function bike(angle) {
+    for (let i = 0; i < 2; i++) {
+      const x = -11.7 + (1 - i * 2) * .23, phase = angle + i * Math.PI;
+      const y = Math.cos(phase) * .106, z = -Math.sin(phase) * .106;
+      crankBox(i + 1, x, .60 + y / 2, 12.26 + z / 2, .04, .106, .04, -phase);
+      crankBox(i + 3, x, .60 + y, 12.26 + z, .12, .07, .19);
+    }
+    crank.instanceMatrix.needsUpdate = true;
+  }
+  bike(0);
+
   function hide() { for (const mesh of all) mesh.visible = false; }
   function fishing(time, phase = 'waiting', progress = 0) {
     rod.visible = true; line.visible = phase !== 'idle';
@@ -108,5 +129,5 @@ export function createLifeVisuals(scene, avatar) {
     pot.rotation.z = phase === 'cooking' ? Math.sin(time * 12) * .007 * Math.min(1, progress + .2) : 0;
   }
   function treadmill(time, speed = 1) { belt.visible = true; beltTexture.offset.y = -(time * speed * .9 % 1); }
-  return { hide, fishing, cooking, treadmill, rod, float, fish, pot, belt };
+  return { hide, fishing, cooking, treadmill, bike, rod, float, fish, pot, belt };
 }

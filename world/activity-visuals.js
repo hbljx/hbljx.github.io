@@ -33,7 +33,7 @@ export function createActivityVisuals(scene, avatar, gameCanvas) {
   for (const x of [0, 16, 32, 48, 64]) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 32); c.stroke(); }
   c.beginPath(); c.moveTo(0, 16); c.lineTo(64, 16); c.stroke();
   const ball = new THREE.Mesh(new THREE.SphereGeometry(.18, 12, 8), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(ballCanvas) }));
-  ball.visible = false; scene.add(ball);
+  ball.name = 'activity-basketball'; ball.visible = false; scene.add(ball);
   const book = boxes([[0, 0, 0, .58, .035, .37, 0x416754], [0, .03, 0, .54, .04, .34, 0xf4e8ca], [0, .055, 0, .025, .015, .34, 0xc3aa76]]);
   book.position.set(0, 1.02, .43); book.rotation.x = .2; book.visible = false; avatar.body.add(book);
   const page = boxes([[.13, 0, 0, .26, .012, .33, 0xfff4d8]]);
@@ -46,7 +46,14 @@ export function createActivityVisuals(scene, avatar, gameCanvas) {
   const cinema = screen(scene, cinemaCanvas, 6.15, 3.5, ...CINEMA.screen);
   cinema.mesh.name = 'cinema-screen';
   const monitor = screen(scene, gameCanvas, 1.47, .55, 2.13, 1.65, -11.128);
-  return { ball, book, page, mug, tv, cinema, monitor };
+  monitor.mesh.name = 'activity-monitor-main';
+  const sideMonitor = screen(scene, Object.assign(document.createElement('canvas'), { width: 320, height: 180 }),
+    .88, .52, 5.628, 1.635, -9.99, -Math.PI / 2);
+  sideMonitor.mesh.name = 'activity-monitor-side';
+  const sideMirror = sideMonitor.mesh.clone();
+  sideMirror.position.z = -8.91;
+  scene.add(sideMirror);
+  return { ball, book, page, mug, tv, cinema, monitor, sideMonitor, sideMirror };
 }
 export function paintCinema(cinema,time,paused=false){
   const c=cinema.ctx,w=480,h=270,t=time*.72;

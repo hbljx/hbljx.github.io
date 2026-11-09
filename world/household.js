@@ -62,7 +62,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   stage.scene.add(femaleAvatar.root);woman.restore(-1.5,0,5.8,Math.PI);
   const navigateWoman=createNpcNavigator(woman,world,nav);
   const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities,world,nav,stage,navigate:navigateWoman});
-  const parents=createParents({stage,world,nav},activities,routine);
+  const parents=createParents({stage,world,nav,player,woman},activities,routine);
   routine.setReservationCheck(id=>parents.isReserved(id));
   const quilts=createSharedQuilt(),shower=createShower(stage.scene);stage.scene.add(quilts);
   const panel=document.createElement('aside');panel.id='shared-routine';panel.hidden=true;

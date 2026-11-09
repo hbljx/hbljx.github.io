@@ -86,5 +86,13 @@ export function createVertec({ avatar, sound }) {
     settled = 0;
   }
 
-  return { mesh, update, exercise, get reached() { return vanes.filter(v => v.goal).length; } };
+  function tap(height) {
+    let hit = false;
+    for (const v of vanes) {
+      if (v.goal || v.y > height) continue;
+      v.goal = 1.35; v.speed = v.goal * 12; hit = true;
+    }
+    if (hit) { settled = 0; sound.play('vane'); }
+  }
+  return { mesh, update, exercise, tap, get reached() { return vanes.filter(v => v.goal).length; } };
 }

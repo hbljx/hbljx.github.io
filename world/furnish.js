@@ -186,6 +186,7 @@ export function furnish({ layer, additionalDoors = [] }) {
   for (const x of [-12.7, -10.9]) {
     B.box(x, 0.08, 14.4, 0.09, 2.25, 0.09, frame);
     B.box(x, 0.08, 14.65, 0.4, 0.75, 0.3, pad);
+    for (const offset of [-.12, .12]) B.box(x + offset, .83, 14.65, .025, 1.32, .025, L.steel);
     for (let i = 0; i < 6; i++) B.box(x, 0.15 + i * 0.1, 14.82, 0.3, 0.025, 0.025, frame);
     B.box(x, 0.8, 14.12, 0.025, 1.25, 0.025, L.paint(0xb8bdbb));
     B.box(x, 1.05, 14.08, 0.3, 0.05, 0.08, pad);
@@ -210,8 +211,6 @@ export function furnish({ layer, additionalDoors = [] }) {
     B.box(0, 0.9, 0.33, 0.38, 0.08, 0.25, pad);
     B.box(0, 0.65, -0.4, 0.06, 0.52, 0.06, frame);
     B.box(0, 1.16, -0.4, 0.52, 0.06, 0.15, pad);
-    B.box(0, 0.38, 0.05, 0.5, 0.05, 0.08, frame);
-    for (const x of [-0.23, 0.23]) B.box(x, 0.32, 0.05, 0.12, 0.05, 0.2, pad);
   }); foot(-11.7, 12.2, 0.85, 1.25);
   // The Vertec's weighted base, pole and the collar under its vanes (the vanes
   // swing, so they live in vertec.js). He stands under them, so only the base blocks.
@@ -287,8 +286,12 @@ export function furnish({ layer, additionalDoors = [] }) {
         const wz = z - Math.sin(ry) * lx + Math.cos(ry) * -0.19;
         plane(sw - 0.08, sh - 0.07, wallpaper, wx, top + 0.29 + sh / 2, wz, ry, true);
       }
-      B.box(-0.1, top + 0.09, 0.22, 0.73, 0.025, 0.21, L.paint(0x7a8080));
-      B.box(0.52, top + 0.09, 0.22, 0.09, 0.035, 0.13, L.steel);
+      // Pull-out input shelf puts the keys and mouse within reach from the chair.
+      const trayX = dual ? .35 : -.2;
+      B.box(trayX, .97, .73, .89, .048, .44, L.panel);
+      B.box(trayX + .16, 1.018, .86, .46, .024, .16, L.paint(0x7a8080));
+      for (let i = 0; i < 8; i++) for (const z of [.81, .86, .91])
+        B.box(trayX - .025 + i * .052, 1.042, z, .044, .009, .035, L.paint(0x354044));
       if (dual) {
         B.box(-1.03, top + 0.08, -0.05, 0.28, 0.65, 0.42, L.steel);
         B.box(-1.03, top + 0.16, 0.165, 0.22, 0.46, 0.015, L.paint(0x333c3e));

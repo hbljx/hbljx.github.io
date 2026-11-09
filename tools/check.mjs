@@ -78,23 +78,39 @@ for (const view of VIEWS) {
     const front = () => doors.states.filter(door => door.id.startsWith('front-'));
     const entranceInitiallyOpen = front().every(door => door.open);
     const doorCases = [
-      ['garage', 30.2, -6.5, 0], ['garage-side', 10.98, -2, 0], ['back', 13, -28.5, 0],
-      ['bedroom', -4.5, -3.88, 4], ['hidden', -17, -9.5, 4], ['roof-gate', 31.65, 14.5, 10],
-      ['roof-room-left', -11, 5.86, 11],
+      [['front-left', 'front-right'], .5, 15, 0, .5, 18],
+      [['garage'], 30.2, -6.5, 0, 33.5, -2.5],
+      [['garage-side'], 10.98, -2, 0, 9.5, -2],
+      [['back'], 13, -28.5, 0, 14, -30.5],
+      [['bedroom'], -4.5, -3.88, 4, -4.5, -2.3],
+      [['hidden'], -17, -9.5, 4, -15.5, -9.5],
+      [['roof-gate'], 31.65, 14.5, 11, 30.5, 14.5],
+      [['roof-room-left', 'roof-room-right'], -11, 5.86, 11, -11, 7.8],
     ];
-    let allDoorsToggle = true;
-    for (const [id, x, z, y] of doorCases) {
+    let allDoorsToggle = true, allDoorsAutoOpen = true;
+    for (const [ids, x, z, y, approachX, approachZ] of doorCases) {
       const player = { mode: 'ground', floorY: y, pos: { x, z } };
-      const before = doors.states.find(door => door.id === id);
+      const states = () => doors.states.filter(door => ids.includes(door.id));
+      const before = states()[0];
       if (!before || !doors.interact(player, h.nav)) { allDoorsToggle = false; break; }
       doors.update(.6, h.nav);
-      const opened = doors.states.find(door => door.id === id);
-      const firstToggle = opened.open !== before.open && opened.blocking === before.open;
+      const firstToggle = states().every(door => door.open !== before.open && door.blocking === before.open);
       await new Promise(requestAnimationFrame);
       if (!doors.interact(player, h.nav)) { allDoorsToggle = false; break; }
       doors.update(.6, h.nav);
-      const closed = doors.states.find(door => door.id === id);
-      if (!firstToggle || closed.open !== before.open || closed.blocking !== !before.open) { allDoorsToggle = false; break; }
+      if (!firstToggle || !states().every(door => door.open === before.open && door.blocking === !before.open)) {
+        allDoorsToggle = false; break;
+      }
+      if (before.open) doors.interact(player, h.nav);
+      const approach = { mode: 'ground', floorY: y + 4, pos: { x: approachX, z: approachZ } };
+      doors.update(.6, h.nav, [approach]);
+      const blockedOnOtherFloor = states().every(door => !door.open && door.blocking);
+      approach.floorY = y;
+      doors.update(.6, h.nav, [approach]);
+      const openedOnApproach = states().every(door => door.open && !door.blocking);
+      allDoorsAutoOpen &&= blockedOnOtherFloor && openedOnApproach;
+      if (!before.open) doors.interact(player, h.nav);
+      doors.update(.6, h.nav, []);
       await new Promise(requestAnimationFrame);
     }
     const roofRoomOpen = doors.states.find(door => door.id === 'roof-room-left')?.open;
@@ -128,11 +144,11 @@ for (const view of VIEWS) {
     const layout = await import('@world/layout.js');
     const dog = h.dog && h.pets[layout.PETS?.cat ? 1 : 0];
     const dogIndoors = !dog || dog.routes.some(route => layout.inHouse(route.at(-1).x, route.at(-1).z));
-    return { up, down, dogIndoors, entranceInitiallyOpen, allDoorsToggle, roofRoomCollisionSynced, blockedClosed, openedByE, passedOpen, closedByE, blockedAgain, passableOpen };
+    return { up, down, dogIndoors, entranceInitiallyOpen, allDoorsToggle, allDoorsAutoOpen, roofRoomCollisionSynced, blockedClosed, openedByE, passedOpen, closedByE, blockedAgain, passableOpen };
   });
   if (traversal) {
     console.log(`${view.name}: roof round trip and indoor dog route: ${JSON.stringify(traversal)}`);
-    if (!traversal.up || !traversal.down || traversal.entranceInitiallyOpen && !traversal.dogIndoors || !traversal.allDoorsToggle || !traversal.roofRoomCollisionSynced || !traversal.blockedClosed || !traversal.openedByE || !traversal.passedOpen || !traversal.closedByE || !traversal.blockedAgain || !traversal.passableOpen) errors.push('showcase traversal or door regression');
+    if (!traversal.up || !traversal.down || traversal.entranceInitiallyOpen && !traversal.dogIndoors || !traversal.allDoorsToggle || !traversal.allDoorsAutoOpen || !traversal.roofRoomCollisionSynced || !traversal.blockedClosed || !traversal.openedByE || !traversal.passedOpen || !traversal.closedByE || !traversal.blockedAgain || !traversal.passableOpen) errors.push('showcase traversal or door regression');
   }
   // Aircraft at cruising height must retain hazy ground detail in bad weather.
   // Exercise the real activity and render loop on both viewport sizes.

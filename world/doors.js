@@ -2,14 +2,24 @@ import * as THREE from 'three';
 import { HOUSE, LOFT, SECRET, GARAGE, ENTRANCE, BACKDOOR, ROOF_LADDER } from './layout.js';
 
 const CLOSE_HOUR = 18, OPEN_HOUR = 7, TRANSITION_SECONDS = 0.48;
+const APPROACH_DISTANCE = 2.8, SHUTTER_APPROACH_DISTANCE = 4, JAMB_MARGIN = 0.45;
 const solidDoor = new THREE.MeshLambertMaterial({ color: 0xffffff });
 const glassDoor = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.38 });
 
+// Draw the gold characters as strokes so the carving is independent of installed fonts.
+const SHI_RADICAL = 'M2.7 1.4l1.5 1.5 M1.2 5h5L4.5 7.8 1 11 M3.8 8.5v7 M4.7 8.4l1.6 1.7';
+const FRONT_DOOR_GLYPHS = {
+  禄: SHI_RADICAL + ' M7.8 1.6h6.6v5.8 M8.1 4.5h6.3 M7.1 7.4h8.4 M11.2 7.4v7q0 1.5-2 1 M7.7 9.2l1.8 1.3 M10.1 11.6l-3.3 2.7 M14.8 9.2l-2.4 1.9q1.3 2 3.4 3.4',
+  福: SHI_RADICAL + ' M7.2 1.7h8.1 M8.2 4.2h6.1v3.1H8.2z M7.2 9.7h8.1v5.8H7.2z M11.2 9.7v5.8 M7.2 12.6h8.1',
+  寿: 'M3.2 2.9h10.2 M4.1 5.3h8.5 M1.3 7.7h14.2 M8.5 1q-.7 8.1-7.3 12.9 M6.2 10.6h8.7 M12.4 8.7v5.7q0 1.7-2.4 1.1 M7.5 12.4l1.5 1.6',
+};
+
 function makeFrontDoorMaterial(style) {
   const canvas = document.createElement('canvas');
-  canvas.width = 128;
-  canvas.height = 128;
+  canvas.width = 256;
+  canvas.height = 256;
   const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
   const black = style === 'blackwood';
   const colors = black
     ? { base: '#100f10', grain: '#211d1a', panel: '#171415', trim: '#b89a62', detail: '#e0c98d' }
@@ -66,8 +76,27 @@ function makeFrontDoorMaterial(style) {
   ctx.lineWidth = 1;
   drawScroll();
 
+  // The two leaves share a vertical arrangement with 福 at the panel center.
+  for (const [character, y] of [['禄', 38], ['福', 64], ['寿', 90]]) {
+    ctx.beginPath();
+    ctx.arc(64, y, 11.5, 0, 2 * Math.PI);
+    ctx.fillStyle = colors.base;
+    ctx.fill();
+    ctx.strokeStyle = colors.trim;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(64 - 8.4, y - 8.4);
+    ctx.strokeStyle = colors.detail;
+    ctx.lineWidth = 1.25;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke(new Path2D(FRONT_DOOR_GLYPHS[character]));
+    ctx.restore();
+  }
+
   ctx.fillStyle = colors.detail;
-  for (const y of [27, 54, 81, 103]) {
+  for (const y of [24, 104]) {
     ctx.beginPath();
     ctx.moveTo(64, y - 3);
     ctx.lineTo(67, y);
@@ -124,8 +153,18 @@ function hinged({ id, controlGroup = id, x, z, y = 0, width, height, closedYaw =
 }
 
 export function createIslandDoors(obstacles, additionalDoors = []) {
-  const doors = [];
-  const add = door => doors.push(door);
+  const doors = [], groupsById = new Map();
+  const add = door => {
+    const key = door.controlGroup ?? door.id;
+    let group = groupsById.get(key);
+    if (!group) {
+      group = { doors: [], nearby: false };
+      groupsById.set(key, group);
+    }
+    group.doors.push(door);
+    door.group = group;
+    doors.push(door);
+  };
 
   // The two front leaves close the full entrance together.
   const entranceMid = (ENTRANCE.x0 + ENTRANCE.x1) / 2;
@@ -163,9 +202,11 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   // A small safety gate closes the roof ladder opening.
   add(hinged({ id: 'roof-gate', x: HOUSE.x1 + 1.65, z: ROOF_LADDER.gate0, y: HOUSE.height,
     width: ROOF_LADDER.gate1 - ROOF_LADDER.gate0, height: 1.05, closedYaw: -Math.PI / 2, openYaw: 0,
-    bounds: { x0: HOUSE.x1 + 1.5, x1: HOUSE.x1 + 1.8, z0: ROOF_LADDER.gate0, z1: ROOF_LADDER.gate1 }, level: 1 }));
+    bounds: { x0: HOUSE.x1 + 1.5, x1: HOUSE.x1 + 1.8, z0: ROOF_LADDER.gate0, z1: ROOF_LADDER.gate1 },
+    level: 1, interactY: ROOF_LADDER.top }));
 
   for (const door of additionalDoors) add(hinged(door));
+  const groups = [...groupsById.values()];
 
   const now = Date.now();
   let closedBySchedule = scheduledClosed(now);
@@ -247,7 +288,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   }
 
   function setOpen(door, open) {
-    if (door.targetOpen === open && door.elapsed < TRANSITION_SECONDS) return false;
+    if (door.targetOpen === open) return false;
     door.targetOpen = open;
     door.from = door.pose;
     door.to = open ? door.openPose : door.closedPose;
@@ -259,6 +300,15 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
     return setBlocking(door, !open);
   }
 
+  function approaching(door, actor) {
+    if (actor.mode !== 'ground' && actor.mode !== 'ladder') return false;
+    if (Math.abs(actor.floorY - door.interactY) > 0.85) return false;
+    const { x, z } = actor.pos, { x0, x1, z0, z1 } = door.bounds;
+    const dx = Math.max(x0 - x, x - x1, 0), dz = Math.max(z0 - z, z - z1, 0);
+    const reach = door.kind === 'shutter' ? SHUTTER_APPROACH_DISTANCE : APPROACH_DISTANCE;
+    return x1 - x0 >= z1 - z0 ? dx <= JAMB_MARGIN && dz <= reach : dz <= JAMB_MARGIN && dx <= reach;
+  }
+
   return {
     roots: instanceMeshes,
     interact(player, nav) {
@@ -267,29 +317,43 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
       let nearest = null, distance = 3.1;
       for (const door of doors) {
         if (Math.abs(y - door.interactY) > 1.3) continue;
-        const d = Math.hypot(player.pos.x - door.root.position.x, player.pos.z - door.root.position.z);
+        const d = Math.hypot(player.pos.x - (door.originX ?? door.root.position.x), player.pos.z - door.root.position.z);
         if (d < distance) { distance = d; nearest = door; }
       }
       if (!nearest) return false;
       const open = !nearest.targetOpen;
       let navChanged = false;
-      for (const door of doors) if (door.controlGroup === nearest.controlGroup) navChanged = setOpen(door, open) || navChanged;
+      for (const door of nearest.group.doors) navChanged = setOpen(door, open) || navChanged;
       if (navChanged) nav?.rebuild();
       return true;
     },
-    update(dt, nav) {
+    update(dt, nav, actors) {
+      let scheduleChanged = false;
       const minute = Math.floor(Date.now() / 60000);
       if (minute !== checkedMinute) {
         checkedMinute = minute;
         const scheduled = scheduledClosed(minute * 60000);
-        if (scheduled !== closedBySchedule) {
-          closedBySchedule = scheduled;
-          let navChanged = false;
-          for (const door of doors) navChanged = setOpen(door, !scheduled) || navChanged;
-          if (navChanged) nav?.rebuild();
-        }
+        scheduleChanged = scheduled !== closedBySchedule;
+        closedBySchedule = scheduled;
       }
       let navChanged = false;
+      for (const group of groups) {
+        let nearby = false;
+        if (actors) {
+          for (const door of group.doors) {
+            for (const actor of actors) {
+              if (approaching(door, actor)) { nearby = true; break; }
+            }
+            if (nearby) break;
+          }
+        }
+        // Open on entry so a manual close can still hold until the next approach.
+        if (scheduleChanged || (nearby && !group.nearby)) {
+          const open = nearby || !closedBySchedule;
+          for (const door of group.doors) navChanged = setOpen(door, open) || navChanged;
+        }
+        if (actors) group.nearby = nearby;
+      }
       for (const door of doors) {
         if (door.elapsed >= TRANSITION_SECONDS) continue;
         door.elapsed = Math.min(TRANSITION_SECONDS, door.elapsed + dt);

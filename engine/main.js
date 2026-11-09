@@ -294,15 +294,16 @@ async function boot() {
   }
   // Every <article class="page" data-station> in index.html is a page, except
   // the contact list (the phone reads that). A page whose id is also one of
-  // the world's STATIONS opens with F there; any page can sit in the Dock.
+  // the world's STATIONS can open there unless marked data-dock-only.
   const pageEl = id => document.querySelector(`#pages .page[data-station="${id}"]`);
   const titleOf = page => { const h = page?.querySelector('h2'); return h ? { name: h.getAttribute('data-zh') ?? h.textContent, en: h.dataset.en || h.textContent } : {}; };
   const stationFor = id => {
     const page = pageEl(id), placed = STATIONS.find(s => s.id === id);
-    return { id, ...titleOf(page), ...placed, icon: placed?.icon || page?.dataset.icon || id };
+    return { id, ...titleOf(page), ...placed, icon: placed?.icon || page?.dataset.icon || id, dockOnly: page.hasAttribute('data-dock-only') };
   };
   const publicStations = [...document.querySelectorAll('#pages .page[data-station]')]
     .map(p => p.dataset.station).filter(id => id !== 'contact').map(stationFor);
+  const sceneStations = publicStations.filter(s => !s.dockOnly);
   // The portal is a place to press F at too, though it has no page.
   const portalStation = portal && STATIONS.find(s => s.id === 'portal');
   const popOut = document.createElement('a');
@@ -412,7 +413,7 @@ async function boot() {
   }
   function nearestTarget() {
     let best = null, bestD = 2.6;
-    for (const s of [...publicStations, ...(portalStation ? [portalStation] : [])]) {
+    for (const s of [...sceneStations, ...(portalStation ? [portalStation] : [])]) {
       if (!s.at) continue;
       const d = targetDistance(s);
       if (d < bestD && Math.abs((s.floor || 0) - Math.max(0, player.floorY)) < 1.5) { best = s; bestD = d; }
@@ -482,7 +483,7 @@ async function boot() {
   // ---------- Picking ----------
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  const hotspots = world.hotspots.filter(h => publicStations.some(s => s.id === h.id));
+  const hotspots = world.hotspots.filter(h => sceneStations.some(s => s.id === h.id));
 
   function pick(clientX, clientY) {
     ndc.set((clientX / innerWidth) * 2 - 1, -(clientY / innerHeight) * 2 + 1);
@@ -714,7 +715,7 @@ async function boot() {
   }
 
   function activate(id) {
-    if (!publicStations.some(s => s.id === id)) return;
+    if (!sceneStations.some(s => s.id === id)) return;
     const s = STATIONS.find(s => s.id === id);
     if (!s) return;
     const d = targetDistance(s);
@@ -798,7 +799,11 @@ async function boot() {
       continue;
     }
     const s = publicStations.find(s => s.id === id);
-    if (s) dockButton(() => nameOf(s), s.icon || s.id, () => openPage(s.id, { preserveScene: true })).dataset.station = s.id;
+    if (s) {
+      const button = dockButton(() => nameOf(s), s.icon || s.id, () => openPage(s.id, { preserveScene: true }));
+      button.dataset.station = s.id;
+      button.toggleAttribute('data-dock-only', s.dockOnly);
+    }
   }
   function togglePhone(on = !phone.up) {
     if (on === phone.up) return;
@@ -850,7 +855,10 @@ async function boot() {
     toggleFly,
     phone: () => togglePhone(),
     map: () => minimap.toggleBig(),
-    slot: n => hotbar.children[n - 1]?.click(),
+    slot: n => {
+      const button = hotbar.children[n - 1];
+      if (button && !button.hasAttribute('data-dock-only')) button.click();
+    },
     orbit: (dx, dy) => { rig.skipIntro(!!extras.locked); rig.orbit(dx, dy); },
     zoom: f => rig.zoom(f),
     tap,

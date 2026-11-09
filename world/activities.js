@@ -1,6 +1,6 @@
 import { COURT, RIM, ISLAND, POOL, BED, floorAt } from './layout.js';
 import { createActivityVisuals, paintTV, paintCinema } from './activity-visuals.js';
-import { getSeats } from './seats.js';
+import { getSeats, SEATS } from './seats.js';
 import { LIFE_SPOTS, createLifeVisuals } from './life-visuals.js';
 import { createLifeActions } from './life-actions.js';
 import { setActivityControl } from '../navigation/activity-icons.js';
@@ -18,6 +18,16 @@ import { tunnelCeiling } from './tunnel-glazing.js';
 import { createTransitRides } from './transit-rides.js';
 import { createVertec } from './vertec.js';
 
+const activitySeat = (id, seatId) => {
+  const { anchor, seatHeight, yaw } = SEATS.find(s => s.id === `seat-${seatId}`);
+  return { id, anchor, seatHeight, yaw };
+};
+const seatActivities = {
+  'seat-studio-main': 'gaming', 'seat-studio-side': 'gaming-side', 'seat-reading': 'reading',
+  'seat-sofa-1': 'tv-left', 'seat-sofa-2': 'tv', 'seat-sofa-3': 'tv-right',
+  'seat-gym-bench': 'gym-bench', 'seat-exercise-bike': 'gym-bike',
+};
+
 export const ACTIVITY_SPOTS = [
   ...TRANSIT_STOPS.map(s=>({...s,title:s.name+' · 双人候车',radius:1.8})),
   ...LIFE_SPOTS,
@@ -31,15 +41,15 @@ export const ACTIVITY_SPOTS = [
   { id: 'airplane', title: '领地飞机 · 驾驶飞机', at: [12, 4.2], floor: 11, radius: 1.6 },
   { id: 'basketball', title: '篮球场 · 投篮', at: [-12, 4], floor: 0, radius: 3, view: [-8, 6, 14], look: [-13.5, 1.5, 4] },
   { id: 'sleep', title: '卧室 · 睡觉', at: [BED.x + 2.2, BED.z + .35], floor: BED.y, radius: 2, anchor: [BED.x, BED.y, BED.z + .35], yaw: 0, view: [BED.x + 4, BED.y + 4, BED.z + 3.65], look: [BED.x, BED.y + .8, BED.z + .15] },
-  { id: 'reading', title: '灵感书房 · 看书', at: [-7.3, -6.7], floor: 4, radius: 2, anchor: [-8.8, 4, -6.85], yaw: 0, view: [-6.1, 7, -5], look: [-8.8, 5, -6.6] },
-  { id: 'tv', title: '日常客厅 · 看电视', at: [1, -.3], floor: 0, radius: 3, anchor: [2.95, 0, -3.1], yaw: -Math.PI / 2, view: [9, 5, 2], look: [1.4, 1.1, -3.2] },
-  { id: 'tv-left', activityId: 'tv', title: '日常客厅 · 沙发看电视', at: [1.85, -4.15], floor: 0, radius: 1.2, anchor: [2.95, 0, -4.15], yaw: -Math.PI / 2 },
-  { id: 'tv-right', activityId: 'tv', title: '日常客厅 · 沙发看电视', at: [1.85, -2.25], floor: 0, radius: 1.2, anchor: [2.95, 0, -2.25], yaw: -Math.PI / 2 },
+  { ...activitySeat('reading', 'reading'), title: '灵感书房 · 看书', at: [-7.3, -6.7], floor: 4, radius: 2, view: [-6.1, 7, -5], look: [-8.8, 5, -6.6] },
+  { ...activitySeat('tv', 'sofa-2'), residentAt: [1.85, -3.2], title: '日常客厅 · 看电视', at: [1, -.3], floor: 0, radius: 3, view: [9, 5, 2], look: [1.4, 1.1, -3.2] },
+  { ...activitySeat('tv-left', 'sofa-1'), activityId: 'tv', title: '日常客厅 · 沙发看电视', at: [1.85, -4.15], floor: 0, radius: 1.2 },
+  { ...activitySeat('tv-right', 'sofa-3'), activityId: 'tv', title: '日常客厅 · 沙发看电视', at: [1.85, -2.25], floor: 0, radius: 1.2 },
   { id: 'driving', title: '特斯拉 Model Y · 喷气汽车', at: [15.5, -4.5], floor: 0, radius: 1.1 },
   { id: 'motorcycle', title: '工具车库 · 骑摩托车', at: [14.5, -.15], floor: 0, radius: 1.25 },
   { id: 'coffee', title: '音乐咖啡吧 · 喝咖啡', at: [8, 13.3], floor: 0, radius: 2.1, anchor: [8.7, 0, 13.65], yaw: 0, view: [11.5, 3.6, 15.5], look: [8.5, 1.1, 13.65] },
-  { id: 'gaming', title: 'AI 工作台 · 打游戏', at: [1.2, -8.3], floor: 0, radius: 2.1, anchor: [2.1, 0, -9.55], yaw: Math.PI, view: [-1, 3.2, -6.7], look: [2.1, 1.1, -10.35] },
-  { id: 'gaming-side', activityId: 'gaming', title: 'AI 工作台 · 双屏电脑打游戏', at: [3.8, -7.9], floor: 0, radius: 1.5, anchor: [4.05, 0, -9.1], yaw: Math.PI / 2 },
+  { ...activitySeat('gaming', 'studio-main'), title: 'AI 工作台 · 打游戏', at: [1.2, -8.3], floor: 0, radius: 2.1, view: [-1, 3.2, -6.7], look: [2.1, 1.1, -10.35] },
+  { ...activitySeat('gaming-side', 'studio-side'), activityId: 'gaming', title: 'AI 工作台 · 双屏电脑打游戏', at: [3.8, -7.9], floor: 0, radius: 1.5 },
 ];
 const BOOK = [
   ['第一章 · 海边的小屋', '清晨，阳光落在木地板上。推开窗，海风带来新的一天。今天不必赶路，先把想做的事情，一件一件放进自己的小世界。'],
@@ -127,27 +137,44 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   vehicles.driving.placeOccupant = jet.placeOccupant;
   vehicles.driving.getHeading = () => jet.airborne ? jet.heading : vehicles.driving.mesh.rotation.y + Math.PI / 2;
   const guidePoint={},guideProjection={};
-  let ambient=null,ambientTime=0,ambientClock=0;
-  function setAmbientActivity(id){
-    ambient=id;
+  const ambient = new Map();
+  let ambientClock = 0, beltTime = null;
+  function setAmbientActivity(id, owner = 'companion', elapsed = 0) {
+    if (!id) { ambient.delete(owner); return; }
+    const entry = ambient.get(owner);
+    if (entry) { entry.id = id; entry.elapsed = elapsed; }
+    else ambient.set(owner, { id, elapsed });
+  }
+  function ambientScreens(dt) {
+    ambientClock += dt;
+    if (ambientClock < .1) return;
+    ambientClock = 0;
+    let tv, cinema, main, side;
+    for (const entry of ambient.values()) {
+      if (entry.id === 'tv' || entry.id === 'tv-left' || entry.id === 'tv-right') tv ??= entry;
+      else if (entry.id === 'cinema') cinema = entry;
+      else if (entry.id === 'gaming') main = entry;
+      else if (entry.id === 'gaming-side') side = entry;
+    }
     // These screens are under the solid roof; skip their hidden outside view.
     const visible=world.hidden.has('roof')||stage.camera.position.y<10.9;
-    visuals.tv.mesh.visible=active?.id==='tv'||visible&&id==='tv';
-    visuals.cinema.mesh.visible=active?.id==='cinema'||visible&&id==='cinema';
-    visuals.monitor.mesh.visible=active?.id==='gaming'||visible&&id==='gaming';
+    visuals.tv.mesh.visible = active?.id === 'tv' || visible && !!tv;
+    visuals.cinema.mesh.visible = active?.id === 'cinema' || visible && !!cinema;
+    visuals.monitor.mesh.visible = active?.id === 'gaming' || visible && !!main;
+    visuals.sideMonitor.mesh.visible = visuals.sideMirror.visible = visible && !!side;
+    if (tv && visible && active?.id !== 'tv') paintTV(visuals.tv, tv.elapsed, Math.floor(tv.elapsed / 12) % 2, false);
+    if (cinema && visible && active?.id !== 'cinema') paintCinema(visuals.cinema, cinema.elapsed);
+    if (main && visible && active?.id !== 'gaming') paintResidentGame(visuals.monitor, main.elapsed);
+    if (side && visible) paintResidentGame(visuals.sideMonitor, side.elapsed);
   }
-  function ambientScreens(dt){
-    ambientTime+=dt;ambientClock+=dt;
-    if(!ambient||ambientClock<=.1||active?.id===ambient)return;
-    ambientClock=0;
-    if(ambient==='tv')paintTV(visuals.tv,ambientTime,0,false);
-    else if(ambient==='cinema')paintCinema(visuals.cinema,ambientTime);
-    else{
-      const c=canvas.getContext('2d');c.fillStyle='#152d43';c.fillRect(0,0,320,180);
-      c.fillStyle='#e8c777';for(let i=0;i<5;i++)c.fillRect(30+i*60,(ambientTime*28+i*39)%160,12,12);
-      c.fillStyle='#76ae9b';c.fillRect(140+Math.sin(ambientTime)*100,157,35,10);
-      visuals.monitor.texture.needsUpdate=true;
-    }
+  function paintResidentGame(screen, elapsed) {
+    const c = screen.ctx;
+    c.fillStyle = '#152d43'; c.fillRect(0, 0, 320, 180);
+    c.fillStyle = '#e8c777';
+    for (let i = 0; i < 5; i++) c.fillRect(30 + i * 60, (elapsed * 54 + i * 39) % 156, 12, 12);
+    c.fillStyle = '#76ae9b'; c.fillRect(140 + Math.sin(elapsed * 2.3) * 100, 157, 35, 10);
+    c.fillStyle = '#eee1bb'; c.font = 'bold 12px monospace'; c.fillText('CATCH THE GOLD', 12, 15);
+    screen.texture.needsUpdate = true;
   }
   const shot = { charging: false, power: 0, flight: false, t: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, scored: false, willScore: false, attempts: 0, points: 0 };
   const game = { x: 160, time: 30, score: 0, lives: 3, over: false, objects: Array.from({ length: 4 }, (_, i) => ({ x: 30 + i * 75, y: -40 - i * 45, speed: 40 + i * 6, bad: i === 2 })) };
@@ -178,6 +205,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (player.mode !== 'ground' || document.querySelector('dialog[open]') || document.body.classList.contains('phone-on')) return null;
     let best = null, distance = Infinity;
     for (const spot of list) {
+      if (spot.activityId) continue;
       if (spot.id === 'carrier') { if (world.carrier.canBoard(player)) { best = spot; distance = 0; } continue; }
       if (spot.id === 'submarine') { if (world.submarine.canBoard(player)) { best = spot; distance = 0; } continue; }
       let plane=null;
@@ -266,6 +294,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if (spot.id === 'tv') sound.effect('tv');
     if (isReading(spot.id)) sound.effect('page');
     life.start(spot.id);
+    if (spot.id === 'treadmill') beltTime = null;
     if (spot.id === 'gym-vertec') vertecReps = 0;
     document.body.classList.add('activity-active'); document.body.classList.toggle('activity-sleep', spot.id === 'sleep');
     refreshUI(); pose(0); sound.effect(spot.kind === 'seat' ? 'sit' : 'start'); return true;
@@ -867,6 +896,10 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     if(active?.service&&transit.readyToExit){stop();return;}
     for(const f of flights)f.syncParked();
     ambientScreens(dt);
+    if (active?.id !== 'treadmill') {
+      if (beltTime === null) lifeVisuals.belt.visible = false;
+      else lifeVisuals.treadmill(beltTime, 1);
+    }
     if (!active) { world.submarine.crew.update(dt, false); walkingSounds(); if (uiClock > .15) { uiClock = 0; const seat = nearest(seats), next = nearest() || seat; if (near !== next || nearSeat !== seat || nearTitle !== next?.title) { near = next; nearSeat = seat; nearTitle = next?.title; refreshUI(); } } return; }
     if (document.querySelector('dialog[open]')) { stop(true); return; }
     if (isDriving()) drive(dt);
@@ -899,6 +932,12 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     return { x: v.mesh.position.x, y: v.mesh.position.y, z: v.mesh.position.z, speed: selected ? carSpeed : 0, heading: v.getHeading?.() ?? v.mesh.rotation.y + Math.PI / 2, distance: v.distance, ...(id === 'driving' ? { jet: jet.status() } : {}) };
   }
   return {
+    isUsingSpot(id) {
+      return !!active && (active.id === id || seatActivities[active.id] === id || active.id === 'library' && id === 'library-companion');
+    },
+    moveResidentBelt(elapsed) { if (active?.id !== 'treadmill') beltTime = elapsed; },
+    moveBikeCrank: lifeVisuals.bike,
+    tapVertec: vertec.tap,
     setResidentBall(x,y,z){if(active?.id==='basketball')return;visuals.ball.visible=x!==null;if(x!==null)visuals.ball.position.set(x,y,z);},
     setBedtimeHandler(fn){bedtimeHandler=fn;},setSharedStatus(text){sharedStatus=text;},
     start, stop, keyDown, keyUp, update, cycleMovement, syncMovement, setAmbientActivity, spots: allSpots, seats, get flight(){return flight;}, flights, cruise, dive, transit,

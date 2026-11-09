@@ -26,6 +26,7 @@ const inHouse = HOUSE ? (x, z) => x >= HOUSE.x0 && x < HOUSE.x1 && z >= HOUSE.z0
 const inPool = POOL ? (x, z) => x >= POOL.x0 && x < POOL.x1 && z >= POOL.z0 && z < POOL.z1 : () => false;
 const DOORWAY = L.DOORWAY || [];
 const EXIT = L.EXIT || (HOUSE && { x: (HOUSE.x0 + HOUSE.x1) / 2, z: HOUSE.z1 + 2.5 });
+const actorsByNav = new WeakMap();
 
 // In the water the body is placed by its middle (`c`), pitched and rolled
 // about it. Water is slow to start and stop. Without input the player floats back
@@ -48,6 +49,20 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   // `level` is the height of whatever the player is standing on.
   let mode = 'ground', island = null, level = 0, pilot = null, standing = null;
   const velocity = new THREE.Vector3();
+  let actors = actorsByNav.get(nav);
+  if (!actors) actorsByNav.set(nav, actors = new Set());
+  const body = { pos, get y() { return mode === 'swim' ? swim.c - PIVOT : y; } };
+  actors.add(body);
+  function overlapsActor(x, feet) {
+    const minDistance = RADIUS * 2;
+    for (const other of actors) {
+      if (other === body || feet >= other.y + 1.8 || other.y >= feet + 1.8) continue;
+      const distance = Math.hypot(x.x - other.pos.x, x.z - other.pos.z);
+      const current = Math.hypot(pos.x - other.pos.x, pos.z - other.pos.z);
+      if (distance < minDistance && (current >= minDistance || distance < current - 0.001)) return true;
+    }
+    return false;
+  }
   const solidAt = (x, y, z) => !!grid?.type(x, y, z);
   // A web-zip, Spider-Man style: a web shoots from their hand to the point
   // aimed at, then pulls them along a rising arc to where the player lands. The web is
@@ -66,19 +81,28 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   // One step on foot. Stepping from the house's grid onto something outside
   // it (the pier, a bridge) hands over to that, and back again.
   function stepBy(dx, dz, guide = null) {
-    const tx = pos.x + dx, tz = pos.z + dz;
-    if (island) {
-      const reference = guide?.route ? { ...standing, route: guide.route, index: guide.index, y: level, expectedY: guide.y, guided: true } : standing;
-      const here = ground.move(pos, dx, dz, level, reference);
-      standing = here; level = here.y; island = here.site;
-      return;
+    function candidate(mx, mz) {
+      const next = { x: pos.x, z: pos.z };
+      if (island) {
+        const reference = guide?.route ? { ...standing, route: guide.route, index: guide.index, y: level, expectedY: guide.y, guided: true } : standing;
+        const here = ground.move(next, mx, mz, level, reference);
+        return { ...next, level: here.y, island: here.site, standing: here };
+      }
+      const tx = pos.x + mx, tz = pos.z + mz, out = ground?.canStand(tx, tz, level);
+      if (out && (!nav.canStand(tx, tz, level) || out.y > nav.heightAt(tx, tz) + 0.02))
+        return { x: tx, z: tz, level: out.y, island: out.site, standing: out };
+      nav.move(next, mx, mz);
+      return { ...next, level: nav.heightAt(next.x, next.z), island: null, standing: null };
     }
-    const out = ground?.canStand(tx, tz, level);
-    if (out && (!nav.canStand(tx, tz, level) || out.y > nav.heightAt(tx, tz) + 0.02)) {
-      pos.x = tx; pos.z = tz; island = out.site; level = out.y; standing = out;
-      return;
+    let next = candidate(dx, dz);
+    if (overlapsActor(next, next.level)) {
+      const xOnly = candidate(dx, 0), zOnly = candidate(0, dz);
+      const xMoves = Math.hypot(xOnly.x - pos.x, xOnly.z - pos.z) > 0.001 && !overlapsActor(xOnly, xOnly.level);
+      const zMoves = Math.hypot(zOnly.x - pos.x, zOnly.z - pos.z) > 0.001 && !overlapsActor(zOnly, zOnly.level);
+      next = xMoves ? xOnly : zMoves ? zOnly : { x: pos.x, z: pos.z, level, island, standing };
     }
-    nav.move(pos, dx, dz); level = nav.heightAt(pos.x, pos.z); standing = null;
+    pos.x = next.x; pos.z = next.z;
+    level = next.level; island = next.island; standing = next.standing;
   }
 
   // What is below (x, z) at or under height `top`: the floor to fly over, and
@@ -103,6 +127,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
   // Would a body at (x, feet, z) overlap a block of the house or anything outside?
   function blocked(x, feet, z) {
+    if (overlapsActor({ x, z }, feet)) return true;
     for (const h of [0.15, 0.95, 1.7]) for (const [ox, oz] of [[0, 0], [RADIUS, 0], [-RADIUS, 0], [0, RADIUS], [0, -RADIUS]]) {
       if (solidAt(Math.floor(x + ox), Math.floor(feet + h), Math.floor(z + oz))) return true;
     }
@@ -373,7 +398,16 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     else if (!s.rest) s.still = 0;
     s.lie += ((s.rest ? 1 : 0) - s.lie) * (1 - Math.exp(-dt * 1.4));
 
-    const to = inPoolBounds(pos.x + s.vx * dt, pos.z + s.vz * dt, s.c);
+    let to = inPoolBounds(pos.x + s.vx * dt, pos.z + s.vz * dt, s.c);
+    if (overlapsActor(to, s.c - PIVOT)) {
+      const xOnly = inPoolBounds(pos.x + s.vx * dt, pos.z, s.c);
+      const zOnly = inPoolBounds(pos.x, pos.z + s.vz * dt, s.c);
+      const xMoves = !overlapsActor(xOnly, s.c - PIVOT);
+      const zMoves = !overlapsActor(zOnly, s.c - PIVOT);
+      to = xMoves ? xOnly : zMoves ? zOnly : { x: pos.x, z: pos.z };
+      if (!xMoves) s.vx = 0;
+      if (!zMoves) s.vz = 0;
+    }
     if (Math.abs(to.x - pos.x - s.vx * dt) > 1e-4) s.vx = 0;
     if (Math.abs(to.z - pos.z - s.vz * dt) > 1e-4) s.vz = 0;
     pos.x = to.x; pos.z = to.z;
@@ -598,7 +632,10 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     speed += (mag * (input.run || (rush && path) ? RUN : WALK) - speed) * (1 - Math.exp(-dt * (airborne ? 4 : 10)));
     if (mag > 0.01) {
       const step = path?.length ? Math.min(speed * dt, Math.hypot(path[0].x - pos.x, path[0].z - pos.z)) : speed * dt;
-      if (through) { pos.x += dx / length * step; pos.z += dz / length * step; }
+      if (through) {
+        const next = { x: pos.x + dx / length * step, z: pos.z + dz / length * step };
+        if (!overlapsActor(next, y)) { pos.x = next.x; pos.z = next.z; }
+      }
       else stepBy(dx / length * step, dz / length * step, path?.[0]);
       turnTowards(dx, dz, dt);
     }

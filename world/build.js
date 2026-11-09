@@ -118,6 +118,7 @@ export function setup(app) {
   world.transit.maskWater(world.coast);
   const activities = createActivities(app);
   const household = createHousehold(app,activities);
+  const doorActors = [app.player, household.woman, ...household.parents.actors];
   return {
     activities,household,
     get locked() { return activities.active || household.sleeping || household.bathing; },
@@ -135,7 +136,7 @@ export function setup(app) {
       world.outer.update(dt, stage.camera);
       activities.update(dt);
       household.update(dt);
-      world.animated.doors.update(dt, app.nav);
+      world.animated.doors.update(dt, app.nav, doorActors);
       world.carrier.updateCabin(app.player,stage.camera);
       world.carrier.update(dt,stage.camera);
       const cutaway = world.hidden.has('roof');

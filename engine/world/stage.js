@@ -134,20 +134,18 @@ const SKY_FRAGMENT = /* glsl */`
       puff = edge * smoothstep(0.035, 0.26, h) * exp(-t * 0.0015) * smoothstep(0.0, 16.0, lift);
     }
     float clear = (1.0 - uCloud) * (1.0 - puff);
-    // A square sun or moon, as it should be in a block world, with a soft halo.
-    vec3 s = normalize(uSunDir);
-    vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), s));
-    vec3 up = cross(s, right);
-    float facing = dot(d, s);
-    vec2 q = vec2(dot(d, right), dot(d, up)) / max(facing, 0.001);
-    float size = mix(0.05, 0.04, uNight);
-    float disc = facing > 0.0 ? step(abs(q.x), size) * step(abs(q.y), size) : 0.0;
+    // A circular sun or moon with a soft halo and an antialiased rim.
+    float facing = dot(d, normalize(uSunDir));
+    float rim = cos(mix(0.05, 0.04, uNight));
+    float aa = max(0.5 * fwidth(facing), 0.00001);
+    float disc = smoothstep(rim - aa, rim + aa, facing);
     float halo = pow(max(facing, 0.0), mix(24.0, 60.0, uNight));
     col += uSunColor * (halo * mix(0.35, 0.25, uNight)) * (1.0-uCloud);
     col = mix(col, uSunColor * mix(1.6, 1.25, uNight), disc * clear);
     if (uNight > 0.0) {
-      vec3 cell = floor(d * 260.0);
-      float star = step(0.9975, hash(cell)) * smoothstep(0.05, 0.35, h);
+      vec3 field = d * 260.0;
+      float point = 1.0 - smoothstep(0.32, 0.5, length(fract(field) - 0.5));
+      float star = step(0.9975, hash(floor(field))) * point * smoothstep(0.05, 0.35, h);
       col += vec3(star) * uNight * 0.9 * clear;
     }
     col = mix(col, mix(uCloudLit, uCloudShade, smoothstep(1.0 - uCover, 1.0, v) * 0.7), puff * 0.93);
