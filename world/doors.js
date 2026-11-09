@@ -14,16 +14,17 @@ const FRONT_DOOR_GLYPHS = {
   寿: 'M3.2 2.9h10.2 M4.1 5.3h8.5 M1.3 7.7h14.2 M8.5 1q-.7 8.1-7.3 12.9 M6.2 10.6h8.7 M12.4 8.7v5.7q0 1.7-2.4 1.1 M7.5 12.4l1.5 1.6',
 };
 
-function makeFrontDoorMaterial(style) {
+function makeFrontDoorMaterial() {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   ctx.scale(2, 2);
-  const black = style === 'blackwood';
-  const colors = black
-    ? { base: '#100f10', grain: '#211d1a', panel: '#171415', trim: '#b89a62', detail: '#e0c98d' }
-    : { base: '#4a1719', grain: '#692326', panel: '#571b1e', trim: '#c99b58', detail: '#eed093' };
+  const gold = ctx.createLinearGradient(0, 8, 128, 120);
+  gold.addColorStop(0, '#ffe4a0');
+  gold.addColorStop(0.5, '#b97824');
+  gold.addColorStop(1, '#ffd278');
+  const colors = { base: '#971d26', grain: '#a92730', panel: '#b52a34', trim: gold, detail: '#ffe1a0' };
   ctx.fillStyle = colors.base;
   ctx.fillRect(0, 0, 128, 128);
 
@@ -36,6 +37,28 @@ function makeFrontDoorMaterial(style) {
   ctx.strokeStyle = colors.trim;
   ctx.lineWidth = 2;
   ctx.strokeRect(10, 8, 108, 112);
+
+  // Shaded brass studs sit in the red band around each leaf.
+  const stud = ctx.createRadialGradient(-0.6, -0.7, 0.1, 0, 0, 2.3);
+  stud.addColorStop(0, '#fff0be');
+  stud.addColorStop(0.48, '#efbd60');
+  stud.addColorStop(1, '#804611');
+  ctx.fillStyle = stud;
+  for (const [xs, ys] of [
+    [[18, 29, 40, 51, 64, 77, 88, 99, 110], [4, 124]],
+    [[5, 123], [16, 28, 40, 52, 64, 76, 88, 100, 112]],
+  ]) {
+    for (const x of xs) {
+      for (const y of ys) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.beginPath();
+        ctx.arc(0, 0, 2.3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
   ctx.strokeStyle = colors.grain;
   ctx.lineWidth = 1;
   ctx.strokeRect(15, 13, 98, 102);
@@ -104,6 +127,19 @@ function makeFrontDoorMaterial(style) {
       ctx.translate(64 + side * (64 - x), y);
       ctx.scale(-side, 1);
       ctx.stroke(leaf);
+      ctx.restore();
+    }
+  }
+
+  // Small blossoms fill the open space beside the character medallions.
+  const blossom = new Path2D('M0-1Q-3-6 0-6Q3-6 0-1Q5-4 6-1Q7 2 1 1Q4 5 2 6Q-1 7 0 2Q-2 7-4 5Q-6 3-1 1Q-7 1-6-2Q-5-4 0-1Z');
+  ctx.strokeStyle = colors.detail;
+  ctx.lineWidth = 0.75;
+  for (const x of [34, 94]) {
+    for (const y of [51, 77]) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.stroke(blossom);
       ctx.restore();
     }
   }
@@ -280,8 +316,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
   garage.root.add(shutterFace);
 
   const unitBox = new THREE.BoxGeometry(1, 1, 1), instanceMeshes = [];
-  const frontDoorStyle = Math.random() < 0.5 ? 'blackwood' : 'rosewood';
-  const woodDoor = makeFrontDoorMaterial(frontDoorStyle);
+  const woodDoor = makeFrontDoorMaterial();
   const matrix = new THREE.Matrix4(), center = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
   for (const [surface, members] of bySurface) {
