@@ -147,13 +147,15 @@ export const EXIT = { x: 0.5, z: 18.6 };
 // Keep the opening camera on the spawn axis, facing straight north.
 export const INTRO = { pos: [SPAWN.x, 47, 92], portrait: [SPAWN.x, 76, 149], look: [SPAWN.x, 0, -6] };
 
-// The cat stays indoors and naps on the sofa; the dog roams the terrace and
-// comes in by the front door. Routes round the sofa and through the doorway
-// are spelled out where string-pulling would cut a corner.
+// The cat roams the solid terrace between the tea room and central skylight.
+// The dog roams the ground-floor terrace and comes in by the front door.
+const CAT_DECK = { x0: ROOF_ROOM.x1 + .5, x1: ROOF_GLASS[0].x0 - .5, z0: -13, z1: 5 };
 export const PETS = {
   cat: {
-    anchors: [[5.8, 5.2], [1.85, -3.2], [1.2, -8.3], [8, 13.3], [12, 6.3]], home: [1.85, -3.2], within: inHouse,
-    detour: (points, hub, x, z, valid) => !valid(points) && z < 0 ? [hub, { x: 1.85, z: hub.z }, { x: 1.85, z: z < -5 ? -6.8 : z }, { x, z }] : null,
+    floor: HOUSE.height + 1.06,
+    anchors: [[-3, -3], [-3, 2], [-3, -6], [-3, -9], [-3, -12]],
+    home: [-3, 2],
+    within: (x, z) => inside(CAT_DECK, x, z),
   },
   dog: {
     anchors: [[7, 19.8], [12, 20], [18, 19.5], [-5, 20.3], [0.5, 13.5], [5.8, 5.2]],

@@ -1,4 +1,4 @@
-// The portal's look: a blue vortex drawn in block texels, two soft arms
+// The portal's look: a violet vortex drawn in block texels, two soft arms
 // turning down a funnel behind its face, a flowing rim, a soft halo and
 // the light it casts on the grass. It livens up as you come close. A
 // shallow lens of energy tapers into its edge; there is no straight side
@@ -13,7 +13,8 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // middle; the two curved faces meet at the perimeter.
 const OY = 1.2, RX = 0.82, RY = 1.38, DEPTH = 0.28, HZ = DEPTH / 2;
 
-const COLORS = { a: '#1d5aa8', b: '#48a2e0', c: '#b2e3fa', white: '#f2faff', rim: '#cdeeff', halo: '#6cbcf0', ground: '#5aaee4' };
+const COLORS = { a: '#412080', b: '#8950e0', c: '#d5b8ff', white: '#fffcff', rim: '#e9d6ff', halo: '#a571ff', ground: '#a16bf0' };
+const MOTION_SPEED = reduced ? 0.2 : 1.65;
 // How fast the arms turn at rest (radians of the pattern a second) and how
 // much faster right beside it; how deep the funnel sinks behind the face in
 // metres, and the most its eye leans towards you, as a share of the radius;
@@ -194,9 +195,13 @@ export function createGate() {
             vec2 uv = vec2(p.x / (2.0 * RX) + 0.5, (p.y - OY + RY) / (2.0 * RY));
             col = mix(col, texture2D(uPreview, uv * uFit.xy + uFit.zw).rgb, uShow * smoothstep(2.0, 6.0, inside));
           }
-          float rim = (1.0 - smoothstep(0.0, 1.6, inside))
-            * (0.55 + 0.2 * sin(atan(q.y, q.x) * 5.0 - uTime * 1.5));
-          col = mix(col, uRim, rim);
+          float angle = atan(q.y, q.x);
+          float rim = 1.0 - smoothstep(0.0, 1.6, inside);
+          float current = 0.55 + 0.2 * sin(angle * 5.0 - uFlow);
+          float streak = smoothstep(0.65, 0.98, sin(angle * 9.0 + uFlow * 2.0))
+            * (0.55 + 0.45 * sin(angle * 3.0 - uFlow));
+          col = mix(col, uRim, rim * current);
+          col = mix(col, uWhite, rim * streak * 0.8);
         }
         col *= 1.0 + 0.1 * uNear + 0.25 * uCharge;
         gl_FragColor = vec4(col, 1.0);
@@ -228,7 +233,7 @@ export function createGate() {
     uniforms, fog: true, side: THREE.DoubleSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     vertexShader: GLOW_VERTEX,
     fragmentShader: `${HEAD}
-      uniform vec3 uHalo, uGround;
+      uniform vec3 uHalo, uGround, uWhite;
       varying vec3 vLocal, vCamera; varying float vKind;
       #include <fog_pars_fragment>
       void main() {
@@ -252,9 +257,22 @@ export function createGate() {
           // A bright skin over a wide, faint aura, fading out with no edge,
           // and out towards the ground, where the card would cut it straight.
           // The aura swells a little as you come close.
+          float angle = atan(c.y, c.x + 1e-5);
           float glow = 0.6 * exp(-d * 12.0) + 0.4 * exp(-d * (5.0 - uNear));
+          float wave = smoothstep(0.72, 0.99, sin(d * 48.0 - uTime * 4.8 + sin(angle * 5.0 + uFlow)));
+          glow *= 0.85 + 0.15 * sin(angle * 4.0 - uFlow);
+          glow += wave * exp(-d * 7.0) * 0.35;
           col = uHalo * glow * (1.0 - smoothstep(0.2, 0.5 + 0.1 * uNear, d)) * smoothstep(0.0, 0.4, vLocal.y)
             * (0.15 * (1.0 + 0.6 * uNear) + 0.5 * uCharge);
+          // Seed one drifting spark per angular sector and fade it at both ends of its path.
+          float sector = fract(angle / 6.2831853 + 0.5) * 36.0;
+          float seed = hash(vec2(floor(sector), 17.0));
+          float life = fract(uTime * (0.6 / 6.2831853) + seed);
+          float drift = 0.35 + 0.30 * life;
+          float spark = (1.0 - smoothstep(0.025, 0.12, abs(fract(sector) - drift)))
+            * (1.0 - smoothstep(0.007, 0.024, abs(d - (0.045 + life * 0.31))));
+          spark *= smoothstep(0.0, 0.2, life) * (1.0 - smoothstep(0.45, 1.0, life));
+          col += mix(uHalo, uWhite, seed) * spark * smoothstep(0.05, 0.4, vLocal.y) * (0.45 + 0.25 * uNear);
         } else {
           // Light spilling onto the grass from the foot of the oval: brightest
           // where it meets the ground, fading unevenly texel by texel, no edge.
@@ -262,7 +280,8 @@ export function createGate() {
           float across = max(abs(g.x) - RX * 0.35, 0.0) / 0.5;
           float out_ = g.y / (g.y > 0.0 ? 0.85 : 0.55);
           float spill = exp(-across * across - out_ * out_);
-          col = uGround * spill * mix(0.7, 1.15, hash(cell)) * (0.42 * (1.0 + 0.4 * uNear) + 0.6 * uCharge);
+          float shimmer = 0.9 + 0.1 * sin(abs(g.y) * 9.0 - uFlow * 2.0 + abs(g.x) * 3.0);
+          col = uGround * spill * shimmer * mix(0.7, 1.15, hash(cell)) * (0.42 * (1.0 + 0.4 * uNear) + 0.6 * uCharge);
         }
         #ifdef USE_FOG
           #ifdef FOG_EXP2
@@ -295,15 +314,16 @@ export function createGate() {
     // near: how close the player is (0–1); charge: opening for a journey (0–1);
     // show: how far the destination's picture has faded in (0–1).
     update(dt, near, charge, show) {
-      const step = dt * (reduced ? 0.2 : 1);
-      time += step;
+      const step = dt * MOTION_SPEED;
+      // Time-driven shader phases use multiples of 0.1 rad/s, so they wrap together.
+      time = (time + step) % (20 * Math.PI);
       // The swirl speeds up as you come close and more with the charge, so
       // its phase adds up here: a clock multiplied by the speed in the
       // shader would jump with it.
       const lively = 1 + SPIN_NEAR * near;
       spin = (spin + step * (SPIN * lively + 3.5 * charge)) % (Math.PI * 2);
       flow = (flow + step * (1.6 * lively + 2.6 * charge)) % (Math.PI * 2);
-      uniforms.uTime.value = time % 1000;
+      uniforms.uTime.value = time;
       uniforms.uSpin.value = spin; uniforms.uFlow.value = flow;
       uniforms.uNear.value = near; uniforms.uCharge.value = charge;
       uniforms.uShow.value = uniforms.uPreview.value ? show : 0;

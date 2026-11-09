@@ -1,4 +1,4 @@
-// A small indoor life for the cat, without a physics engine or runtime A*.
+// A small life for pets, without a physics engine or runtime A*.
 // Prevalidated routes are built under the loading screen. Movement changes only
 // the root transform; articulated coat/limb matrices upload at 12 Hz.
 // The player nearby draws attention: heads follow them, a resting dog turns round to
@@ -8,15 +8,20 @@ import { rng } from './textures.js';
 import { registerActor } from './actor-collision.js';
 
 // `anchors` are [x, z] places to wander between; the first is the hub every
-// route starts from. `within(x, z)` keeps a pet to an area (a cat indoors),
-// and `detour(points, hub, x, z)` may reroute a path around a tight corner.
-export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, within = () => true, detour = null, home = null } = {}) {
+// route starts from. `within(x, z)` limits roaming. For an elevated `floor`,
+// it defines the walkable area and routes are checked directly on that surface.
+// `detour(points, hub, x, z)` may reroute a path around a tight corner.
+export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, within = () => true, detour = null, home = null, floor = 0 } = {}) {
   const random = rng(seed);
   const dog = kind === 'dog';
   const hub = { x: anchors[0][0], z: anchors[0][1] };
   const routes = [];
-  const safe = (x, z) => within(x, z) && nav.heightAt(x, z) === 0 && nav.canStand(x, z)
-    && (!dog || [[-.3, 0], [.3, 0], [0, -.3], [0, .3]].every(([dx, dz]) => nav.canStand(x + dx, z + dz)));
+  const safe = (x, z) => {
+    if (!within(x, z)) return false;
+    if (floor !== 0) return true;
+    return nav.heightAt(x, z) === 0 && nav.canStand(x, z)
+      && (!dog || [[-.3, 0], [.3, 0], [0, -.3], [0, .3]].every(([dx, dz]) => nav.canStand(x + dx, z + dz)));
+  };
   const validRoute = points => {
     for (let i = 1; i < points.length; i++) {
       const a = points[i - 1], b = points[i], n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.12);
@@ -29,7 +34,7 @@ export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, wi
   };
   for (const [x, z] of anchors.slice(1)) {
     if (!safe(x, z)) continue;
-    const path = nav.findPath(hub, { x, z });
+    const path = floor === 0 ? nav.findPath(hub, { x, z }) : [{ x, z }];
     if (!path?.length) continue;
     let points = [hub, ...path];
     // A world may route round a tight spot; the whole route is checked either way.
@@ -37,8 +42,8 @@ export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, wi
     if (validRoute(points)) routes.push(points.filter((p, i) => !i || Math.hypot(p.x - points[i - 1].x, p.z - points[i - 1].z) > 0.01).map(p => ({ x: p.x, z: p.z })));
   }
   // A pet starts asleep at `home` (an anchor), or at the hub.
-  const sofa = home ? routes.findIndex(p => Math.hypot(p.at(-1).x - home[0], p.at(-1).z - home[1]) < 0.1) : -1;
-  let place = sofa >= 0 ? sofa : -1, path = null, point = 0, targetPlace = -1;
+  let place = home ? routes.findIndex(p => Math.hypot(p.at(-1).x - home[0], p.at(-1).z - home[1]) < 0.1) : -1;
+  let path = null, point = 0, targetPlace = -1;
   let state = 'sleeping', wait = dog ? 5 : 3.5, poseClock = 0, visibilityClock = 0, visible = true;
   let reducedLast = false;
   // Cosmetic choices (how to rest, where to glance) use Math.random, so the
@@ -47,7 +52,7 @@ export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, wi
   // The dog only ever walks or lies down; the cat loafs or sits.
   const chooseRest = () => { rest = dog ? 'sphinx' : (Math.random() < 0.55 ? 'loaf' : 'sit'); };
   const start = place >= 0 ? routes[place].at(-1) : hub;
-  cat.root.position.set(start.x, 0, start.z); cat.root.rotation.y = 0.6;
+  cat.root.position.set(start.x, floor, start.z); cat.root.rotation.y = 0.6;
   const body = registerActor(nav, cat.root.position, dog ? .64 : .4, dog ? 1.2 : .65);
   cat.update(0, { sleeping: true });
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -78,7 +83,7 @@ export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, wi
     }
     if (!visible) return;
     const p = cat.root.position, dx = player ? player.pos.x - p.x : 0, dz = player ? player.pos.z - p.z : 0;
-    const dist = player && player.y < 1 ? Math.hypot(dx, dz) : Infinity;
+    const dist = player && (floor === 0 ? player.y < 1 : Math.abs(player.y - floor) < 1) ? Math.hypot(dx, dz) : Infinity;
     if (dog && state === 'sleeping' && dist < 2.4) { state = 'resting'; rest = 'sphinx'; wait = 8 + Math.random() * 8; }
     let walking = false;
     if (state === 'rising') {
