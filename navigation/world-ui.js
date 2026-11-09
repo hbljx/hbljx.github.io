@@ -56,13 +56,21 @@ dialog#panel[data-station="mailbox"] {
 }
 `;
 document.head.append(guideStyle);
+const guideSeenKey='li-home-guide-seen';
 const ready=setInterval(()=>{
-  if(window.__home?.player){
+  const home=window.__home;
+  if(home?.player&&!document.querySelector('#loading, #panel[open]')){
     clearInterval(ready);brand.hidden=false;
     document.querySelector('#portalButton')?.remove();
     document.querySelector('#minimap .badge.credit')?.remove();
+
+    try{if(localStorage.getItem(guideSeenKey)==='1')return;}catch{}
+    home.openPage('mailbox',{preserveScene:true});
+    if(document.querySelector('#panel[data-station="mailbox"][open]')){
+      try{localStorage.setItem(guideSeenKey,'1');}catch{}
+    }
   }
-  else if(window.__homeStartupError){clearInterval(ready);}
+  else if(window.__homeStartupError||document.body.classList.contains('plain')){clearInterval(ready);}
 },250);
 // F closes an open panel when focus is outside the embedded directory.
 window.addEventListener('keydown',event=>{
