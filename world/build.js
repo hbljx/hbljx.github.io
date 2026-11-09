@@ -116,6 +116,8 @@ export function setup(app) {
   const { stage, world } = app;
   world.oceanLife.configureSea(world.coast);
   world.transit.maskWater(world.coast);
+  world.carrier.crew.connectActors(app.nav);
+  world.submarine.crew.connectActors(app.nav);
   const activities = createActivities(app);
   const household = createHousehold(app,activities);
   const doorActors = [app.player, household.woman, ...household.parents.actors];

@@ -59,6 +59,8 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
     waiting=3;
   }
   function begin(){
+    const a=target.anchor||[-12.5,0,4];
+    if(target.id!=='swimming'&&target.id!=='motorcycle-view'&&!woman.canOccupy(...a)){leave();return;}
     woman.cancel();phase='interacting';elapsed=0;startedAt=Date.now();duration=25+Math.random()*25;lastActivity=target.id;
     if(target.id==='swimming'){avatar.setSwimsuit(true);swimLane=0;woman.enterPool(-10,27);return;}
     if(target.id==='motorcycle-view'){
@@ -76,7 +78,7 @@ export function createFemaleRoutine({woman,avatar,activities,world,navigate,nav,
       ride={points,index:1,back:false,speed:4,viewTime:0,stage:'riding-up'};duration=Infinity;
       woman.anchor(points[0].x,points[0].y,points[0].z,Math.PI/2);return;
     }
-    const a=target.anchor||[-12.5,0,4],yaw=target.yaw??Math.atan2(RIM.x-a[0],RIM.z-a[2]);
+    const yaw=target.yaw??Math.atan2(RIM.x-a[0],RIM.z-a[2]);
     woman.anchor(a[0],a[1],a[2],yaw);
   }
   function animate(dt){

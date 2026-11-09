@@ -235,8 +235,9 @@ export function createParentPerformance(avatar, activities) {
       if ((cycle < 8.15 || cycle >= 8.8 && cycle < 12) && walk > 0 && walk < 1) {
         activities.setResidentBall(ball.x, ball.y, ball.z);
         if (cycle < 8.15) {
-          actor.anchor(root.position.x, spot.floor, root.position.z, root.rotation.y);
-          avatar.update(dt, { speed: .55 });
+          const moved = actor.moveAnchor(root.position.x, spot.floor, root.position.z, root.rotation.y);
+          root.position.x = actor.pos.x; root.position.z = actor.pos.z;
+          avatar.update(dt, { speed: moved ? .55 : 0 });
           return true;
         }
         for (let i = 0; i < 2; i++) {
@@ -259,7 +260,8 @@ export function createParentPerformance(avatar, activities) {
         contact(hands[1], .14, grip, .43);
       }
     }
-    actor.anchor(root.position.x, spot.floor, root.position.z, root.rotation.y);
+    actor.moveAnchor(root.position.x, spot.floor, root.position.z, root.rotation.y);
+    root.position.x = actor.pos.x; root.position.z = actor.pos.z;
     activities.setResidentBall(ball.x, ball.y, ball.z);
     return false;
   }

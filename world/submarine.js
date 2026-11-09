@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { SEA_BRIDGE, SUBMARINE_ACCESS, SUBMARINE_HOME, SUBMARINE_SCALE } from './layout.js';
 import { bridgeHeight } from './sea-bridge.js';
 import { canvasTexture } from '@engine/world/textures.js';
+import { registerLocalActor } from '@engine/world/actor-collision.js';
 import { DEEP_LANDMARKS, seabedAt, installDeepSeaView } from './deep-sea.js';
 import { PATROL_BOUNDS, PATROL_LENGTH, samplePatrol, RETURN_ENTRY, RETURN_LENGTH, sampleReturn } from './submarine-path.js';
 
@@ -13,7 +14,9 @@ const angle = a => Math.atan2(Math.sin(a), Math.cos(a));
 const clamp = THREE.MathUtils.clamp;
 
 function createCrew(mesh) {
-  const patrolPoints = [[-1.8, -38], [1.8, -28], [-1.8, -17], [1.8, -5], [-1.8, 7]];
+  // Keep the patrol beside the hatch on the west side of the deck, clear of
+  // the boarding route on the east side and the standing point at the hatch.
+  const patrolPoints = [[-1.8, -38], [1.8, -28], [-1.8, -17], [-3.15, -5], [-1.8, 7]];
   const patrolWidth = 1.7, patrolLength = 4.6, crewScale = 1.5;
   const seatPoints = [[-2.3, -12], [-1.15, -12], [0, -12], [1.15, -12], [2.3, -12]];
   const uniforms = [
@@ -72,19 +75,36 @@ function createCrew(mesh) {
   const group = new THREE.Group(); group.name = 'submarine-deck-crew-root'; group.add(crew);
   for (let i = 0; i < parts.length; i++) crew.setColorAt(i, color.setHex(parts[i].tint));
   const walkTime = new Float64Array(people.length);
+  const patrolY = MODEL_DECK + .02;
+  function syncColliders() {
+    if (!people[0].collider) return;
+    group.updateWorldMatrix(true, false);
+    for (const person of people) person.collider.sync(person.x, patrolY, person.z);
+  }
+  function connectActors(nav) {
+    const scale = crewScale * SUBMARINE_SCALE;
+    for (const person of people) person.collider = registerLocalActor(nav, group, person.root.position, .43 * scale, 1.88 * scale, () => group.visible);
+    syncColliders();
+  }
   function place(sitting, time, dt = 0) {
+    if (!sitting) syncColliders();
     for (let i = 0; i < people.length; i++) {
       const person = people[i], root = person.root, idle = sitting ? 1 : THREE.MathUtils.smoothstep((time + i * 2.35) % 14, 0, .8) * (1 - THREE.MathUtils.smoothstep((time + i * 2.35) % 14, 3.5, 4.3));
-      const walking = !sitting && idle < .98, stride = walkTime[i] * 3.8 + i * 2.1;
-      if (walking) walkTime[i] += dt;
-      person.routePhase += walking ? dt * (.44 + i * .025) : 0;
+      let walking = !sitting && idle < .98;
+      const stride = walkTime[i] * 3.8 + i * 2.1;
       if (!sitting) {
-        person.x = patrolPoints[i][0] + Math.sin(person.routePhase * .42) * patrolWidth;
-        person.z = patrolPoints[i][1] + Math.cos(person.routePhase * .31) * patrolLength;
-        const yaw = Math.atan2(.42 * patrolWidth * Math.cos(person.routePhase * .42), -.31 * patrolLength * Math.sin(person.routePhase * .31));
+        const width = i === 3 ? .9 : patrolWidth;
+        const phase = person.routePhase + (walking ? dt * (.44 + i * .025) : 0);
+        const x = patrolPoints[i][0] + Math.sin(phase * .42) * width;
+        const z = patrolPoints[i][1] + Math.cos(phase * .31) * patrolLength;
+        if (person.collider?.blocked(x, patrolY, z)) walking = false;
+        else { person.routePhase = phase; person.x = x; person.z = z; person.collider?.sync(x, patrolY, z); }
+        const yaw = Math.atan2(.42 * width * Math.cos(person.routePhase * .42), -.31 * patrolLength * Math.sin(person.routePhase * .31));
         person.yaw += Math.atan2(Math.sin(yaw - person.yaw), Math.cos(yaw - person.yaw)) * Math.min(1, dt * 4);
-      } else { person.x = seatPoints[i][0]; person.z = seatPoints[i][1]; person.yaw = 0; }
-      root.position.set(person.x, MODEL_DECK + (sitting ? .2 : .02), person.z); root.rotation.set(0, person.yaw, 0);
+        root.position.set(person.x, patrolY, person.z);
+      } else { root.position.set(seatPoints[i][0], MODEL_DECK + .2, seatPoints[i][1]); person.yaw = 0; }
+      if (walking) walkTime[i] += dt;
+      root.rotation.set(0, person.yaw, 0);
       const gait = walking ? Math.sin(stride) * .42 : 0, task = sitting ? 0 : i;
       person.pelvis.position.y = .82 + (walking ? Math.abs(Math.sin(stride * 2)) * .035 : 0) - (task === 3 ? .2 * idle : 0);
       person.pelvis.rotation.set(sitting ? -.08 : 0, 0, 0);
@@ -132,7 +152,7 @@ function createCrew(mesh) {
     group.visible = !active;
     place(active, clock, Math.min(dt, .05));
   }
-  return { group, update, status: () => ({ active: engaged, patrolCount: engaged ? 0 : uniforms.length, seatedCount: engaged ? uniforms.length : 0 }) };
+  return { group, connectActors, update, status: () => ({ active: engaged, patrolCount: engaged ? 0 : uniforms.length, seatedCount: engaged ? uniforms.length : 0 }) };
 }
 
 // This 126 m pressure hull shares the existing fleet's vertex-colored draw.

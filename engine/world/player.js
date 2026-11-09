@@ -15,6 +15,7 @@
 import * as THREE from 'three';
 import * as L from '@world/layout.js';
 import { SWIM_PIVOT } from './avatar.js';
+import { registerActor } from './actor-collision.js';
 
 const WALK = 3.6, RUN = 6.2, FLY = 8.5, FLY_FAST = 16, CLIMB = 6, JUMP = 6.4, GRAVITY = 19, RADIUS = 0.3, SEA = -0.9;
 // What the world has: stations, a spawn point, and optionally a house (left
@@ -26,7 +27,6 @@ const inHouse = HOUSE ? (x, z) => x >= HOUSE.x0 && x < HOUSE.x1 && z >= HOUSE.z0
 const inPool = POOL ? (x, z) => x >= POOL.x0 && x < POOL.x1 && z >= POOL.z0 && z < POOL.z1 : () => false;
 const DOORWAY = L.DOORWAY || [];
 const EXIT = L.EXIT || (HOUSE && { x: (HOUSE.x0 + HOUSE.x1) / 2, z: HOUSE.z1 + 2.5 });
-const actorsByNav = new WeakMap();
 
 // In the water the body is placed by its middle (`c`), pitched and rolled
 // about it. Water is slow to start and stop. Without input the player floats back
@@ -49,20 +49,11 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   // `level` is the height of whatever the player is standing on.
   let mode = 'ground', island = null, level = 0, pilot = null, standing = null;
   const velocity = new THREE.Vector3();
-  let actors = actorsByNav.get(nav);
-  if (!actors) actorsByNav.set(nav, actors = new Set());
-  const body = { pos, get y() { return mode === 'swim' ? swim.c - PIVOT : y; } };
-  actors.add(body);
-  function overlapsActor(x, feet) {
-    const minDistance = RADIUS * 2;
-    for (const other of actors) {
-      if (other === body || feet >= other.y + 1.8 || other.y >= feet + 1.8) continue;
-      const distance = Math.hypot(x.x - other.pos.x, x.z - other.pos.z);
-      const current = Math.hypot(pos.x - other.pos.x, pos.z - other.pos.z);
-      if (distance < minDistance && (current >= minDistance || distance < current - 0.001)) return true;
-    }
-    return false;
-  }
+  // Character contact covers the shoulders and head. Terrain keeps its own
+  // narrower clearance so existing doors and stairs remain walkable.
+  const body = registerActor(nav, pos, .46, 1.88, () => y);
+  const hitsActor = (x, feet, z) => body.travel(x, feet, z) < 1;
+  const limitHeight = feet => y + (feet - y) * body.travel(pos.x, feet, pos.z);
   const solidAt = (x, y, z) => !!grid?.type(x, y, z);
   // A web-zip, Spider-Man style: a web shoots from their hand to the point
   // aimed at, then pulls them along a rising arc to where the player lands. The web is
@@ -95,10 +86,10 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       return { ...next, level: nav.heightAt(next.x, next.z), island: null, standing: null };
     }
     let next = candidate(dx, dz);
-    if (overlapsActor(next, next.level)) {
+    if (hitsActor(next.x, y, next.z)) {
       const xOnly = candidate(dx, 0), zOnly = candidate(0, dz);
-      const xMoves = Math.hypot(xOnly.x - pos.x, xOnly.z - pos.z) > 0.001 && !overlapsActor(xOnly, xOnly.level);
-      const zMoves = Math.hypot(zOnly.x - pos.x, zOnly.z - pos.z) > 0.001 && !overlapsActor(zOnly, zOnly.level);
+      const xMoves = Math.hypot(xOnly.x - pos.x, xOnly.z - pos.z) > 0.001 && !hitsActor(xOnly.x, y, xOnly.z);
+      const zMoves = Math.hypot(zOnly.x - pos.x, zOnly.z - pos.z) > 0.001 && !hitsActor(zOnly.x, y, zOnly.z);
       next = xMoves ? xOnly : zMoves ? zOnly : { x: pos.x, z: pos.z, level, island, standing };
     }
     pos.x = next.x; pos.z = next.z;
@@ -127,7 +118,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
   // Would a body at (x, feet, z) overlap a block of the house or anything outside?
   function blocked(x, feet, z) {
-    if (overlapsActor({ x, z }, feet)) return true;
+    if (hitsActor(x, feet, z)) return true;
     for (const h of [0.15, 0.95, 1.7]) for (const [ox, oz] of [[0, 0], [RADIUS, 0], [-RADIUS, 0], [0, RADIUS], [0, -RADIUS]]) {
       if (solidAt(Math.floor(x + ox), Math.floor(feet + h), Math.floor(z + oz))) return true;
     }
@@ -177,12 +168,28 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
   function visit(id) { const s = STATIONS.find(s => s.id === id); return s ? goTo(...s.at, s) : false; }
   function settle() { velocity.set(0, 0, 0); vy = 0; speed = 0; pilot = null; zip = null; ladder = null; web.visible = false; standing = null; swim = null; flewOut = 0; }
+  function vacantStand(x, z, standAt) {
+    const stand = standAt(x, z);
+    if (stand && !body.occupied(x, stand.y, z)) return { ...stand, x, z };
+    for (let r = .25; r <= 2.5; r += .25) {
+      for (let i = 0; i < 16; i++) {
+        const angle = i * Math.PI / 8, sx = x + r * Math.cos(angle), sz = z + r * Math.sin(angle);
+        const alternate = standAt(sx, sz);
+        if (alternate && !body.occupied(sx, alternate.y, sz)) return { ...alternate, x: sx, z: sz };
+      }
+    }
+    return null;
+  }
   function teleport(x, z, station = null) {
+    const nearest = nav.nearestStand(x, z);
+    if (!nearest) return false;
+    const height = nav.heightAt(nearest.x, nearest.z);
+    const stand = vacantStand(nearest.x, nearest.z, (x, z) =>
+      nav.canStand(x, z, height) ? { y: nav.heightAt(x, z) } : null);
+    if (!stand) return false;
     cancel(); settle();
-    const stand = nav.nearestStand(x, z);
-    if (!stand || !nav.canStand(stand.x, stand.z)) return false;
     pos.set(stand.x, 0, stand.z); mode = 'ground'; island = null;
-    y = level = nav.heightAt(pos.x, pos.z);
+    y = level = stand.y;
     if (station?.look) heading = Math.atan2(station.look[0] - pos.x, station.look[1] - pos.z);
     place(0);
     return true;
@@ -202,7 +209,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     if (mode === 'fly') return true;
     // Walking eases y toward level, so uphill feet can still be inside the
     // supporting surface. Clear it before flight collision checks take over.
-    if (mode === 'ground') y = Math.max(y, level);
+    if (mode === 'ground') y = limitHeight(Math.max(y, level));
     const fromWater = leaveWater(0.7);
     cancel(); ladder = null; mode = 'fly'; island = null; standing = null; velocity.set(0, 0, 0); vy = 0; zip = null; web.visible = false;
     // Out of the pool in a burst, so the player does not drop straight back in.
@@ -330,30 +337,34 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
 
   // The dive in and the climb out, played through.
   function animateSwim(dt) {
-    const s = swim, a = s.anim, u = Math.min(1, (a.t += dt) / a.T);
+    const s = swim, a = s.anim, u = Math.min(1, (a.t + dt) / a.T);
     if (a.kind === 'in') {
       const e = 1 - (1 - u) * (1 - u), end = WATER - 1.05;
-      pos.x = a.from.x + (a.to.x - a.from.x) * e; pos.z = a.from.z + (a.to.z - a.from.z) * e;
-      s.c = a.from.c + (end - a.from.c) * u + 5 * u * (1 - u);
+      const x = a.from.x + (a.to.x - a.from.x) * e, z = a.from.z + (a.to.z - a.from.z) * e;
+      const c = a.from.c + (end - a.from.c) * u + 5 * u * (1 - u);
+      if (hitsActor(x, c - PIVOT, z)) return;
+      pos.x = x; pos.z = z; s.c = c;
       s.pitch = THREE.MathUtils.smoothstep(u, 0.08, 0.8) * (Math.PI / 2 + 0.6);
       if (!s.wet && s.c < WATER + 0.35) { s.wet = true; onWater?.('splash', pos.x, WATER, pos.z, 1); }
       if (u >= 1) { s.anim = null; s.wet = true; s.vy = -1.1; s.vx = a.nx * 1.3; s.vz = a.nz * 1.3; }
     } else {
       // Up to the lip with the hands on the coping, then over onto the deck.
       const { from, exit } = a, lip = WATER + 0.62, rise = smooth(Math.min(1, u / 0.5)), over = smooth(Math.max(0, (u - 0.5) / 0.5));
-      pos.x = from.x + (exit.edge.x - from.x) * rise + (exit.out.x - exit.edge.x) * over;
-      pos.z = from.z + (exit.edge.z - from.z) * rise + (exit.out.z - exit.edge.z) * over;
-      s.c = u < 0.5 ? from.c + (lip - from.c) * rise : lip + (PIVOT - lip) * over;
+      const x = from.x + (exit.edge.x - from.x) * rise + (exit.out.x - exit.edge.x) * over;
+      const z = from.z + (exit.edge.z - from.z) * rise + (exit.out.z - exit.edge.z) * over;
+      const c = u < 0.5 ? from.c + (lip - from.c) * rise : lip + (PIVOT - lip) * over;
+      if (hitsActor(x, c - PIVOT, z)) return;
+      pos.x = x; pos.z = z; s.c = c;
       s.pitch = u < 0.5 ? from.pitch + (0.3 - from.pitch) * rise : 0.3 * (1 - over);
       s.roll = from.roll * (1 - rise); s.lie = 0;
       if (!a.dripped && u > 0.45) { a.dripped = true; onWater?.('climb', exit.edge.x, WATER, exit.edge.z, 0.45); }
       if (u >= 1) {
-        pos.x = exit.out.x; pos.z = exit.out.z;
         mode = 'ground'; island = null; standing = null; swim = null; y = level = 0;
         a.after?.();
         return;
       }
     }
+    a.t += dt;
     y = s.c - PIVOT;
   }
 
@@ -362,9 +373,11 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     if (s.anim) return animateSwim(dt);
     // Dropping in from the air: fall until the water takes them.
     if (!s.wet) {
-      s.vy -= GRAVITY * dt; s.c += s.vy * dt;
+      s.vy -= GRAVITY * dt;
+      const next = y + s.vy * dt;
+      y = limitHeight(next); s.c = y + PIVOT;
+      if (y !== next) s.vy = 0;
       if (s.c < WATER + 0.5) { s.wet = true; onWater?.('splash', pos.x, WATER, pos.z, Math.min(1.2, 0.4 - s.vy / 9)); s.vy *= 0.3; }
-      y = s.c - PIVOT;
       return;
     }
     let dx = 0, dz = 0;
@@ -393,17 +406,20 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     if (s.c < bed) { s.c += (bed - s.c) * (1 - Math.exp(-dt * 10)); s.vy = Math.max(s.vy, 0); }
     // Resting, the player settles onto the floor as the player turns over onto their back.
     else if (s.rest) s.c += (bed - s.c) * (1 - Math.exp(-dt * 1.5));
+    const nextY = s.c - PIVOT;
+    y = limitHeight(nextY); s.c = y + PIVOT;
+    if (y !== nextY) s.vy = 0;
     // Still on the bottom for a moment, the player settles there and turns over.
     if (s.c < bed + 0.06 && want < 0.05 && !input.up && !s.rise) { if ((s.still += dt) > 0.5) { s.rest = true; s.dive = false; } }
     else if (!s.rest) s.still = 0;
     s.lie += ((s.rest ? 1 : 0) - s.lie) * (1 - Math.exp(-dt * 1.4));
 
     let to = inPoolBounds(pos.x + s.vx * dt, pos.z + s.vz * dt, s.c);
-    if (overlapsActor(to, s.c - PIVOT)) {
+    if (hitsActor(to.x, y, to.z)) {
       const xOnly = inPoolBounds(pos.x + s.vx * dt, pos.z, s.c);
       const zOnly = inPoolBounds(pos.x, pos.z + s.vz * dt, s.c);
-      const xMoves = !overlapsActor(xOnly, s.c - PIVOT);
-      const zMoves = !overlapsActor(zOnly, s.c - PIVOT);
+      const xMoves = !hitsActor(xOnly.x, y, xOnly.z);
+      const zMoves = !hitsActor(zOnly.x, y, zOnly.z);
       to = xMoves ? xOnly : zMoves ? zOnly : { x: pos.x, z: pos.z };
       if (!xMoves) s.vx = 0;
       if (!zMoves) s.vz = 0;
@@ -464,23 +480,26 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     zip.t += dt;
     if (zip.t <= 0) return;
     const { from, end, to } = zip;
+    let x, feet, z, landed = false;
     if (zip.t < zip.pull) {
       // Fastest at the start, easing in at the end.
       const u = zip.t / zip.pull, e = 1 - (1 - u) * (1 - u);
-      pos.x = from.x + (end.x - from.x) * e; pos.z = from.z + (end.z - from.z) * e; y = from.y + (end.y - from.y) * e;
-      return;
-    }
-    zip.released = true; web.visible = false;
-    const u = Math.min(1, (zip.t - zip.pull) / zip.hop);
-    if (zip.ledge) {
-      // Up past the edge first, then over and down onto the top.
-      const across = THREE.MathUtils.smoothstep(u, 0.35, 0.9);
-      pos.x = end.x + (to.x - end.x) * across; pos.z = end.z + (to.z - end.z) * across;
-      y = u < 0.6 ? end.y + (zip.peak - end.y) * Math.sin((u / 0.6) * Math.PI / 2) : zip.peak + (to.y - zip.peak) * ((u - 0.6) / 0.4) ** 2;
+      x = from.x + (end.x - from.x) * e; z = from.z + (end.z - from.z) * e; feet = from.y + (end.y - from.y) * e;
     } else {
-      pos.x = end.x + (to.x - end.x) * u; pos.z = end.z + (to.z - end.z) * u; y = end.y + (to.y - end.y) * u * u;
+      zip.released = true; web.visible = false;
+      const u = Math.min(1, (zip.t - zip.pull) / zip.hop);
+      // On a ledge, rise past the edge before moving onto the top.
+      const across = zip.ledge ? THREE.MathUtils.smoothstep(u, 0.35, 0.9) : u;
+      x = end.x + (to.x - end.x) * across; z = end.z + (to.z - end.z) * across;
+      feet = zip.ledge
+        ? (u < 0.6 ? end.y + (zip.peak - end.y) * Math.sin((u / 0.6) * Math.PI / 2) : zip.peak + (to.y - zip.peak) * ((u - 0.6) / 0.4) ** 2)
+        : end.y + (to.y - end.y) * u * u;
+      landed = u >= 1;
     }
-    if (u >= 1) { mode = 'ground'; island = to.island; y = level = to.y; zip = null; }
+    const fraction = body.travel(x, feet, z);
+    pos.x += (x - pos.x) * fraction; pos.z += (z - pos.z) * fraction; y += (feet - y) * fraction;
+    if (fraction < 1) { startFlying(); return; }
+    if (landed) { mode = 'ground'; island = to.island; y = level = to.y; zip = null; }
   }
   // The web runs from their hand to the anchor; for the first instant it is
   // still shooting out.
@@ -570,9 +589,11 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
 
   function attachLadder(value) {
+    if (hitsActor(value.x, y, value.z)) return false;
     ladder = value; mode = 'ladder'; island = value.site; standing = null;
     pos.x = value.x; pos.z = value.z; level = y;
     vy = 0; speed = 0; heading = -Math.PI / 2;
+    return true;
   }
   function climbLadder(dt, input, cameraYaw) {
     let direction = 0;
@@ -584,14 +605,15 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       const next = path.find(q => q.ladder);
       if (next) direction = Math.sign(next.y - y);
     }
-    speed = Math.abs(direction) * 2.8;
-    y = level = THREE.MathUtils.clamp(y + direction * 2.8 * dt, ladder.bottom, ladder.top);
+    const feet = THREE.MathUtils.clamp(y + direction * 2.8 * dt, ladder.bottom, ladder.top);
     // The last 70 cm carries the feet smoothly over the lip onto the roof.
-    const over = THREE.MathUtils.smoothstep(y, ladder.top - .7, ladder.top);
-    pos.x = ladder.x + (ladder.exit.x - ladder.x) * over;
-    if (direction > 0 && y >= ladder.top || direction < 0 && y <= ladder.bottom) {
-      const end = direction > 0 ? ladder.exit : ladder.foot;
-      pos.x = end.x; pos.z = end.z; y = level = end.y;
+    const over = THREE.MathUtils.smoothstep(feet, ladder.top - .7, ladder.top);
+    const end = direction > 0 && feet >= ladder.top ? ladder.exit : direction < 0 && feet <= ladder.bottom ? ladder.foot : null;
+    const x = end?.x ?? ladder.x + (ladder.exit.x - ladder.x) * over, z = end?.z ?? ladder.z;
+    if (hitsActor(x, end?.y ?? feet, z)) { speed = 0; return; }
+    speed = Math.abs(direction) * 2.8;
+    pos.x = x; pos.z = z; y = level = end?.y ?? feet;
+    if (end) {
       island = direction > 0 ? 'roof' : null; mode = 'ground'; ladder = null;
       standing = island ? ground.canStand(pos.x, pos.z, level) : null;
       if (path?.[0]?.ladder) { path.shift(); if (!path.length) arrive(); }
@@ -603,9 +625,9 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     const manual = Math.hypot(input.x, input.z) > .08;
     const climb = !airborne && ground?.ladderAt(pos.x, y, pos.z);
     const next = path?.[0];
-    if (climb && (next?.ladder || manual && (y < climb.top - .1 ? input.z < -.35 || steer(input, cameraYaw).x < -.35 : input.z > .35 || steer(input, cameraYaw).x > .35))) {
+    if (climb && (next?.ladder || manual && (y < climb.top - .1 ? input.z < -.35 || steer(input, cameraYaw).x < -.35 : input.z > .35 || steer(input, cameraYaw).x > .35)) && attachLadder(climb)) {
       if (manual) cancel();
-      attachLadder(climb); climbLadder(dt, input, cameraYaw); return;
+      climbLadder(dt, input, cameraYaw); return;
     }
 
     if (Math.hypot(input.x, input.z) > 0.08) {
@@ -634,7 +656,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       const step = path?.length ? Math.min(speed * dt, Math.hypot(path[0].x - pos.x, path[0].z - pos.z)) : speed * dt;
       if (through) {
         const next = { x: pos.x + dx / length * step, z: pos.z + dz / length * step };
-        if (!overlapsActor(next, y)) { pos.x = next.x; pos.z = next.z; }
+        if (!hitsActor(next.x, y, next.z)) { pos.x = next.x; pos.z = next.z; }
       }
       else stepBy(dx / length * step, dz / length * step, path?.[0]);
       turnTowards(dx, dz, dt);
@@ -645,9 +667,9 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     walk(dt, input, cameraYaw, true);
     if (mode !== 'air') return;
     vy -= GRAVITY * dt;
-    const next = y + vy * dt;
+    const next = Math.max(level, y + vy * dt);
     if (vy > 0 && solidAt(Math.floor(pos.x), Math.floor(next + 1.8), Math.floor(pos.z))) vy = 0;
-    else y = next;
+    else { y = limitHeight(next); if (y !== next) vy = 0; }
     if (y <= level) { y = level; vy = 0; mode = 'ground'; }
   }
 
@@ -665,7 +687,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       fast = d > 25;
       const left = d + Math.abs(height - y);
       if (left < pilot.best - 0.2) { pilot.best = left; pilot.stuck = 0; } else if ((pilot.stuck += dt) > 2.5) pilot = null;
-      if (pilot && (leg.final ? d < 0.3 && Math.abs(y - leg.y) < 0.12 : d < 0.5 && Math.abs(y - leg.y) < 0.6)) {
+      if (pilot && (leg.final ? d < 0.3 && Math.abs(y - leg.y) < 0.12 && !hitsActor(pos.x, leg.y, pos.z) : d < 0.5 && Math.abs(y - leg.y) < 0.6)) {
         pilot.legs.shift();
         if (!pilot.legs.length) {
           const { target, after } = pilot;
@@ -688,13 +710,14 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     if (!blocked(nx, y, pos.z)) pos.x = nx; else velocity.x = 0;
     if (!blocked(pos.x, y, nz)) pos.z = nz; else velocity.z = 0;
     const below = floorBelow(pos.x, pos.z, Math.max(y, ny));
-    if (!blocked(pos.x, ny, pos.z) && ny >= below.y) y = ny;
-    else { if (ny < below.y) y = below.y; velocity.y = 0; }
+    const feet = limitHeight(Math.max(ny, below.y));
+    if ((ny < below.y && feet === below.y) || !blocked(pos.x, feet, pos.z)) y = feet;
+    if (y !== ny) velocity.y = 0;
     // Flying down onto somewhere walkable lands, as in Minecraft. Down against
     // a wall or a piece of furniture, the player first edges over to the nearest place
     // to stand, so holding descend always brings them down onto their feet.
     if (!pilot && input.down && y - below.y < 0.05) {
-      if (below.landable) { mode = 'ground'; island = below.island; y = level = below.y; velocity.set(0, 0, 0); }
+      if (below.landable && !hitsActor(pos.x, below.y, pos.z)) { mode = 'ground'; island = below.island; y = level = below.y; velocity.set(0, 0, 0); }
       else if (below.y > SEA) {
         const s = below.island ? ground.nearestStand(pos.x, pos.z, below.y) : nav.nearestStand(pos.x, pos.z);
         const d = s ? Math.hypot(s.x - pos.x, s.z - pos.z) : Infinity;
@@ -719,7 +742,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     else if (mode === 'air') fall(dt, input, cameraYaw);
     else {
       walk(dt, input, cameraYaw, false);
-      if (mode === 'ground') y += (level - y) * (1 - Math.exp(-dt * 18));
+      if (mode === 'ground') y = limitHeight(y + (level - y) * (1 - Math.exp(-dt * 18)));
     }
     // In first person the body faces the view, except lying on the pool's floor.
     if (firstPerson && !(mode === 'swim' && swim.rest)) heading = cameraYaw + Math.PI;
@@ -760,17 +783,33 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     return true;
   }
 
+  function anchor(x, height, z, angle) {
+    pos.set(x, 0, z); y = level = height; heading = angle; mode = 'ground'; speed = vy = 0;
+  }
+
   return {
     pos, web, update, goTo, follow, walkThrough, visit, cancel, teleport, jump, toggleFly, startFlying, stopFlying, flyTo, zipTo,
-    // Scene activities own collision checks while the walking controller is locked.
-    anchor(x, height, z, angle) { pos.set(x, 0, z); y = level = height; heading = angle; mode = 'ground'; speed = vy = 0; },
+    // Seats and vehicles supply their own transforms. Scripted walking still
+    // sweeps against the same bodies as the walking controller.
+    anchor,
+    canOccupy(x, height, z) { return !body.occupied(x, height, z); },
+    moveAnchor(x, height, z, angle) {
+      const fraction = body.travel(x, height, z);
+      anchor(pos.x + (x - pos.x) * fraction, y + (height - y) * fraction, pos.z + (z - pos.z) * fraction, angle);
+      return fraction === 1;
+    },
     // Return from a locked pose to its original walkable surface, including
     // the pier and mountain that live outside the house navigation grid.
     restore(x, height, z, angle) {
       const outside = ground?.canStand(x, z, height);
       if (outside?.site && Math.abs(outside.y - height) < .7) {
-        cancel(); settle(); pos.set(x, 0, z); mode = 'ground';
-        standing = outside; island = outside.site; y = level = outside.y;
+        const stand = vacantStand(x, z, (x, z) => {
+          const at = ground.canStand(x, z, height);
+          return at?.site === outside.site && Math.abs(at.y - height) < .7 ? at : null;
+        });
+        if (!stand) return false;
+        cancel(); settle(); pos.set(stand.x, 0, stand.z); mode = 'ground';
+        standing = stand; island = stand.site; y = level = stand.y;
         heading = angle; place(0); return true;
       }
       const ok = teleport(x, z); heading = angle; place(0); return ok;

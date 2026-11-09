@@ -198,7 +198,9 @@ export function buildCarrier(layer,staticBatch){
       const target=docked()?1:0;
       boardingProgress=dt<=0?target:boardingProgress+Math.sign(target-boardingProgress)*Math.min(Math.abs(target-boardingProgress),dt*1.5);
       crew.setBoardingProgress(boardingProgress);
-      weapons.update(dt);wake.update(dt);if(!camera||camera.position.distanceToSquared(mesh.position)<240*240)crew.update(dt);
+      weapons.update(dt);wake.update(dt);
+      if(!camera||camera.position.distanceToSquared(mesh.position)<240*240)crew.update(dt);
+      else crew.syncColliders();
     },
     foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,deckAircraft,ramp:RAMP,gangway:GANGWAY,
     driveHeight(x,z,margin=0){

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { registerLocalActor } from '@engine/world/actor-collision.js';
 
 // All duties remain in these side lanes and gaps between parked aircraft.
 export const CREW_ROUTES = [
@@ -51,7 +52,7 @@ export function createDeckCrew(parent,gangway){
     const route=CREW_ROUTES[i],heading=Math.atan2(route[2]-route[0],route[3]-route[1]);
     const person={root,pelvis,torso,head,left,right,elbowL,elbowR,hipL,hipR,kneeL,kneeR,ankleL,ankleR,
       route,color:COLORS[i%COLORS.length],x:route[0],z:route[1],working:false,action:'walk',yaw:heading,
-      speed:.57+(i%4)*.065,rest:5.6+(i%3)*1.1,phase:i*4.7,gear:'',first:parts.length,count:0};
+      speed:.57+(i%4)*.065,rest:5.6+(i%3)*1.1,clock:i*4.7,gear:'',first:parts.length,count:0};
     crew.push(person);
     const shirt=person.color,vest=color.setHex(shirt).multiplyScalar(.72).getHex();
     const skin=[0xd8a17e,0xb67f5b,0xe3b693,0x986b51][i%4],pants=0x34495c,dark=0x24303b,reflect=0xece8c8;
@@ -141,15 +142,27 @@ export function createDeckCrew(parent,gangway){
     mesh.instanceMatrix.needsUpdate=true;
   }
   function blend(bone,x,y,z,w){bone.rotation.x+=(x-bone.rotation.x)*w;bone.rotation.y+=(y-bone.rotation.y)*w;bone.rotation.z+=(z-bone.rotation.z)*w;}
+  function syncColliders(){
+    if(!crew[0].collider)return;
+    parent.updateWorldMatrix(true,false);
+    for(const p of crew)p.collider.sync(p.x,3.4,p.z);
+  }
+  function connectActors(nav){
+    for(const p of crew)p.collider=registerLocalActor(nav,parent,p.root.position,.43,1.88);
+    syncColliders();
+  }
   let time=0;
   function update(dt){
     dt=Math.max(0,Math.min(dt,.1));time+=dt;
+    syncColliders();
     for(let i=0;i<crew.length;i++){
       const p=crew[i],r=p.route,length=Math.hypot(r[2]-r[0],r[3]-r[1]),walk=length/p.speed,cycle=walk+p.rest;
-      const clock=time+p.phase,leg=Math.floor(clock/cycle),back=leg%2===1,u=clock%cycle,moving=u<walk;
+      const clock=p.clock+dt,leg=Math.floor(clock/cycle),back=leg%2===1,u=clock%cycle;
       const f=smooth(Math.min(u/walk,1)),distance=(back?1-f:f)*length;
-      p.x=r[0]+(r[2]-r[0])*distance/length;p.z=r[1]+(r[3]-r[1])*distance/length;
-      p.working=!moving;p.action=moving?'walk':DUTIES[i][leg%DUTIES[i].length];
+      const x=r[0]+(r[2]-r[0])*distance/length,z=r[1]+(r[3]-r[1])*distance/length;
+      const blocked=p.collider?.blocked(x,3.4,z),moving=u<walk&&!blocked;
+      if(!blocked){p.clock=clock;p.x=x;p.z=z;p.collider?.sync(x,3.4,z);}
+      p.working=u>=walk;p.action=p.working?DUTIES[i][leg%DUTIES[i].length]:'walk';
       const work=smooth((u-walk)/.8)*smooth((cycle-u)/.9);
       // Decelerate at each stop, turn through the shoulders, then walk back.
       let heading=Math.atan2(back?r[0]-r[2]:r[2]-r[0],back?r[1]-r[3]:r[3]-r[1]);
@@ -209,5 +222,5 @@ export function createDeckCrew(parent,gangway){
     }
     mesh.instanceMatrix.needsUpdate=true;
   }
-  setBoardingProgress(1);update(0);return {mesh,crew,boardingLink,setBoardingProgress,update};
+  setBoardingProgress(1);update(0);return {mesh,crew,boardingLink,setBoardingProgress,connectActors,syncColliders,update};
 }

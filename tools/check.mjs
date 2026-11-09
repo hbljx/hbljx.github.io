@@ -68,6 +68,46 @@ for (const view of VIEWS) {
     await page.screenshot({ path: `${out}${view.name}-${id}.png` });
     await page.evaluate(() => document.querySelector('#panel .close')?.click());
   }
+  const collisionFailures = await page.evaluate(async () => {
+    const { createPlayer } = await import('@engine/world/player.js');
+    const { registerActor } = await import('@engine/world/actor-collision.js');
+    const THREE = await import('three');
+    const nav = {
+      canStand: () => true, heightAt: () => 0, nearestStand: (x, z) => ({ x, z }),
+      move(pos, dx, dz) { pos.x += dx; pos.z += dz; },
+    };
+    const actor = () => createPlayer({ nav, avatar: {
+      root: new THREE.Object3D(), hand: new THREE.Object3D(), blob: new THREE.Object3D(), update() {},
+    } });
+    const a = actor(), b = actor(), failures = [];
+    const reset = () => { a.cancel(); b.cancel(); a.anchor(0, 0, 0, 0); b.anchor(2, 0, 0, 0); };
+    const tick = (p, input = {}, n = 90) => {
+      const move = { x: 0, z: 0, ...input };
+      for (let i = 0; i < n; i++) p.update(1 / 30, move, 0);
+    };
+    const stopped = (label, advance) => {
+      if (advance < .2 || advance > 1.080001) failures.push(label);
+    };
+    reset(); tick(a, { x: 1, run: true }); stopped('player walking', a.pos.x);
+    reset(); tick(b, { x: -1, run: true }); stopped('NPC walking', 2 - b.pos.x);
+    reset(); a.follow([{ x: 4, z: 0 }]); tick(a); stopped('following a route', a.pos.x);
+    reset(); a.startFlying(); tick(a, { x: 1, run: true }); stopped('low flight', a.pos.x);
+    reset(); a.zipTo({ x: 4, y: 0, z: 0, anchor: { x: 4, y: 0, z: 0 } }); tick(a); stopped('web zip', a.pos.x);
+    reset(); a.anchor(2, 4, 0, 0); a.startFlying(); a.stopFlying(); tick(a);
+    if (Math.abs(a.y - 1.88) > .001) failures.push('falling onto another actor');
+    reset(); b.anchor(2, 4, 0, 0); tick(a, { x: 1 });
+    if (a.pos.x <= 2) failures.push('walking below another actor');
+    reset();
+    if (!a.teleport(2, 0) || Math.hypot(a.pos.x - 2, a.pos.z) < .92) failures.push('occupied teleport destination');
+    reset(); b.anchor(2, 4, 0, 0);
+    const pet = registerActor(nav, new THREE.Vector3(2, 0, 0), .64, 1.2);
+    if (pet.travel(0, 0, 0) >= 1) failures.push('pet moving into player');
+    tick(a, { x: 1, run: true });
+    if (a.pos.x < .2 || a.pos.x > .900001) failures.push('player moving into pet');
+    return failures;
+  });
+  console.log(`${view.name}: actor collision: ${collisionFailures.length ? collisionFailures.join(', ') : 'passed'}`);
+  if (collisionFailures.length) errors.push('actor collision regression');
   // The showcase house must finish a roof-ladder round trip without flying.
   // The front door must be opened before the indoor route can reach the ladder.
   const traversal = await page.evaluate(async () => {
@@ -136,11 +176,20 @@ for (const view of VIEWS) {
       }
       return !h.player.travelling && !flew && Math.hypot(h.player.pos.x - target.x, h.player.pos.z - target.z) < .2;
     };
-    h.player.teleport(home.x, home.z);
-    h.player.follow(access.route(home.x, 0, home.z, access.exit.x, access.exit.y, access.exit.z), access.foot);
-    const up = finish(access.exit) && Math.abs(h.player.y - access.exit.y) < .05;
-    h.player.follow(access.route(h.player.pos.x, h.player.y, h.player.pos.z, home.x, 0, home.z), null, () => h.player.goTo(home.x, home.z));
-    const down = finish(home) && Math.abs(h.player.y) < .05;
+    // This synchronous traversal only advances the player. Keep any frozen
+    // NPCs and pets out of the route while verifying the ladder itself.
+    const household = h.extras.household;
+    const positions = [...(household ? [household.woman, ...household.parents.actors].map(a => a.pos) : []), ...h.pets.map(p => p.position)];
+    const savedX = positions.map(pos => pos.x);
+    let up, down;
+    try {
+      positions.forEach((pos, i) => { pos.x = 1e4 + i * 2; });
+      h.player.teleport(home.x, home.z);
+      h.player.follow(access.route(home.x, 0, home.z, access.exit.x, access.exit.y, access.exit.z), access.foot);
+      up = finish(access.exit) && Math.abs(h.player.y - access.exit.y) < .05;
+      h.player.follow(access.route(h.player.pos.x, h.player.y, h.player.pos.z, home.x, 0, home.z), null, () => h.player.goTo(home.x, home.z));
+      down = finish(home) && Math.abs(h.player.y) < .05;
+    } finally { positions.forEach((pos, i) => { pos.x = savedX[i]; }); }
     const layout = await import('@world/layout.js');
     const dog = h.dog && h.pets[layout.PETS?.cat ? 1 : 0];
     const dogIndoors = !dog || dog.routes.some(route => layout.inHouse(route.at(-1).x, route.at(-1).z));

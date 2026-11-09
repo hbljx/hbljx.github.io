@@ -5,6 +5,7 @@
 // face them, and a sleeping dog wakes up when the player comes close.
 import * as THREE from 'three';
 import { rng } from './textures.js';
+import { registerActor } from './actor-collision.js';
 
 // `anchors` are [x, z] places to wander between; the first is the hub every
 // route starts from. `within(x, z)` keeps a pet to an area (a cat indoors),
@@ -47,6 +48,7 @@ export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, wi
   const chooseRest = () => { rest = dog ? 'sphinx' : (Math.random() < 0.55 ? 'loaf' : 'sit'); };
   const start = place >= 0 ? routes[place].at(-1) : hub;
   cat.root.position.set(start.x, 0, start.z); cat.root.rotation.y = 0.6;
+  const body = registerActor(nav, cat.root.position, dog ? .64 : .4, dog ? 1.2 : .65);
   cat.update(0, { sleeping: true });
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const frustum = new THREE.Frustum(), vp = new THREE.Matrix4();
@@ -78,18 +80,23 @@ export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, wi
     const p = cat.root.position, dx = player ? player.pos.x - p.x : 0, dz = player ? player.pos.z - p.z : 0;
     const dist = player && player.y < 1 ? Math.hypot(dx, dz) : Infinity;
     if (dog && state === 'sleeping' && dist < 2.4) { state = 'resting'; rest = 'sphinx'; wait = 8 + Math.random() * 8; }
+    let walking = false;
     if (state === 'rising') {
       wait -= dt;
       if (wait <= 0) state = 'walking';
     } else if (state === 'walking' && path) {
       const next = path[point], dx = next.x - cat.root.position.x, dz = next.z - cat.root.position.z;
       const distance = Math.hypot(dx, dz), step = Math.min(distance, dt * (dog ? 1.15 : 0.7));
+      let moved = step;
       if (distance > 0.001) {
-        cat.root.position.x += dx / distance * step; cat.root.position.z += dz / distance * step;
+        const x = p.x + dx / distance * step, z = p.z + dz / distance * step;
+        moved *= body.travel(x, p.y, z);
+        p.x += dx / distance * moved; p.z += dz / distance * moved;
+        walking = moved > .001;
         const goal = Math.atan2(dx, dz), angle = goal - cat.root.rotation.y;
         cat.root.rotation.y += Math.atan2(Math.sin(angle), Math.cos(angle)) * Math.min(1, dt * 6);
       }
-      if (distance <= step + 0.001 && ++point >= path.length) {
+      if (distance <= moved + 0.001 && ++point >= path.length) {
         place = targetPlace; path = null;
         state = random() < (dog ? 0.5 : 0.7) ? 'sleeping' : 'resting'; wait = (dog ? 6 : 10) + random() * (dog ? 24 : 30);
         if (state === 'resting') chooseRest();
@@ -108,7 +115,7 @@ export function createPetLife(cat, nav, { seed = 1989, kind = 'cat', anchors, wi
     near = dist < (dog ? 3.5 : 3);
     poseClock += dt;
     if (poseClock >= 1 / 12) {
-      cat.update(poseClock, { moving: state === 'walking', sleeping: state === 'sleeping', rest: state === 'rising' ? 'stand' : rest, look, near });
+      cat.update(poseClock, { moving: walking, sleeping: state === 'sleeping', rest: state === 'rising' ? 'stand' : rest, look, near });
       poseClock = 0;
     }
   }

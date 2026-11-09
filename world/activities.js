@@ -258,6 +258,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     const requested = id && allSpots.find(s => s.id === id);
     const spot = requested ? nearest([requested]) : nearest() || nearest(seats); if (active || !spot || (id && spot.id !== id)) return false;
     if ((spot.id==='sleep'||spot.id==='bath')&&bedtimeHandler) return bedtimeHandler('manual');
+    if (spot.anchor && spot.id !== 'basketball' && !vehicles[spot.id] && !player.canOccupy(...spot.anchor)) return false;
     saved = { x: player.pos.x, y: player.y, z: player.pos.z, heading: player.heading }; firstPerson = rig.firstPerson;
     rig.setFirstPerson(false); player.cancel(); keys.clear(); active = spot; entered = time; notice = '';
     collapsed = false; breathClock = 0; rig.skipIntro();

@@ -194,10 +194,10 @@ function createParentAvatar(name, colors) {
   return { root, body, blob, update, beginProps, prop, rod, endProps };
 }
 
-export function createParents({ stage, world, nav, player, woman }, activities, femaleRoutine) {
+export function createParents({ stage, world, nav }, activities, femaleRoutine) {
   const specs = [
-    { name: '爸爸', colors: { skin: 0xd9aa86, nose: 0xc98f72, mouth: 0x9e5c56, eyes: 0x394552, hair: 0x40352d, hairLight: 0x877764, shirt: 0x587d78, shirtDark: 0x365953, shirtLight: 0x86a59a, inner: 0xe3dfd1, buttons: 0xd5bc83, stitch: 0xadc0a7, belt: 0x302f32, pants: 0x39475a, pantsDark: 0x303a4a, pantsLight: 0x627186, shoes: 0x473b33, shoesLight: 0x726052, sole: 0x24282c, laces: 0xd6c6a4, accessory: 0xd5bc83 }, start: [-2.2, 0, 5.5] },
-    { name: '妈妈', colors: { skin: 0xf0c6aa, nose: 0xdca88d, mouth: 0xa94f62, eyes: 0x42515c, hair: 0x49352e, hairLight: 0x795446, shirt: 0x9a6470, shirtDark: 0x754957, shirtLight: 0xc18a92, inner: 0xf0e3d7, buttons: 0xe4c68e, stitch: 0xe1b5ad, belt: 0x6d5551, pants: 0x4e5260, pantsDark: 0x424552, pantsLight: 0x777988, shoes: 0x563e43, shoesLight: 0x80616a, sole: 0x29282d, laces: 0xe5d7c5, accessory: 0xd8b36d }, start: [.5, 0, 5.8] },
+    { name: '爸爸', colors: { skin: 0xd9aa86, nose: 0xc98f72, mouth: 0x9e5c56, eyes: 0x394552, hair: 0x40352d, hairLight: 0x877764, shirt: 0x587d78, shirtDark: 0x365953, shirtLight: 0x86a59a, inner: 0xe3dfd1, buttons: 0xd5bc83, stitch: 0xadc0a7, belt: 0x302f32, pants: 0x39475a, pantsDark: 0x303a4a, pantsLight: 0x627186, shoes: 0x473b33, shoesLight: 0x726052, sole: 0x24282c, laces: 0xd6c6a4, accessory: 0xd5bc83 }, start: [-2.7, 0, 5.5] },
+    { name: '妈妈', colors: { skin: 0xf0c6aa, nose: 0xdca88d, mouth: 0xa94f62, eyes: 0x42515c, hair: 0x49352e, hairLight: 0x795446, shirt: 0x9a6470, shirtDark: 0x754957, shirtLight: 0xc18a92, inner: 0xf0e3d7, buttons: 0xe4c68e, stitch: 0xe1b5ad, belt: 0x6d5551, pants: 0x4e5260, pantsDark: 0x424552, pantsLight: 0x777988, shoes: 0x563e43, shoesLight: 0x80616a, sole: 0x29282d, laces: 0xe5d7c5, accessory: 0xd8b36d }, start: [1.65, 0, 5.8] },
   ];
   const residents = specs.map(spec => {
     const avatar = createParentAvatar(spec.name, spec.colors);
@@ -214,17 +214,13 @@ export function createParents({ stage, world, nav, player, woman }, activities, 
     for (const other of residents) if (other !== self && other.target?.id === spot.id) return true;
     return false;
   }
-  function blocksApproach(actor, at, floor) {
-    return Math.abs(actor.y - floor) < 1.7 && Math.hypot(actor.pos.x - at.x, actor.pos.z - at.z) < .65;
-  }
   function freeApproaches(x, z, floor, resident) {
     const origin = resident.actor.pos;
     const distance = at => Math.hypot(at.x - origin.x, at.z - origin.z);
     const center = nav.nearestStand(x, z);
     const alternatives = SIDE_STEPS.map(([dx, dz]) => nav.nearestStand(x + dx, z + dz)).sort((a, b) => distance(a) - distance(b));
     return [center, ...alternatives].filter(at => nav.canStand(at.x, at.z, floor)
-      && !blocksApproach(player, at, floor) && !blocksApproach(woman, at, floor)
-      && !residents.some(other => other !== resident && blocksApproach(other.actor, at, floor)));
+      && resident.actor.canOccupy(at.x, floor, at.z));
   }
   function approach(id, resident) {
     const ids = id === 'treadmill' ? [id, ...GYM_BACKUPS] : [id];
@@ -284,12 +280,13 @@ export function createParents({ stage, world, nav, player, woman }, activities, 
         actor.update(dt, IDLE, 0);
         resident.stalled = Math.hypot(actor.pos.x - x, actor.pos.z - z) > .002 ? 0 : resident.stalled + dt;
         if (Math.abs(actor.y - spot.floor) < .25 && Math.hypot(actor.pos.x - approach.x, actor.pos.z - approach.z) < .2) {
-          resident.actor.cancel();
           const anchor = spot.residentAnchor || spot.anchor || [spot.at[0], spot.floor, spot.at[1]];
+          if (!actor.canOccupy(...anchor)) { leave(resident); continue; }
+          actor.cancel();
           const yaw = activityId(spot) === 'basketball'
             ? Math.atan2(RIM.x - anchor[0], RIM.z - anchor[2])
             : spot.residentYaw ?? spot.yaw ?? 0;
-          resident.actor.anchor(anchor[0], anchor[1], anchor[2], yaw);
+          actor.anchor(...anchor, yaw);
           resident.phase = 'active'; resident.elapsed = 0;
           resident.lastActivity = activityId(spot);
         } else if (!actor.travelling || resident.stalled > 4 || resident.elapsed > 60) leave(resident);

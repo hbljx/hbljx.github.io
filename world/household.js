@@ -62,7 +62,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   stage.scene.add(femaleAvatar.root);woman.restore(-1.5,0,5.8,Math.PI);
   const navigateWoman=createNpcNavigator(woman,world,nav);
   const routine=createFemaleRoutine({woman,avatar:femaleAvatar,activities,world,nav,stage,navigate:navigateWoman});
-  const parents=createParents({stage,world,nav,player,woman},activities,routine);
+  const parents=createParents({stage,world,nav},activities,routine);
   routine.setReservationCheck(id=>parents.isReserved(id));
   const quilts=createSharedQuilt(),shower=createShower(stage.scene);stage.scene.add(quilts);
   const panel=document.createElement('aside');panel.id='shared-routine';panel.hidden=true;
@@ -143,7 +143,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
     if(!readArrived){
       if(!woman.travelling)navigateWoman(LIBRARY.approach.x,0,LIBRARY.approach.z);
       woman.update(dt,IDLE,0);
-      if(reached(woman,LIBRARY.approach)){woman.cancel();woman.anchor(...LIBRARY.female,Math.PI);readArrived=true;}
+      if(reached(woman,LIBRARY.approach)&&woman.canOccupy(...LIBRARY.female)){woman.cancel();woman.anchor(...LIBRARY.female,Math.PI);readArrived=true;}
     }
     activities.setSharedStatus(readArrived?'两个人正在一起看书':'女主正在前来，一起看书');
     if(!readArrived)return;
@@ -158,7 +158,7 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
     if(!watchArrived){
       if(!woman.travelling)navigateWoman(CINEMA.approach.x,CINEMA.approach.y,CINEMA.approach.z);
       woman.update(dt,IDLE,0);
-      if(reached(woman,CINEMA.approach)){woman.cancel();woman.anchor(...CINEMA.female,Math.PI);watchArrived=true;}
+      if(reached(woman,CINEMA.approach)&&woman.canOccupy(...CINEMA.female)){woman.cancel();woman.anchor(...CINEMA.female,Math.PI);watchArrived=true;}
     }
     activities.setSharedStatus(watchArrived?'两个人正在一起看电影':'女主正在前来，一起看电影');
     if(!watchArrived)return;
