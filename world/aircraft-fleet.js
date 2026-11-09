@@ -51,22 +51,60 @@ export function createAircraftFleet(carrier,oceanLife,vehicles=[],stage=null){
   body.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking});poseShader(body.customDepthMaterial,bodyMatrices,shadow);
   const canopyMaterial=new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true});poseShader(canopyMaterial,canopyMatrices,visible);
   const canopies=new THREE.Mesh(combined(true),canopyMaterial);canopies.name='fleet-canopies';canopies.frustumCulled=false;canopies.renderOrder=3;
-  const glowPositions=new Float32Array(planes.length*12),glowColors=new Float32Array(planes.length*12),glowSizes=new Float32Array(planes.length*4),glowPulse=new Float32Array(planes.length*4);
-  const glowGeometry=new THREE.BufferGeometry();
-  glowGeometry.setAttribute('position',new THREE.BufferAttribute(glowPositions,3).setUsage(THREE.DynamicDrawUsage));
-  glowGeometry.setAttribute('aColor',new THREE.BufferAttribute(glowColors,3));
-  glowGeometry.setAttribute('aSize',new THREE.BufferAttribute(glowSizes,1));
-  glowGeometry.setAttribute('aPulse',new THREE.BufferAttribute(glowPulse,1));
-  const glowShader=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uNight:{value:0},uTime:{value:0}},vertexShader:`attribute vec3 aColor; attribute float aSize; attribute float aPulse; uniform float uNight; uniform float uTime; varying vec3 vColor; varying float vAlpha; void main(){ vec4 mv=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mv; gl_PointSize=aSize*(260.0/max(1.0,-mv.z)); vColor=aColor; float blink=aPulse>.5?step(.28,fract(uTime*1.25)):1.0; vAlpha=uNight*blink; }`,fragmentShader:`varying vec3 vColor; varying float vAlpha; void main(){ float r=length(gl_PointCoord-.5)*2.0; float glow=exp(-r*r*12.0)*(1.0-smoothstep(.82,1.0,r)); if(glow<.015)discard; gl_FragColor=vec4(vColor*1.8,glow*vAlpha); }`});
-  const glow=new THREE.Points(glowGeometry,glowShader);glow.name='aircraft-navigation-lights';glow.frustumCulled=false;glow.renderOrder=4;
   const lightSpecs=planes.map(p=>p.userData.kind==='fighter'
     ? [[-p.userData.halfSpan,1.25,-.7,0xff3f48,.48,0],[p.userData.halfSpan,1.25,-.7,0x42ffb7,.48,0],[0,1.15,2.9,0xfff2c4,.58,0],[0,1.85,-1.5,0xff3544,.72,1]]
     : p.userData.kind==='awacs'
       ? [[-p.userData.halfSpan,1.25,-.2,0xff3f48,.5,0],[p.userData.halfSpan,1.25,-.2,0x42ffb7,.5,0],[0,1.1,3.35,0xfff2c4,.62,0],[0,3.3,-1,0xff3544,.85,1]]
       : [[-3.5,1.25,-.35,0xff3f48,.5,0],[3.5,1.25,-.35,0x42ffb7,.5,0],[0,1.35,3.15,0xfff2c4,.62,0],[0,2.5,-2.6,0xff3544,.85,1]]);
-  lightSpecs.forEach((specs,i)=>specs.forEach(([x,y,z,color,size,pulse],j)=>{
-    const k=i*4+j;glowColors.set(new THREE.Color(color).toArray(),k*3);glowSizes[k]=size;glowPulse[k]=pulse;
-  }));
+  // Share one glow pass between aircraft and other moving vehicles.
+  const lamps = [];
+  function addLamps(mesh, specs, daylight) {
+    for (const [x,y,z,color,size,pulse] of specs) lamps.push({mesh,x,y,z,color,size,pulse,daylight});
+  }
+  planes.forEach((plane,i)=>addLamps(plane,lightSpecs[i],0));
+  for (const vehicle of vehicles) {
+    if (vehicle.userData.navigationLights) addLamps(vehicle,vehicle.userData.navigationLights,.65);
+  }
+  const glowPositions=new Float32Array(lamps.length*3),glowColors=new Float32Array(lamps.length*3);
+  const glowSizes=new Float32Array(lamps.length),glowPulse=new Float32Array(lamps.length),glowDaylight=new Float32Array(lamps.length);
+  lamps.forEach(({color,size,pulse,daylight},i)=>{
+    new THREE.Color(color).toArray(glowColors,i*3);
+    glowSizes[i]=size;glowPulse[i]=pulse;glowDaylight[i]=daylight;
+  });
+  const glowGeometry=new THREE.BufferGeometry();
+  glowGeometry.setAttribute('position',new THREE.BufferAttribute(glowPositions,3).setUsage(THREE.DynamicDrawUsage));
+  glowGeometry.setAttribute('aColor',new THREE.BufferAttribute(glowColors,3));
+  glowGeometry.setAttribute('aSize',new THREE.BufferAttribute(glowSizes,1));
+  glowGeometry.setAttribute('aPulse',new THREE.BufferAttribute(glowPulse,1));
+  glowGeometry.setAttribute('aDaylight',new THREE.BufferAttribute(glowDaylight,1));
+  const glowShader=new THREE.ShaderMaterial({
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+    uniforms:{uNight:{value:0},uTime:{value:0}},
+    vertexShader:`
+      attribute vec3 aColor;
+      attribute float aSize, aPulse, aDaylight;
+      uniform float uNight, uTime;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main(){
+        vec4 mv=modelViewMatrix*vec4(position,1.);
+        gl_Position=projectionMatrix*mv;
+        gl_PointSize=aSize*(260.0/max(1.0,-mv.z));
+        vColor=aColor;
+        float blink=aPulse>0.0?step(.28,fract(uTime*1.25*aPulse)):1.0;
+        vAlpha=mix(aDaylight,1.0,uNight)*blink;
+      }`,
+    fragmentShader:`
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main(){
+        float r=length(gl_PointCoord-.5)*2.0;
+        float glow=exp(-r*r*12.0)*(1.0-smoothstep(.82,1.0,r));
+        if(glow<.015)discard;
+        gl_FragColor=vec4(vColor*1.8,glow*vAlpha);
+      }`,
+  });
+  const glow=new THREE.Points(glowGeometry,glowShader);glow.name='aircraft-navigation-lights';glow.frustumCulled=false;glow.renderOrder=4;
   const lampPosition=new THREE.Vector3();
   const collisions=planes.map(aircraftObstacle);
   function update(cutaway=false){
@@ -76,9 +114,10 @@ export function createAircraftFleet(carrier,oceanLife,vehicles=[],stage=null){
       const p=planes[i],v=p.position;p.updateMatrixWorld(true);angles[i]=p.userData.propeller.rotation.z;
       visible[i]=cutaway&&v.y<14&&v.x>HOUSE.x0-1&&v.x<HOUSE.x1+1&&v.z>HOUSE.z0-1&&v.z<HOUSE.z1+1?0:1;
       shadow[i]=visible[i]&&p.castShadow?1:0;
-      for(let j=0;j<4;j++){
-        const [x,y,z]=lightSpecs[i][j];lampPosition.set(x,y,z).applyMatrix4(p.matrixWorld);glowPositions.set(lampPosition.toArray(),(i*4+j)*3);
-      }
+    }
+    for(let i=0;i<lamps.length;i++){
+      const {mesh,x,y,z}=lamps[i];
+      lampPosition.set(x,y,z).applyMatrix4(mesh.matrixWorld).toArray(glowPositions,i*3);
     }
     glowGeometry.attributes.position.needsUpdate=true;
     glowShader.uniforms.uNight.value=stage?.night??1;

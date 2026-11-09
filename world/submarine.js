@@ -211,6 +211,8 @@ function createSubmarineMesh() {
   const glyphs = ['11101', '10101', '10101', '10101', '11101'];
   for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) if (glyphs[r][c] === '1')
     box(2.42, 9.8 - r * .35, 13 + c * .35, .04, .28, .28, light);
+  for (const x of [-1.6, 1.6]) box(x, 0, 56, .65, .35, .6, light);
+  box(0, 5.98, -55, .55, .24, .55, light);
   box(0, -3.8, -65.8, 1.5, 1.5, 3, gold); propeller = 1;
   for (let i = 0; i < 7; i++) {
     const a = i * Math.PI * 2 / 7;
@@ -221,7 +223,19 @@ function createSubmarineMesh() {
   g.setAttribute('propellerPart', new THREE.Float32BufferAttribute(parts, 1)); g.setAttribute('propellerPivot', new THREE.Float32BufferAttribute(pivots, 3));
   g.computeVertexNormals(); g.computeBoundingSphere();
   const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
-  mesh.name = 'territory-nuclear-submarine'; mesh.position.set(HOME.x, 0, HOME.z); mesh.scale.setScalar(SUBMARINE_SCALE); mesh.updateMatrixWorld(true); return mesh;
+  mesh.name = 'territory-nuclear-submarine';
+  // Local positions sit just outside the hull or the existing lamp housings.
+  mesh.userData.navigationLights = [
+    [4.6, MODEL_DECK + .39, 29, 0xff484b, 3.6, 0],
+    [-4.6, MODEL_DECK + .39, 29, 0x4effa2, 3.6, 0],
+    [-1.7, MODEL_DECK + 1.06, -10, 0xa6eaff, 2.5, 0],
+    [1.7, MODEL_DECK + 1.06, -10, 0xa6eaff, 2.5, 0],
+    [-1.6, .21, 56, 0xd4f4ff, 3.4, 0],
+    [1.6, .21, 56, 0xd4f4ff, 3.4, 0],
+    [0, 6.14, -55, 0xffe9c4, 3.4, 0],
+    [0, 15.45, 16.6, 0xff7545, 5, .45],
+  ];
+  mesh.position.set(HOME.x, 0, HOME.z); mesh.scale.setScalar(SUBMARINE_SCALE); mesh.updateMatrixWorld(true); return mesh;
 }
 
 function createGangway() {
