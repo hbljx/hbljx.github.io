@@ -201,13 +201,13 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
   return {services,tunnel,platform,approach,place,stationGlass,stops:TRANSIT_STOPS,
     maskWater(coast){tunnel.waterMask=maskTunnelWater(coast,tunnelPath);},
     installView(stage,player){
-      const scene=stage.scene,before=scene.onBeforeRender,after=scene.onAfterRender,water=new THREE.Color(0x235467),fogColor=new THREE.Color();
+      const scene=stage.scene,before=scene.onBeforeRender,after=scene.onAfterRender,interior=new THREE.Color(0x46504f),fogColor=new THREE.Color();
       let changed=false,background,sky,near,far,hemi;
       scene.onBeforeRender=function(renderer,current,camera){
         before?.call(this,renderer,current,camera);
         if(camera!==stage.camera||player.swimming||player.y>=-2||camera.position.y>=-1||!tunnel.contains(player.pos.x,player.pos.z))return;
         changed=true;background=scene.background;sky=stage.sky.visible;near=scene.fog.near;far=scene.fog.far;hemi=stage.hemi.intensity;fogColor.copy(scene.fog.color);
-        scene.background=water;stage.sky.visible=false;scene.fog.color.copy(water);scene.fog.near=30;scene.fog.far=140;stage.hemi.intensity=Math.max(2.2,hemi);
+        scene.background=interior;stage.sky.visible=false;scene.fog.color.copy(interior);scene.fog.near=35;scene.fog.far=180;
       };
       scene.onAfterRender=function(renderer,current,camera){
         if(changed&&camera===stage.camera){scene.background=background;stage.sky.visible=sky;scene.fog.near=near;scene.fog.far=far;scene.fog.color.copy(fogColor);stage.hemi.intensity=hemi;changed=false;}

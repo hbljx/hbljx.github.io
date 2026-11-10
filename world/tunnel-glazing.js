@@ -13,10 +13,8 @@ export function createTunnelGlazing(path){
     if(i)for(let j=0;j<cross.length-1;j++){const a=(i-1)*cross.length+j,b=a+cross.length;indices.push(a,b,a+1,a+1,b,b+1);}
   }
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();
-  // The tube is a viewing surface, not a solid wall: its transparent pass lets
-  // the ocean gardens, fish and seabed remain visible from inside the tunnel.
-  // Depth writes are disabled so the far side of the curved shell cannot hide
-  // the scenery seen through the near side.
+  // Clear glass keeps the tunnel dry while letting visitors see the seabed,
+  // fish and ocean gardens outside the enclosure.
   const material=new THREE.MeshPhongMaterial({color:0x9edfe2,specular:0xffffff,shininess:110,transparent:true,opacity:.2,depthWrite:false,side:THREE.DoubleSide});
   const shell=new THREE.Mesh(geometry,material);shell.name='undersea-tunnel-glazing';shell.renderOrder=2;
   return {shell,cross};

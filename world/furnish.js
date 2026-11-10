@@ -15,8 +15,8 @@ import { HOUSE, COURT, RIM, VERTEC, LOFT, LOFT_STAIR_DOOR, BED, STAIRS, SECRET, 
 
 const L = {
   // Two interior wood finishes: the existing floor and the wall-panel timber.
-  wood: { tex: 'wood_panel' }, floor: { tex: 'greige_floor' },
-  panel: { tex: 'wood_panel' }, marble: { tex: 'prada_marble' },
+  wood: { tex: 'wood_panel' }, floor: { tex: 'greige_floor', tint: colors.lavender },
+  panel: { tex: 'wood_panel', tint: colors.heather }, marble: { tex: 'prada_marble' },
   steel: { tex: 'steel' }, silver: { tex: 'stainless', metal: true }, plaster: { tex: 'plaster' }, velvet: { tex: 'velvet' },
   linen: { tex: 'linen' }, books: { tex: 'bookshelf', top: 'wood_panel' },
   paint: tint => ({ tex: 'paint', tint }),

@@ -8,7 +8,7 @@ const SHELL = { x0: HOUSE.x0 - 1, x1: HOUSE.x1 + 1, z0: HOUSE.z0 - 1, z1: HOUSE.
 const POOL_DECK = { x0: POOL.x0 - 1, x1: POOL.x1 + 1, z0: POOL.z0 - 1, z1: POOL.z1 + 1 };
 
 export function defineHouseBlocks(grid) {
-  grid.define('wood_floor', { tex: { all: 'greige_floor' }, merge: true });
+  grid.define('wood_floor', { tex: { all: 'greige_floor' }, tint: colors.lavender, merge: true });
   grid.define('entry_oak', { tex: { all: 'maple' }, merge: true });
   // The level bridge approach owns the visible surface at y=0. Keep its
   // underlying land solid, but omit the grass top that would fight the deck.
@@ -39,7 +39,7 @@ export function defineHouseBlocks(grid) {
   // wall line so the metre-deep voxel shell cannot slice through open doors.
   grid.define('front_glass', { kind: 'glass', tex: { all: 'glass' }, skipFace: () => true });
   grid.define('brick', { tex: { all: 'paint' }, tint: colors.lavender, merge: true });
-  grid.define('loft', { tex: { top: 'greige_floor', side: 'paint', bottom: 'greige_floor' }, tint: colors.trim, merge: true });
+  grid.define('loft', { tex: { top: 'greige_floor', side: 'paint', bottom: 'greige_floor' }, tint: colors.lavender, merge: true });
   grid.define('osmanthus', { kind: 'cutout', tex: { all: 'leaves_osmanthus' } });
   grid.define('bookshelf', { tex: { all: 'paint' }, tint: colors.heather, merge: true });
 }

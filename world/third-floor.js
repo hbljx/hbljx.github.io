@@ -6,7 +6,7 @@ import { HOUSE_COLORS as colors } from './house-palette.js';
 
 export function buildThirdFloor({ grid, layer }) {
   const B = new BoxBatch(layer), ceiling = new BoxBatch(layer), stairs = new BoxBatch(layer);
-  const wood = { tex: 'maple' }, floor = { tex: 'greige_floor' }, dark = { tex: 'black_metal' },
+  const wood = { tex: 'maple' }, floor = { tex: 'greige_floor', tint: colors.lavender }, dark = { tex: 'black_metal' },
     trim = { tex: 'paint', tint: colors.trim }, sill = { tex: 'paint', tint: colors.facade },
     glass = { tex: 'glass', glass: true }, cushion = { tex: 'paint', tint: colors.heather }, china = { tex: 'paint', tint: colors.ivory };
   const barriers = [], slabs = [], stairPoints = [], hit = new THREE.Vector3();
