@@ -62,7 +62,16 @@ export function createOceanModel(kind,{fishCount=18,groundAt}={}){
     const profile=whale?
       [[-2.15,.02,.02],[-1.85,.12,.13],[-1.45,.18,.19],[-.9,.3,.32],[-.3,.45,.43],[.35,.52,.47],[.95,.51,.43],[1.35,.43,.34],[1.55,.26,.2],[1.61,.02,.02]]:
       [[-1.65,.01,.01],[-1.38,.08,.09],[-1.05,.14,.17],[-.65,.23,.29],[-.15,.34,.37],[.38,.36,.35],[.8,.27,.26],[1.03,.17,.16],[1.15,.025,.04]];
-    body(profile.map(([z,x,y])=>[z*s,x*s,y*s]),(x,y,z)=>blend(top,belly,clamp(.55-y/(s*.43))*.95),sway,axis,small?10:20);
+    const skin=(x,y,z)=>{
+      const base=blend(top,belly,clamp(.55-y/(s*.43))*.95);
+      if(!small)return base;
+      // A soft pearl stripe follows the fish's flanks between the back and
+      // belly; vertex colour keeps this detail inside the shared fleet draw.
+      const flank=clamp((Math.abs(x)/s-.18)/.12);
+      const band=flank*(1-clamp(Math.abs(y/s-.015)/.1));
+      return color.setHex(base).lerp(shade.setHex(0xffe7b7),band*.48).getHex();
+    };
+    body(profile.map(([z,x,y])=>[z*s,x*s,y*s]),skin,sway,axis,small?10:20);
     // Pectoral flippers sweep back from the shoulder, with rounded tips.
     for(const side of [-1,1]){
       const pts=[[.24,-.08,.52],[.43,-.11,.45],[whale?1.08:.86,-.24,-.34],[whale?1.1:.91,-.25,-.52],[.72,-.18,-.43],[.3,-.1,-.15]];
@@ -84,6 +93,7 @@ export function createOceanModel(kind,{fishCount=18,groundAt}={}){
       for(const side of [-1,1]){
         const eye=new THREE.CircleGeometry(.05*s,8);eye.rotateY(side*Math.PI/2);eye.translate(side*.275*s,.1*s,.83*s);append(eye,0x0d2430);
         const glint=new THREE.CircleGeometry(.016*s,4);glint.rotateY(side*Math.PI/2);glint.translate(side*.277*s,.12*s,.845*s);append(glint,0xe4f7f1);
+        tube([[side*.29*s,.12*s,.56*s],[side*.33*s,.015*s,.49*s],[side*.29*s,-.1*s,.43*s]],.012*s,0x45616a,0,undefined,5,4);
       }
     }else eyes((whale?.47:.245)*s,.1*s,(whale?1.03:.83)*s,.065*s);
     if(!small){

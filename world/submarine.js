@@ -7,6 +7,8 @@ import { DEEP_LANDMARKS, seabedAt, installDeepSeaView } from './deep-sea.js';
 import { PATROL_BOUNDS, PATROL_LENGTH, samplePatrol, RETURN_ENTRY, RETURN_LENGTH, sampleReturn } from './submarine-path.js';
 
 const HOME = { ...SUBMARINE_HOME, y: 0 }, MODEL_DECK = 4.4, DECK = MODEL_DECK * SUBMARINE_SCALE, MAX_DEPTH = 320;
+// A clear aft-deck berth, ahead of the tail and away from the sail and hatch.
+const JET_PAD = { x: 0, y: MODEL_DECK, z: -40.4, heading: 0 };
 const PIER = { x0: HOME.x + 5 * SUBMARINE_SCALE, x1: SEA_BRIDGE.x - SEA_BRIDGE.width / 2, z: HOME.z, width: SUBMARINE_ACCESS.width };
 const PIER_RUN = PIER.x1 - PIER.x0, PIER_RISE = bridgeHeight(PIER.z) - DECK;
 const GANGWAY_SECONDS = 2, GANGWAY_THICKNESS = .28;
@@ -15,9 +17,9 @@ const clamp = THREE.MathUtils.clamp;
 const pierHeight = x => DECK + PIER_RISE * clamp((x - PIER.x0) / PIER_RUN, 0, 1);
 
 function createCrew(mesh) {
-  // Keep the patrol beside the hatch on the west side of the deck, clear of
-  // the boarding route on the east side and the standing point at the hatch.
-  const patrolPoints = [[-1.8, -38], [1.8, -28], [-1.8, -17], [-3.15, -5], [-1.8, 7]];
+  // Keep the patrol clear of the east-side boarding route, hatch and the
+  // reserved aft-deck berth for the jet car.
+  const patrolPoints = [[-3.3, -26], [1.8, -28], [-1.8, -17], [-3.15, -5], [-1.8, 7]];
   const patrolWidth = 1.7, patrolLength = 4.6, crewScale = 1.5;
   const seatPoints = [[-2.3, -12], [-1.15, -12], [0, -12], [1.15, -12], [2.3, -12]];
   const uniforms = [
@@ -94,7 +96,7 @@ function createCrew(mesh) {
       let walking = !sitting && idle < .98;
       const stride = walkTime[i] * 3.8 + i * 2.1;
       if (!sitting) {
-        const width = i === 3 ? .9 : patrolWidth;
+        const width = i === 0 ? .55 : i === 3 ? .9 : patrolWidth;
         const phase = person.routePhase + (walking ? dt * (.44 + i * .025) : 0);
         const x = patrolPoints[i][0] + Math.sin(phase * .42) * width;
         const z = patrolPoints[i][1] + Math.cos(phase * .31) * patrolLength;
@@ -129,6 +131,14 @@ function createCrew(mesh) {
       }
     }
     crew.instanceMatrix.needsUpdate = true;
+  }
+  function blocksVehicle(x,z,heading,length,width){
+    const forwardX=Math.sin(heading),forwardZ=Math.cos(heading),radius=.65;
+    for(const person of people){
+      const dx=person.x-x,dz=person.z-z,along=Math.abs(dx*forwardX+dz*forwardZ)-length,side=Math.abs(dx*forwardZ-dz*forwardX)-width;
+      if(Math.max(0,along)**2+Math.max(0,side)**2<radius*radius)return true;
+    }
+    return false;
   }
   const dummy = new THREE.Object3D();
   const console = new THREE.Mesh(new THREE.BoxGeometry(6.2, .55, 1.8), new THREE.MeshLambertMaterial({ color: 0x344c53 }));
@@ -287,6 +297,23 @@ export function buildSubmarine(B, planes) {
   }
   const onPier = (x, z, margin = 0) => x >= PIER.x0 && x <= PIER.x1 && Math.abs(z - PIER.z) <= PIER.width / 2 - margin;
   const onDeck = (x, z) => Math.abs(x - HOME.x) <= 5 * SUBMARINE_SCALE && z >= HOME.z - 48 * SUBMARINE_SCALE && z <= HOME.z + 30 * SUBMARINE_SCALE;
+  const deckLocalScratch={x:0,z:0};
+  const toDeckLocal = (x,z) => {
+    const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);
+    deckLocalScratch.x=(dx*c-dz*s)/SUBMARINE_SCALE;deckLocalScratch.z=(dx*s+dz*c)/SUBMARINE_SCALE;
+    return deckLocalScratch;
+  };
+  function driveHeight(x,z,margin=0){
+    if(mesh.position.y<-.5)return null;
+    const p=toDeckLocal(x,z),m=margin/SUBMARINE_SCALE;
+    if(Math.abs(p.x)>5-m||p.z< -48+m||p.z>30-m)return null;
+    return mesh.position.y+DECK;
+  }
+  function blocksVehicle(x,z,heading,length,width){
+    const y=driveHeight(x,z);if(y===null)return false;
+    const p=toDeckLocal(x,z),localHeading=heading-mesh.rotation.y;
+    return this.obstructed(x,z,y)||crew.blocksVehicle(p.x,p.z,localHeading,length/SUBMARINE_SCALE,width/SUBMARINE_SCALE);
+  }
   const board = { x: HOME.x, y: DECK, z: HOME.z - 10 * SUBMARINE_SCALE };
   function route(ax, ay, az, bx, by, bz) {
     if (!gangwayReady()) return [];
@@ -299,14 +326,16 @@ export function buildSubmarine(B, planes) {
     if (to) points.push({ x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: HOME.z }, { x: HOME.x + 3.6 * SUBMARINE_SCALE, y: DECK, z: bz });
     points.push({ x: bx, y: by, z: bz }); return points;
   }
-  return { mesh, crew, gangway, home: HOME, foot, board, pier: PIER, docked, route, maxDepth: MAX_DEPTH, landmarks: DEEP_LANDMARKS,
+  return { mesh, crew, gangway, home: HOME, foot, board, pier: PIER, docked, route, maxDepth: MAX_DEPTH, landmarks: DEEP_LANDMARKS, jetPad: JET_PAD,
     gangwayReady, updateGangway, get gangwayProgress() { return gangwayProgress; },
+    driveHeight,isDeck:(x,z)=>driveHeight(x,z)!==null,blocksVehicle,
     canBoard: p => gangwayReady() && Math.abs(p.y - DECK) < .7 * SUBMARINE_SCALE && Math.hypot(p.pos.x - board.x, p.pos.z - board.z) < 2.2 * SUBMARINE_SCALE,
     levels(x, z, out) {
-      if (!gangwayReady()) return;
-      if (onPier(x, z)) out.push({ y: pierHeight(x), site: 'submarine' }); else if (onDeck(x, z)) out.push({ y: DECK, site: 'submarine' });
+      if (gangwayReady() && onPier(x, z)) out.push({ y: pierHeight(x), site: 'submarine' });
+      const deck=driveHeight(x,z);
+      if(deck!==null)out.push({y:deck,site:'submarine'});
     },
-    obstructed(x, z, y) { return docked() && onDeck(x, z) && y < 11.7 * SUBMARINE_SCALE && Math.abs(x - HOME.x) < 2.65 * SUBMARINE_SCALE && z > HOME.z + 7.7 * SUBMARINE_SCALE && z < HOME.z + 24.3 * SUBMARINE_SCALE; },
+    obstructed(x, z, y) { const p=toDeckLocal(x,z);return y<mesh.position.y+11.7*SUBMARINE_SCALE&&Math.abs(p.x)<2.65&&p.z>7.7&&p.z<24.3; },
     collides(x, y, z) {
       return gangway.visible && onPier(x, z) && x <= PIER.x0 + PIER_RUN * gangwayProgress &&
         y < pierHeight(x) - .02 && y + 1.8 > pierHeight(x) - GANGWAY_THICKNESS || this.obstructed(x, z, y);

@@ -54,14 +54,14 @@ export function createJetExhaust(car) {
   };
 }
 
-export function createJetCar({ mesh, world, player, sound, canDrive, driveHeight, vehicle }) {
+export function createJetCar({ mesh, world, player, sound, canDrive, driveHeight, vehicle, landingTargetAt, onShipDeck, onLandingStart, onLandingCancelled, onLandingComplete, onTakeoff }) {
   const fx = mesh.userData.jetExhaust;
   const seatFacing = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
   const footprint = [];
   for (const x of [-2.85, 0, 2.85]) for (const z of [-1.15, 0, 1.15]) footprint.push([x, z]);
   let phase = 'ground', heading = Math.PI / 2, speed = 0, throttle = 0, vertical = 0;
   let bank = 0, pitch = 0, stunt = null, progress = 0, startHeading = 0, takeoffY = 0;
-  let notice = '', boosting = false, stepDistance = 0;
+  let notice = '', boosting = false, stepDistance = 0, landingTarget = null;
 
   function terrainHeight(x, z, h = heading) {
     let top = 0;
@@ -85,15 +85,22 @@ export function createJetCar({ mesh, world, player, sound, canDrive, driveHeight
     heading = mesh.rotation.y + Math.PI / 2;
     if (!openColumn(mesh.position.x, mesh.position.z, heading)) { notice = '上方有顶棚或障碍，请先驶出车库到露天空地'; return false; }
     phase = 'takeoff'; takeoffY = Math.max(mesh.position.y + 6, clearance(mesh.position.x, mesh.position.z) + 3);
-    speed = throttle = vertical = bank = pitch = 0; notice = ''; stunt = null;
+    speed = throttle = vertical = bank = pitch = 0; notice = ''; stunt = null; landingTarget = null;
     return true;
   }
   function land() {
     if (phase === 'ground' || phase === 'landing') return phase === 'landing';
     if (stunt) { notice = '请等翻转或掉头完成后再降落'; return false; }
-    if (!canDrive(mesh.position.x, mesh.position.z, heading) || !openColumn(mesh.position.x, mesh.position.z, heading)) {
+    const target = landingTargetAt?.(mesh.position.x, mesh.position.z, heading) || null;
+    if (!target && onShipDeck?.(mesh.position.x, mesh.position.z)) {
+      notice = '请对准航母或潜艇的专用停机位，并避开甲板人员后再降落'; return false;
+    }
+    const x = target?.position.x ?? mesh.position.x, z = target?.position.z ?? mesh.position.z, h = target?.heading ?? heading;
+    if (!canDrive(x, z, h) || !openColumn(x, z, h)) {
       notice = '下方无法停车，请飞到露天空地降落，或按 R 回车库'; return false;
     }
+    landingTarget = target;
+    if (target) { mesh.position.x = x; mesh.position.z = z; heading = h; onLandingStart?.(target); }
     phase = 'landing'; speed = throttle = vertical = 0; notice = ''; return true;
   }
   function maneuver(kind) {
@@ -113,15 +120,20 @@ export function createJetCar({ mesh, world, player, sound, canDrive, driveHeight
     const p = mesh.position;
     if (phase === 'takeoff') {
       p.y = Math.min(takeoffY, p.y + dt * 4);
-      if (p.y >= takeoffY) phase = 'flying';
+      if (p.y >= takeoffY) { phase = 'flying'; onTakeoff?.(); }
     } else if (phase === 'landing') {
+      if (landingTarget) {
+        landingTarget.update();
+        p.x = landingTarget.position.x; p.z = landingTarget.position.z; heading = landingTarget.heading;
+      }
       if (!canDrive(p.x, p.z, heading) || !openColumn(p.x, p.z, heading)) { phase = 'flying'; notice = '降落点被占用，已悬停'; }
       else {
         const floor = driveHeight(p.x, p.z);
         p.y = Math.max(floor, p.y - dt * Math.min(4, Math.max(.6, (p.y - floor) * 2)));
         bank *= Math.exp(-dt * 6); pitch *= Math.exp(-dt * 6);
-        if (p.y <= floor + .001) { p.y = floor; reset(); }
+        if (p.y <= floor + .001) { p.y = floor; onLandingComplete?.(landingTarget); landingTarget = null; reset(); }
       }
+      if (phase === 'flying' && landingTarget) { onLandingCancelled?.(landingTarget); landingTarget = null; }
     } else if (phase === 'flying') {
       const previousHeading = heading;
       const forward = keys.has('w') || keys.has('arrowup'), brake = keys.has('s') || keys.has('arrowdown');

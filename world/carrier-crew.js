@@ -147,6 +147,14 @@ export function createDeckCrew(parent,gangway){
     parent.updateWorldMatrix(true,false);
     for(const p of crew)p.collider.sync(p.x,3.4,p.z);
   }
+  function blocksVehicle(x,z,heading,length,width){
+    const forwardX=Math.sin(heading),forwardZ=Math.cos(heading),radius=.72;
+    for(const p of crew){
+      const dx=p.x-x,dz=p.z-z,along=Math.abs(dx*forwardX+dz*forwardZ)-length,side=Math.abs(dx*forwardZ-dz*forwardX)-width;
+      if(Math.max(0,along)**2+Math.max(0,side)**2<radius*radius)return true;
+    }
+    return false;
+  }
   function connectActors(nav){
     for(const p of crew)p.collider=registerLocalActor(nav,parent,p.root.position,.43,1.88);
     syncColliders();
@@ -222,5 +230,5 @@ export function createDeckCrew(parent,gangway){
     }
     mesh.instanceMatrix.needsUpdate=true;
   }
-  setBoardingProgress(1);update(0);return {mesh,crew,boardingLink,setBoardingProgress,connectActors,syncColliders,update};
+  setBoardingProgress(1);update(0);return {mesh,crew,boardingLink,setBoardingProgress,connectActors,syncColliders,blocksVehicle,update};
 }

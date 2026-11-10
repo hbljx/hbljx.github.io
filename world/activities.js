@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { COURT, RIM, ISLAND, POOL, BED, floorAt } from './layout.js';
 import { createActivityVisuals, paintTV, paintCinema } from './activity-visuals.js';
 import { getSeats, SEATS } from './seats.js';
@@ -17,6 +18,7 @@ import { TRANSIT_STOPS } from './transit-layout.js';
 import { tunnelCeiling } from './tunnel-glazing.js';
 import { createTransitRides } from './transit-rides.js';
 import { createVertec } from './vertec.js';
+import { registerActor } from '@engine/world/actor-collision.js';
 
 const activitySeat = (id, seatId) => {
   const { anchor, seatHeight, yaw } = SEATS.find(s => s.id === `seat-${seatId}`);
@@ -128,12 +130,74 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
   const isDriving = () => !!vehicles[active?.id];
   const keys = new Set();
   let active = null, near = null, nearSeat = null, nearTitle = '', time = 0, uiClock = 0, screenClock = 0, entered = 0, vertecReps = 0;
+  let deckAttachment = null;
   let runMode = false, collapsed = false, controlsReady = false, stepDistance = 0, lastX = player.pos.x, lastZ = player.pos.z, lastMode = player.mode, breathClock = 0;
   let firstPerson = false, saved = null, pageIndex = 0, flip = 0, sip = 0, sips = 0;
   let tvChannel = 0, tvTime = 0, tvPaused = false, cinemaTime = 0, carSpeed = 0, carHeading = Math.PI / 2, driveDistance = 0, notice = '';
   let tunnelGuide=0,tunnelArrived=false;
   let jetExitPending = false;
-  const jet = createJetCar({ mesh: vehicles.driving.mesh, world, player, sound, canDrive, driveHeight, vehicle: vehicles.driving });
+  const deckLocal = new THREE.Vector3();
+  const jetPads = [
+    { site: world.carrier, platform: world.carrier.mesh, pad: world.carrier.jetPad, ready: () => true },
+    { site: world.submarine, platform: world.submarine.mesh, pad: world.submarine.jetPad, ready: () => world.submarine.mesh.position.y >= -.5 },
+  ].map(({site,platform,pad,ready}) => {
+    const baseLocal = new THREE.Vector3(pad.x,pad.y,pad.z);
+    const target = {site,platform,pad,baseLocal,localPosition:baseLocal.clone(),position:new THREE.Vector3(),headingOffset:pad.heading,heading:0,ready};
+    target.update = () => {
+      platform.updateWorldMatrix(true,false);
+      target.position.copy(target.localPosition).applyMatrix4(platform.matrixWorld);
+      target.heading=platform.rotation.y+target.headingOffset;
+      return target;
+    };
+    return target;
+  });
+  function landingTargetAt(x,z,heading){
+    for(const target of jetPads){
+      if(!target.ready())continue;
+      target.platform.updateWorldMatrix(true,false);
+      target.position.copy(target.baseLocal).applyMatrix4(target.platform.matrixWorld);
+      const padHeading=target.platform.rotation.y+target.pad.heading;
+      if(Math.hypot(x-target.position.x,z-target.position.z)>3.8)continue;
+      if(!canDrive(target.position.x,target.position.z,padHeading))continue;
+      target.localPosition.copy(target.baseLocal);target.headingOffset=target.pad.heading;target.update();
+      return target;
+    }
+    return null;
+  }
+  function onShipDeck(x,z){return world.carrier.isDeck(x,z)||world.submarine.isDeck(x,z);}
+  function syncDeckAttachment(){
+    if(!deckAttachment||(active?.id==='driving'&&['landing','takeoff'].includes(jet.phase)))return;
+    deckAttachment.update();
+    const tesla=vehicles.driving.mesh;
+    tesla.position.copy(deckAttachment.position);
+    tesla.rotation.set(0,deckAttachment.heading-Math.PI/2,0);tesla.updateMatrix();
+    if(active?.id==='driving')carHeading=deckAttachment.heading;
+    const obstacle=vehicles.driving.obstacle;
+    if(obstacle.x0<1e5){
+      const c=Math.abs(Math.cos(tesla.rotation.y)),s=Math.abs(Math.sin(tesla.rotation.y));
+      const w=c*vehicles.driving.halfLength+s*vehicles.driving.halfWidth,d=s*vehicles.driving.halfLength+c*vehicles.driving.halfWidth;
+      Object.assign(obstacle,{x0:tesla.position.x-w,x1:tesla.position.x+w,z0:tesla.position.z-d,z1:tesla.position.z+d,y:tesla.position.y});
+    }
+  }
+  function rememberDeckAttachment(){
+    if(!deckAttachment||active?.id!=='driving')return;
+    const tesla=vehicles.driving.mesh;
+    if(!deckAttachment.site.isDeck(tesla.position.x,tesla.position.z)){deckAttachment=null;return;}
+    deckAttachment.platform.updateWorldMatrix(true,false);
+    deckLocal.set(tesla.position.x,tesla.position.y,tesla.position.z);
+    deckAttachment.platform.worldToLocal(deckLocal);
+    deckAttachment.localPosition.copy(deckLocal);
+    deckAttachment.headingOffset=Math.atan2(Math.sin(carHeading-deckAttachment.platform.rotation.y),Math.cos(carHeading-deckAttachment.platform.rotation.y));
+  }
+  registerActor(nav,vehicles.driving.mesh.position,Math.hypot(vehicles.driving.halfLength,vehicles.driving.halfWidth)+.1,2.1,()=>vehicles.driving.mesh.position.y,()=>!!deckAttachment);
+  const jet = createJetCar({
+    mesh: vehicles.driving.mesh, world, player, sound, canDrive, driveHeight, vehicle: vehicles.driving,
+    landingTargetAt, onShipDeck,
+    onLandingStart(target){deckAttachment=target;const tesla=vehicles.driving.mesh;tesla.position.set(target.position.x,tesla.position.y,target.position.z);carHeading=target.heading;},
+    onLandingCancelled(target){if(deckAttachment===target)deckAttachment=null;},
+    onLandingComplete(target){deckAttachment=target||null;},
+    onTakeoff(){deckAttachment=null;},
+  });
   vehicles.driving.placeOccupant = jet.placeOccupant;
   vehicles.driving.getHeading = () => jet.airborne ? jet.heading : vehicles.driving.mesh.rotation.y + Math.PI / 2;
   const guidePoint={},guideProjection={};
@@ -249,7 +313,9 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       const x = car.position.x + Math.cos(carHeading) * side * (vehicle.halfWidth + .65) + Math.sin(carHeading) * along;
       const z = car.position.z - Math.sin(carHeading) * side * (vehicle.halfWidth + .65) + Math.cos(carHeading) * along;
       const surface=world.ground.canStand(x,z,car.position.y);
-      if(['sea-bridge','carrier','sea-tunnel','transit-concourse'].includes(surface?.site))return{x,y:surface.y,z};
+      if(['sea-bridge','carrier','submarine','sea-tunnel','transit-concourse'].includes(surface?.site))return{x,y:surface.y,z};
+      const submarine=world.submarine.driveHeight(x,z);
+      if(submarine!==null&&Math.abs(submarine-car.position.y)<.7)return{x,y:submarine,z};
       if (nav.canStand(x, z) && floorAt(x, z) === 0) return { x, y:0,z };
     }
     return null;
@@ -645,13 +711,16 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
     const tunnel=world.seaTunnel.driveHeight(x,z);
     if(tunnel!==null)return tunnel;
     const ship=world.carrier.driveHeight(x,z);
-    return ship??(world.seaBridge.contains(x,z)?world.seaBridge.height(z):0);
+    if(ship!==null)return ship;
+    const submarine=world.submarine.driveHeight(x,z);
+    return submarine??(world.seaBridge.contains(x,z)?world.seaBridge.height(z):0);
   }
   function canDrive(x, z, heading) {
     const c = Math.sin(heading), s = Math.cos(heading);
     const { halfLength: length, halfWidth: width } = vehicle;
     const y=driveHeight(x,z);
     if(world.carrier.blocksVehicle(x,z,heading,length,width))return false;
+    if(world.submarine.blocksVehicle(x,z,heading,length,width))return false;
     // Separating-axis checks also catch thin furniture between grid samples.
     for (const o of world.obstacles) {
       if (o === carObstacle || o.level === 1) continue;
@@ -674,6 +743,8 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       if(world.transit.approach.driveHeight(px,pz,.35)!==null&&Math.abs(y)<.5)continue;
       const ship=world.carrier.driveHeight(px,pz,.35);
       if(ship!==null){if(Math.abs(ship-y)>1.1)return false;continue;}
+      const submarine=world.submarine.driveHeight(px,pz,.35);
+      if(submarine!==null){if(Math.abs(submarine-y)>1.1||world.submarine.obstructed(px,pz,submarine))return false;continue;}
       if(world.seaBridge.contains(px,pz,.5)||world.seaBridge.junction(px,pz,.35))continue;
       if (px < ISLAND.x0 + 1 || px > ISLAND.x1 - 1 || pz < ISLAND.z0 + 1 || pz > ISLAND.z1 - 1 || floorAt(px, pz) !== 0) return false;
       if (px > POOL.x0 - .4 && px < POOL.x1 + .4 && pz > POOL.z0 - .4 && pz < POOL.z1 + .4) return false;
@@ -729,10 +800,11 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       else { carSpeed = 0;tunnelGuide=0; notice = '遇到障碍，请反向挪车后转向'; }
     }
     // The mesh faces local +X; Three.js rotates +X toward -Z for positive yaw.
-    const ship=world.carrier.driveHeight(car.position.x,car.position.z);
-    const slope=world.seaTunnel.contains(car.position.x,car.position.z)?world.seaTunnel.slope(car.position.x,car.position.z,carHeading):ship!==null?world.carrier.driveSlope(car.position.x,car.position.z,carHeading):world.seaBridge.contains(car.position.x,car.position.z)?world.seaBridge.slope(car.position.z)*Math.cos(carHeading):0;
+    const ship=world.carrier.driveHeight(car.position.x,car.position.z),submarine=world.submarine.driveHeight(car.position.x,car.position.z);
+    const slope=world.seaTunnel.contains(car.position.x,car.position.z)?world.seaTunnel.slope(car.position.x,car.position.z,carHeading):ship!==null?world.carrier.driveSlope(car.position.x,car.position.z,carHeading):submarine!==null?0:world.seaBridge.contains(car.position.x,car.position.z)?world.seaBridge.slope(car.position.z)*Math.cos(carHeading):0;
     car.rotation.set(0,carHeading-Math.PI/2,Math.atan(slope)); car.updateMatrix();
     player.anchor(car.position.x, car.position.y, car.position.z, carHeading);
+    rememberDeckAttachment();
     sound.loop(active.id==='roadster'?'luxury-engine':'engine', Math.abs(carSpeed) / topSpeed);
   }
   function basketball(dt) {
@@ -892,6 +964,7 @@ export function createActivities({ stage, world, player, avatar, nav, rig, sound
       controlsReady = true; controls.hidden = false;
     }
     time += dt; uiClock += dt; screenClock += dt;
+    syncDeckAttachment();
     transit.update(dt);
     vertec.update(dt, active?.id === 'gym-vertec' ? null : player);
     if(active?.service&&transit.readyToExit){stop();return;}

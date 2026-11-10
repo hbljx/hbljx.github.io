@@ -23,6 +23,7 @@ import { createHousehold } from './household.js';
 import { flattenGlazing, flattenBatchGlazing } from './glazing.js';
 import { buildSeaTransit } from './sea-transit.js';
 import { seabedAt } from './deep-sea.js';
+import { buildOtherContinent } from './other-continent.js';
 
 export function build({ grid, layer, materials, stage }) {
   // Flat glass panes need one two-sided pass rather than separate front/back
@@ -85,13 +86,14 @@ export function build({ grid, layer, materials, stage }) {
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
   stage.scene.add(outer.group, mountain.group, roofAccess.group, carrier.mesh, carrier.boardingLink);
+  const otherContinent=buildOtherContinent({layer,materials,stage});
   for(const batch of Object.values(furn.batches))flattenBatchGlazing(batch);
   for(const group of [outer.group,mountain.group,roofAccess.group])group.traverse(mesh=>flattenGlazing(mesh,materials.boxGlass));
   return {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
-    sites: [outer, mountain, furn.stairs, third.source, carrier, submarine, furn.partitions, seaBridge,transit.platform,transit.approach,transit.tunnel], sitesAfter: [roofAccess],
-    named: { seaSwimming: { bedAt: seabedAt }, seaBridge, transit, seaTunnel:transit.tunnel, drawTransitMap:transit.drawMap, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
+    sites: [outer, mountain, furn.stairs, third.source, carrier, submarine, furn.partitions, seaBridge,transit.platform,transit.approach,transit.tunnel,otherContinent.site], sitesAfter: [roofAccess],
+    named: { seaSwimming: { bedAt: seabedAt }, seaBridge, transit, seaTunnel:transit.tunnel, drawTransitMap:transit.drawMap, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, aircraftFleet, oceanLife, thirdFloor: third.source, otherContinent, drawMap },
   };
 }
 
@@ -146,6 +148,7 @@ export function setup(app) {
       world.oceanLife.update(dt,world.carrier,stage.camera);
       world.aircraftFleet.update(cutaway);
       world.offshore.rotor.rotation.z -= dt * 0.42;
+      world.otherContinent.update(dt,app.player,app.rig);
       const dx = app.player.pos.x - world.offshore.x, dz = app.player.pos.z - world.offshore.z;
       const distance = Math.hypot(dx, dz);
       app.sound.wind(distance < 36 ? 1 - distance / 36 : 0);

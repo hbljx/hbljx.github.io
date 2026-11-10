@@ -7,6 +7,7 @@ import { createWhaleWaterEffects } from './whale-water.js';
 // without extra lights, shadow passes or frame-by-frame geometry uploads.
 export function createOceanLife(deepBatch,tunnelPath=null){
   const creatures=[],tunnelCreatures=[],time={value:0};
+  const seaOpacity={value:.9},viewDirection=new THREE.Vector3();let seaLevel=-1.08;
   const whaleWater=createWhaleWaterEffects(time),effectsGroup=whaleWater.group;
   const tunnelGroup=new THREE.Group();tunnelGroup.name='tunnel-ocean-gardens';tunnelGroup.visible=false;let inTunnelGarden=false;
   const deepGroup=new THREE.Group(),deepCreatures=[];deepGroup.name='deep-sea-scenery';deepGroup.visible=false;
@@ -38,9 +39,17 @@ export function createOceanLife(deepBatch,tunnelPath=null){
   // Keep nearshore whales close to the waterline so their backs and breaches
   // read clearly from the house and beach.
   animal('whale',-24,-1.8,64,16,8,.055);animal('whale',-75,-2,12,8,18,.045,2);
+  animal('whale',52,-1.8,90,14,9,.04,1);animal('whale',-89,-2.1,74,12,8,.05,2.8);
   animal('shark',-65,-3.4,-5,9,15,.12);animal('shark',26,-3,61,11,8,.1,2);
+  animal('shark',-52,-3.2,82,11,7,.075,1.5);animal('shark',72,-3.4,24,10,7,.085,2.6);
   for(let i=0;i<3;i++)animal('dolphin',4,-1.8,48,12,5,.18,i*.7);
   for(const [i,x]of [-45,-12,23].entries())animal('fish-school',x,-2.6,i===0?17:39,3,2,.22,i);
+  // Spread schools along the nearshore reef line and across the open-water
+  // foreground, where they stay visible from the house and beach viewpoints.
+  for(const [i,[x,z,rx,rz]]of [[-67,48,4.5,3],[-49,75,5,3],[-20,88,4.5,3],[4,57,4,2.5],[47,69,5,3],[70,90,4.5,3],[91,48,5,3]].entries()){
+    const school=animal('fish-school',x,-2.6,z,rx,rz,.16,i*.72+.5);
+    school.scale.setScalar(1.12);
+  }
   animal('crab',-51,seabedAt(-51,16)+.2,16,.45,.35,.12);animal('crab',19.3,seabedAt(19.3,40.3)+.2,40.3,.4,.3,.08,1);
   animal('shrimp',-49,seabedAt(-49,-9)+.5,-9,1,.7,.25);animal('shrimp',-17,seabedAt(-17,41)+.5,41,1,.8,.2,2);
   animal('octopus',-47.2,seabedAt(-47.2,17.6)+.25,17.6,.25,.3,.1);animal('octopus',14.8,seabedAt(14.8,43.4)+.25,43.4,.3,.25,.08,2);
@@ -84,7 +93,14 @@ export function createOceanLife(deepBatch,tunnelPath=null){
   const allCreatures=[...creatures,...deepCreatures,...tunnelCreatures];
   const tunnelView={};
   function update(dt,carrier,camera){
-    if(camera)terrain.visible=camera.position.y<-1.08;
+    if(camera){
+      const height=camera.position.y-seaLevel;
+      terrain.visible=height<0||height>6;
+      camera.getWorldDirection(viewDirection);
+      const lookingDown=THREE.MathUtils.smoothstep(Math.max(0,-viewDirection.y),.04,.7);
+      const aerial=THREE.MathUtils.smoothstep(height,2,14);
+      seaOpacity.value=height < 0 ? .9 : .9 - .58 * aerial * (.7 + .3 * lookingDown);
+    }
     // Follow the actual tunnel path so the glass scenery is also visible near
     // both portals, instead of relying on a rectangular world-space cutoff.
     if(camera&&tunnelPath){
@@ -111,13 +127,17 @@ export function createOceanLife(deepBatch,tunnelPath=null){
     whaleWater.update(camera);
   }
   function configureSea(coast){
-    whaleWater.setWaterHeight(coast.sea.position.y);
-    // Use one opaque surface so seabed colors and distance cannot split the ocean into bands.
-    const material=coast.sea.material;material.transparent=false;material.opacity=1;material.depthWrite=true;
+    seaLevel=coast.sea.position.y;
+    whaleWater.setWaterHeight(seaLevel);
+    // The surface keeps its blue tint at low altitude, then lets the seabed
+    // and reefs show through during flight. Grazing views stay more reflective.
+    const material=coast.sea.material;material.transparent=true;material.opacity=1;material.depthWrite=false;
     material.onBeforeCompile=shader=>{
+      shader.uniforms.uSeaOpacity=seaOpacity;
       shader.vertexShader='varying vec2 vOceanXZ;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvOceanXZ=(modelMatrix*vec4(position,1.)).xz;');
       // Keep world coordinates for the tunnel entrance water mask.
-      shader.fragmentShader='varying vec2 vOceanXZ;\n'+shader.fragmentShader;
+      shader.fragmentShader='uniform float uSeaOpacity;\nvarying vec2 vOceanXZ;\n'+shader.fragmentShader;
+      shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','diffuseColor.a*=uSeaOpacity;\n#include <opaque_fragment>');
     };
     material.needsUpdate=true;
   }

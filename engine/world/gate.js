@@ -93,14 +93,15 @@ void main() {
     right = dot(right, right) < 1e-6 ? vec3(1.0, 0.0, 0.0) : normalize(right);
     local = centre - view * BACK + (right * position.x + cross(view, right) * position.y) * (far + BACK) / max(far - BACK, 0.5);
   } else if (aKind > 1.5) {
-    // The two floor rings counter-rotate and breathe outwards as the gate
-    // charges. They share the existing glow draw call.
-    float outer = aKind > 2.5 ? 1.0 : 0.0;
-    float turn = uTime * mix(0.2, -0.13, outer);
-    float pulse = 1.0 + 0.025 * sin(uTime * 2.4 + outer * 2.1) + 0.055 * uCharge;
+    // Three floor rings orbit in alternating directions and expand in quick
+    // pulses as the gate charges. They share the existing glow draw call.
+    float ring = aKind - 2.0;
+    float turn = uTime * (ring > 0.5 && ring < 1.5 ? -0.42 : 0.28);
+    float expansion = 0.08 + 0.12 * (0.5 + 0.5 * sin(uTime * 9.0 + ring * 2.1));
+    float pulse = 1.0 + 0.025 * sin(uTime * 2.4 + ring * 2.1) + uCharge * expansion;
     local.xz *= pulse;
     local.xz = mat2(cos(turn), sin(turn), -sin(turn), cos(turn)) * local.xz;
-    local.y += 0.012 * sin(uTime * 2.0 + outer * 1.6);
+    local.y += 0.014 * sin(uTime * 2.0 + ring * 1.6);
   }
   vLocal = local;
   vKind = aKind;
@@ -254,7 +255,8 @@ export function createGate() {
     }
   };
   ring(1.12, 0.035, 2);
-  ring(2.08, 0.045, 3);
+  ring(1.62, 0.04, 3);
+  ring(2.08, 0.045, 4);
   const glowGeometry = new THREE.BufferGeometry();
   glowGeometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
   glowGeometry.setAttribute('aKind', new THREE.Float32BufferAttribute(kind, 1));
@@ -315,15 +317,24 @@ export function createGate() {
           float shimmer = 0.9 + 0.1 * sin(abs(g.y) * 9.0 - uFlow * 2.0 + abs(g.x) * 3.0);
           col = uGround * spill * shimmer * mix(0.7, 1.15, hash(cell)) * (0.42 * (1.0 + 0.4 * uNear) + 0.6 * uCharge);
         } else {
-          float outer = vKind > 2.5 ? 1.0 : 0.0;
+          float ring = vKind - 2.0;
           float radius = length(vLocal.xz);
           float angle = atan(vLocal.z, vLocal.x);
-          float dash = sin(angle * mix(18.0, 28.0, outer) + uTime * mix(-3.0, 2.0, outer));
-          float traveling = 0.55 + 0.45 * sin(angle * 3.0 - uTime * 2.2 + outer * 1.8);
-          float sparks = pow(max(0.0, sin(angle * 41.0 - uTime * 4.0 + outer)), 24.0);
-          float fade = 1.0 - smoothstep(1.2, 2.55, radius);
-          float energy = 0.38 + 0.28 * smoothstep(0.72, 0.98, dash) * traveling + sparks * 0.3;
-          col = mix(uHalo, uArc, 0.68) * energy * fade * (0.55 + 0.65 * uNear + uCharge);
+          float radius0 = ring < 0.5 ? 1.12 : ring < 1.5 ? 1.62 : 2.08;
+          float width = ring < 0.5 ? 0.035 : ring < 1.5 ? 0.04 : 0.045;
+          float expansion = 0.08 + 0.12 * (0.5 + 0.5 * sin(uTime * 9.0 + ring * 2.1));
+          float pulse = 1.0 + 0.025 * sin(uTime * 2.4 + ring * 2.1) + uCharge * expansion;
+          float edge = 1.0 - smoothstep(width * pulse * 0.2, width * pulse, abs(radius - radius0 * pulse));
+          float dash = sin(angle * (18.0 + ring * 5.0) + uTime * (ring > 0.5 && ring < 1.5 ? -3.0 : 2.4));
+          float traveling = 0.55 + 0.45 * sin(angle * 3.0 - uTime * 2.2 + ring * 1.8);
+          float boltWave = sin(angle * (24.0 + ring * 8.0) - uTime * (5.0 + ring * 2.0)
+            + sin(angle * 7.0 + uTime * 3.0) * 0.75);
+          float lightning = pow(max(0.0, boltWave), 18.0) * edge;
+          float sparks = pow(max(0.0, sin(angle * (11.0 + ring * 4.0) - uTime * (4.0 + ring * 1.2))), 32.0) * edge;
+          float fade = 1.0 - smoothstep(2.5, 3.05, radius);
+          float energy = 0.3 + 0.2 * smoothstep(0.72, 0.98, dash) * traveling;
+          col = mix(uHalo, uArc, 0.68) * (energy + lightning * 1.2 + sparks * 0.55) * fade * (0.55 + 0.65 * uNear + uCharge);
+          col += uWhite * edge * (lightning * 1.15 + sparks * 0.9) * (0.35 + 0.5 * uNear + uCharge);
         }
         #ifdef USE_FOG
           #ifdef FOG_EXP2

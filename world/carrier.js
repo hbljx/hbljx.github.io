@@ -17,6 +17,7 @@ const STERN=-32,BOW=33;
 const sections=[[STERN,5.9],[-29,9.5],[-21,9.5],[-18,7.6],[22,7.6],[29,8],[BOW,6.8]];
 const deckY=()=>DECK;
 const RAMP={x0:-4.4,x1:1.9,z0:23,z1:33,height:2.3};
+const JET_PAD={x:-2,y:DECK,z:-25.5,heading:0};
 const onRamp=(x,z)=>x>=RAMP.x0&&x<=RAMP.x1&&z>=RAMP.z0&&z<=RAMP.z1;
 const surfaceY=(x,z)=>DECK+(onRamp(x,z)?(z-RAMP.z0)/(RAMP.z1-RAMP.z0)*RAMP.height:0);
 const deckAircraft=[
@@ -193,7 +194,7 @@ export function buildCarrier(layer,staticBatch){
     if(toDeck)points.push(...deckRoute(-7.1,0,b.x,b.z));else points.push({x:bx,y:by,z:bz});return points;
   }
   return{
-    mesh,boardingLink,crew,
+    mesh,boardingLink,crew,jetPad:JET_PAD,
     update(dt,camera){
       const target=docked()?1:0;
       boardingProgress=dt<=0?target:boardingProgress+Math.sign(target-boardingProgress)*Math.min(Math.abs(target-boardingProgress),dt*1.5);
@@ -203,6 +204,7 @@ export function buildCarrier(layer,staticBatch){
       else crew.syncColliders();
     },
     foot,home:HOME,toLocal,toWorld,route,docked,helm,airfield,deckAircraft,ramp:RAMP,gangway:GANGWAY,
+    isDeck(x,z){const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y);return onDeck(dx*c-dz*s,dx*s+dz*c);},
     driveHeight(x,z,margin=0){
       if(onGangway(x,z,margin)&& (docked()||x<GANGWAY.x1-margin))return gangwayHeight(x);
       const dx=x-mesh.position.x,dz=z-mesh.position.z,c=Math.cos(mesh.rotation.y),s=Math.sin(mesh.rotation.y),lx=dx*c-dz*s,lz=dx*s+dz*c;
@@ -224,7 +226,7 @@ export function buildCarrier(layer,staticBatch){
         if(Math.abs(dx*c+dz*s)>length+w*ac+d*as||Math.abs(-dx*s+dz*c)>width+w*as+d*ac)continue;
         return true;
       }
-      return false;
+      return onDeck(p.x,p.z)&&crew.blocksVehicle(p.x,p.z,angle,length,width);
     },
     setPlaneObstacle(fn){planeObstacle=fn;},
     canBoard(player){const p=toLocal(player.pos.x,player.pos.z);return Math.abs(player.y-DECK)<.7&&inCabin(p.x,p.z)&&Math.hypot(p.x-4.65,p.z-5.1)<1.6;},
