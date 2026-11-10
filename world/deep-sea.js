@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { SHALLOW_REEFS } from './coral-models.js';
 
 export const DEEP_LANDMARKS = [
   { name: '荧光珊瑚林', x: -350, z: 285, depth: 260, color: '#67edce' },
@@ -7,31 +6,53 @@ export const DEEP_LANDMARKS = [
   { name: '领地界碑', x: -430, z: 570, depth: 300, color: '#9fcaff' },
 ];
 
-// One continuous slope, shared by visual geometry and hull clearance checks.
+const { clamp, lerp, smoothstep } = THREE.MathUtils;
+const mound = (x, z, cx, cz, rx, rz) => Math.exp(-(((x - cx) / rx) ** 2 + ((z - cz) / rz) ** 2));
+
+// One continuous surface for the coastal shelf, tunnel basin and abyss.
+// The submarine uses the same height field for hull clearance.
 export function seabedAt(x, z) {
-  // The eastern observation basin lies below the complete tunnel floor.
-  if (x > 50 && x <= 180 && z >= 32 && z <= 180) return -23;
-  if (z < 32 || x > 50) return -9.5;
-  const depth = THREE.MathUtils.clamp((-x - 140) / 160, 0, 1);
+  const shelf = -10 + 1.2 * Math.sin(x * .065 + z * .03) * Math.cos(z * .071);
+  const basin = smoothstep(x, 49, 115) * smoothstep(z, -16, 45) * (1 - smoothstep(z, 112, 181));
+  const hills = 9 * mound(x, z, 80, 74, 20, 31) + 7 * mound(x, z, 103, 115, 17, 21)
+    + 11 * mound(x, z, 156, 45, 18, 25) + 10 * mound(x, z, 159, 125, 23, 24)
+    + 16 * mound(x, z, 216, 85, 23, 35) + 8 * mound(x, z, 230, 124, 19, 28);
+  const channel = (x - 181 - 14 * Math.sin((z - 35) * .032)) / 19;
+  const trench = 23 * Math.exp(-(channel ** 2)) * smoothstep(z, -5, 51) * (1 - smoothstep(z, 126, 189));
+  const coast = shelf - 18 * basin + hills - trench;
+
+  const depth = clamp((-x - 140) / 160, 0, 1);
   const broadRelief = Math.sin(x * .018 + z * .006) * 17 + Math.cos(z * .014 - x * .009) * 12;
   const ridges = Math.sin(x * .035 + Math.sin(z * .012) * 2) * Math.cos(z * .021) * 20;
   const roughness = Math.sin(x * .061 - z * .028) * Math.cos(z * .047) * 7;
-  return -34 - depth * 386 + (broadRelief + ridges + roughness) * (.3 + depth * .7);
+  const abyss = -34 - depth * 386 + (broadRelief + ridges + roughness) * (.3 + depth * .7);
+  return lerp(coast, abyss, (1 - smoothstep(x, -20, 48)) * smoothstep(z, 10, 32));
 }
 
-function createSeabedGeometry() {
-  const x0 = -750, x1 = 65, z0 = -100, z1 = 700, step = 16;
-  const nx = Math.ceil((x1 - x0) / step), nz = Math.ceil((z1 - z0) / step);
+// Denser samples near the tunnel keep its slopes smooth. The coarser grid
+// farther away joins the same indexed mesh without seams.
+function terrainAxis(start, sections) {
+  const points = [start];
+  for (const [end, step] of sections) {
+    const count = Math.ceil((end - start) / step);
+    for (let i = 1; i <= count; i++) points.push(lerp(start, end, i / count));
+    start = end;
+  }
+  return points;
+}
+
+export function createSeabed() {
+  const xs = terrainAxis(-950, [[-160, 18], [48, 8], [240, 5], [400, 18]]);
+  const zs = terrainAxis(-220, [[-32, 18], [192, 5], [244, 10], [900, 18]]);
+  const nx = xs.length - 1, nz = zs.length - 1;
   const positions = [], colors = [], indices = [];
-  const low = new THREE.Color(0x183f52), high = new THREE.Color(0x83b3ac), color = new THREE.Color();
+  const low = new THREE.Color(0x183f52), shelf = new THREE.Color(0x719d94);
+  const sand = new THREE.Color(0xb4b494), rock = new THREE.Color(0x466c72), color = new THREE.Color();
   for (let iz = 0; iz <= nz; iz++) {
-    const z = z0 + (z1 - z0) * iz / nz;
+    const z = zs[iz];
     for (let ix = 0; ix <= nx; ix++) {
-      const x = x0 + (x1 - x0) * ix / nx, y = seabedAt(x, z);
+      const x = xs[ix], y = seabedAt(x, z);
       positions.push(x, y, z);
-      const elevation = THREE.MathUtils.clamp((y + 430) / 410, 0, 1);
-      color.copy(low).lerp(high, elevation);
-      colors.push(color.r, color.g, color.b);
       if (ix < nx && iz < nz) {
         const a = iz * (nx + 1) + ix, b = a + 1, c = a + nx + 1, d = c + 1;
         indices.push(a, c, b, b, c, d);
@@ -40,37 +61,28 @@ function createSeabedGeometry() {
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
-  return geometry;
+  const normals = geometry.getAttribute('normal');
+  for (let i = 0; i < normals.count; i++) {
+    const x = positions[i * 3], y = positions[i * 3 + 1], z = positions[i * 3 + 2];
+    const sediment = .45 + .29 * Math.sin(x * .11 + z * .1 + 1.4 * Math.sin(z * .15))
+      + .12 * Math.sin(x * .27 - z * .23);
+    color.copy(shelf).lerp(sand, sediment).lerp(rock, smoothstep(1 - normals.getY(i), .018, .27));
+    const basinShade = .42 * (1 - smoothstep(y, -55, -19));
+    color.lerp(low, lerp(basinShade, 1, 1 - smoothstep(y, -420, -55)));
+    colors.push(color.r, color.g, color.b);
+  }
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  const terrain = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  terrain.name = 'continuous-underwater-terrain';
+  terrain.visible = false;
+  return terrain;
 }
 
-export function buildDeepSea(shallow, B, deepGroup) {
+export function buildDeepSea(B) {
   const rock = { tex: 'stone', tint: 0x417d8b, emissive: .12 };
   const seabed = { tex: 'paint', tint: 0x83b3ac, emissive: .22 };
-  // Retain the shallow reefs, opening only the western harbor and trench.
-  shallow.box(115, -23.5, 106, 130, .5, 148, seabed);
-  shallow.box(4, -10, -74, 92, .5, 212, { tex: 'paint', tint: 0x327e94 });
-  shallow.box(-111, -10, -74, 138, .5, 212, { tex: 'paint', tint: 0x327e94 });
-  // A visible shelf immediately offshore gives swimmers a recognizable
-  // seabed before the western trench begins.
-  shallow.box(-8, -10, 73, 150, .5, 86, seabed);
-  for (const [i, reef] of SHALLOW_REEFS.entries()) {
-    const [x,z] = reef, turn = i * .71;
-    shallow.box(x, -9.35, z, 10 + i % 3 * 2, .8, 8 + i % 2 * 2, rock, { ry: turn });
-    shallow.box(x - 1, -8.85, z + 1, 7, .22, 6, seabed, { ry: turn });
-    // Sculpted coral colonies join the ocean geometry batch.
-    for (let j = 0; j < 3; j++) {
-      const a = turn + j * 2.1, px = x + Math.cos(a) * 5.4, pz = z + Math.sin(a) * 4.4;
-      shallow.box(px, -6.3 + j % 2 * .5, pz, .45, 5.8 + j % 2, .45,
-        { tex: 'paint', tint: j % 2 ? 0x43a99b : 0x7ac9a8, emissive: .2 }, { rz: Math.sin(a) * .08 });
-    }
-  }
-  const terrain = new THREE.Mesh(createSeabedGeometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
-  terrain.name = 'continuous-underwater-terrain';
-  terrain.receiveShadow = false;
-  deepGroup.add(terrain);
   // Terraced gardens frame the circuit with a sandy channel between them.
   // Even the highest branches remain below the full-depth hull envelope.
   const gardens = [[-360,290],[-495,245],[-605,330],[-625,470],[-520,555],[-370,515],[-350,405],[-485,405]];

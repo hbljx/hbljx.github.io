@@ -77,9 +77,9 @@ export function build({ grid, layer, materials, stage }) {
   stage.scene.add(submarine.crew.group, submarine.gangway);
   const offshore = buildOffshore();
   stage.scene.add(offshore.group);
-  const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(furn.batches.static,deepBatch,transit.tunnel.path);
+  const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(deepBatch,transit.tunnel.path);
   for(const mesh of deepBatch.build(materials)){mesh.castShadow=false;oceanLife.deepGroup.add(mesh);}
-  stage.scene.add(oceanLife.deepGroup,oceanLife.tunnelGroup,oceanLife.effectsGroup);
+  stage.scene.add(oceanLife.deepGroup,oceanLife.tunnelGroup,oceanLife.effectsGroup,oceanLife.terrain);
   const aircraftFleet=createAircraftFleet(carrier,oceanLife,[furn.animated.roadster,submarine.mesh],stage);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);

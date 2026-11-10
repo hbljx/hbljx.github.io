@@ -1,25 +1,22 @@
 import * as THREE from 'three';
 import { createOceanModel } from './ocean-models.js';
-import { buildDeepSea } from './deep-sea.js';
+import { buildDeepSea, createSeabed, seabedAt } from './deep-sea.js';
 import { createWhaleWaterEffects } from './whale-water.js';
 
 // Shallow life shares the fleet batch. Abyss scenery draws only underwater,
 // without extra lights, shadow passes or frame-by-frame geometry uploads.
-export function createOceanLife(B,deepBatch,tunnelPath=null){
+export function createOceanLife(deepBatch,tunnelPath=null){
   const creatures=[],tunnelCreatures=[],time={value:0};
   const whaleWater=createWhaleWaterEffects(time),effectsGroup=whaleWater.group;
   const tunnelGroup=new THREE.Group();tunnelGroup.name='tunnel-ocean-gardens';tunnelGroup.visible=false;let inTunnelGarden=false;
   const deepGroup=new THREE.Group(),deepCreatures=[];deepGroup.name='deep-sea-scenery';deepGroup.visible=false;
-  const sand={tex:'sand',tint:0xb1b99c},rock={tex:'stone',tint:0x6f9287};
-  buildDeepSea(B,deepBatch,deepGroup);
+  const terrain=createSeabed();
+  buildDeepSea(deepBatch);
   const deepMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
   deepMaterial.onBeforeCompile=shader=>{shader.uniforms.uOceanTime=time;
     shader.vertexShader='attribute float swimWeight; attribute vec3 swimAxis; uniform float uOceanTime;'+String.fromCharCode(10)+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>'+String.fromCharCode(10)+'transformed+=swimAxis*swimWeight*sin(uOceanTime*3.+position.z*2.);');
   };
   const reefs=[[-49,16],[-49,-9],[-17,41],[17,42]];
-  for(const [x,z] of reefs){
-    B.box(x,-9.5,z,14,2.5,12,rock);B.box(x,-7,z,11,1.5,10,rock);B.box(x,-5.5,z,9,1,8,rock);B.box(x,-4.5,z,8.6,.2,7.6,sand);
-  }
   const cache=new Map();let tunnelSchool;
   let whaleCount=0;
   function animal(kind,x,y,z,rx,rz,speed,phase=0){
@@ -31,10 +28,11 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
       const phase=(whaleCount++%4)*2.25;mesh.userData.whalePhase=phase;
       whaleWater.attach(mesh,phase);
     }
-    if(y<-30){mesh.material=deepMaterial;deepCreatures.push(mesh);deepGroup.add(mesh);}else if(inTunnelGarden){mesh.material=deepMaterial;tunnelCreatures.push(mesh);tunnelGroup.add(mesh);}else creatures.push(mesh);
+    if(inTunnelGarden){mesh.material=deepMaterial;tunnelCreatures.push(mesh);tunnelGroup.add(mesh);}else if(y<-30){mesh.material=deepMaterial;deepCreatures.push(mesh);deepGroup.add(mesh);}else creatures.push(mesh);
+    return mesh;
   }
-  for(const [x,z] of reefs)animal('reef',x,-4.28,z,0,0,0);
-  const shoreCorals=new THREE.Mesh(createOceanModel('shore-corals'));
+  for(const [x,z] of reefs)animal('reef',x,seabedAt(x,z)-.45,z,0,0,0);
+  const shoreCorals=new THREE.Mesh(createOceanModel('shore-corals',{groundAt:seabedAt}));
   shoreCorals.name='ocean-shore-corals';shoreCorals.userData={kind:'reef'};
   shoreCorals.updateMatrixWorld(true);creatures.push(shoreCorals);
   // Keep nearshore whales close to the waterline so their backs and breaches
@@ -43,9 +41,9 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
   animal('shark',-65,-3.4,-5,9,15,.12);animal('shark',26,-3,61,11,8,.1,2);
   for(let i=0;i<3;i++)animal('dolphin',4,-1.8,48,12,5,.18,i*.7);
   for(const [i,x]of [-45,-12,23].entries())animal('fish-school',x,-2.6,i===0?17:39,3,2,.22,i);
-  animal('crab',-51,-4.27,16,.45,.35,.12);animal('crab',19.3,-4.27,40.3,.4,.3,.08,1);
-  animal('shrimp',-49,-3.9,-9,1,.7,.25);animal('shrimp',-17,-3.9,41,1,.8,.2,2);
-  animal('octopus',-47.2,-4.25,17.6,.25,.3,.1);animal('octopus',14.8,-4.25,43.4,.3,.25,.08,2);
+  animal('crab',-51,seabedAt(-51,16)+.2,16,.45,.35,.12);animal('crab',19.3,seabedAt(19.3,40.3)+.2,40.3,.4,.3,.08,1);
+  animal('shrimp',-49,seabedAt(-49,-9)+.5,-9,1,.7,.25);animal('shrimp',-17,seabedAt(-17,41)+.5,41,1,.8,.2,2);
+  animal('octopus',-47.2,seabedAt(-47.2,17.6)+.25,17.6,.25,.3,.1);animal('octopus',14.8,seabedAt(14.8,43.4)+.25,43.4,.3,.25,.08,2);
   animal('turtle',-40,-2.5,38,4,3,.08);
   // Gardens stay outside the glazed tube and draw only near the underwater camera.
   if(tunnelPath){
@@ -53,8 +51,8 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
     for(const [i,s]of [65,110,155,200,235].entries()){
       const p=tunnelPath.sample(s,{}),side=i%2?-1:1,offset=side*12;
       const x=p.x+Math.cos(p.heading)*offset,z=p.z-Math.sin(p.heading)*offset;
-      B.box(x,-23,z,8,Math.max(1,p.y+20.9),7,rock);B.box(x,p.y-2.1,z,7.2,1.1,6.2,rock);B.box(x,p.y-1,z,7.1,.18,6.1,sand);
-      animal('reef',x,p.y-.82,z,0,0,0);
+      const reef=animal('reef',x,seabedAt(x,z)-.65,z,0,0,0);
+      reef.scale.set(1,2.2,1);
       if(i%2===0)animal('fish-school',x,p.y+2.4,z,2,1.5,.16,i);
       if(i===1)animal('turtle',x,p.y+3.4,z,2,2,.08);
     }
@@ -86,6 +84,7 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
   const allCreatures=[...creatures,...deepCreatures,...tunnelCreatures];
   const tunnelView={};
   function update(dt,carrier,camera){
+    if(camera)terrain.visible=camera.position.y<-1.08;
     // Follow the actual tunnel path so the glass scenery is also visible near
     // both portals, instead of relying on a rectangular world-space cutoff.
     if(camera&&tunnelPath){
@@ -122,5 +121,5 @@ export function createOceanLife(B,deepBatch,tunnelPath=null){
     };
     material.needsUpdate=true;
   }
-  update(0);return{creatures,deepGroup,tunnelGroup,effectsGroup,time,update,configureSea,species:[...cache.keys()].filter(kind=>kind!=='reef')};
+  update(0);return{creatures,deepGroup,tunnelGroup,effectsGroup,terrain,time,update,configureSea,species:[...cache.keys()].filter(kind=>kind!=='reef')};
 }
