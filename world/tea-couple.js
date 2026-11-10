@@ -108,7 +108,7 @@ function makePerson(scene, nav, woman) {
   }
 
   const arms = [addArm(-1), addArm(1)], legs = [addLeg(-1), addLeg(1)];
-  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ vertexColors: true }), parts.length);
+  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(), parts.length);
   mesh.name = woman ? 'tea-couple-woman' : 'tea-couple-man';
   mesh.castShadow = false; mesh.receiveShadow = false;
   for (let i = 0; i < parts.length; i++) mesh.setColorAt(i, new THREE.Color(parts[i].color));
@@ -309,7 +309,7 @@ export function createTeaCouple(scene, nav) {
   };
   cup('maleCup', 'maleLiquid', .103); cup('femaleCup', 'femaleLiquid', .103);
   addTeaBox('stream', -.30, 1.20, -.43, .035, .18, .035, 0xc58446);
-  const teaMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ vertexColors: true }), teaParts.length);
+  const teaMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(), teaParts.length);
   teaMesh.name = 'tea-room-kettle-and-cups'; teaMesh.castShadow = false; teaMesh.receiveShadow = false;
   for (let i = 0; i < teaParts.length; i++) teaMesh.setColorAt(i, new THREE.Color(teaColors[i]));
   const teaRoot = new THREE.Group(); teaRoot.name = 'tea-room-teaware'; teaRoot.position.set(TABLE.x, FLOOR, TABLE.z); teaRoot.add(teaMesh); scene.add(teaRoot);
