@@ -238,10 +238,10 @@ function shadeHex(hex, amount) {
 export function paintCourt(ctx, w, h, { court, rim, origin }) {
   const S = 32;
   const X = x => Math.round((x - origin.x) * S), Z = z => Math.round((z - origin.z) * S);
-  ctx.fillStyle = '#25282b';
+  ctx.fillStyle = '#514660';
   ctx.fillRect(0, 0, w, h);
-  // One quiet wood surface; the court markings carry the detail.
-  ctx.fillStyle = '#c6a071';
+  // A pale lavender court keeps the white lines legible against plum borders.
+  ctx.fillStyle = '#aa9cbe';
   ctx.fillRect(X(court.x0), Z(court.z0), (court.x1 - court.x0) * S, (court.z1 - court.z0) * S);
   // Grain is painted into this single surface, without separate plank meshes.
   const random = rng(5);
@@ -250,7 +250,7 @@ export function paintCourt(ctx, w, h, { court, rim, origin }) {
   for (let i = 0; i < 360; i++) {
     const x = X(court.x0) + random() * (court.x1 - court.x0) * S;
     const z = Z(court.z0) + random() * (court.z1 - court.z0) * S;
-    ctx.fillStyle = random() > .5 ? 'rgba(85,55,31,.06)' : 'rgba(248,230,184,.07)';
+    ctx.fillStyle = random() > .5 ? 'rgba(61,48,77,.09)' : 'rgba(246,237,255,.11)';
     ctx.fillRect(x, z, 1, 12 + random() * 80);
   }
   ctx.restore();
@@ -258,7 +258,7 @@ export function paintCourt(ctx, w, h, { court, rim, origin }) {
   const line = '#fbfaf6', paint = '#b92d28';
   const lw = 2;
   const cz = rim.z;
-  // Red key, warm maple and a dark surround, matching the supplied court.
+  // Keep the red key clear against the lavender playing surface.
   ctx.fillStyle = paint;
   ctx.fillRect(X(court.x0), Z(cz - 2.45), Math.round(5.8 * S), Math.round(4.9 * S));
   const ring = (x, z, radius, from, to, filled = false) => {

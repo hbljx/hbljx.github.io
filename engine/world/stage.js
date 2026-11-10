@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import * as L from '@world/layout.js';
 import { rng } from './textures.js';
+import { lunarSky, locateForLunarSky } from './lunar.js';
 
 export const LAYER_SHADOW_ONLY = 1;
 
@@ -114,7 +115,8 @@ const SKY_VERTEX = /* glsl */`
 `;
 
 const SKY_FRAGMENT = /* glsl */`
-  uniform vec3 uTop, uHorizon, uBottom, uSunDir, uSunColor, uFogColor, uCloudLit, uCloudShade, uCamPos;
+  uniform vec3 uTop, uHorizon, uBottom, uSunDir, uMoonDir, uSunColor, uFogColor, uCloudLit, uCloudShade, uCamPos;
+  uniform float uMoonIllumination, uMoonBrightAngle;
   uniform float uNight, uCloud, uFlash, uCover;
   uniform vec2 uCloudShift;
   uniform sampler2D uClouds;
@@ -138,10 +140,25 @@ const SKY_FRAGMENT = /* glsl */`
     float facing = dot(d, normalize(uSunDir));
     float rim = cos(mix(0.05, 0.04, uNight));
     float aa = max(0.5 * fwidth(facing), 0.00001);
-    float disc = smoothstep(rim - aa, rim + aa, facing);
+    float sunDisc = smoothstep(rim - aa, rim + aa, facing);
     float halo = pow(max(facing, 0.0), mix(24.0, 60.0, uNight));
     col += uSunColor * (halo * mix(0.35, 0.25, uNight)) * (1.0-uCloud);
-    col = mix(col, uSunColor * mix(1.6, 1.25, uNight), disc * clear);
+    col = mix(col, uSunColor * mix(1.6, 1.25, uNight), sunDisc * clear);
+    vec3 moonDir = normalize(uMoonDir);
+    float moonFacing = dot(d, moonDir);
+    float moonRadius = cos(0.0093);
+    float moonDisc = smoothstep(moonRadius - aa, moonRadius + aa, moonFacing);
+    vec3 moonRight = normalize(cross(vec3(0.0, 1.0, 0.0), moonDir));
+    if (length(moonRight) < 0.01) moonRight = vec3(1.0, 0.0, 0.0);
+    vec3 moonUp = normalize(cross(moonDir, moonRight));
+    vec2 moonXY = vec2(dot(d, moonRight), dot(d, moonUp)) / 0.0093;
+    float moonZ = sqrt(max(0.0, 1.0 - dot(moonXY, moonXY)));
+    float phaseSide = 2.0 * uMoonIllumination - 1.0;
+    float phaseEdge = 2.0 * sqrt(max(0.0, uMoonIllumination * (1.0-uMoonIllumination)));
+    vec3 moonLight = vec3(cos(uMoonBrightAngle) * phaseEdge, sin(uMoonBrightAngle) * phaseEdge, phaseSide);
+    float litMoon = smoothstep(-0.025, 0.025, dot(vec3(moonXY, moonZ), moonLight));
+    vec3 moonColor = mix(vec3(0.20, 0.24, 0.28), vec3(0.92, 0.91, 0.82), litMoon);
+    col = mix(col, moonColor, moonDisc * clear * uNight);
     if (uNight > 0.0) {
       vec3 field = d * 260.0;
       float point = 1.0 - smoothstep(0.32, 0.5, length(fract(field) - 0.5));
@@ -189,7 +206,8 @@ export function createStage(container, quality) {
       fog: false,
       uniforms: {
         uTop: { value: new THREE.Color() }, uHorizon: { value: new THREE.Color() }, uBottom: { value: new THREE.Color() },
-        uSunDir: { value: new THREE.Vector3() }, uSunColor: { value: new THREE.Color() }, uNight: { value: 0 }, uCloud: { value: 0 }, uFlash: { value: 0 },
+        uSunDir: { value: new THREE.Vector3() }, uMoonDir: { value: new THREE.Vector3(0, 0.7, -0.7) }, uMoonIllumination: { value: 1 }, uMoonBrightAngle: { value: 0 },
+        uSunColor: { value: new THREE.Color() }, uNight: { value: 0 }, uCloud: { value: 0 }, uFlash: { value: 0 },
         uFogColor: { value: new THREE.Color() }, uCloudLit: { value: new THREE.Color() }, uCloudShade: { value: new THREE.Color() },
         uCamPos: { value: new THREE.Vector3() }, uCover: { value: 0 }, uCloudShift: { value: new THREE.Vector2() }, uClouds: { value: cloudTexture() },
       },
@@ -223,6 +241,16 @@ export function createStage(container, quality) {
   // in about two seconds, so a change in the live weather or a preview rolls in rather
   // than cuts. The sun's direction moves at once (its shadow is baked once).
   let mood = MOODS.day, moodName = 'day', practicalLights = [], weather = { ...CALM }, clearance = 0, aerialHeight = 0;
+  let lunarLatitude = 0, lunarLongitude = 0, lunarMinute = -1;
+  const refreshLunarSky = now => {
+    const u = sky.material.uniforms, phase = lunarSky(now, lunarLatitude, lunarLongitude);
+    u.uMoonDir.value.set(phase.dir.x, phase.dir.y, phase.dir.z).normalize();
+    u.uMoonIllumination.value = phase.illumination;
+    u.uMoonBrightAngle.value = phase.brightAngle;
+    lunarMinute = Math.floor(now.getTime() / 60000);
+  };
+  refreshLunarSky(new Date());
+  locateForLunarSky((latitude, longitude) => { lunarLatitude = latitude; lunarLongitude = longitude; lunarMinute = -1; });
   let baseHemi = 1, flash = 0, settling = false, shadowDirty = false, sunSeen = true;
   // With the camera in the pool, the fog is the water: { color, near, far }.
   let submerged = null;
@@ -277,9 +305,8 @@ export function createStage(container, quality) {
     const lit = now.sunI > 0.004;
     if (sun.visible !== lit) { sun.visible = lit; if (lit) shadowDirty = true; }
     renderer.toneMappingExposure = now.exposure;
-    // The camera draws only as far as anyone can see through the weather
-    // (under water, no further than the pool's walls).
-    const far = submerged ? 40 : Math.max(90, scene.fog.far * 1.04);
+    // The camera draws to the active water visibility range when submerged.
+    const far = submerged ? Math.max(40, submerged.far * 1.15) : Math.max(90, scene.fog.far * 1.04);
     if (Math.abs(camera.far - far) > 0.5) { camera.far = far; camera.updateProjectionMatrix(); }
   }
 
@@ -350,6 +377,8 @@ export function createStage(container, quality) {
   function render() {
     sky.position.copy(camera.position);
     sky.material.uniforms.uCamPos.value.copy(camera.position);
+    const now = new Date();
+    if (Math.floor(now.getTime() / 60000) !== lunarMinute) refreshLunarSky(now);
     // three.js gathers a frame's lights after drawing its shadows, so a shadow
     // pass in the frame the sun returns would compile shaders for a sunless
     // sky. Re-bake one frame later; the sun is still near zero by then.

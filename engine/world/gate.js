@@ -1,8 +1,8 @@
 // The portal's look: a violet vortex drawn in block texels, two soft arms
-// turning down a funnel behind its face, a flowing rim, a soft halo and
-// the light it casts on the grass. It livens up as you come close. A
-// shallow lens of energy tapers into its edge; there is no straight side
-// wall. It faces +z; portal.js places and drives it. Two draw calls: the
+// turning down a funnel behind its face, a flowing rim, a soft halo, animated
+// floor rings and the light it casts on the grass. It livens up as you come
+// close. A shallow lens of energy tapers into its edge; there is no straight
+// side wall. It faces +z; portal.js places and drives it. Two draw calls: the
 // vortex and its glow.
 import * as THREE from 'three';
 
@@ -31,6 +31,14 @@ const LOOK = `
     // to lead, rather than a white spot painted on a solid object.
     float ripple = pow(0.5 + 0.5 * sin(r * 35.0 + log(max(r, 0.055)) * 3.0 + uTime * 1.9), 8.0);
     col += uB * ripple * 0.1 * (1.0 - smoothstep(0.25, 1.0, r));
+    // Fast, narrow currents cut across the slower spiral. Their brightness
+    // breathes, so the face reads as a live energy field instead of a texture
+    // being spun in place.
+    float bands = pow(0.5 + 0.5 * sin(r * 34.0 - uTime * 3.2 + sin(a * 3.0 - uSpin)), 11.0);
+    float filaments = pow(max(0.0, sin(a * 7.0 - r * 25.0 + uTime * 2.7 + sin(a * 3.0 + uSpin))), 14.0);
+    col += mix(uC, uArc, 0.7) * (bands * 0.2 + filaments * 0.3) * (0.55 + 0.35 * uNear + 0.8 * uCharge);
+    float core = exp(-r * r * 42.0) * (0.5 + 0.5 * sin(uTime * 3.4 - uSpin * 1.7));
+    col = mix(col, uWhite, core * (0.14 + 0.55 * uCharge));
     col = mix(uA * 0.45, col, smoothstep(0.04, 0.25, r));
     col = mix(col, uWhite, arms * (1.0 - smoothstep(0.1, 0.4, r)) * uCharge * 0.45);
     return col;
@@ -64,6 +72,7 @@ vec3 cameraLocal() {
 const GLOW_VERTEX = `
 #define OY ${OY}
 #define BACK 0.9
+uniform float uTime, uCharge;
 attribute float aKind;
 varying float vKind;
 varying vec3 vLocal, vCamera;
@@ -83,6 +92,15 @@ void main() {
     vec3 view = toEye / far, right = cross(vec3(0.0, 1.0, 0.0), view);
     right = dot(right, right) < 1e-6 ? vec3(1.0, 0.0, 0.0) : normalize(right);
     local = centre - view * BACK + (right * position.x + cross(view, right) * position.y) * (far + BACK) / max(far - BACK, 0.5);
+  } else if (aKind > 1.5) {
+    // The two floor rings counter-rotate and breathe outwards as the gate
+    // charges. They share the existing glow draw call.
+    float outer = aKind > 2.5 ? 1.0 : 0.0;
+    float turn = uTime * mix(0.2, -0.13, outer);
+    float pulse = 1.0 + 0.025 * sin(uTime * 2.4 + outer * 2.1) + 0.055 * uCharge;
+    local.xz *= pulse;
+    local.xz = mat2(cos(turn), sin(turn), -sin(turn), cos(turn)) * local.xz;
+    local.y += 0.012 * sin(uTime * 2.0 + outer * 1.6);
   }
   vLocal = local;
   vKind = aKind;
@@ -151,7 +169,7 @@ export function createGate() {
     uPreview: { value: null }, uFit: { value: new THREE.Vector4(1, 1, 0, 0) },
     uA: { value: color(COLORS.a) }, uB: { value: color(COLORS.b) }, uC: { value: color(COLORS.c) },
     uWhite: { value: color(COLORS.white) }, uRim: { value: color(COLORS.rim) },
-    uHalo: { value: color(COLORS.halo) }, uGround: { value: color(COLORS.ground) },
+    uHalo: { value: color(COLORS.halo) }, uGround: { value: color(COLORS.ground) }, uArc: { value: color('#68edff') },
   };
   const group = new THREE.Group();
   const top = OY + RY;
@@ -162,7 +180,7 @@ export function createGate() {
   const vortex = new THREE.Mesh(ovalLens(), new THREE.ShaderMaterial({
     uniforms, fog: true, side: THREE.DoubleSide, vertexShader: VORTEX_VERTEX,
     fragmentShader: `${HEAD}
-      uniform vec3 uA, uB, uC, uWhite, uRim;
+      uniform vec3 uA, uB, uC, uWhite, uRim, uArc;
       uniform float uShow;
       uniform sampler2D uPreview;
       uniform vec4 uFit;
@@ -200,8 +218,11 @@ export function createGate() {
           float current = 0.55 + 0.2 * sin(angle * 5.0 - uFlow);
           float streak = smoothstep(0.65, 0.98, sin(angle * 9.0 + uFlow * 2.0))
             * (0.55 + 0.45 * sin(angle * 3.0 - uFlow));
+          float arc = smoothstep(0.78, 0.99, sin(angle * 17.0 - uFlow * 2.8 + sin(angle * 4.0 + uTime) * 1.4));
+          arc *= 0.5 + 0.5 * sin(angle * 5.0 - uTime * 2.0);
           col = mix(col, uRim, rim * current);
           col = mix(col, uWhite, rim * streak * 0.8);
+          col = mix(col, uArc, rim * arc * (0.55 + 0.35 * uNear + 0.7 * uCharge));
         }
         col *= 1.0 + 0.1 * uNear + 0.25 * uCharge;
         gl_FragColor = vec4(col, 1.0);
@@ -224,6 +245,16 @@ export function createGate() {
   const [hx, hy] = HALO;
   quad([[-hx, -hy, 0], [hx, -hy, 0], [hx, hy, 0], [-hx, hy, 0]], 0);
   quad([[-1.6, 0.03, 2], [1.6, 0.03, 2], [1.6, 0.03, -1.2], [-1.6, 0.03, -1.2]], 1);
+  const ring = (radius, width, k) => {
+    const segments = 128;
+    for (let i = 0; i < segments; i++) {
+      const a = i / segments * Math.PI * 2, b = (i + 1) / segments * Math.PI * 2;
+      const point = (r, angle) => [Math.cos(angle) * r, 0.025, Math.sin(angle) * r];
+      quad([point(radius - width, a), point(radius + width, a), point(radius + width, b), point(radius - width, b)], k);
+    }
+  };
+  ring(1.12, 0.035, 2);
+  ring(2.08, 0.045, 3);
   const glowGeometry = new THREE.BufferGeometry();
   glowGeometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
   glowGeometry.setAttribute('aKind', new THREE.Float32BufferAttribute(kind, 1));
@@ -233,7 +264,7 @@ export function createGate() {
     uniforms, fog: true, side: THREE.DoubleSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     vertexShader: GLOW_VERTEX,
     fragmentShader: `${HEAD}
-      uniform vec3 uHalo, uGround, uWhite;
+      uniform vec3 uHalo, uGround, uWhite, uArc;
       varying vec3 vLocal, vCamera; varying float vKind;
       #include <fog_pars_fragment>
       void main() {
@@ -273,7 +304,8 @@ export function createGate() {
             * (1.0 - smoothstep(0.007, 0.024, abs(d - (0.045 + life * 0.31))));
           spark *= smoothstep(0.0, 0.2, life) * (1.0 - smoothstep(0.45, 1.0, life));
           col += mix(uHalo, uWhite, seed) * spark * smoothstep(0.05, 0.4, vLocal.y) * (0.45 + 0.25 * uNear);
-        } else {
+          col += uArc * spark * smoothstep(0.15, 0.5, vLocal.y) * (0.22 + 0.35 * uCharge);
+        } else if (vKind < 1.5) {
           // Light spilling onto the grass from the foot of the oval: brightest
           // where it meets the ground, fading unevenly texel by texel, no edge.
           vec2 cell = floor(vLocal.xz / CELL), g = (cell + 0.5) * CELL;
@@ -282,6 +314,16 @@ export function createGate() {
           float spill = exp(-across * across - out_ * out_);
           float shimmer = 0.9 + 0.1 * sin(abs(g.y) * 9.0 - uFlow * 2.0 + abs(g.x) * 3.0);
           col = uGround * spill * shimmer * mix(0.7, 1.15, hash(cell)) * (0.42 * (1.0 + 0.4 * uNear) + 0.6 * uCharge);
+        } else {
+          float outer = vKind > 2.5 ? 1.0 : 0.0;
+          float radius = length(vLocal.xz);
+          float angle = atan(vLocal.z, vLocal.x);
+          float dash = sin(angle * mix(18.0, 28.0, outer) + uTime * mix(-3.0, 2.0, outer));
+          float traveling = 0.55 + 0.45 * sin(angle * 3.0 - uTime * 2.2 + outer * 1.8);
+          float sparks = pow(max(0.0, sin(angle * 41.0 - uTime * 4.0 + outer)), 24.0);
+          float fade = 1.0 - smoothstep(1.2, 2.55, radius);
+          float energy = 0.38 + 0.28 * smoothstep(0.72, 0.98, dash) * traveling + sparks * 0.3;
+          col = mix(uHalo, uArc, 0.68) * energy * fade * (0.55 + 0.65 * uNear + uCharge);
         }
         #ifdef USE_FOG
           #ifdef FOG_EXP2

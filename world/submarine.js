@@ -343,10 +343,12 @@ export function createDive({ world, player, stage }) {
   const anchor = () => player.anchor(mesh.position.x, mesh.position.y + SUBMARINE_SCALE, mesh.position.z, mesh.rotation.y);
   function takeOver() { returnDistance = -1; route = []; mode = 'manual'; patrolling = false; exitPending = false; message = '手动航行'; }
   function leaveBasin() {
-    // Use the submerged harbor corridor when starting or interrupting a route.
-    const p = mesh.position, y = -18.5, z = Math.max(p.z, 260);
+    // Reach a fixed deep-water ascent point before surfacing. Near the berth,
+    // this shifts the vertical leg west of the shallow coastal shelf; farther
+    // offshore it keeps the existing deeper x-coordinate.
+    const p = mesh.position, y = -18.5, z = Math.max(p.z, 260), x = Math.min(p.x, HOME.x - 55);
     return [{ x: p.x, y, z: p.z, yaw: mesh.rotation.y },
-      { x: p.x, y, z, yaw: mesh.rotation.y }, { x: p.x, y: 0, z, yaw: 0 }];
+      { x: p.x, y, z, yaw: mesh.rotation.y }, { x, y, z, yaw: 0 }, { x, y: 0, z, yaw: 0 }];
   }
   function returnHome(leaving = false) {
     exitPending ||= leaving;

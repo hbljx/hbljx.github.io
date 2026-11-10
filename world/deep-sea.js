@@ -169,9 +169,9 @@ export function installDeepSeaView(stage, isActive, scenery) {
     if (!isActive() || camera !== stage.camera || camera.position.y >= -1.2) return;
     saved = state; saved.background = scene.background; saved.near = scene.fog.near; saved.far = scene.fog.far;
     saved.cameraFar = camera.far; saved.sky = stage.sky.visible; saved.hemi = stage.hemi.intensity; savedColor.copy(scene.fog.color);
-    scene.background = water; scene.fog.color.copy(water); scene.fog.near = 160; scene.fog.far = 720;
+    scene.background = water; scene.fog.color.copy(water); scene.fog.near = 220; scene.fog.far = 1200;
     stage.sky.visible = false; stage.hemi.intensity = Math.max(1.8, saved.hemi);
-    camera.far = 800; camera.updateProjectionMatrix();
+    camera.far = 1350; camera.updateProjectionMatrix();
   };
   scene.onAfterRender = function(renderer, current, camera) {
     if (saved && camera === stage.camera) {

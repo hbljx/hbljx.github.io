@@ -165,9 +165,8 @@ export function furnish({ layer, additionalDoors = [] }) {
   surfaces.scoreboard = { position: [-19.79, 5.424, clockZ], rotation: Math.PI / 2, width: 3.96, height: 1.848 };
   hot('court', (COURT.x0 + COURT.x1) / 2, 0, RIM.z, COURT.x1 - COURT.x0, 0.1, COURT.z1 - COURT.z0);
 
-  // A distinct rubber training zone: pull-ups, free weights, cable machine,
-  // treadmill and an exercise bike, all static instances in the same batch.
-  B.box(-12.15, 0, 13.7, 14.4, 0.025, 3.6, L.paint(0x383e3d));
+  // Dusty plum rubber marks the training zone beneath the exercise equipment.
+  B.box(-12.15, 0, 13.7, 14.4, 0.025, 3.6, L.paint(0x786987));
   const frame = L.paint(0x747d80), pad = L.paint(0x242a2d);
   for (const x of [-19.3, -17.8]) B.box(x, 0, 13.8, 0.09, 2.4, 0.09, frame);
   B.box(-18.55, 2.35, 13.8, 1.6, 0.07, 0.07, L.steel);

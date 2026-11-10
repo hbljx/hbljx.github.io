@@ -261,7 +261,7 @@ async function boot() {
     else if (kind === 'exhale') { pool.exhale(x, y, z); if (pool.submerged) sound.play('bubbles'); }
   }
   const sea = world.seaSwimming && { ...world.seaSwimming, water: world.coast.sea.position.y };
-  const seaFog = sea && { color: new THREE.Color(0x245968), near: 0, far: 36 };
+  const seaFog = sea && { color: new THREE.Color(0x245968), near: 12, far: 110 };
   const player = createPlayer({ avatar, nav, grid: world.grid, ground: world.ground, sea, onWater });
   stage.scene.add(player.web);
   const rig = createRig(stage.camera, world);
