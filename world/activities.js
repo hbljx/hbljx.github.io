@@ -39,7 +39,7 @@ export const ACTIVITY_SPOTS = [
   {id:'roadster',title:'劳斯莱斯 · 白色敞篷跑车',at:[24.2,-17],floor:0,radius:1.2},
   { id: 'carrier', title: '航母驾驶舱 · 海上巡航', at: [CARRIER_HOME.x + 4.65, CARRIER_HOME.z + 5.1], floor: 3.4, radius: 1.6 },
   { id: 'submarine', title: '领海一号 · 核潜艇', at: [SUBMARINE_HOME.x, SUBMARINE_HOME.z - 10 * SUBMARINE_SCALE], floor: 4.4 * SUBMARINE_SCALE, radius: 2.2 * SUBMARINE_SCALE },
-  { id: 'tea', title: '三楼茶室 · 泡茶', at: [-11, 2], floor: 11, radius: 1.5, anchor: [-11, 11, .45], yaw: Math.PI, view: [-6.3, 13.8, 3.8], look: [-11, 12, -1.5] },
+  { id: 'tea', title: '三楼茶室 · 泡茶', at: [-11, 2], floor: 11, radius: 1.5, anchor: [-8.3, 11, -1.5], yaw: -Math.PI / 2, view: [-6.3, 13.8, 3.8], look: [-11, 12, -1.5] },
   { id: 'airplane', title: '领地飞机 · 驾驶飞机', at: [12, 4.2], floor: 11, radius: 1.6 },
   { id: 'basketball', title: '篮球场 · 投篮', at: [-12, 4], floor: 0, radius: 3, view: [-8, 6, 14], look: [-13.5, 1.5, 4] },
   { id: 'sleep', title: '卧室 · 睡觉', at: [BED.x + 2.2, BED.z + .35], floor: BED.y, radius: 2, anchor: [BED.x, BED.y, BED.z + .35], yaw: 0, view: [BED.x + 4, BED.y + 4, BED.z + 3.65], look: [BED.x, BED.y + .8, BED.z + .15] },

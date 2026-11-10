@@ -83,9 +83,6 @@ export function buildThirdFloor({ grid, layer }) {
   B.box(-11, 11.77, -1.5, 3.5, .16, 1.7, wood); obstacle(-11, -1.5, 3.5, 1.7);
   for (const x of [-12.35, -9.65]) for (const z of [-2.05, -.95]) B.box(x, 11, z, .14, .77, .14, dark);
   B.box(-11, 11.93, -1.5, 1.5, .07, .85, dark);
-  B.box(-11.3, 12, -1.5, .38, .3, .34, china); B.box(-11.3, 12.3, -1.5, .42, .05, .38, china);
-  B.box(-11.3, 12.35, -1.5, .1, .06, .1, dark); B.box(-11.03, 12.12, -1.5, .26, .09, .1, china, { rz: -.3 });
-  for (const x of [-10.65, -10.25]) B.box(x, 12, -1.5, .18, .16, .18, china);
   const seatData = [[-11,.45,Math.PI],[-11,-3.45,0],[-13.7,-1.5,Math.PI/2],[-8.3,-1.5,-Math.PI/2]];
   const seats = seatData.map(([x,z,yaw],i)=>{
     B.at(x,11,z,yaw,()=>{

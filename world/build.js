@@ -24,6 +24,7 @@ import { flattenGlazing, flattenBatchGlazing } from './glazing.js';
 import { buildSeaTransit } from './sea-transit.js';
 import { seabedAt } from './deep-sea.js';
 import { buildOtherContinent } from './other-continent.js';
+import { createTeaCouple } from './tea-couple.js';
 
 export function build({ grid, layer, materials, stage }) {
   // Flat glass panes need one two-sided pass rather than separate front/back
@@ -122,6 +123,7 @@ export function setup(app) {
   world.carrier.crew.connectActors(app.nav);
   world.submarine.crew.connectActors(app.nav);
   const activities = createActivities(app);
+  const teaCouple = createTeaCouple(world.groups.roof, app.nav);
   const household = createHousehold(app,activities);
   const doorActors = [app.player, household.woman, ...household.parents.actors];
   return {
@@ -140,6 +142,7 @@ export function setup(app) {
     update(dt) {
       world.outer.update(dt, stage.camera);
       activities.update(dt);
+      teaCouple.update(dt);
       household.update(dt);
       world.animated.doors.update(dt, app.nav, doorActors);
       world.carrier.updateCabin(app.player,stage.camera);
