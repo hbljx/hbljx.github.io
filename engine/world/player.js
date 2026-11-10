@@ -35,12 +35,14 @@ const EXIT = L.EXIT || (HOUSE && { x: (HOUSE.x0 + HOUSE.x1) / 2, z: HOUSE.z1 + 2
 const SWIM = 1.7, SWIM_FAST = 2.9, RISE = 1.5, SINK = 1.6, FLOAT = 0.5, EDGE = 0.4, WATER = POOL ? POOL.water : -1, PIVOT = SWIM_PIVOT;
 // At the surface: upright, the chin is at the water; leaning into a stroke,
 // the back comes up to just under it.
-const surfaceLevel = pitch => Math.min(WATER - 0.18, WATER + 0.15 - 0.575 * Math.cos(pitch));
+const surfaceLevel = (pitch, water = WATER) => Math.min(water - 0.18, water + 0.15 - 0.575 * Math.cos(pitch));
 // The lowest the middle can go: lying flat on the floor, or standing on it.
-const bedLevel = pitch => POOL.bed + 0.24 + 0.76 * Math.pow(Math.abs(Math.cos(pitch)), 1.3);
+const bedLevel = (pitch, bed) => bed + 0.24 + 0.76 * Math.pow(Math.abs(Math.cos(pitch)), 1.3);
+const SEA_STROKES = ['freestyle', 'butterfly', 'backstroke'];
 const smooth = t => t * t * (3 - 2 * t);
+const openWaterPoint = (x, z) => ({ x, z });
 
-export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive, onWater }) {
+export function createPlayer({ avatar, nav, grid = null, ground = null, sea = null, onArrive, onWater }) {
   ground?.setNav(nav);
   const pos = new THREE.Vector3(SPAWN.x, 0, SPAWN.z);
   let heading = SPAWN.heading, y = 0, vy = 0, speed = 0;
@@ -67,7 +69,24 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   // down or up on its own (`dive`, `rise`), or in a dive or a climb (`anim`).
   let swim = null, flewOut = 0;
   const eye = new THREE.Vector3(), mouth = new THREE.Vector3(), bodyTurn = new THREE.Euler(0, 0, 0, 'XYZ'), up = new THREE.Vector3(0, 1, 0);
-  const swimInfo = { x: 0, z: 0, c: 0, speed: 0, surface: false };
+  const swimInfo = { x: 0, z: 0, c: 0, speed: 0, surface: false, ocean: false, water: WATER };
+  let seaStroke = 0;
+
+  function seaAt(x, z) {
+    if (!sea || inPool(x, z)) return false;
+    const bx = Math.floor(x), bz = Math.floor(z), surface = Math.floor(sea.water);
+    return !solidAt(bx, surface, bz) && !solidAt(bx, surface + 1, bz);
+  }
+  function canDropIntoSea(x, z, feet) {
+    return seaAt(x, z) && clearDrop(sea.water, x, z, feet)
+      && (ground?.topAt(x, z, feet)?.y ?? -Infinity) < sea.water
+      && !blocked(x, sea.water - 0.65, z);
+  }
+  function cycleSwimStroke() {
+    if (!swim?.ocean || mode !== 'swim') return false;
+    seaStroke = (seaStroke + 1) % SEA_STROKES.length;
+    return true;
+  }
 
   // One step on foot. Stepping from the house's grid onto something outside
   // it (the pier, a bridge) hands over to that, and back again.
@@ -125,8 +144,8 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     return !!ground?.collides(x, feet, z, mode === 'fly');
   }
   // Is there a clear drop from the feet straight down to `to`?
-  function clearDrop(to) {
-    for (let cy = Math.floor(y - 0.01); cy >= Math.floor(to + 0.01); cy--) if (solidAt(Math.floor(pos.x), cy, Math.floor(pos.z))) return false;
+  function clearDrop(to, x = pos.x, z = pos.z, from = y) {
+    for (let cy = Math.floor(from - 0.01); cy >= Math.floor(to + 0.01); cy--) if (solidAt(Math.floor(x), cy, Math.floor(z))) return false;
     return true;
   }
 
@@ -227,16 +246,17 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
   // Into the water with the body's middle at height c (above the surface the player
   // falls in first, with a splash).
-  function intoWater(c, fall = 0) {
+  function intoWater(c, fall = 0, ocean = false) {
+    const water = ocean ? sea.water : WATER;
     ladder = null; pilot = null; zip = null; web.visible = false; island = null; standing = null;
     mode = 'swim'; velocity.set(0, 0, 0); vy = 0; speed = 0;
-    swim = { c, vx: 0, vy: fall, vz: 0, pitch: 0, roll: 0, lie: 0, rest: false, dive: false, rise: false, still: 0, push: 0, breath: 2.5, anim: null, wet: c < WATER + 0.5 };
+    swim = { c, vx: 0, vy: fall, vz: 0, pitch: 0, roll: 0, lie: 0, rest: false, dive: false, rise: false, still: 0, push: 0, breath: 2.5, anim: null, ocean, water, wet: c < water + 0.5 };
     y = c - PIVOT;
   }
   // Leaving the water any way but climbing out (flying, a web): a splash.
   function leaveWater(power) {
     if (mode !== 'swim') return false;
-    onWater?.('splash', pos.x, WATER, pos.z, power);
+    onWater?.('splash', pos.x, swim.water, pos.z, power, swim.ocean);
     y = swim.c - PIVOT; swim = null;
     return true;
   }
@@ -277,7 +297,10 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     heading = Math.atan2(nx, nz);
   }
   // From the air: straight down into the water where the player is.
-  function dropIn() { intoWater(y + PIVOT, Math.min(-1.5, velocity.y)); swim.wet = false; flewOut = 0; }
+  function dropIn(ocean = false, fall = velocity.y) {
+    intoWater(y + PIVOT, Math.min(-1.5, fall), ocean);
+    swim.wet = false; flewOut = 0;
+  }
   function climbOut(exit, after = null) {
     cancel();
     const depth = Math.max(0, surfaceLevel(0.3) - swim.c);
@@ -305,14 +328,15 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
   function swimTo(x, z) {
     if (mode !== 'swim' || swim.anim) return false;
+    if (swim.ocean && !seaAt(x, z)) return false;
     cancel(); swim.rest = swim.dive = false;
-    path = [inPoolBounds(x, z, swim.c)];
+    path = [swim.ocean ? { x, z } : inPoolBounds(x, z, swim.c)];
     return true;
   }
   // Out of the water towards (x, z): swim to the side nearest the way,
   // climb out, then carry on with `after`.
   function leavePool(x, z, after = null) {
-    if (mode !== 'swim' || swim.anim) return false;
+    if (mode !== 'swim' || swim.anim || swim.ocean) return false;
     const along = (v, lo, hi) => Math.min(hi - 0.5, Math.max(lo + 0.5, v));
     const exits = [exitAt(along(x, POOL.x0, POOL.x1), POOL.z0, 0, -1), exitAt(POOL.x0, along(z, POOL.z0, POOL.z1), -1, 0), exitAt(POOL.x1, along(z, POOL.z0, POOL.z1), 1, 0)].filter(Boolean);
     const cost = e => Math.hypot(e.edge.x - pos.x, e.edge.z - pos.z) + Math.hypot(e.out.x - x, e.out.z - z);
@@ -329,6 +353,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     cancel();
     if (swim.rest || swim.dive) { swim.rest = swim.dive = false; swim.rise = true; return true; }
     swim.dive = true; swim.rise = false;
+    if (swim.ocean) return true;
     // Down into open water, clear of the walls, so there is sky to look up at.
     const to = { x: Math.min(POOL.x1 - 2, Math.max(POOL.x0 + 2, pos.x)), z: Math.min(POOL.z1 - 2.2, Math.max(POOL.z0 + 2.2, pos.z)) };
     if (Math.hypot(to.x - pos.x, to.z - pos.z) > 0.3) path = [to];
@@ -368,8 +393,30 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     y = s.c - PIVOT;
   }
 
+  function stepOntoShore(dx, dz) {
+    const length = Math.hypot(dx, dz);
+    for (const reach of [0.55, 0.85, 1.2, 1.6]) {
+      const x = pos.x + dx / length * reach, z = pos.z + dz / length * reach;
+      const shore = ground?.canStand(x, z, swim.water + 0.65);
+      if (!shore || shore.y < swim.water || shore.y > swim.water + 1.35 || hitsActor(x, shore.y, z)) continue;
+      cancel(); leaveWater(0.4);
+      pos.x = x; pos.z = z; y = level = shore.y;
+      standing = shore; island = shore.site; mode = 'ground';
+      return true;
+    }
+    return false;
+  }
+
+  function seaBed(x, z) { return Math.min(sea.bedAt(x, z), sea.water - 1.5); }
+
+  function swimCollision(x, feet, z) {
+    return swim.ocean
+      ? !seaAt(x, z) || blocked(x, feet, z) || feet + PIVOT < bedLevel(swim.pitch, seaBed(x, z)) - 0.04
+      : hitsActor(x, feet, z);
+  }
+
   function swimming(dt, input, cameraYaw) {
-    const s = swim;
+    const s = swim, water = s.water;
     if (s.anim) return animateSwim(dt);
     // Dropping in from the air: fall until the water takes them.
     if (!s.wet) {
@@ -377,7 +424,11 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       const next = y + s.vy * dt;
       y = limitHeight(next); s.c = y + PIVOT;
       if (y !== next) s.vy = 0;
-      if (s.c < WATER + 0.5) { s.wet = true; onWater?.('splash', pos.x, WATER, pos.z, Math.min(1.2, 0.4 - s.vy / 9)); s.vy *= 0.3; }
+      if (s.c < water + 0.5) {
+        s.wet = true;
+        onWater?.('splash', pos.x, water, pos.z, Math.min(1.2, 0.4 - s.vy / 9), s.ocean);
+        s.vy = s.ocean ? Math.max(-1.8, s.vy * 0.3) : s.vy * 0.3;
+      }
       return;
     }
     let dx = 0, dz = 0;
@@ -398,7 +449,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     s.vx += (dx * top - s.vx) * ease; s.vz += (dz * top - s.vz) * ease;
 
     // Up and down: rising, diving, floating back up, or staying put on the bottom.
-    const surface = surfaceLevel(s.pitch), bed = bedLevel(s.pitch);
+    const surface = surfaceLevel(s.pitch, water), bed = bedLevel(s.pitch, s.ocean ? seaBed(pos.x, pos.z) : POOL.bed);
     const rise = input.up || s.rise ? RISE : input.down || s.dive ? -SINK : !s.rest && s.c < surface - 0.02 ? FLOAT : 0;
     s.vy += (rise - s.vy) * (1 - Math.exp(-dt * 3));
     s.c += s.vy * dt;
@@ -407,19 +458,21 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     // Resting, the player settles onto the floor as the player turns over onto their back.
     else if (s.rest) s.c += (bed - s.c) * (1 - Math.exp(-dt * 1.5));
     const nextY = s.c - PIVOT;
-    y = limitHeight(nextY); s.c = y + PIVOT;
+    y = s.ocean && blocked(pos.x, nextY, pos.z) ? y : limitHeight(nextY); s.c = y + PIVOT;
     if (y !== nextY) s.vy = 0;
     // Still on the bottom for a moment, the player settles there and turns over.
     if (s.c < bed + 0.06 && want < 0.05 && !input.up && !s.rise) { if ((s.still += dt) > 0.5) { s.rest = true; s.dive = false; } }
     else if (!s.rest) s.still = 0;
     s.lie += ((s.rest ? 1 : 0) - s.lie) * (1 - Math.exp(-dt * 1.4));
 
-    let to = inPoolBounds(pos.x + s.vx * dt, pos.z + s.vz * dt, s.c);
-    if (hitsActor(to.x, y, to.z)) {
-      const xOnly = inPoolBounds(pos.x + s.vx * dt, pos.z, s.c);
-      const zOnly = inPoolBounds(pos.x, pos.z + s.vz * dt, s.c);
-      const xMoves = !hitsActor(xOnly.x, y, xOnly.z);
-      const zMoves = !hitsActor(zOnly.x, y, zOnly.z);
+    const swimBounds = s.ocean ? openWaterPoint : inPoolBounds;
+    let to = swimBounds(pos.x + s.vx * dt, pos.z + s.vz * dt, s.c);
+    if (swimCollision(to.x, y, to.z)) {
+      if (s.ocean && manual && s.c > surface - 0.25 && stepOntoShore(dx, dz)) return;
+      const xOnly = swimBounds(pos.x + s.vx * dt, pos.z, s.c);
+      const zOnly = swimBounds(pos.x, pos.z + s.vz * dt, s.c);
+      const xMoves = !swimCollision(xOnly.x, y, xOnly.z);
+      const zMoves = !swimCollision(zOnly.x, y, zOnly.z);
       to = xMoves ? xOnly : zMoves ? zOnly : { x: pos.x, z: pos.z };
       if (!xMoves) s.vx = 0;
       if (!zMoves) s.vz = 0;
@@ -428,7 +481,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     if (Math.abs(to.z - pos.z - s.vz * dt) > 1e-4) s.vz = 0;
     pos.x = to.x; pos.z = to.z;
     // Pushing against a side at the surface climbs out there.
-    if (manual && s.c > surface - 0.25) {
+    if (!s.ocean && manual && s.c > surface - 0.25) {
       const exit = wallExit(dx, dz);
       if (exit && (s.push += dt) > 0.18) { climbOut(exit); y = s.c - PIVOT; return; }
       if (!exit) s.push = 0;
@@ -442,18 +495,19 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       : sp > 0.35 ? Math.PI / 2 - Math.atan2(s.vy, sp) * 0.8
       : s.vy < -0.3 ? Math.PI / 2 + 0.95 : s.vy > 0.3 ? 0.2 : 0.35;
     s.pitch += (pitchGoal - s.pitch) * (1 - Math.exp(-dt * 2.6));
-    s.roll += ((s.rest ? Math.PI : 0) - s.roll) * (1 - Math.exp(-dt * 1.6));
+    const backstroke = s.ocean && atTop && sp > 0.35 && SEA_STROKES[seaStroke] === 'backstroke';
+    s.roll += ((s.rest || backstroke ? Math.PI : 0) - s.roll) * (1 - Math.exp(-dt * (s.ocean ? 4 : 1.6)));
     if (sp > 0.25 && !s.rest) turnTowards(s.vx, s.vz, dt * 0.45);
 
     // Under water, a breath goes out now and then, slowly while lying still.
     y = s.c - PIVOT;
     onBody(eye, 0, 0.575, 0.25);
-    if (eye.y < WATER - 0.05) {
+    if ((!s.ocean || !atTop) && eye.y < water - 0.05) {
       if ((s.breath -= dt) <= 0) {
         // Lying still, the breath shows a little way above the face, rising
         // away from their eyes rather than across them.
         if (s.rest) onBody(mouth, 0, 0.5, 0.6); else onBody(mouth, 0, 0.43, 0.26);
-        onWater?.('exhale', mouth.x, mouth.y, mouth.z);
+        onWater?.('exhale', mouth.x, mouth.y, mouth.z, undefined, s.ocean);
         s.breath = s.rest ? 4.5 + Math.random() * 3 : 2.5 + Math.random() * 2;
       }
     } else s.breath = 1.2;
@@ -513,15 +567,15 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     web.visible = length > 0.05;
   }
 
-  // Ending flight drops the player onto whatever is below if they can stand there.
-  // Over the sea or a roof the player flies to the nearest place to stand and lands:
-  // the closest point of the home island, a floating island or a peak.
+  // Ending flight drops the player onto land or into water below, or finds
+  // a landing when the space directly underneath is obstructed.
   function stopFlying() {
     if (mode !== 'fly') return false;
     // Over the pool, the player simply drops into it.
     if (inPool(pos.x, pos.z)) { dropIn(); return true; }
     const below = floorBelow(pos.x, pos.z, y);
     if (below.landable && clearDrop(below.y)) { mode = 'air'; vy = 0; island = below.island; level = below.y; pilot = null; return true; }
+    if (canDropIntoSea(pos.x, pos.z, y)) { cancel(); dropIn(true); return true; }
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
     const spots = [{ x: clamp(pos.x, ISLAND.x0 + 3, ISLAND.x1 - 3), z: clamp(pos.z, ISLAND.z0 + 3, ISLAND.z1 - 3) }];
     if (ground) spots.push(...ground.spots());
@@ -658,7 +712,20 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
         const next = { x: pos.x + dx / length * step, z: pos.z + dz / length * step };
         if (!hitsActor(next.x, y, next.z)) { pos.x = next.x; pos.z = next.z; }
       }
-      else stepBy(dx / length * step, dz / length * step, path?.[0]);
+      else {
+        if (sea && manual && y < sea.water + 4) {
+          const reach = Math.max(0.7, step);
+          const x = pos.x + dx / length * reach, z = pos.z + dz / length * reach;
+          if (canDropIntoSea(x, z, y) && !blocked(x, y, z) &&
+            (!island || !blocked((x + pos.x) / 2, y, (z + pos.z) / 2))) {
+            pos.x = x; pos.z = z;
+            turnTowards(dx, dz, dt);
+            dropIn(true, vy);
+            return;
+          }
+        }
+        stepBy(dx / length * step, dz / length * step, path?.[0]);
+      }
       turnTowards(dx, dz, dt);
     }
   }
@@ -692,7 +759,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
         if (!pilot.legs.length) {
           const { target, after } = pilot;
           pilot = null;
-          if (target.pool) { velocity.set(0, 0, 0); dropIn(); after?.(); return; }
+          if (target.water) { velocity.set(0, 0, 0); dropIn(target.water === 'sea'); after?.(); return; }
           mode = 'ground'; island = target.island; y = level = target.y; velocity.set(0, 0, 0);
           after?.();
           return;
@@ -710,6 +777,8 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     if (!blocked(nx, y, pos.z)) pos.x = nx; else velocity.x = 0;
     if (!blocked(pos.x, y, nz)) pos.z = nz; else velocity.z = 0;
     const below = floorBelow(pos.x, pos.z, Math.max(y, ny));
+    if (sea && !pilot && flewOut <= 0 && input.down && ny <= sea.water + 0.35
+      && canDropIntoSea(pos.x, pos.z, y)) { dropIn(true); return; }
     const feet = limitHeight(Math.max(ny, below.y));
     if ((ny < below.y && feet === below.y) || !blocked(pos.x, feet, pos.z)) y = feet;
     if (y !== ny) velocity.y = 0;
@@ -757,7 +826,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       const s = swim, sp = Math.hypot(s.vx, s.vz);
       avatar.root.position.set(pos.x, s.c - PIVOT, pos.z); avatar.root.rotation.y = heading;
       avatar.update(dt, s.wet || s.anim ? { speed: 0, fly: -1, swim: { pitch: s.pitch, roll: s.roll, stroke: sp / SWIM, fast: sp > SWIM * 1.15,
-        surface: !s.anim && s.c > surfaceLevel(s.pitch) - 0.15, lie: s.lie, climb: s.anim?.kind === 'out', dive: s.anim?.kind === 'in' } } : { speed: 0, fly: -1, air: true });
+        surface: !s.anim && s.c > surfaceLevel(s.pitch, s.water) - 0.15, style: s.ocean ? SEA_STROKES[seaStroke] : null, lie: s.lie, climb: s.anim?.kind === 'out', dive: s.anim?.kind === 'in' } } : { speed: 0, fly: -1, air: true });
       avatar.blob.visible = false;
       onBody(eye, 0, 0.575, 0.25);
       return;
@@ -772,8 +841,11 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
   }
 
   // Fly to the pool and drop in (from the roof, the mountain, the air).
-  function flyIntoPool(x, z) {
-    const at = inPoolBounds(x, z), target = { x: at.x, z: at.z, y: WATER + 1.4, island: null, pool: true };
+  function flyIntoPool(x, z) { return flyIntoWater(x, z, false); }
+  function flyIntoSea(x, z) { return seaAt(x, z) && flyIntoWater(x, z, true); }
+  function flyIntoWater(x, z, ocean) {
+    const at = ocean ? { x, z } : inPoolBounds(x, z);
+    const target = { ...at, y: (ocean ? sea.water : WATER) + 1.4, island: null, water: ocean ? 'sea' : 'pool' };
     if (mode === 'ground' && !island && inHouse(pos.x, pos.z)) {
       if (!goTo(EXIT.x, EXIT.z)) return false;
       then = () => launch(target, null);
@@ -814,7 +886,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
       }
       const ok = teleport(x, z); heading = angle; place(0); return ok;
     },
-    enterPool, swimTo, leavePool, toggleDive, flyIntoPool,
+    enterPool, swimTo, leavePool, toggleDive, flyIntoPool, flyIntoSea, seaAt, cycleSwimStroke,
     get y() { return y; }, get heading() { return heading; }, get floorY() { return y; },
     get speed() { return speed; }, get running() { return mode === 'ground' && speed > WALK + .15; },
     get moving() { return speed > 0.3 || !!zip || (mode === 'fly' && velocity.lengthSq() > 0.1) || (mode === 'swim' && Math.hypot(swim.vx, swim.vz) > 0.3); },
@@ -824,17 +896,20 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, onArrive
     // Flying themselves to a tapped place, rather than steered by hand.
     get piloting() { return !!pilot; },
     get swimming() { return mode === 'swim'; },
+    get oceanSwimming() { return mode === 'swim' && swim.ocean; },
+    get swimStroke() { return SEA_STROKES[seaStroke]; },
     // Where their eyes are in the water, whether they are under it, and whether
     // the player lies still on the bottom (the camera then looks up through their eyes).
     get eye() { return eye; },
-    get underwater() { return mode === 'swim' && eye.y < WATER; },
+    get underwater() { return mode === 'swim' && eye.y < swim.water; },
     // Heading for the bottom, or lying on it: what the dive button shows.
     get diving() { return mode === 'swim' && (swim.dive || swim.rest); },
-    get gazing() { return mode === 'swim' && swim.rest && swim.lie > 0.9 && !swim.anim; },
+    get gazing() { return mode === 'swim' && !swim.ocean && swim.rest && swim.lie > 0.9 && !swim.anim; },
     get swim() {
       if (mode !== 'swim') return null;
       swimInfo.x = pos.x; swimInfo.z = pos.z; swimInfo.c = swim.c; swimInfo.speed = Math.hypot(swim.vx, swim.vz);
-      swimInfo.surface = swim.wet && !swim.anim && swim.c > surfaceLevel(swim.pitch) - 0.15;
+      swimInfo.surface = swim.wet && !swim.anim && swim.c > surfaceLevel(swim.pitch, swim.water) - 0.15;
+      swimInfo.ocean = swim.ocean; swimInfo.water = swim.water;
       return swimInfo;
     },
   };

@@ -10,6 +10,7 @@ import { createRoadster } from './roadster.js';
 import { buildSharedRooms } from './shared-rooms.js';
 import { buildFloorPlants } from './plants.js';
 import { createIslandDoors } from './doors.js';
+import { HOUSE_COLORS as colors } from './house-palette.js';
 import { HOUSE, COURT, RIM, VERTEC, LOFT, LOFT_STAIR_DOOR, BED, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, STUDIO_WALL_END } from './layout.js';
 
 const L = {
@@ -61,6 +62,8 @@ export function furnish({ layer, additionalDoors = [] }) {
     for (const y of [bottom, ...(height > 5 ? [bottom + height / 2] : []), bottom + height - 0.07]) for(let i=0;i<count;i++)batch.box(-width/2+width*(i+.5)/count,y,0,width/count-.07,.07,.1,L.steel);
   });
   const doors = createIslandDoors(obstacles, additionalDoors);
+  const trim = L.paint(colors.trim), entry = L.paint(colors.ivory);
+  const roomWall = L.paint(colors.lavender), accentWall = L.paint(colors.heather);
 
   // Slim black structure frames the warm wood walls and uninterrupted glazing.
   for (const x of [HOUSE.x0+.5, 10, HOUSE.x1-.5]) {
@@ -97,12 +100,12 @@ export function furnish({ layer, additionalDoors = [] }) {
   // perimeter and mullions as the matching north-side glazing.
   glazing(batches.wallE,HOUSE.x1+.02,(GARAGE.door.z1+HOUSE.z1)/2,HOUSE.z1-GARAGE.door.z1,0,10,Math.PI/2);
   const garageDoorCenter=(GARAGE.door.z0+GARAGE.door.z1)/2,garageDoorWidth=GARAGE.door.z1-GARAGE.door.z0;
-  const garageFrame={tex:'black_metal'};
+  const garageFrame=trim;
   const shutterBottom=4.02,slatPitch=.14,slatCount=6;
   const shutterTop=shutterBottom+slatPitch*slatCount,hoodHeight=.62;
   for(const z of [GARAGE.door.z0+.035,GARAGE.door.z1-.035]) {
     batches.wallE.box(HOUSE.x1+.02,0,z,.2,shutterTop,.16,garageFrame);
-    batches.wallE.box(HOUSE.x1+.13,0,z,.025,shutterTop,.055,L.paint(0x89969e));
+    batches.wallE.box(HOUSE.x1+.13,0,z,.025,shutterTop,.055,accentWall);
   }
   // End each side pane inside its jamb, on the same plane as the frame.
   // Sharing these exact cuts with the upper pane leaves no exposed overlap
@@ -131,8 +134,8 @@ export function furnish({ layer, additionalDoors = [] }) {
   glazing(B,(GARAGE.x0-1+GARAGE.x1)/2,GARAGE.z1+.02,GARAGE.x1-GARAGE.x0+1,3,7);
   // Keep the entrance frame separate from the animated leaves to avoid
   // coplanar geometry during the scheduled swing.
-  for (const x of [ENTRANCE.x0, ENTRANCE.x1]) batches.wallS.box(x, 0, 16.21, 0.16, 3, 0.16, L.steel);
-  batches.wallS.box(0.5, 2.9, 16.21, 4.84, 0.1, 0.16, L.steel);
+  for (const x of [ENTRANCE.x0, ENTRANCE.x1]) batches.wallS.box(x, 0, 16.21, 0.16, 3, 0.16, entry);
+  batches.wallS.box(0.5, 2.9, 16.21, 4.84, 0.1, 0.16, entry);
   foot(ENTRANCE.x0, 17.35, 0.16, 2.4); foot(ENTRANCE.x1, 17.35, 0.16, 2.4);
   // Two subdued realtime lights support moving characters. All localized
   // architectural/task light is baked, with the same fittings on phones.
@@ -323,9 +326,9 @@ export function furnish({ layer, additionalDoors = [] }) {
   });
   ergonomicChair(B, 2.1, -9.55, 0); foot(2.1, -9.55, 0.85, 0.85);
   ergonomicChair(B, 4.05, -9.1, -Math.PI / 2); foot(4.05, -9.1, 0.85, 0.85);
-  // Close the former door opening with the same wood-panel wall as its neighbour.
+  // Continue the studio wall's lavender finish across the former opening.
   const studioWallX = 1, studioWallZ = -11.91, studioWallWidth = 4;
-  B.box(studioWallX, 0, studioWallZ, studioWallWidth, 4, .1, L.panel);
+  B.box(studioWallX, 0, studioWallZ, studioWallWidth, 4, .1, roomWall);
   foot(studioWallX, studioWallZ, studioWallWidth + .08, .18);
   // A black pegboard, about the chalkboard's size, is mounted over the wall
   // panelling behind the two desks, with a few sheets pinned to it.
@@ -360,9 +363,9 @@ export function furnish({ layer, additionalDoors = [] }) {
   const WALL = STAIRS.x1;
   for (let i = 0; i < steps; i++) {
     const z = STAIRS.z1 - (i + 0.5) * run, y = (i + 1) * LOFT.y / steps;
-    B.box(WALL - 0.09, 0, z, 0.18, y + 0.93, run, L.panel);
+    B.box(WALL - 0.09, 0, z, 0.18, y + 0.93, run, roomWall);
   }
-  B.box(WALL + 0.015, 0, -5.7, 0.03, LOFT.y, 3.4, L.panel);
+  B.box(WALL + 0.015, 0, -5.7, 0.03, LOFT.y, 3.4, roomWall);
   foot(WALL - 0.09, 0, 0.3, STAIRS.z1 - STAIRS.z0);
   // Low black fireplace, flanked by media cabinets. Warmth comes from one
   // tiny flame mesh and static emissive trim, without another point light.
@@ -445,7 +448,7 @@ export function furnish({ layer, additionalDoors = [] }) {
     B.box(18.824, .7, z + .31, .035, .025, .33, L.steel);
   }
   B.box(17.5, 0, 8.5, 3.7, .08, 1.2, L.steel);
-  B.box(17.5, .08, 8.5, 3.7, .76, 1.2, L.panel);
+  B.box(17.5, .08, 8.5, 3.7, .76, 1.2, accentWall);
   B.box(17.5, .84, 8.5, 3.9, .12, 1.35, L.marble);
   for (const x of [15.6, 19.4]) B.box(x, 0, 8.5, .1, .96, 1.35, L.marble);
   foot(17.5, 8.5, 4, 1.45);
@@ -466,12 +469,12 @@ export function furnish({ layer, additionalDoors = [] }) {
   bake('dining-pendant', 16, 2.62, 12.8, 1.45, 5.5, [0, -1, 0]);
   for (const x of [15.45, 16.55]) for (const z of [11.8, 13.8]) {
     for (const dx of [-0.2, 0.2]) for (const dz of [-0.2, 0.2]) B.box(x + dx, 0, z + dz, 0.045, 0.44, 0.045, L.steel);
-    B.box(x, 0.44, z, 0.5, 0.07, 0.5, L.paint(0x1c1f21));
-    B.box(x, 0.51, z + Math.sign(z - 12.8) * 0.23, 0.5, 0.43, 0.06, L.paint(0x1c1f21)); foot(x, z, 0.6, 0.6);
+    B.box(x, 0.44, z, 0.5, 0.07, 0.5, trim);
+    B.box(x, 0.51, z + Math.sign(z - 12.8) * 0.23, 0.5, 0.43, 0.06, trim); foot(x, z, 0.6, 0.6);
   }
   // Dining sideboard doubles as the coffee station, with a green marble top.
   B.box(8, 0, 14.8, 5, 0.08, 0.65, L.steel);
-  B.box(8, 0.08, 14.8, 5, 0.74, 0.65, L.panel);
+  B.box(8, 0.08, 14.8, 5, 0.74, 0.65, accentWall);
   B.box(8, 0.82, 14.8, 5.2, 0.1, 0.76, L.marble); foot(8, 14.8, 5.3, 0.85);
   B.box(7, 0.92, 14.8, 0.8, 0.58, 0.55, L.steel);
   B.box(7, 0.98, 14.49, 0.65, 0.28, 0.03, L.paint(0xc5c5be));
@@ -503,6 +506,9 @@ export function furnish({ layer, additionalDoors = [] }) {
   B.box((BACKDOOR.x0 + BACKDOOR.x1) / 2, 0, HOUSE.z0 - 1.75, 1.6, 0.02, 0.9, L.paint(0x4a4038));
 
   // Full-floor master suite: sleeping zone, dressing wall and a small bench.
+  // Finish the walking face above the plum fascia with the hall's pale floor.
+  B.box((LOFT.x0 + LOFT.x1) / 2, LOFT.y - .015, (LOFT.z0 + LOFT.z1) / 2,
+    LOFT.x1 - LOFT.x0 - .08, .022, LOFT.z1 - LOFT.z0 - .08, L.floor, { shadow: false });
   // The glass front and a wood door folded against it preserve a broad entry.
   B.box((LOFT.x0-6)/2, LOFT.y, -4.14, -6-LOFT.x0, 3, .055, { tex: 'glass', glass: true });
   glazing(B,(LOFT.x0-6)/2,-4.14,-6-LOFT.x0,LOFT.y,3);
@@ -533,7 +539,7 @@ export function furnish({ layer, additionalDoors = [] }) {
   foot(-7.38, bedroomDoorZ, 2.85, .15, 1);
   const { x: bedX, z: bedZ, y: bedY } = BED;
   B.box(bedX, bedY, bedZ + 1.2, 7.4, .025, 6.4, L.linen);
-  B.box(bedX, bedY, bedZ - 2.21, 6.8, 2.3, .1, L.panel);
+  B.box(bedX, bedY, bedZ - 2.21, 6.8, 2.3, .1, accentWall);
   B.box(bedX, bedY + .3, bedZ - 2.14, 4.9, 1.5, .07, L.marble);
   B.box(bedX, bedY + 2.27, bedZ - 2.12, 6.5, .025, .035, L.light(0xffe2ae));
   for (const x of [bedX - 2, bedX + 2]) bake('headboard-cove', x, bedY + 2.3, bedZ - 1.85, 1.05, 5.5, [0, -.7, 1]);
@@ -582,10 +588,15 @@ export function furnish({ layer, additionalDoors = [] }) {
   for (const x of [-14.8, -11.2]) { B.box(x, 0, 19, 0.65, 0.45, 0.65, L.wood); foot(x, 19, 0.7, 0.7); }
   // Shielded door sconces and a tiny terrace table lamp guide arrival.
   for (const x of [-1.3, 2.3]) {
-    B.box(x, 2.28, 16.32, .18, .52, .17, L.steel);
+    B.box(x, 2.28, 16.32, .18, .52, .17, entry);
     B.box(x, 2.27, 16.34, .13, .025, .13, L.light(0xffe4ba));
     bake('entry-sconce', x, 2.22, 16.45, .85, 5, [0, -1, .3]);
   }
+  // A small shaded lamp warms the tea table and reads through the pavilion.
+  roof.box(-12.3, 11.93, -1.5, .23, .045, .23, trim);
+  roof.box(-12.3, 11.975, -1.5, .055, .225, .055, trim);
+  roof.box(-12.3, 12.2, -1.5, .27, .22, .27, L.light(0xffe3bb, .7));
+  bake('tea-table-lamp', -12.3, 12.24, -1.5, 1.3, 5);
   B.box(-13, .86, 19, .13, .25, .13, L.steel);
   B.box(-13, 1.08, 19, .3, .065, .3, L.light(0xffe4ba));
   bake('terrace-table', -13, 1.1, 19, .65, 3.2);

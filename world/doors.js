@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { HOUSE, LOFT, SECRET, GARAGE, ENTRANCE, BACKDOOR, ROOF_LADDER } from './layout.js';
 import { frontDoorGeometry, makeFrontDoorMaterial } from './front-door-finish.js';
+import { HOUSE_COLORS as colors } from './house-palette.js';
 
 const CLOSE_HOUR = 18, OPEN_HOUR = 7, TRANSITION_SECONDS = 0.48;
 const APPROACH_DISTANCE = 2.8, AUTOMATIC_APPROACH_DISTANCE = 3.4, SHUTTER_APPROACH_DISTANCE = 4, JAMB_MARGIN = 0.45;
@@ -13,12 +14,13 @@ function makeShutterMaterial() {
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   const slatHeight = 18;
+  const slat = '#' + colors.trim.toString(16);
   for (let y = 0; y < canvas.height; y += slatHeight) {
-    ctx.fillStyle = '#b7c1c6';
+    ctx.fillStyle = slat;
     ctx.fillRect(0, y, canvas.width, slatHeight - 1);
-    ctx.fillStyle = '#8e9ba2';
+    ctx.fillStyle = '#3a3146';
     ctx.fillRect(0, y + slatHeight - 2, canvas.width, 1);
-    ctx.fillStyle = '#d5dde0';
+    ctx.fillStyle = '#796c87';
     ctx.fillRect(0, y, canvas.width, 1);
   }
   const texture = new THREE.CanvasTexture(canvas);
@@ -87,7 +89,7 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
 
   // The hidden bookshelf door is part of the same timed and interactive set.
   add(hinged({ id: 'hidden', x: SECRET.x1, z: SECRET.door, y: LOFT.y, width: 1, height: 2,
-    closedYaw: -Math.PI / 2, openYaw: Math.PI, color: 0x76583f, level: 1,
+    closedYaw: -Math.PI / 2, openYaw: Math.PI, color: colors.heather, level: 1,
     bounds: { x0: SECRET.x1 - 0.14, x1: SECRET.x1 + 0.14, z0: SECRET.door, z1: SECRET.door + 1 } }));
 
   // A small safety gate closes the roof ladder opening.

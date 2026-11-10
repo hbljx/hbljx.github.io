@@ -197,7 +197,7 @@ async function boot() {
     }
     const background = `#${stage.fogTarget.getHexString()}`;
     document.querySelector('meta[name="theme-color"]').content = background;
-    if (!pool.submerged) document.body.style.background = background;
+    if (!document.body.classList.contains('underwater')) document.body.style.background = background;
     // Weather symbol plus live temperature; clear skies also reflect day/night.
     const live = data ? `${t(...condition.description)} ${Math.round(data.temperature)}°C` : status === 'off' ? t(...WEATHER_LABELS.clear) : status === 'locating' ? '正在请求定位' : status === 'denied' ? '未获定位权限，请允许定位后重试' : status === 'location-unavailable' ? '定位暂不可用，请重试' : status === 'loading' ? t('获取天气中', 'Getting the weather') : t('天气暂不可用', 'Weather unavailable');
     const now = `${weatherMode === 'auto' ? live : t(...WEATHER_LABELS[weatherMode])} · ${t(...TIME_LABELS[mood])}`;
@@ -250,12 +250,19 @@ async function boot() {
   });
 
   // Going into the water, climbing out and breathing out under it.
-  function onWater(kind, x, y, z, power) {
+  function onWater(kind, x, y, z, power, ocean) {
+    if (ocean) {
+      if (kind === 'splash') sound.play('splash', power);
+      else if (kind === 'exhale' && player.underwater) sound.play('bubbles');
+      return;
+    }
     if (kind === 'splash') { pool.splash(x, z, power); sound.play('splash', power); }
     else if (kind === 'climb') { pool.ripple(x, z, power); sound.play('drip'); }
     else if (kind === 'exhale') { pool.exhale(x, y, z); if (pool.submerged) sound.play('bubbles'); }
   }
-  const player = createPlayer({ avatar, nav, grid: world.grid, ground: world.ground, onWater });
+  const sea = world.seaSwimming && { ...world.seaSwimming, water: world.coast.sea.position.y };
+  const seaFog = sea && { color: new THREE.Color(0x245968), near: 0, far: 36 };
+  const player = createPlayer({ avatar, nav, grid: world.grid, ground: world.ground, sea, onWater });
   stage.scene.add(player.web);
   const rig = createRig(stage.camera, world);
   // The world's own moving parts (a sailboat, a Vertec, …): build.js setup(app).
@@ -506,12 +513,16 @@ async function boot() {
     if (portalHit != null && (!block || portalHit <= block.t + .35) && (!island || portalHit <= island.t) && (!best || portalHit < best.t)) {
       best = { t: portalHit, h: { id: 'portal' } };
     }
-    // The pool's surface answers too, from above or below: water is not a block.
-    let water = null;
-    const toWater = POOL && Math.abs(d.y) > 1e-4 ? (POOL.water - o.y) / d.y : -1;
-    if (toWater > 0 && (!block || toWater < block.t) && (!island || toWater < island.t) && inPool(o.x + d.x * toWater, o.z + d.z * toWater)) {
-      water = { t: toWater, x: o.x + d.x * toWater, z: o.z + d.z * toWater };
+    // Water is picked before anything below its surface.
+    function waterHit(level, contains) {
+      if (Math.abs(d.y) < 1e-4) return null;
+      const t = (level - o.y) / d.y;
+      if (t <= 0 || t > stage.camera.far || (block && t >= block.t) || (island && t >= island.t)) return null;
+      const x = o.x + d.x * t, z = o.z + d.z * t;
+      return contains(x, z) ? { t, x, z, y: level } : null;
     }
+    const water = (POOL && waterHit(POOL.water, inPool)) ||
+      (sea && player.island !== 'sea-tunnel' && waterHit(sea.water, player.seaAt));
     return { block: island ? null : block, spot: best?.h || null, island, water };
   }
 
@@ -607,7 +618,7 @@ async function boot() {
       if (target) return webTo(target);
     }
     const { block, island, water } = target;
-    if (water) return navigate(water.x, water.z, POOL.water);
+    if (water) return navigate(water.x, water.z, water.y);
     if (island?.site === 'roof-ladder') {
       const target = player.island === 'roof' ? world.roofAccess.foot : world.roofAccess.exit;
       return navigate(target.x, target.z, target.y, true);
@@ -619,6 +630,14 @@ async function boot() {
   // Walk if the place is reachable on foot from here; otherwise fly there.
   function navigate(x, z, targetY = null, useRoofLadder = false) {
     closePage(); minimap.toggleBig(false); input.clear(); rig.skipIntro();
+    const seaSpot = sea && targetY === sea.water && player.seaAt(x, z);
+    if ((seaSpot && !player.swimming) || player.oceanSwimming) {
+      const accepted = seaSpot ? (player.oceanSwimming ? player.swimTo(x, z) : player.flyIntoSea(x, z))
+        : inPool(x, z) && (targetY === null || targetY < 0) ? player.flyIntoPool(x, z)
+        : player.flyTo(x, z);
+      marker.show(x, targetY ?? nav.heightAt(x, z), z, accepted ? 0x85c9ff : 0xeab66a);
+      return accepted;
+    }
     const landscape=world.travelLandscape?.(player,world,nav,x,z,targetY,()=>navigate(x,z,targetY));
     if(landscape!==null&&landscape!==undefined){
       marker.show(x,targetY??world.ground.topAt(x,z,Infinity)?.y??0,z,landscape?0x85c9ff:0xeab66a);
@@ -779,6 +798,36 @@ async function boot() {
   // A touch screen has no keys to fly with: while the player flies by hand, a
   // D-pad and a climb/descend rocker come up in the bottom corners.
   const flightPad = matchMedia('(pointer: coarse)').matches ? createFlightPad($('#flightPad')) : null;
+  const swimControls = $('#swimControls'), strokeButton = $('#strokeButton'), swimBoost = $('#swimBoost');
+  const strokeNames = { freestyle: ['自由泳', 'Freestyle'], butterfly: ['蝶泳', 'Butterfly'], backstroke: ['仰泳', 'Backstroke'] };
+  let boosted = false;
+  function syncSwimControls() {
+    const show = player.oceanSwimming && !panel.open && !minimap.isBigOpen() && !weatherMenuOpen() && !phone.up;
+    if (swimControls.hidden === show) swimControls.hidden = !show;
+    if (!player.oceanSwimming && boosted) {
+      boosted = false;
+      swimBoost.setAttribute('aria-pressed', 'false');
+    }
+  }
+  function syncStrokeLabel() {
+    const name = t(...strokeNames[player.swimStroke]);
+    strokeButton.textContent = name + (flightPad ? '' : ' · C');
+    strokeButton.setAttribute('aria-label', t('切换泳姿', 'Change stroke') + ' · ' + name);
+    swimBoost.textContent = t('加速', 'Boost') + (flightPad ? '' : ' · Shift');
+  }
+  function cycleStroke() {
+    if (swimControls.hidden || !player.cycleSwimStroke()) return false;
+    syncStrokeLabel();
+    sound.play('click');
+    return true;
+  }
+  strokeButton.addEventListener('click', cycleStroke);
+  swimBoost.addEventListener('click', () => {
+    if (swimControls.hidden) return;
+    boosted = !boosted;
+    swimBoost.setAttribute('aria-pressed', String(boosted));
+  });
+  syncStrokeLabel();
 
   // ---------- Phone ----------
   // P or its Dock slot, like GTA's: it comes up bottom right and the player
@@ -824,7 +873,7 @@ async function boot() {
   onLang(() => {
     for (const [b, name] of docked) b.setAttribute('aria-label', name());
     promptFor = null; flyIcon = null;
-    syncFlyButton(); applyWeather();
+    syncFlyButton(); syncStrokeLabel(); applyWeather();
     phone.setAccounts(accounts());
     if (openStation === 'portal') openPortal();
     else if (openStation === 'works') openPage('works', { preserveScene: pageKeepsScene });
@@ -836,9 +885,15 @@ async function boot() {
     blocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy || !!extras.locked,
     pointerBlocked: () => minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!portal?.busy,
     shortcutsBlocked: () => minimap.isBigOpen() || weatherMenuOpen() || isTravelling() || !!portal?.busy || !!extras.locked,
-    keydown: e => e.key.toLowerCase() === 'e' && !extras.locked && nearestTarget() ? false : extras.keyDown?.(e),
+    keydown: e => {
+      if ((e.code === 'KeyC' || e.key.toLowerCase() === 'c') && player.oceanSwimming && !swimControls.hidden) {
+        if (!e.repeat) cycleStroke();
+        return true;
+      }
+      return e.key.toLowerCase() === 'e' && !extras.locked && nearestTarget() ? false : extras.keyDown?.(e);
+    },
     keyup: e => extras.keyUp?.(e),
-    run: () => extras.running,
+    run: () => player.oceanSwimming ? boosted : extras.running,
     escape: () => { if (weatherMenuOpen()) toggleWeatherMenu(false, true); else if (minimap.isBigOpen()) minimap.toggleBig(false); else if (panel.open) closePage(); else if (phone.up) { if (!phone.back()) togglePhone(false); } else toggleWeb(false); },
     interact: () => {
       const s = nearestTarget();
@@ -968,7 +1023,7 @@ async function boot() {
   let wasPaused = false;
   // Lying still on the pool's floor, looking up, the HUD fades away until the
   // next touch, key or mouse movement.
-  let quiet = false, lastInput = performance.now(), underwater = false;
+  let quiet = false, lastInput = performance.now(), underwater = null;
   const stir = () => { lastInput = performance.now(); if (quiet) { quiet = false; document.body.classList.remove('quiet'); } };
   for (const type of ['pointermove', 'pointerdown', 'keydown', 'wheel']) addEventListener(type, stir, { passive: true });
 
@@ -1005,14 +1060,17 @@ async function boot() {
     atmosphere.update(elapsed, now);
     weatherFx.update(elapsed, stage.camera, weatherFocus.set(player.pos.x, player.y + 1, player.pos.z));
     const weatherNow = weatherFx.state, cam = stage.camera.position;
-    pool.update(elapsed, stage.camera, player, weatherNow);
-    // Under water the view softens; behind its blurred edges is water, not sky.
-    if (pool.submerged !== underwater) {
-      underwater = pool.submerged;
-      document.body.classList.toggle('underwater', underwater);
-      document.body.style.background = `#${(underwater ? pool.fogColor : stage.fogTarget).getHexString()}`;
+    const oceanFog = player.oceanSwimming && cam.y < sea.water ? seaFog : null;
+    pool.update(elapsed, stage.camera, player, weatherNow, oceanFog);
+    if (!POOL && sea) stage.setSubmerged(oceanFog);
+    // Behind the blurred edges use the fog of the water the camera is in.
+    const waterColor = pool.submerged ? pool.fogColor : oceanFog?.color ?? null;
+    if (waterColor !== underwater) {
+      underwater = waterColor;
+      document.body.classList.toggle('underwater', !!underwater);
+      document.body.style.background = `#${(underwater ?? stage.fogTarget).getHexString()}`;
     }
-    sound.ambience(weatherNow.rain, pool.submerged, inHouse(cam.x, cam.z) && cam.y < HOUSE.height);
+    sound.ambience(weatherNow.rain, !!underwater, inHouse(cam.x, cam.z) && cam.y < HOUSE.height);
     stage.update(elapsed);
     // Looking up through their own eyes from the pool's floor, as in first
     // person, their body is out of the way.
@@ -1021,7 +1079,8 @@ async function boot() {
     crosshair.hidden = !fp;
     viewButton.setAttribute('aria-pressed', String(fp));
     syncFlyButton();
-    flightPad?.show(player.flying && !player.piloting && !paused && !rig.introActive && !phone.up);
+    syncSwimControls();
+    flightPad?.show((player.flying && !player.piloting || player.oceanSwimming) && !paused && !rig.introActive && !phone.up);
 
     // A page closes itself once the player walks away from where it belongs.
     if (openStation && openStation !== 'portal' && !pageKeepsScene) {

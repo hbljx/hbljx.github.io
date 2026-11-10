@@ -180,9 +180,12 @@ export function createRig(camera, world) {
     } else if (firstPerson) {
       // Swimming, the eyes are wherever the stroke puts them, but kept out
       // of the water while the player swims on top.
-      const e = player.swimming ? player.eye : null;
+      const swim = player.swim;
       camera.position.set(player.pos.x, player.y + EYE, player.pos.z);
-      if (e) camera.position.set(e.x, player.swim?.surface ? Math.max(e.y, POOL.water + 0.12) : e.y, e.z);
+      if (swim) {
+        const e = player.eye;
+        camera.position.set(e.x, swim.surface ? Math.max(e.y, swim.water + 0.12) : e.y, e.z);
+      }
       const cp = Math.cos(lookPitch), p = camera.position;
       camera.lookAt(p.x - Math.sin(yaw) * cp, p.y + Math.sin(lookPitch), p.z - Math.cos(yaw) * cp);
       lookUp(dt, player);
@@ -191,7 +194,11 @@ export function createRig(camera, world) {
     } else {
       cutaway(player, followPos);
       collide(dt, followPos);
-      if (player.swimming || gazeT > 0) keepOffWater(followPos);
+      if (player.oceanSwimming) {
+        const swim = player.swim;
+        const d = followPos.y - swim.water;
+        if (Math.abs(d) < 0.16) followPos.y = swim.water + (swim.surface || d >= 0 ? 0.16 : -0.16);
+      } else if (player.swimming || gazeT > 0) keepOffWater(followPos);
       camera.position.copy(followPos);
       camera.lookAt(focus);
       lookUp(dt, player);

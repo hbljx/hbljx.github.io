@@ -2,11 +2,13 @@ import * as THREE from 'three';
 import { BoxBatch } from '@engine/world/blocks.js';
 import { makeSeat } from './seats.js';
 import { HOUSE, LOFT_STAIR_DOOR, ROOF_ROOM, ROOF_GLASS, ROOF_PARKING } from './layout.js';
+import { HOUSE_COLORS as colors } from './house-palette.js';
 
 export function buildThirdFloor({ grid, layer }) {
   const B = new BoxBatch(layer), ceiling = new BoxBatch(layer), stairs = new BoxBatch(layer);
-  const wood = { tex: 'wood_panel' }, floor = { tex: 'greige_floor' }, dark = { tex: 'black_metal' },
-    glass = { tex: 'glass', glass: true }, cushion = { tex: 'paint', tint: 0x587565 }, china = { tex: 'paint', tint: 0xece1c6 };
+  const wood = { tex: 'maple' }, floor = { tex: 'greige_floor' }, dark = { tex: 'black_metal' },
+    trim = { tex: 'paint', tint: colors.trim }, sill = { tex: 'paint', tint: colors.facade },
+    glass = { tex: 'glass', glass: true }, cushion = { tex: 'paint', tint: colors.heather }, china = { tex: 'paint', tint: colors.ivory };
   const barriers = [], slabs = [], stairPoints = [], hit = new THREE.Vector3();
   const glassVertices=[];
   let planeObstacle=()=>false;
@@ -41,14 +43,14 @@ export function buildThirdFloor({ grid, layer }) {
   for(const r of ROOF_GLASS)pane(B,[r.x0,r.x1,r.z0,r.z1],11.06);
   // A 20 x 21 m tea pavilion doubles its former 14 x 15 m footprint.
   function wall(x,z,w,d){
-    B.box(x,11,z,w,.18,d,wood);B.box(x,14.45,z,w,.25,d,dark);
+    B.box(x,11,z,w,.18,d,sill);B.box(x,14.45,z,w,.25,d,trim);
     B.box(x,11.18,z,w,3.27,d*.8,glass);obstacle(x,z,w,d);
   }
   wall((room.x0+room.x1)/2,room.z0,room.x1-room.x0,.18);
   for(const x of [room.x0,room.x1]){
-    B.box(x,11,(room.z0+room.z1)/2,.18,.18,room.z1-room.z0,wood);
+    B.box(x,11,(room.z0+room.z1)/2,.18,.18,room.z1-room.z0,sill);
     B.box(x,11.18,(room.z0+room.z1)/2,.10,3.27,room.z1-room.z0,glass);
-    B.box(x,14.45,(room.z0+room.z1)/2,.18,.25,room.z1-room.z0,dark);
+    B.box(x,14.45,(room.z0+room.z1)/2,.18,.25,room.z1-room.z0,trim);
     obstacle(x,(room.z0+room.z1)/2,.18,room.z1-room.z0);
     for(let z=room.z0;z<=room.z1;z+=3.5)B.box(x,11,z,.16,3.7,.10,dark);
   }
@@ -75,7 +77,7 @@ export function buildThirdFloor({ grid, layer }) {
       closedYaw: Math.PI, openYaw: Math.PI / 2, color: 0x76583f, level: 1, bounds: { x0: -11, x1: -10, z0: 5.74, z1: 5.98 },
       onBlockingChange: blocked => setRoomDoorBarrier(blocked) },
   ];
-  skylight(ceiling,roomRoof.min.x,roomRoof.max.x,roomRoof.min.z,roomRoof.max.z,14.7,.24,dark,[room.x0+1,room.x1-1,room.z0+1,room.z1-1]);
+  skylight(ceiling,roomRoof.min.x,roomRoof.max.x,roomRoof.min.z,roomRoof.max.z,14.7,.24,trim,[room.x0+1,room.x1-1,room.z0+1,room.z1-1]);
   for (const x of [room.x0+.4,room.x1-.4]) ceiling.box(x,14.60,(room.z0+room.z1)/2,.12,.1,room.z1-room.z0-.4,wood);
   // Tea table, tray, kettle, cups and four armchairs.
   B.box(-11, 11.77, -1.5, 3.5, .16, 1.7, wood); obstacle(-11, -1.5, 3.5, 1.7);

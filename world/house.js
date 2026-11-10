@@ -2,21 +2,14 @@
 // blocks. The island itself comes from the engine (terrain.js buildIsland).
 import { HOUSE, LOFT, SECRET, GARAGE, POOL, TERRACE, DRIVEWAY, ENTRANCE, BACKDOOR, ROOF_GLASS, ROOF_LADDER, STUDIO_WALL_END, SEA_BRIDGE } from './layout.js';
 import { inRect } from '@engine/world/terrain.js';
+import { HOUSE_COLORS as colors } from './house-palette.js';
 
 const SHELL = { x0: HOUSE.x0 - 1, x1: HOUSE.x1 + 1, z0: HOUSE.z0 - 1, z1: HOUSE.z1 + 1 };
 const POOL_DECK = { x0: POOL.x0 - 1, x1: POOL.x1 + 1, z0: POOL.z0 - 1, z1: POOL.z1 + 1 };
 
 export function defineHouseBlocks(grid) {
-  const interior = (x, y, z) => x >= HOUSE.x0 && x < HOUSE.x1 && z >= HOUSE.z0 && z < HOUSE.z1 && y >= 0 && y < HOUSE.height;
-  // Blackened metal outside and continuous warm wood panelling inside.
-  const wallTex = (face, x, y, z) => {
-    if (face.n[1] === 1) return 'steel';
-    if (face.n[1] === -1) return 'black_metal';
-    const nx = x + face.n[0], nz = z + face.n[2];
-    if (!interior(nx, y, nz)) return 'black_metal';
-    return 'wood_panel';
-  };
   grid.define('wood_floor', { tex: { all: 'greige_floor' }, merge: true });
+  grid.define('entry_oak', { tex: { all: 'maple' }, merge: true });
   // The level bridge approach owns the visible surface at y=0. Keep its
   // underlying land solid, but omit the grass top that would fight the deck.
   grid.define('bridge_ground', {
@@ -28,9 +21,10 @@ export function defineHouseBlocks(grid) {
   grid.define('pool_deep', { tex: { all: 'pool_deep' } });
   // The pool's rim: travertine on top, tiled down its inner face to the water.
   grid.define('coping', { tex: { top: 'travertine', side: 'pool_tile', bottom: 'pool_tile' } });
-  grid.define('wall', { tex: wallTex, merge: true });
-  grid.define('roof', { tex: { top: 'roof', side: 'black_metal', bottom: 'wood_panel' }, merge: true });
-  grid.define('parapet', { tex: { top: 'steel', side: 'black_metal', bottom: 'black_metal' } });
+  grid.define('exterior_wall', { tex: { all: 'paint' }, tint: colors.facade, merge: true });
+  grid.define('wall', { tex: { all: 'paint' }, tint: colors.lavender, merge: true });
+  grid.define('roof', { tex: { all: 'paint' }, tint: colors.facade, merge: true });
+  grid.define('parapet', { tex: { all: 'paint' }, tint: colors.trim, merge: true });
   // A glazed cell is a metre deep; drawing all its faces reads as two thick
   // sheets. Keep one face, on the inner wall line beside the steel frames
   // (the top for roof lights), so every window is a single pane.
@@ -44,16 +38,17 @@ export function defineHouseBlocks(grid) {
   // Keep the facade's collision cells; furnish draws thin panes at the inner
   // wall line so the metre-deep voxel shell cannot slice through open doors.
   grid.define('front_glass', { kind: 'glass', tex: { all: 'glass' }, skipFace: () => true });
-  grid.define('brick', { tex: { all: 'wood_panel' }, merge: true });
-  grid.define('loft', { tex: { top: 'greige_floor', side: 'wood_panel', bottom: 'wood_panel' }, merge: true });
+  grid.define('brick', { tex: { all: 'paint' }, tint: colors.lavender, merge: true });
+  grid.define('loft', { tex: { top: 'greige_floor', side: 'paint', bottom: 'greige_floor' }, tint: colors.trim, merge: true });
   grid.define('osmanthus', { kind: 'cutout', tex: { all: 'leaves_osmanthus' } });
-  grid.define('bookshelf', { tex: { all: 'wood_panel' }, merge: true });
+  grid.define('bookshelf', { tex: { all: 'paint' }, tint: colors.heather, merge: true });
 }
 
 // What tops each column of the island: floors, decks and paving, else grass.
 export function surfaceAt(x, z) {
   if (x >= SEA_BRIDGE.x - SEA_BRIDGE.width / 2 && x < SEA_BRIDGE.x + SEA_BRIDGE.width / 2
     && z >= SEA_BRIDGE.z0 && z < 30) return 'bridge_ground';
+  if (z === HOUSE.z1 && x >= ENTRANCE.x0 && x < ENTRANCE.x1) return 'entry_oak';
   if (inRect(SHELL, x, z)) {
     return 'wood_floor';
   }
@@ -87,7 +82,7 @@ export function buildShell(grid) {
   for (let y = 0; y < height; y++) {
     for (let x = x0 - 1; x <= x1; x++) {
       const back = x >= BACKDOOR.x0 && x < BACKDOOR.x1 && y < 3;
-      grid.set(x, y, z0 - 1, back ? null : northWall(x, y) ? 'wall' : 'glass', 'wallN');
+      grid.set(x, y, z0 - 1, back ? null : northWall(x, y) ? 'exterior_wall' : 'glass', 'wallN');
       const south = southWall(x, y);
       grid.set(x, y, z1, south, 'wallS');
     }
@@ -147,7 +142,7 @@ function eastWall(z,y){
   return 'front_glass';
 }
 function southWall(x,y){
-  if(x===HOUSE.x0-1||x===HOUSE.x1)return 'wall';
+  if(x===HOUSE.x0-1||x===HOUSE.x1)return 'exterior_wall';
   if(x>=ENTRANCE.x0&&x<ENTRANCE.x1&&y<3)return null;
   return 'front_glass';
 }

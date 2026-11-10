@@ -205,7 +205,7 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
       let changed=false,background,sky,near,far,hemi;
       scene.onBeforeRender=function(renderer,current,camera){
         before?.call(this,renderer,current,camera);
-        if(camera!==stage.camera||player.y>=-2||camera.position.y>=-1||!tunnel.contains(player.pos.x,player.pos.z))return;
+        if(camera!==stage.camera||player.swimming||player.y>=-2||camera.position.y>=-1||!tunnel.contains(player.pos.x,player.pos.z))return;
         changed=true;background=scene.background;sky=stage.sky.visible;near=scene.fog.near;far=scene.fog.far;hemi=stage.hemi.intensity;fogColor.copy(scene.fog.color);
         scene.background=water;stage.sky.visible=false;scene.fog.color.copy(water);scene.fog.near=30;scene.fog.far=140;stage.hemi.intensity=Math.max(2.2,hemi);
       };

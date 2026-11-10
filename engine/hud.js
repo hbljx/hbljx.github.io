@@ -47,6 +47,10 @@ const HUD = `
     <button id="moodButton" aria-label="天气与时段" aria-expanded="false" aria-controls="weatherMenu"><span></span><b></b></button>
     <button id="soundButton" aria-label="声音" data-en-label="Sound" aria-pressed="false"><span></span></button>
   </div>
+  <div id="swimControls" hidden>
+    <button type="button" id="strokeButton" aria-keyshortcuts="C"></button>
+    <button type="button" id="swimBoost" aria-pressed="false"></button>
+  </div>
   <div id="tooltip" hidden></div>
   <div id="crosshair" hidden></div>
   <div id="aim" hidden></div>

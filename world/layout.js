@@ -136,7 +136,7 @@ export const FOREST = [
 ];
 
 // Baked lamp light covers the house and bridge at the original texel density.
-export const LIGHT_VOLUME = { min: [-28, -1, -30], extent: [66, 12, 202], size: [66, 16, 202] };
+export const LIGHT_VOLUME = { min: [-28, -1, -30], extent: [66, 16.5, 202], size: [66, 22, 202] };
 // The weather's shelter map covers the island, the mountain and the pier.
 export const SHELTER = { x0: -64, z0: -52, w: 144, d: 324 };
 // Flying out of the house goes through the front doors.

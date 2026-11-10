@@ -122,6 +122,16 @@ body.quiet #hud { opacity: 0; pointer-events: none; transition: opacity 1.6s eas
   display: grid; place-items: center;
 }
 #corner button:hover { background: var(--btn-hover); }
+#swimControls {
+  position: fixed; top: calc(max(16px, env(safe-area-inset-top)) + 64px); right: max(16px, env(safe-area-inset-right));
+  display: flex; gap: 8px; z-index: 10;
+}
+#swimControls button {
+  min-height: 44px; padding: 0 12px; color: #fff; font: inherit; cursor: pointer;
+  background: var(--btn); border: 2px solid var(--line);
+}
+#swimControls button:hover { background: var(--btn-hover); }
+#swimControls button[aria-pressed="true"] { background: var(--accent); }
 #corner button span { width: 32px; height: 32px; image-rendering: pixelated; background: center / contain no-repeat; }
 #viewButton[aria-pressed="true"], #webButton[aria-pressed="true"], #flyButton[aria-pressed="true"] { background: var(--accent); }
 #webButton[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--line), 0 0 0 4px #e8352b, inset 2px 2px 0 rgba(255, 255, 255, .32), inset -2px -3px 0 rgba(0, 0, 0, .38); }

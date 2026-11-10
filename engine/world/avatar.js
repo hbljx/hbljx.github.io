@@ -142,7 +142,7 @@ export function createAvatar(skinUrl, { onFace } = {}) {
   const look = { yaw: 0, pitch: 0 };
 
   // In the water: lying on the bottom, climbing out, diving in, treading
-  // water, the front crawl (running) or the breaststroke.
+  // water and the different arm and kick cycles.
   function swimPose(w, dt) {
     const t = idleT;
     stroke = (stroke + dt * (w.fast ? 7.6 : 4.4) * (0.3 + 0.7 * Math.min(1, w.stroke))) % (Math.PI * 20);
@@ -161,10 +161,17 @@ export function createAvatar(skinUrl, { onFace } = {}) {
       const scull = Math.sin(t * 3.1), cycle = Math.sin(t * 2.4) * 0.35;
       Object.assign(target, { armR: -0.35 + 0.25 * Math.cos(t * 3.1), armL: -0.35 + 0.25 * Math.cos(t * 3.1 + 0.4),
         armRz: -0.95 + 0.3 * scull, armLz: 0.95 - 0.3 * scull, legR: cycle, legL: -cycle, legRz: -0.1, legLz: 0.1 });
-    } else if (w.fast) {
-      // The arms windmill in turn; the legs flutter.
-      const flutter = Math.sin(t * 15) * 0.32;
-      Object.assign(target, { armR: -stroke, armL: -stroke - Math.PI, armRz: -0.12, armLz: 0.12, legR: 0.06 + flutter, legL: 0.06 - flutter, legRz: 0, legLz: 0 });
+    } else if (w.style === 'butterfly') {
+      // Recover both arms out wide, with the legs kicking together.
+      const spread = 0.16 + 0.72 * Math.max(0, Math.sin(stroke));
+      const kick = 0.33 * Math.sin(stroke * 2 - 0.6);
+      Object.assign(target, { armR: -stroke, armL: -stroke, armRz: -spread, armLz: spread,
+        legR: kick, legL: kick, legRz: 0, legLz: 0 });
+    } else if (w.style || w.fast) {
+      // The arms alternate in both crawl and backstroke, with a flutter kick.
+      const sweep = w.style === 'backstroke' && w.surface ? stroke : -stroke;
+      const flutter = Math.sin(w.style ? stroke * 2.5 : t * 15) * 0.32;
+      Object.assign(target, { armR: sweep, armL: sweep - Math.PI, armRz: -0.12, armLz: 0.12, legR: 0.06 + flutter, legL: 0.06 - flutter, legRz: 0, legLz: 0 });
     } else {
       // Pull out and back, hands together, shoot forward, then glide on the kick.
       const u = stroke / (Math.PI * 2) % 1;
@@ -236,7 +243,7 @@ export function createAvatar(skinUrl, { onFace } = {}) {
     // The head looks where it is told, within a natural range. Swimming on
     // top, it lifts to look ahead over the water.
     const headPitch = !w ? THREE.MathUtils.clamp(phoneOut ? 0.45 : s.lookPitch ?? 0, -0.5, 0.6)
-      : w.lie > 0.5 || w.dive ? 0 : w.surface ? (w.fast ? -0.2 : -THREE.MathUtils.clamp(w.pitch - 0.25, 0, 1.1)) : -0.35;
+      : w.lie > 0.5 || w.dive || (w.style === 'backstroke' && w.surface) ? 0 : w.surface ? (w.fast ? -0.2 : -THREE.MathUtils.clamp(w.pitch - 0.25, 0, 1.1)) : -0.35;
     look.yaw += (THREE.MathUtils.clamp(s.lookYaw ?? 0, -1.1, 1.1) - look.yaw) * k * 0.6;
     look.pitch += (headPitch - look.pitch) * k * 0.6;
     head.rotation.y = look.yaw;

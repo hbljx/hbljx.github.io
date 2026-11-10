@@ -351,7 +351,7 @@ export function createPool({ stage, world, shelter, quality }) {
     for (let i = 0; i < 7; i++) queued.push({ t: i * .09 + random() * .05, x, y, z });
   }
 
-  function update(dt, camera, player, weather) {
+  function update(dt, camera, player, weather, seaFog = null) {
     const still = reduced.matches;
     if (!still) time += dt;
     if (time > 3600) { time -= 3600; for (const r of uniforms.uRipples.value) r.z -= 3600; }
@@ -380,12 +380,12 @@ export function createPool({ stage, world, shelter, quality }) {
       overhead.copy(sky.uHorizon.value).lerp(sky.uTop.value, .5);
       waterFog.copy(deep).lerp(overhead, .35).multiplyScalar(.3 + .9 * light).lerp(glowWater, glow * .6);
       stage.setSubmerged(submerged);
-    } else stage.setSubmerged(null);
+    } else stage.setSubmerged(seaFog);
     particleMaterial.uniforms.uTint.value.setScalar(.4 + .6 * Math.min(1, light)).lerp(glowWater, glow * .35);
 
     // Rings from the player swimming at the surface; the bigger moments call splash().
     const swim = player.swim;
-    if (swim && !still) {
+    if (swim && !swim.ocean && !still) {
       wakeIn -= dt;
       if (swim.surface && wakeIn <= 0) {
         const moving = swim.speed > .3;
