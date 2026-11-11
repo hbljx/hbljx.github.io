@@ -25,7 +25,7 @@ export function buildMusicHall(B, foot, bake) {
   // grid. The performer uses a separate route that passes through the east aisle.
   foot(25.1, 7.0, 3.4, 2.55);
   foot(25.1, 5.38, 1.02, 0.82);
-  foot(25.1, 10.025, 3.15, 2.0);
+  foot(25.1, 10.55, 3.15, 1.15);
   foot(25.1, 11.45, 1.02, 0.92);
 
   // A slim lighting rail follows the north-south instrument arrangement.
@@ -244,7 +244,7 @@ function createDrumKit() {
   addVerticalDrum(-0.48, 0.83, 0.2, 0.25, 0.2); // snare
   addVerticalDrum(-0.27, 1.12, -0.26, 0.22, 0.22); // high tom
   addVerticalDrum(0.24, 1.12, -0.26, 0.24, 0.23); // mid tom
-  addVerticalDrum(0.7, 0.48, -0.08, 0.31, 0.54, 10); // floor tom
+  addVerticalDrum(0.7, 0.48, 0.35, 0.31, 0.54, 10); // floor tom
   // Chrome rack arms suspend the mounted toms above the bass drum.
   for (const x of [-0.27, 0.24]) {
     rod(root, [x, 0.78, -0.1], [x, 1.04, -0.26], 0.023, metal);
@@ -280,14 +280,14 @@ function createDrumKit() {
     addMesh(root, new THREE.CylinderGeometry(0.035, 0.035, 0.1, 10), metal, x, height + 0.085, z);
     addMesh(root, new THREE.SphereGeometry(0.04, 8, 6), brass, x, height + 0.14, z);
   }
-  cymbalStand(-1.05, -0.05, 1.48, 0.35, true); // hi-hat
-  cymbalStand(-1.0, -0.72, 1.92, 0.52);
-  cymbalStand(0.98, -0.6, 2.06, 0.49);
-  cymbalStand(1.12, 0.32, 1.74, 0.37);
+  cymbalStand(-0.5, 0.32, 1.18, 0.33, true); // hi-hat
+  cymbalStand(-0.7, 0.3, 1.28, 0.45);
+  cymbalStand(0.7, 0.28, 1.34, 0.47);
+  cymbalStand(0.8, 0.4, 1.22, 0.34);
   // Hi-hat clutch, bass pedal and felt beater complete the lower hardware.
-  rod(root, [-1.05, 0.02, -0.05], [-1.05, 0.42, -0.05], 0.03, black);
-  addBox(root, black, -1.05, 0.035, 0.17, 0.34, 0.045, 0.3);
-  addBox(root, metal, -1.05, 0.065, 0.04, 0.045, 0.055, 0.1);
+  rod(root, [-0.5, 0.02, -0.05], [-0.5, 0.42, -0.05], 0.03, black);
+  addBox(root, black, -0.5, 0.035, 0.17, 0.34, 0.045, 0.3);
+  addBox(root, metal, -0.5, 0.065, 0.04, 0.045, 0.055, 0.1);
   addBox(root, black, 0, 0.035, 0.64, 0.34, 0.045, 0.42);
   rod(root, [0, 0.08, 0.49], [0, 0.5, 0.3], 0.022, metal);
   rod(root, [0, 0.49, 0.3], [0, 0.49, 0.38], 0.028, black);

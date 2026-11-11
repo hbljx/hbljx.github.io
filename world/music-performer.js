@@ -147,32 +147,52 @@ export function createMusicPerformer() {
   // fingers resting over the keys. Tags let each joint move independently.
   for (const side of [-1, 1]) {
     const upperTag = side < 0 ? 3 : 6, lowerTag = side < 0 ? 4 : 7, handTag = side < 0 ? 5 : 8;
-    const shoulder = [side * 0.205, 0.96, 0.035];
-    const elbow = [shoulder[0], shoulder[1] - Math.sin(0.65) * 0.21, shoulder[2] + Math.cos(0.65) * 0.21];
-    const wrist = [elbow[0], elbow[1] - Math.sin(1) * 0.25, elbow[2] + Math.cos(1) * 0.25];
-    const upperEnd = [shoulder[0], elbow[1], elbow[2]];
+    const shoulder = [side * 0.21, 0.96, 0.025];
+    const elbow = [side * 0.28, 0.91, 0.22];
+    const wrist = [side * 0.34, 0.835, 0.36];
+    const upperEnd = elbow;
     parts[segment(shoulder, upperEnd, 0.155, 0.15, COLORS.navy, upperTag)].costume = true;
     parts[part(shoulder[0], shoulder[1] - 0.04, shoulder[2] + 0.065, 0.16, 0.025, 0.035, COLORS.navyLight, upperTag, 0.65)].costume = true;
     parts[segment(elbow, wrist, 0.12, 0.13, COLORS.navy, lowerTag)].costume = true;
     const cuff = [wrist[0], wrist[1] + 0.045, wrist[2] - 0.045];
     parts[part(cuff[0], cuff[1], cuff[2], 0.13, 0.055, 0.07, COLORS.white, lowerTag, 0.95)].costume = true;
     parts[part(cuff[0], cuff[1] - 0.025, cuff[2], 0.132, 0.016, 0.073, COLORS.gold, lowerTag, 0.95)].costume = true;
-    part(wrist[0], wrist[1] - 0.035, wrist[2] + 0.035, 0.13, 0.055, 0.12, COLORS.skin, handTag, 1);
+    const palm = part(wrist[0], wrist[1] - 0.02, wrist[2] + 0.035, 0.14, 0.065, 0.15, COLORS.skin, handTag, 0.12);
+    parts[palm].palm = true;
+    parts[palm].handSide = side < 0 ? 0 : 1;
     for (let f = 0; f < 5; f++) {
-      const fingerX = wrist[0] + (f - 2) * 0.026;
-      const start = [fingerX, wrist[1] - 0.07, wrist[2] + 0.075];
-      const end = [fingerX, start[1] - Math.sin(1.12) * 0.085, start[2] + Math.cos(1.12) * 0.085];
+      const fingerX = wrist[0] + (f - 2) * 0.03;
+      const start = [fingerX, wrist[1] - 0.025, wrist[2] + 0.06];
+      const end = [fingerX, start[1] - 0.125, start[2] + 0.07];
       const tag = (side < 0 ? 11 : 16) + f;
-      segment(start, end, 0.022, 0.023, COLORS.skin, tag);
-      part(fingerX, end[1] - 0.006, end[2], 0.013, 0.012, 0.018, COLORS.white, tag, 1.12);
+      const finger = segment(start, end, 0.022, 0.023, COLORS.skin, tag);
+      parts[finger].grip = true;
+      parts[finger].finger = true;
+      const nail = part(fingerX, end[1] - 0.006, end[2], 0.013, 0.012, 0.018, COLORS.white, tag, Math.atan2(start[1] - end[1], end[2] - start[2]));
+      parts[nail].grip = true;
+      parts[nail].finger = true;
     }
     // A thumb reaches in toward the inner keys; tiny cuff buttons finish the sleeve.
     const thumbX = wrist[0] + side * -0.07;
-    segment([thumbX, wrist[1] - 0.035, wrist[2] + 0.025],
+    const thumb = segment([thumbX, wrist[1] - 0.035, wrist[2] + 0.025],
       [thumbX, wrist[1] - 0.095, wrist[2] + 0.09], 0.026, 0.026, COLORS.skin, handTag);
+    parts[thumb].grip = true;
+    parts[thumb].finger = true;
     parts[part(side * 0.205, 0.76, 0.42, 0.025, 0.025, 0.025, COLORS.gold, lowerTag)].costume = true;
-    const stick = part(wrist[0], wrist[1] - 0.045, wrist[2] + 0.19, 0.014, 0.014, 0.38, 0xb08b59, handTag, 1);
+    const stick = part(wrist[0], wrist[1] - 0.04, wrist[2] + 0.22, 0.016, 0.016, 0.46, 0xb08b59, handTag, 0.32);
     parts[stick].drumstick = true;
+    parts[stick].stickHand = side < 0 ? 0 : 1;
+  }
+
+  // In the drumming pose, replace the open piano fingers with small curled
+  // finger pads that sit across each moving stick, plus a thumb over the grip.
+  for (let hand = 0; hand < 2; hand++) {
+    for (let finger = 0; finger < 4; finger++) {
+      const detail = part(0, 0, 0, finger === 3 ? 0.066 : 0.09, 0.026, 0.044, COLORS.skin);
+      parts[detail].dynamicGrip = true;
+      parts[detail].gripHand = hand;
+      parts[detail].gripFinger = finger;
+    }
   }
 
   const mesh = new THREE.InstancedMesh(
@@ -194,16 +214,16 @@ export function createMusicPerformer() {
   setPivot(1, 0, 0.68, 0); setPivot(2, 0, 1.21, 0);
   for (const side of [-1, 1]) {
     const upper = side < 0 ? 3 : 6, lower = side < 0 ? 4 : 7, wristTag = side < 0 ? 5 : 8;
-    const shoulderX = side * 0.205, elbowY = 0.96 - Math.sin(0.65) * 0.21, elbowZ = 0.035 + Math.cos(0.65) * 0.21;
-    const wristY = elbowY - Math.sin(1) * 0.25, wristZ = elbowZ + Math.cos(1) * 0.25;
-    setPivot(upper, shoulderX, 0.96, 0.035); setPivot(lower, shoulderX, elbowY, elbowZ); setPivot(wristTag, shoulderX, wristY, wristZ);
+    const shoulderX = side * 0.21, elbowX = side * 0.28, wristX = side * 0.34;
+    const elbowY = 0.91, elbowZ = 0.22, wristY = 0.835, wristZ = 0.36;
+    setPivot(upper, shoulderX, 0.96, 0.025); setPivot(lower, elbowX, elbowY, elbowZ); setPivot(wristTag, wristX, wristY, wristZ);
     setPivot(side < 0 ? 9 : 10, side * 0.11, 1.47, -0.2);
     setPivot(side < 0 ? 21 : 22, side * 0.115, 0.12, 0.52);
     setPivot(side < 0 ? 23 : 24, side * 0.115, 0.56, 0.005);
     setPivot(side < 0 ? 25 : 26, side * 0.115, 0.41, 0.34);
     for (let f = 0; f < 5; f++) {
-      const x = shoulderX + (f - 2) * 0.026;
-      const startY = wristY - 0.07, startZ = wristZ + 0.075;
+      const x = wristX + (f - 2) * 0.03;
+      const startY = wristY - 0.025, startZ = wristZ + 0.06;
       setPivot((side < 0 ? 11 : 16) + f, x, startY, startZ);
     }
   }
@@ -239,6 +259,21 @@ export function createMusicPerformer() {
 
   let phase = 0, state = 'piano', stateTime = 0, outfit = 0, lastOutfit = -1;
   const pianoX = PIANIST.x, drumX = 25.1, homeZ = PIANIST.z, drumZ = 11.45, aisleX = 27.8;
+  const drumTargets = [
+    new THREE.Vector3(-0.7, 0.776, 0.8),
+    new THREE.Vector3(0.48, 0.956, 0.95),
+  ];
+  const cymbalTargets = [
+    new THREE.Vector3(-0.7, 1.34, 0.87),
+    new THREE.Vector3(0.7, 1.28, 0.85),
+  ];
+  const handGrips = [new THREE.Vector3(), new THREE.Vector3()];
+  const gripTargets = [new THREE.Vector3(), new THREE.Vector3()];
+  const gripDirections = [new THREE.Vector3(), new THREE.Vector3()];
+  const gripAcross = [new THREE.Vector3(), new THREE.Vector3()];
+  const gripUps = [new THREE.Vector3(), new THREE.Vector3()];
+  const gripBases = [new THREE.Matrix4(), new THREE.Matrix4()];
+  const stickForward = new THREE.Vector3(0, 0, 1);
   const routeToDrums = [
     { x: aisleX, z: homeZ, yaw: Math.PI / 2 },
     { x: aisleX, z: drumZ, yaw: 0 },
@@ -321,6 +356,8 @@ export function createMusicPerformer() {
       stateTime -= duration(state); state = next(state);
     }
     const t = stateTime / duration(state);
+    const walking = state === 'walkToDrums' || state === 'walkToPiano';
+    const cymbalHits = [0, 0];
     let walkBlend = 0, restBlend = 0, drumMode = state === 'drums', yaw = PIANIST.yaw;
     root.position.z = homeZ; root.position.y = 0;
     switch (state) {
@@ -359,41 +396,54 @@ export function createMusicPerformer() {
       default:
         outfit = 0; root.position.x = pianoX; root.position.z = homeZ; yaw = PIANIST.yaw; break;
     }
-    root.position.y = 0.16 * walkBlend;
+    root.position.y = 0.16 * walkBlend + (walking ? 0.025 * (1 - Math.cos(phase * 14.6)) : 0);
     root.rotation.y = yaw;
-    pivotMatrix(joints[1], pivots[1], 0.018 * Math.sin(phase * 1.15));
+    pivotMatrix(joints[1], pivots[1], (walking ? 0.045 : 0.018) * Math.sin(phase * 1.15));
     pivotMatrix(joints[2], pivots[2], 0.11 + 0.025 * Math.sin(phase * 1.7), 0.025 * Math.sin(phase * 0.8));
     for (let side = -1; side <= 1; side += 2) {
       const upper = side < 0 ? 3 : 6, lower = side < 0 ? 4 : 7, wristTag = side < 0 ? 5 : 8;
-      const offset = side < 0 ? 0 : 0.9;
+      const offset = side < 0 ? 0 : Math.PI;
       let upperAngle = 0.018 * Math.sin(phase * 2.2 + offset), elbowAngle = 0.055 * Math.sin(phase * 6.1 + offset);
-      let wristAngle = 0.11 * Math.sin(phase * 8.2 + offset);
+      let wristAngle = 0.08 * Math.sin(phase * 8.2 + offset), upperYaw = 0;
       if (drumMode) {
-        const strike = Math.max(0, Math.sin(phase * 3.25 + offset));
-        upperAngle = -0.22 - 0.76 * strike + 0.06 * Math.sin(phase * 5.1 + offset);
-        elbowAngle = -0.48 - 0.62 * strike;
-        wristAngle = 0.17 * Math.sin(phase * 8.4 + offset);
+        const strike = Math.max(0, Math.sin(phase * 5.2 + offset));
+        const cymbalWave = Math.max(0, Math.sin(phase * 0.78 + (side < 0 ? 0 : Math.PI)));
+        const cymbal = Math.pow(cymbalWave, 7);
+        cymbalHits[side < 0 ? 0 : 1] = cymbal;
+        upperAngle = mix(-0.78 + 0.3 * strike, -1.48 + 0.24 * strike, cymbal);
+        elbowAngle = mix(-0.4 + 0.22 * strike, -0.62 + 0.18 * strike, cymbal);
+        upperYaw = side * mix(0.05, 0.72, cymbal);
+        wristAngle = 0.1 * Math.sin(phase * 8.4 + offset) + cymbal * (0.08 + 0.13 * strike);
+      } else if (walking) {
+        // Arms swing opposite the legs instead of staying held out in front.
+        const gait = Math.sin(phase * 7.3 + (side < 0 ? Math.PI : 0));
+        upperAngle = 0.48 + 0.34 * gait;
+        elbowAngle = -0.12 + 0.2 * Math.max(0, -gait);
+        wristAngle = 0.08 * Math.sin(phase * 7.3 + (side < 0 ? Math.PI : 0.7));
       } else if (restBlend > 0) {
         upperAngle += 0.76 * restBlend + 0.12 * restBlend * Math.sin(phase * 6 + offset);
         elbowAngle -= 0.25 * restBlend;
         wristAngle *= 1 - restBlend;
       }
-      pivotMatrix(joints[upper], pivots[upper], upperAngle, 0, side * 0.012 * Math.sin(phase * 1.4));
+      pivotMatrix(joints[upper], pivots[upper], upperAngle, upperYaw, side * 0.012 * Math.sin(phase * 1.4));
       pivotMatrix(joints[lower], pivots[lower], elbowAngle);
       pivotMatrix(joints[wristTag], pivots[wristTag], wristAngle);
       const hairTag = side < 0 ? 9 : 10;
       pivotMatrix(joints[hairTag], pivots[hairTag], 0.018 * Math.sin(phase * 1.3 + offset), 0.035 * Math.sin(phase * 0.9 + offset));
       for (let f = 0; f < 5; f++) {
         const tag = (side < 0 ? 11 : 16) + f;
-        const fingerRate = drumMode ? 11.4 : 8.8;
-        pivotMatrix(joints[tag], pivots[tag], (drumMode ? 0.19 : 0.13) * Math.sin(phase * fingerRate + f * 0.82 + offset));
+        const fingerAngle = drumMode
+          ? 0.38 + 0.1 * Math.sin(phase * 8 + f * 0.8 + offset)
+          : walking ? 0.06 * Math.sin(phase * 7.3 + f * 0.4 + offset)
+            : 0.13 * Math.sin(phase * 8.8 + f * 0.82 + offset);
+        pivotMatrix(joints[tag], pivots[tag], fingerAngle);
       }
       const footTag = side < 0 ? 21 : 22;
       const hipTag = side < 0 ? 23 : 24, kneeTag = side < 0 ? 25 : 26;
-      const step = Math.sin(phase * 6.4 + (side > 0 ? Math.PI : 0));
-      const hipAngle = walkBlend * (1.15 + step * 0.18);
-      const kneeAngle = walkBlend * (-0.61 + Math.max(0, -step) * 0.34);
-      const footAngle = walkBlend * (-0.54 - step * 0.08) + (drumMode ? (side < 0 ? 0.15 : 0.2) * Math.sin(phase * (side < 0 ? 5.9 : 7.4) + offset) : state === 'piano' && side > 0 ? 0.035 * Math.sin(phase * 2.1) : 0);
+      const step = Math.sin(phase * 7.3 + (side > 0 ? Math.PI : 0));
+      const hipAngle = walkBlend * (1.15 + step * 0.43);
+      const kneeAngle = walkBlend * (-0.61 + Math.max(0, step) * 0.82);
+      const footAngle = walkBlend * (-0.54 - step * 0.31) + (drumMode ? (side < 0 ? 0.15 : 0.2) * Math.sin(phase * (side < 0 ? 5.9 : 7.4) + offset) : state === 'piano' && side > 0 ? 0.035 * Math.sin(phase * 2.1) : 0);
       pivotMatrix(joints[hipTag], pivots[hipTag], hipAngle);
       pivotMatrix(joints[kneeTag], pivots[kneeTag], kneeAngle);
       pivotMatrix(joints[footTag], pivots[footTag], footAngle);
@@ -416,12 +466,58 @@ export function createMusicPerformer() {
       const p = parts[i];
       const dress = p.dress, blend = p.costume ? outfit : 0;
       dummy.position.set(mix(p.x, dress?.x ?? p.x, blend), mix(p.y, dress?.y ?? p.y, blend), mix(p.z, dress?.z ?? p.z, blend));
+      if (walking && (p.limb === 21 || p.limb === 22)) {
+        const footPhase = phase * 7.3 + (p.limb === 22 ? Math.PI : 0);
+        dummy.position.y += Math.max(0, Math.sin(footPhase)) * 0.065;
+      }
+      if (drumMode && p.grip) dummy.position.y += 0.035;
       dummy.scale.set(mix(p.w, dress?.w ?? p.w, blend), mix(p.h, dress?.h ?? p.h, blend), mix(p.d, dress?.d ?? p.d, blend));
       if (p.drumstick && !drumMode) dummy.scale.set(0, 0, 0);
+      if (drumMode && p.finger) dummy.scale.set(0, 0, 0);
       dummy.rotation.set(p.rx, p.ry, p.rz);
+      if (p.drumstick && drumMode) dummy.rotation.x = mix(0.32, 0.08, cymbalHits[p.stickHand] || 0);
       dummy.updateMatrix();
       matrix.copy(dummy.matrix);
       if (p.chain) for (let j = p.chain.length - 1; j >= 0; j--) matrix.premultiply(joints[p.chain[j]]);
+      if (p.palm) handGrips[p.handSide].setFromMatrixPosition(matrix);
+      if (p.dynamicGrip) {
+        if (!drumMode) {
+          dummy.scale.set(0, 0, 0);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(i, dummy.matrix);
+          continue;
+        }
+        const side = p.gripHand;
+        const target = gripTargets[side].copy(drumTargets[side]).lerp(cymbalTargets[side], cymbalHits[side]);
+        const grip = handGrips[side];
+        const direction = gripDirections[side].copy(target).sub(grip).normalize();
+        const across = gripAcross[side].set(direction.z, 0, -direction.x).normalize();
+        const up = gripUps[side].crossVectors(direction, across).normalize();
+        const along = [0.075, 0.14, 0.205, 0.105][p.gripFinger];
+        const acrossOffset = p.gripFinger === 3 ? 0.035 : 0;
+        const upOffset = p.gripFinger === 3 ? 0.03 : 0.014;
+        dummy.position.copy(grip).addScaledVector(direction, along)
+          .addScaledVector(across, acrossOffset).addScaledVector(up, upOffset);
+        dummy.scale.set(p.gripFinger === 3 ? 0.066 : 0.09, 0.026, 0.044);
+        dummy.quaternion.setFromRotationMatrix(gripBases[side].makeBasis(across, up, direction));
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+        continue;
+      }
+      if (p.drumstick && drumMode) {
+        const side = p.stickHand;
+        const target = gripTargets[side].copy(drumTargets[side]).lerp(cymbalTargets[side], cymbalHits[side]);
+        const grip = handGrips[side];
+        const direction = gripDirections[side].copy(target).sub(grip);
+        const stickLength = direction.length();
+        dummy.position.copy(grip).add(target).multiplyScalar(0.5);
+        dummy.scale.set(0.016, 0.016, stickLength);
+        dummy.rotation.set(0, 0, 0);
+        dummy.quaternion.setFromUnitVectors(stickForward, direction.normalize());
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+        continue;
+      }
       mesh.setMatrixAt(i, matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
