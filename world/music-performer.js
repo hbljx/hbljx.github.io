@@ -12,7 +12,7 @@ const COLORS = {
   gold: 0xe0bf83, eye: 0x392b2b, iris: 0x60443a, pupil: 0x17191e,
 };
 
-const PIANIST = { x: 23.44, z: 7.5, yaw: -Math.PI / 2 };
+const PIANIST = { x: 25.1, z: 5.38, yaw: 0 };
 
 export function createMusicPerformer() {
   const root = new THREE.Group();
@@ -238,16 +238,54 @@ export function createMusicPerformer() {
   root.add(mesh);
 
   let phase = 0, state = 'piano', stateTime = 0, outfit = 0, lastOutfit = -1;
-  const pianoX = PIANIST.x, drumX = 26.95, homeZ = 7.5;
+  const pianoX = PIANIST.x, drumX = 25.1, homeZ = PIANIST.z, drumZ = 11.45, aisleX = 27.8;
+  const routeToDrums = [
+    { x: aisleX, z: homeZ, yaw: Math.PI / 2 },
+    { x: aisleX, z: drumZ, yaw: 0 },
+    { x: drumX, z: drumZ, yaw: -Math.PI / 2 },
+  ];
+  const routeToPiano = [
+    { x: aisleX, z: drumZ, yaw: Math.PI / 2 },
+    { x: aisleX, z: homeZ, yaw: -Math.PI },
+    { x: pianoX, z: homeZ, yaw: -Math.PI / 2 },
+  ];
   const clamp01 = value => Math.max(0, Math.min(1, value));
   const smooth = value => { const t = clamp01(value); return t * t * (3 - 2 * t); };
   const mix = (a, b, t) => a + (b - a) * t;
+  const mixAngle = (a, b, t) => {
+    const delta = ((b - a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    return a + delta * t;
+  };
+  function routePose(start, startYaw, points, progress) {
+    const segments = [];
+    let total = 0, from = start;
+    for (const point of points) {
+      const length = Math.hypot(point.x - from.x, point.z - from.z);
+      segments.push({ from, to: point, length }); total += length; from = point;
+    }
+    let distance = clamp01(progress) * total, previousYaw = startYaw;
+    for (const segment of segments) {
+      const u = segment.length ? Math.min(1, distance / segment.length) : 1;
+      if (distance <= segment.length) {
+        const turn = smooth(clamp01(u / 0.22));
+        return {
+          x: mix(segment.from.x, segment.to.x, smooth(u)),
+          z: mix(segment.from.z, segment.to.z, smooth(u)),
+          yaw: mixAngle(previousYaw, segment.to.yaw, turn),
+        };
+      }
+      distance -= segment.length;
+      previousYaw = segment.to.yaw;
+    }
+    const last = points[points.length - 1];
+    return { x: last.x, z: last.z, yaw: last.yaw };
+  }
   function duration(name) {
     switch (name) {
       case 'piano': case 'drums': return 60;
       case 'standPiano': case 'sitDrums': case 'standDrums': case 'sitPiano': return 0.65;
       case 'turnToDrums': case 'faceDrums': return 0.5;
-      case 'walkToDrums': case 'walkToPiano': return 3.4;
+      case 'walkToDrums': case 'walkToPiano': return 5.8;
       case 'changeToDress': case 'changeToUniform': return 2.4;
       default: return 60;
     }
@@ -289,27 +327,37 @@ export function createMusicPerformer() {
       case 'standPiano':
         walkBlend = smooth(t); restBlend = walkBlend; root.position.x = pianoX; break;
       case 'turnToDrums':
-        walkBlend = restBlend = 1; yaw = mix(-Math.PI / 2, Math.PI / 2, smooth(t)); root.position.x = pianoX; break;
+        walkBlend = restBlend = 1; yaw = mixAngle(PIANIST.yaw, Math.PI / 2, smooth(t)); root.position.x = pianoX; break;
       case 'walkToDrums':
-        walkBlend = restBlend = 1; yaw = Math.PI / 2; root.position.x = mix(pianoX, drumX, smooth(t)); root.position.z = mix(homeZ, 7.55, smooth(t)); break;
+        {
+          walkBlend = restBlend = 1;
+          const pose = routePose({ x: pianoX, z: homeZ }, Math.PI / 2, routeToDrums, t);
+          root.position.x = pose.x; root.position.z = pose.z; yaw = pose.yaw;
+        }
+        break;
       case 'faceDrums':
-        walkBlend = restBlend = 1; yaw = mix(Math.PI / 2, -Math.PI / 2, smooth(t)); root.position.x = drumX; root.position.z = 7.55; break;
+        walkBlend = restBlend = 1; yaw = mixAngle(-Math.PI / 2, -Math.PI, smooth(t)); root.position.x = drumX; root.position.z = drumZ; break;
       case 'sitDrums':
-        walkBlend = restBlend = 1 - smooth(t); yaw = -Math.PI / 2; root.position.x = drumX; root.position.z = 7.55; break;
+        walkBlend = restBlend = 1 - smooth(t); yaw = -Math.PI; root.position.x = drumX; root.position.z = drumZ; break;
       case 'changeToDress':
-        outfit = smooth(t); restBlend = 1; root.position.x = drumX; root.position.z = 7.55; yaw = -Math.PI / 2; break;
+        outfit = smooth(t); restBlend = 1; root.position.x = drumX; root.position.z = drumZ; yaw = -Math.PI; break;
       case 'drums':
-        outfit = 1; root.position.x = drumX; root.position.z = 7.55; yaw = -Math.PI / 2; break;
+        outfit = 1; root.position.x = drumX; root.position.z = drumZ; yaw = -Math.PI; break;
       case 'standDrums':
-        outfit = 1; walkBlend = restBlend = smooth(t); root.position.x = drumX; root.position.z = 7.55; yaw = -Math.PI / 2; break;
+        outfit = 1; walkBlend = restBlend = smooth(t); root.position.x = drumX; root.position.z = drumZ; yaw = -Math.PI; break;
       case 'walkToPiano':
-        outfit = 1; walkBlend = restBlend = 1; root.position.x = mix(drumX, pianoX, smooth(t)); root.position.z = mix(7.55, homeZ, smooth(t)); yaw = -Math.PI / 2; break;
+        {
+          outfit = 1; walkBlend = restBlend = 1;
+          const pose = routePose({ x: drumX, z: drumZ }, -Math.PI, routeToPiano, t);
+          root.position.x = pose.x; root.position.z = pose.z; yaw = pose.yaw;
+        }
+        break;
       case 'sitPiano':
-        outfit = 1; walkBlend = restBlend = 1 - smooth(t); root.position.x = pianoX; yaw = PIANIST.yaw; break;
+        outfit = 1; walkBlend = restBlend = 1 - smooth(t); root.position.x = pianoX; root.position.z = homeZ; yaw = mixAngle(-Math.PI / 2, PIANIST.yaw, smooth(t)); break;
       case 'changeToUniform':
-        outfit = 1 - smooth(t); restBlend = 1; root.position.x = pianoX; yaw = PIANIST.yaw; break;
+        outfit = 1 - smooth(t); restBlend = 1; root.position.x = pianoX; root.position.z = homeZ; yaw = PIANIST.yaw; break;
       default:
-        outfit = 0; root.position.x = pianoX; yaw = PIANIST.yaw; break;
+        outfit = 0; root.position.x = pianoX; root.position.z = homeZ; yaw = PIANIST.yaw; break;
     }
     root.position.y = 0.16 * walkBlend;
     root.rotation.y = yaw;
