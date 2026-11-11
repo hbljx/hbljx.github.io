@@ -80,7 +80,7 @@ export function createSea(scene, hole = null) {
   open.name = 'open-sea'; open.rotation.x = -Math.PI / 2; open.position.y = -1.08; open.visible = false;
   scene.add(sea, open);
   let mood = 'day', overcast = 0;
-  const tones = { dawn: 0x526f70, morning: 0x538f94, day: 0x3a8991, dusk: 0x5c7071, night: 0x123b3e };
+  const tones = { dawn: 0x4fc3f7, morning: 0x00a896, day: 0x0077be, dusk: 0x315f86, night: 0x003366 };
   const cloudTone = new THREE.Color(0x526f72);
   const update = () => { sea.material.color.setHex(tones[mood]); if (mood !== 'night') sea.material.color.lerp(cloudTone, .65 * overcast); };
   return {
