@@ -123,6 +123,7 @@ export function setup(app) {
   const activities = createActivities(app);
   const teaCouple = createTeaCouple(world.groups.roof, app.nav);
   const household = createHousehold(app,activities);
+  world.animated.dinoRunner.start();
   const doorActors = [app.player, household.woman, ...household.parents.actors];
   return {
     activities,household,
@@ -142,6 +143,7 @@ export function setup(app) {
       activities.update(dt);
       teaCouple.update(dt);
       household.update(dt);
+      world.animated.musicPerformer?.update(dt);
       world.animated.doors.update(dt, app.nav, doorActors);
       world.carrier.updateCabin(app.player,stage.camera);
       world.carrier.update(dt,stage.camera);

@@ -67,18 +67,18 @@ function makePerson(scene, nav, woman) {
   add(0, .82, .17, .39, .085, .035, woman ? colors.accent : 0x4a3931);
   add(0, .82, .194, .075, .055, .012, colors.metal);
   if (woman) {
-    add(0, .48, -.008, .51, .62, .36, colors.skirt);
-    add(0, .205, -.008, .52, .045, .37, colors.skirtLight);
-    add(-.17, .47, .187, .025, .54, .022, colors.skirtLight);
-    add(.17, .47, .187, .025, .54, .022, colors.skirtLight);
+    add(0, .48, -.008, .51, .62, .36, colors.skirt, 'skirt');
+    add(0, .205, -.008, .52, .045, .37, colors.skirtLight, 'skirt');
+    add(-.17, .47, .187, .025, .54, .022, colors.skirtLight, 'skirt');
+    add(.17, .47, .187, .025, .54, .022, colors.skirtLight, 'skirt');
     add(.13, 1.18, .169, .095, .12, .025, colors.accent);
     add(.148, 1.17, .19, .045, .055, .014, colors.metal);
   } else {
     add(0, .72, 0, .4, .12, .28, colors.skirtShade);
-    add(-.105, .43, 0, .19, .48, .23, colors.skirt);
-    add(.105, .43, 0, .19, .48, .23, colors.skirt);
-    add(-.105, .45, .132, .023, .43, .018, colors.skirtLight);
-    add(.105, .45, .132, .023, .43, .018, colors.skirtLight);
+    add(-.105, .43, 0, .19, .48, .23, colors.skirt, 'staticLeg');
+    add(.105, .43, 0, .19, .48, .23, colors.skirt, 'staticLeg');
+    add(-.105, .45, .132, .023, .43, .018, colors.skirtLight, 'staticLeg');
+    add(.105, .45, .132, .023, .43, .018, colors.skirtLight, 'staticLeg');
     add(.13, 1.18, .17, .105, .12, .025, colors.topLight);
     add(.13, 1.18, .19, .072, .065, .014, colors.top);
     add(.16, 1.195, .208, .022, .022, .012, colors.metal);
@@ -191,7 +191,9 @@ function applyPerson(person, clock, gesture) {
       const open = talking ? .018 + Math.max(0, Math.sin(clock * 5.4 + (person.woman ? 1.7 : 0))) * .035 : .018;
       dummy.position.set(p.x, p.y, p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(p.w, open, p.d);
     } else {
-      dummy.position.set(p.x, p.y, p.z); dummy.rotation.set(p.rotation[0], p.rotation[1], p.rotation[2]); dummy.scale.set(p.w, p.h, p.d);
+      dummy.position.set(p.x, p.y, p.z + (p.group === 'skirt' ? .68 * seated : 0));
+      dummy.rotation.set(p.rotation[0], p.rotation[1], p.rotation[2]);
+      dummy.scale.set(p.w, p.h * (p.group === 'staticLeg' ? 1 - seated : 1), p.d);
     }
     dummy.updateMatrix(); matrix.copy(dummy.matrix).premultiply(p.group === 'head' || p.group === 'mouth' ? headMatrix : bodyMatrix);
     mesh.setMatrixAt(i, matrix);
@@ -201,8 +203,10 @@ function applyPerson(person, clock, gesture) {
   for (const leg of legs) {
     const side = leg.side, swing = Math.sin(phase + (side < 0 ? Math.PI : 0)) * walk * .22;
     const hipY = .82 - .075 * seated;
-    const kneeY = .49 - .03 * seated;
-    const kneeZ = .02 + .39 * seated + swing * .42;
+    // Keep seated thighs above the cushion, with knees and shins beyond its
+    // front edge so neither character's trousers intersect the chair.
+    const kneeY = .49 + .19 * seated;
+    const kneeZ = .02 + .45 * seated + swing * .42;
     const ankleY = .045, ankleZ = .02 + .52 * seated + swing;
     setSegment(person, leg.upper, side * .105, hipY, 0, side * .105, kneeY, kneeZ, .16, .18, false);
     setSegment(person, leg.lower, side * .105, kneeY, kneeZ, side * .105, ankleY + .045, ankleZ, .13, .14, false);

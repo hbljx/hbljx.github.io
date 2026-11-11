@@ -72,6 +72,9 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
   const harborZ=L.SEA_BRIDGE?(L.SEA_BRIDGE.z0+L.SEA_BRIDGE.z1)/2:98;
   const landmarks=[{id:'fishing',name:'钓鱼台',en:'Fishing deck',at:[-45.3,2],symbol:'⚑'},{id:'harbor',name:'航母停泊港',en:'Carrier harbor',at:[(L.CARRIER_HOME?.x ?? 64)-7.2,harborZ],symbol:'⚓'}];
   const symbolCanvas=s=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d');g.fillStyle='#ffe6a1';g.font='26px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(s,16,16);return c;};
+  const kitchenIcon = symbolCanvas('🍳'), cinemaIcon = symbolCanvas('🎬');
+  const gymIcon = symbolCanvas('🏋️'), womanIcon = symbolCanvas('👩');
+  const musicHallIcon = symbolCanvas('♫');
   const blips = [...STATIONS.map(s => ({ s, img: icon(s.icon || s.id).canvas })),...landmarks.map(s=>({s,img:symbolCanvas(s.symbol)}))];
 
   function fit() {
@@ -245,8 +248,7 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     bctx.save();bctx.translate(W,H);bctx.rotate(Math.PI);
     bctx.drawImage(mapImage, ox, oz, mapImage.width * s * mapXScale / PPM, mapImage.height * s / PPM);
     bctx.restore();
-    // Room markers are keyed to the fixed legend, whose labels stay clear at
-    // every map zoom and viewport size.
+    // Keep room markers and labels on the map; the fixed legend is optional.
     const roomLabels = [];
     const roomLegend = bigRoot.querySelector('.room-map-legend')?.getBoundingClientRect();
     const occupied = roomLegend ? [{
@@ -257,15 +259,15 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     }] : [];
     bctx.font = `600 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif`;
     for (const room of [
-      { x: 17.6, z: 6.2, color: '#bd7055', label: '厨房' },
-      { x: 7.4, z: -19.55, color: '#566b91', label: '电影院' },
-      { x: -8.3, z: 11.8, color: '#559477', label: '健身房' },
+      { x: 17.6, z: 6.2, color: '#bd7055', label: '厨房', markerIcon: kitchenIcon },
+      { x: 24.65, z: 7.5, color: '#9b8060', label: '音乐厅', markerIcon: musicHallIcon, labelIcon: musicHallIcon },
+      { x: 7.4, z: -19.55, color: '#566b91', label: '电影院', markerIcon: cinemaIcon },
+      { x: -8.3, z: 11.8, color: '#559477', label: '健身房', markerIcon: gymIcon },
     ]) {
       const [x, y] = P(room.x, room.z);
-      bctx.beginPath(); bctx.arc(x, y, 6 * dpr, 0, Math.PI * 2);
-      bctx.fillStyle = room.color; bctx.strokeStyle = '#fff'; bctx.lineWidth = 2 * dpr;
-      bctx.fill(); bctx.stroke();
-      const width = bctx.measureText(room.label).width + 12 * dpr, height = 22 * dpr, gap = 9 * dpr;
+      drawBlip(bctx, x, y, room.markerIcon, 26 * dpr);
+      const iconSize = room.labelIcon ? 16 * dpr : 0, iconGap = room.labelIcon ? 4 * dpr : 0;
+      const width = bctx.measureText(room.label).width + 12 * dpr + iconSize + iconGap, height = 22 * dpr, gap = 9 * dpr;
       const options = [
         [x + gap, y - height / 2], [x - gap - width, y - height / 2],
         [x - width / 2, y - height - gap], [x - width / 2, y + gap],
@@ -277,19 +279,25 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
           && !occupied.some(other => candidate.left < other.right + 4 * dpr && candidate.right + 4 * dpr > other.left && candidate.top < other.bottom + 4 * dpr && candidate.bottom + 4 * dpr > other.top));
       if (box) {
         occupied.push(box);
-        roomLabels.push({ room, x, y, box, width });
+        roomLabels.push({ room, x, y, box, width, iconSize, iconGap });
       }
     }
     bctx.textBaseline = 'middle';
-    for (const { room, x, y, box, width } of roomLabels) {
+    for (const { room, x, y, box, width, iconSize, iconGap } of roomLabels) {
       const lx = Math.max(box.left, Math.min(x, box.right));
       const ly = Math.max(box.top, Math.min(y, box.bottom));
+      const lineLength = Math.hypot(lx - x, ly - y) || 1;
       bctx.strokeStyle = room.color; bctx.lineWidth = 2 * dpr;
-      bctx.beginPath(); bctx.moveTo(x, y); bctx.lineTo(lx, ly); bctx.stroke();
+      bctx.beginPath(); bctx.moveTo(x + (lx - x) / lineLength * 13 * dpr, y + (ly - y) / lineLength * 13 * dpr); bctx.lineTo(lx, ly); bctx.stroke();
       bctx.fillStyle = 'rgba(12, 14, 16, .88)'; bctx.fillRect(box.left, box.top, width, box.bottom - box.top);
       bctx.strokeStyle = room.color; bctx.lineWidth = 1.5 * dpr; bctx.strokeRect(box.left, box.top, width, box.bottom - box.top);
       bctx.fillStyle = '#fff'; bctx.textAlign = 'left';
-      bctx.fillText(room.label, box.left + 6 * dpr, (box.top + box.bottom) / 2);
+      let labelX = box.left + 6 * dpr;
+      if (room.labelIcon) {
+        bctx.drawImage(room.labelIcon, labelX, (box.top + box.bottom - iconSize) / 2, iconSize, iconSize);
+        labelX += iconSize + iconGap;
+      }
+      bctx.fillText(room.label, labelX, (box.top + box.bottom) / 2);
     }
     bctx.strokeStyle='#b99e72';bctx.lineWidth=3*s;bctx.beginPath();bctx.moveTo(...P(-32,2));bctx.lineTo(...P(-45.3,2));bctx.stroke();
     if(L.SEA_BRIDGE){const b=L.SEA_BRIDGE;const bx=b.x,by=harborZ;bctx.strokeStyle='#526477';bctx.lineWidth=10*s*mapXScale;bctx.beginPath();bctx.moveTo(...P(bx,b.z0));bctx.lineTo(...P(bx,b.z1-10));bctx.stroke();bctx.fillStyle='#526477';rect(bx-9,150,18,20);bctx.fillStyle='#fff';bctx.font=`600 ${12*dpr}px system-ui`;bctx.textAlign='center';bctx.fillText('海上观景大桥',...P(bx,130));
@@ -316,9 +324,8 @@ export function createMinimap({ root, bigRoot, grid, obstacles, decorate = null,
     }
     const p = getPlayer();
     for(const resident of getResidents()){
-      const [x,y]=P(resident.x,resident.z);bctx.fillStyle='#ed77bf';bctx.strokeStyle='#fff';bctx.lineWidth=2*dpr;
-      bctx.beginPath();bctx.arc(x,y,6*dpr,0,Math.PI*2);bctx.fill();bctx.stroke();
-      bctx.fillStyle='#172737';bctx.fillRect(x+9*dpr,y-10*dpr,40*dpr,20*dpr);bctx.fillStyle='#fff';bctx.fillText('女主',x+13*dpr,y);
+      const [x,y]=P(resident.x,resident.z);drawBlip(bctx,x,y,womanIcon,26*dpr);
+      const labelX=x+16*dpr;bctx.fillStyle='#172737';bctx.fillRect(labelX,y-10*dpr,40*dpr,20*dpr);bctx.fillStyle='#fff';bctx.fillText('女主',labelX+4*dpr,y);
     }
     const [px, py] = P(p.x, p.z);
     bctx.save();

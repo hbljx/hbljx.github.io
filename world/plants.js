@@ -9,8 +9,7 @@ export const FLOOR_PLANTS = [
   { id: 'lounge', kind: 'money', x: 3.15, z: -.6, height: 2.7, width: 1.58, yaw: .35 },
   // Beyond the desks' working/chair area, below the framed keepsakes.
   { id: 'work', kind: 'monstera', x: 7.8, z: -9.45, height: 2.5, width: 1.62, yaw: -.6 },
-  // The east glazing, clear of the island return, stools and dining chairs.
-  { id: 'dining', kind: 'bird', x: 22.5, z: 10.2, height: 2.75, width: 1.52, yaw: .35 },
+  // The east-glass corner now holds the piano and drum kit.
   // The sideboard's free end, not in front of the coffee machine or entry.
   { id: 'coffee', kind: 'money', x: 11.6, z: 14.5, height: 2.65, width: 1.45, yaw: .7 },
   // Beside the bed's west aisle; keep the glass entry and wardrobe clear.

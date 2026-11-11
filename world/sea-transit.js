@@ -221,15 +221,28 @@ export function buildSeaTransit({B,planes,layer,materials,scene}){
         context.strokeStyle='#244b60';context.lineWidth=Math.max(4*dpr,7*scale);context.stroke();
         context.strokeStyle=color;context.lineWidth=Math.max(2*dpr,3.4*scale);context.setLineDash(dashed?[5*dpr,4*dpr]:[]);context.stroke();context.setLineDash([]);
       }
-      for(const stop of TRANSIT_STOPS){
+      if(!labels)for(const stop of TRANSIT_STOPS){
         const [x,y]=P(...stop.at);context.fillStyle=stop.service==='metro'?'#168e9d':'#f3dc89';context.strokeStyle='#193c4e';context.lineWidth=1.5*dpr;context.beginPath();context.arc(x,y,3.4*dpr,0,Math.PI*2);context.fill();context.stroke();
       }
       for(const service of Object.values(services))for(const car of service.cars){const [x,y]=P(car.root.position.x,car.root.position.z);context.fillStyle=service.id==='metro'?'#f8faf1':'#e4ae52';context.fillRect(x-3*dpr,y-2*dpr,6*dpr,4*dpr);}
       if(labels){
         context.font=`600 ${11*dpr}px system-ui`;context.textAlign='center';context.textBaseline='middle';
-        for(const [x,z,text]of [[tunnelLabel.x,tunnelLabel.z,'海底隧道'],[metroLabel.x,metroLabel.z,'海上地铁'],[-28,23,'家园地铁站'],[-30,181,'山脚地铁站'],[24,82,'海桥公交站']]){
+        for(const [x,z,text]of [[tunnelLabel.x,tunnelLabel.z,'海底隧道'],[metroLabel.x,metroLabel.z,'海上地铁']]){
           const [px,py]=P(x,z),width=context.measureText(text).width+10*dpr;context.fillStyle='#173849e8';context.fillRect(px-width/2,py-9*dpr,width,18*dpr);context.fillStyle='#fff';context.fillText(text,px,py);
         }
+        const stopLabel=(x,z,text,symbol)=>{
+          const [px,py]=P(x,z),iconWidth=17*dpr,gap=4*dpr,pad=5*dpr,height=20*dpr;
+          const textWidth=context.measureText(text).width,width=pad*2+iconWidth+gap+textWidth,left=px-width/2;
+          context.fillStyle='#173849e8';context.fillRect(left,py-height/2,width,height);
+          context.textAlign='left';context.font=`${15*dpr}px system-ui`;context.fillStyle='#ffe6a1';context.fillText(symbol,left+pad,py);
+          context.font=`600 ${11*dpr}px system-ui`;context.fillStyle='#fff';context.fillText(text,left+pad+iconWidth+gap,py);
+          context.textAlign='center';
+        };
+        stopLabel(-28,23,'家园地铁站','🚇');
+        stopLabel(-30,181,'山脚地铁站','🚇');
+        stopLabel(24,29,'家园公交站','🚌');
+        stopLabel(24,86,'海桥公交站','🚌');
+        stopLabel(24,154,'山脚公交站','🚌');
       }context.restore();
     },
   };

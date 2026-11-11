@@ -9,7 +9,10 @@ import { createMotorcycle } from './motorcycle.js';
 import { createRoadster } from './roadster.js';
 import { buildSharedRooms } from './shared-rooms.js';
 import { buildFloorPlants } from './plants.js';
+import { buildMusicHall } from './music-hall.js';
+import { createMusicPerformer } from './music-performer.js';
 import { createIslandDoors } from './doors.js';
+import { createDinoRunner } from './dino-runner.js';
 import { HOUSE_COLORS as colors } from './house-palette.js';
 import { HOUSE, COURT, RIM, VERTEC, LOFT, LOFT_STAIR_DOOR, BED, STAIRS, SECRET, GARAGE, POOL, POOL_LAMPS, ENTRANCE, BACKDOOR, STUDIO_WALL_END } from './layout.js';
 
@@ -27,6 +30,7 @@ export function furnish({ layer, additionalDoors = [] }) {
   const B = new BoxBatch(layer), roof = new BoxBatch(layer);
   const batches = { static: B, roof, wallN: new BoxBatch(layer), wallS: new BoxBatch(layer), wallE: new BoxBatch(layer), wallW: new BoxBatch(layer) };
   const obstacles = [], lights = [], lighting = [], hotspots = [], planes = [], animated = {}, surfaces = {};
+  const dinoRunner = createDinoRunner();
   const stairTreads = [], stairHit = new THREE.Vector3();
   const bake = (id, x, y, z, power, radius, direction = null) => lighting.push({ id, position: [x, y, z], power, radius, direction });
   const foot = (x, z, w, d, level = 0) => obstacles.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, level });
@@ -80,7 +84,10 @@ export function furnish({ layer, additionalDoors = [] }) {
   }
   for (const z of [-5, 6]) {
     roof.box(2, HOUSE.height - 0.4, z, HOUSE.x1 - HOUSE.x0, 0.3, 0.3, L.wood);
-    for (const x of [-12, 3, 17]) pendant(x, z, 6.5);
+    for (const x of [-12, 3, 17]) {
+      if (x === 3 && z === -5) continue; // Replaced with the lounge chandelier over the sofa.
+      pendant(x, z, 6.5);
+    }
   }
   // The third-floor module owns the replacement skylight and its frame.
   // Flush facade panes belong to the inner wall line; the open wood leaves
@@ -266,7 +273,7 @@ export function furnish({ layer, additionalDoors = [] }) {
 
   // Two independent sit/stand desks form an L, as in the owner's workspace.
   // One ultrawide + laptop, one pair of monitors + tower, each with its own chair.
-  const wallpaper = paint(192, 72, P.paintForestScreen);
+  const wallpaper = dinoRunner.standard;
   const desk = (x, z, width, ry, dual) => {
     const top = 1.05;
     B.at(x, 0, z, ry, () => {
@@ -286,7 +293,7 @@ export function furnish({ layer, additionalDoors = [] }) {
         B.box(lx, top + 0.29, -0.23, sw, sh, 0.07, L.steel);
         const wx = x + Math.cos(ry) * lx + Math.sin(ry) * -0.19;
         const wz = z - Math.sin(ry) * lx + Math.cos(ry) * -0.19;
-        plane(sw - 0.08, sh - 0.07, wallpaper, wx, top + 0.29 + sh / 2, wz, ry, true);
+        plane(sw - 0.08, sh - 0.07, dual ? wallpaper : dinoRunner.ultrawide, wx, top + 0.29 + sh / 2, wz, ry, true);
       }
       // Pull-out input shelf puts the keys and mouse within reach from the chair.
       const trayX = dual ? .35 : -.2;
@@ -306,6 +313,7 @@ export function furnish({ layer, additionalDoors = [] }) {
         B.box(1, top + 0.15, -0.08, 0.35, 0.18, 0.009, L.paint(0x426358));
       }
     });
+    if (!dual) plane(0.35, 0.18, wallpaper, x + 1, top + 0.24, z - 0.075, 0, true, -0.14);
     foot(x, z, ry ? 1.05 : width + 0.1, ry ? width + 0.1 : 1.05);
   };
   desk(2.3, -10.95, 3.3, 0, false);
@@ -355,6 +363,10 @@ export function furnish({ layer, additionalDoors = [] }) {
   B.box(3.45, 0.48, -3.2, 0.2, 0.62, 3.6, sofa);
   for (const z of [-4.9, -1.5]) B.box(3, 0.08, z, 1, 0.65, 0.2, sofa);
   foot(3, -3.2, 1.2, 3.8); hot('about', 3, 0, -3.2, 1.4, 1.2, 4);
+  const chandelier = createCrystalChandelier();
+  chandelier.position.set(3, 0, -3.2);
+  planes.push(chandelier);
+  bake('sofa-chandelier', 3, 6.55, -3.2, 3.1, 11.5, [0, -1, 0]);
   B.box(0.3, 0, -3.2, 1.4, 0.45, 1.8, L.marble); foot(0.3, -3.2, 1.5, 1.9);
   // The stair's east side is the TV wall: a panelled balustrade climbs with
   // the flight, stepped like the treads, and the back rooms' face beside it is
@@ -379,9 +391,8 @@ export function furnish({ layer, additionalDoors = [] }) {
   B.box(WALL + 0.065, 1.48, -5.95, 0.07, 1.14, 0.76, L.paint(0x554e42));
   plane(0.70, 1.08, paint(128, 198, P.paintPoster), WALL + 0.11, 2.05, -5.95, Math.PI / 2);
   B.box(WALL + 0.075, 0.98, -3.2, 0.09, 2.14, 3.74, L.steel);
-  // The TV plays an aerial screensaver over a city at night; world/aerial.js
-  // draws it into a render target that main.js puts on this screen.
-  plane(3.6, 2, paint(256, 144, P.paintForestScreen), WALL + 0.125, 2.05, -3.2, Math.PI / 2, true);
+  // The TV shares the same endlessly running pixel-dino game as the desks.
+  plane(3.6, 2, wallpaper, WALL + 0.125, 2.05, -3.2, Math.PI / 2, true);
   foot(WALL + 0.35, -3.2, 0.75, 4.75);
   B.box(WALL + 0.7, 0.7, -3.2, 0.04, 0.025, 2.6, L.light(0xffbd67));
   bake('fireplace', WALL + .8, .5, -3.2, .45, 3.8);
@@ -456,6 +467,9 @@ export function furnish({ layer, additionalDoors = [] }) {
   B.box(17.5, 3.22, 8.5, 3.5, .09, .18, L.steel);
   B.box(17.5, 3.195, 8.5, 3.32, .025, .12, L.light(0xffe9c9));
   for (const x of [16.35, 17.5, 18.65]) bake('island-pendant', x, 3.18, 8.5, .9, 5, [0, -1, 0]);
+  planes.push(buildMusicHall(B, foot, bake));
+  animated.musicPerformer = createMusicPerformer();
+  planes.push(animated.musicPerformer.group);
   for (const x of [16.6, 18.2]) {
     for (const z of [9.6, 9.98]) B.box(x, 0, z, 0.42, 0.66, 0.04, L.steel);
     B.box(x, 0.66, 9.8, 0.48, 0.09, 0.48, L.panel); foot(x, 9.8, 0.58, 0.58);
@@ -655,6 +669,7 @@ export function furnish({ layer, additionalDoors = [] }) {
     },
   };
   animated.doors = doors;
+  animated.dinoRunner = dinoRunner;
   return { batches, obstacles, lights, lighting, hotspots, planes, animated, surfaces, stairs, partitions };
 }
 
@@ -678,6 +693,112 @@ function ergonomicChair(B, x, z, ry) {
       B.box(cx, 0.72, 0, 0.09, 0.04, 0.36, black);
     }
   });
+}
+
+function createCrystalChandelier() {
+  const group = new THREE.Group();
+  const gold = new THREE.MeshPhongMaterial({ color: 0xc99f56, specular: 0xffe5a7, shininess: 82 });
+  const crystal = new THREE.MeshPhongMaterial({ color: 0xd8f2fa, specular: 0xffffff, shininess: 120 });
+  const champagne = new THREE.MeshPhongMaterial({ color: 0xffe8b1, emissive: 0xc87a23, emissiveIntensity: .62, specular: 0xffffff, shininess: 70 });
+  const rodGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
+  const ringGeometry = new THREE.TorusGeometry(1, .025, 6, 48);
+  const gemGeometry = new THREE.OctahedronGeometry(1, 0);
+  const beadGeometry = new THREE.SphereGeometry(1, 8, 6);
+  const cupGeometry = new THREE.CylinderGeometry(.72, 1, 1, 10);
+  const bulbGeometry = new THREE.SphereGeometry(1, 10, 8);
+  const rods = [], rings = [], gems = [], beads = [], cups = [], bulbs = [];
+  const up = new THREE.Vector3(0, 1, 0), direction = new THREE.Vector3(), midpoint = new THREE.Vector3();
+  const dummy = new THREE.Object3D();
+
+  const add = (list, position, scale, rotation = null) => {
+    dummy.position.set(...position);
+    dummy.scale.set(...scale);
+    if (rotation) dummy.rotation.set(...rotation);
+    else dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix();
+    list.push(dummy.matrix.clone());
+  };
+  const addRod = (a, b, radius) => {
+    direction.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+    midpoint.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+    dummy.position.copy(midpoint);
+    dummy.quaternion.setFromUnitVectors(up, direction.clone().normalize());
+    dummy.scale.set(radius, direction.length(), radius);
+    dummy.updateMatrix();
+    rods.push(dummy.matrix.clone());
+  };
+  const addCylinder = (list, x, y, z, radius, height) => add(list, [x, y, z], [radius, height, radius]);
+  const addGem = (x, y, z, sx = .085, sy = .19, sz = .085) => add(gems, [x, y, z], [sx, sy, sz]);
+  const addRing = (radius, y) => add(rings, [0, y, 0], [radius, radius, radius], [Math.PI / 2, 0, 0]);
+  const put = (geometry, material, matrices, name) => {
+    const mesh = new THREE.InstancedMesh(geometry, material, matrices.length);
+    matrices.forEach((matrix, i) => mesh.setMatrixAt(i, matrix));
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+    mesh.name = name;
+    mesh.castShadow = false;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+  };
+
+  // A broad ceiling rose, a long polished drop rod and three fine collars.
+  addCylinder(cups, 0, 9.48, 0, .3, .09);
+  addCylinder(cups, 0, 9.39, 0, .22, .045);
+  addCylinder(rods, 0, 8.04, 0, .035, 2.82);
+  for (const y of [8.95, 8.1, 7.25, 6.65]) addCylinder(cups, 0, y, 0, .095, .055);
+
+  // A broad crown feeds eight long scrolled arms and a deep, layered crystal skirt.
+  addRing(.38, 6.48); addRing(.56, 6.3); addRing(1.25, 6.02); addRing(1.03, 5.78);
+  addRing(.79, 5.54); addRing(.55, 5.3); addRing(.39, 5.25);
+  addCylinder(cups, 0, 6.28, 0, .18, .32);
+  addCylinder(cups, 0, 5.82, 0, .115, .72);
+  addCylinder(cups, 0, 5.38, 0, .1, .38);
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4, dx = Math.sin(a), dz = Math.cos(a);
+    const p0 = [0, 6.27, 0], p1 = [dx * .42, 6.39, dz * .42], p2 = [dx * .88, 6.48, dz * .88], p3 = [dx * 1.32, 6.4, dz * 1.32];
+    addRod(p0, p1, .026); addRod(p1, p2, .024); addRod(p2, p3, .022);
+    addCylinder(cups, dx * 1.32, 6.43, dz * 1.32, .14, .12);
+    addCylinder(bulbs, dx * 1.32, 6.61, dz * 1.32, .11, .21);
+    addGem(dx * 1.32, 6.77, dz * 1.32, .05, .085, .05);
+    addRod([dx * 1.32, 6.32, dz * 1.32], [dx * 1.32, 6.04, dz * 1.32], .012);
+    addGem(dx * 1.32, 5.95, dz * 1.32, .07, .13, .07);
+  }
+
+  // Dense faceted drops cascade across four widening tiers; the lowest point stays unchanged.
+  for (let i = 0; i < 24; i++) {
+    const a = i * Math.PI / 12, x = Math.sin(a) * 1.25, z = Math.cos(a) * 1.25;
+    addCylinder(beads, x, 5.99, z, .042, .05);
+    addRod([x, 5.96, z], [x, 5.79, z], .01);
+    addGem(x, 5.7, z, .078, .16, .078);
+  }
+  for (let i = 0; i < 22; i++) {
+    const a = i * Math.PI / 11, x = Math.sin(a) * 1.03, z = Math.cos(a) * 1.03;
+    addCylinder(beads, x, 5.75, z, .039, .045);
+    addRod([x, 5.72, z], [x, 5.55, z], .009);
+    addGem(x, 5.46, z, .074, .16, .074);
+  }
+  for (let i = 0; i < 18; i++) {
+    const a = i * Math.PI / 9, x = Math.sin(a) * .79, z = Math.cos(a) * .79;
+    addCylinder(beads, x, 5.51, z, .036, .042);
+    addRod([x, 5.48, z], [x, 5.32, z], .009);
+    addGem(x, 5.23, z, .07, .15, .07);
+  }
+  for (let i = 0; i < 14; i++) {
+    const a = i * Math.PI / 7, x = Math.sin(a) * .55, z = Math.cos(a) * .55;
+    addCylinder(beads, x, 5.27, z, .033, .04);
+    addRod([x, 5.24, z], [x, 5.08, z], .008);
+    addGem(x, 5.0, z, .065, .14, .065);
+  }
+  addCylinder(beads, 0, 5.03, 0, .06, .08);
+  addGem(0, 4.84, 0, .13, .32, .13);
+
+  put(rodGeometry, gold, rods, 'chandelier-goldwork');
+  put(ringGeometry, gold, rings, 'chandelier-rings');
+  put(cupGeometry, gold, cups, 'chandelier-cups');
+  put(beadGeometry, gold, beads, 'chandelier-spacers');
+  put(gemGeometry, crystal, gems, 'chandelier-crystals');
+  put(bulbGeometry, champagne, bulbs, 'chandelier-candle-bulbs');
+  return group;
 }
 
 // A future companion outside: a lean black-and-rust Doberman with a deep chest,

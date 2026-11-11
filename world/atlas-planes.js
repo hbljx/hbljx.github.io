@@ -1,5 +1,5 @@
-// Pack static printed panels into one atlas per shading mode. Interactive
-// bounds remain independent; dynamic screens and non-plane geometry are skipped.
+// Pack printed panels into one atlas per shading mode. Dynamic canvas tiles
+// refresh in place; interactive bounds and non-plane geometry stay independent.
 import * as THREE from 'three';
 export function atlasPlanes(planes) {
   const groups=new Map(),rest=[];
@@ -16,8 +16,8 @@ export function atlasPlanes(planes) {
     for(const mesh of meshes){
       const map=mesh.material.map;
       if(!tiles.has(map))tiles.set(map,{image:map.image,
-        w:map.userData.preserveAtlasResolution?map.image.width:size-4,
-        h:map.userData.preserveAtlasResolution?map.image.height:size-4});
+        w:map.userData.dynamic||map.userData.preserveAtlasResolution?map.image.width:size-4,
+        h:map.userData.dynamic||map.userData.preserveAtlasResolution?map.image.height:size-4});
     }
     // Shelf-pack text at its source resolution, sharing tiles between the two
     // faces of a sign. Ordinary decorative panels keep their existing budget.
@@ -32,7 +32,7 @@ export function atlasPlanes(planes) {
     }
     const canvas=document.createElement('canvas');canvas.width=atlasWidth;canvas.height=cursorY+rowHeight;
     const ctx=canvas.getContext('2d'),positions=[],normals=[],uvs=[];
-    for(const {image,x,y,w,h}of entries){
+    const paintTile=({image,x,y,w,h})=>{
       ctx.drawImage(image,x,y,w,h);
       // Extend edge pixels into the gutter so filtering cannot darken borders.
       ctx.drawImage(image,0,0,image.width,1,x,y-gap,w,gap);
@@ -40,7 +40,8 @@ export function atlasPlanes(planes) {
       ctx.drawImage(image,0,0,1,image.height,x-gap,y,gap,h);
       ctx.drawImage(image,image.width-1,0,1,image.height,x+w,y,gap,h);
       for(const [sx,dx]of [[0,x-gap],[image.width-1,x+w]])for(const [sy,dy]of [[0,y-gap],[image.height-1,y+h]])ctx.drawImage(image,sx,sy,1,1,dx,dy,gap,gap);
-    }
+    };
+    for(const tile of entries)paintTile(tile);
     const point=new THREE.Vector3(),normal=new THREE.Vector3(),normalMatrix=new THREE.Matrix3();
     meshes.forEach(mesh=>{
       const {x,y,w,h}=tiles.get(mesh.material.map);
@@ -53,14 +54,17 @@ export function atlasPlanes(planes) {
         uvs.push((x+u*w)/canvas.width,1-(y+(1-v)*h)/canvas.height);
       }
     });
-    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.magFilter=THREE.LinearFilter;
+    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+    const hasDynamic=[...tiles.keys()].some(map=>map.userData.dynamic);
+    texture.magFilter=hasDynamic?THREE.NearestFilter:THREE.LinearFilter;
     texture.anisotropy=Math.max(...meshes.map(mesh=>mesh.material.map.anisotropy));
+    if(hasDynamic)for(const [map,tile]of tiles)if(map.userData.dynamic)map.userData.updateAtlas=()=>{paintTile(tile);texture.needsUpdate=true;};
     const material=meshes[0].material.clone();material.map=texture;
     const geometry=new THREE.BufferGeometry();
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.computeBoundingSphere();
-    const merged=new THREE.Mesh(geometry,material);merged.receiveShadow=meshes[0].receiveShadow;merged.name='navigation-panel-atlas';rest.push(merged);
+    const merged=new THREE.Mesh(geometry,material);merged.receiveShadow=meshes[0].receiveShadow;merged.name='navigation-panel-atlas';merged.userData.dynamicScreenAtlas=hasDynamic;rest.push(merged);
     for(const mesh of meshes){mesh.geometry.dispose();mesh.material.dispose();}
-    for(const texture of new Set(meshes.map(m=>m.material.map)))texture.dispose();
+    for(const texture of new Set(meshes.map(m=>m.material.map)))if(!texture.userData.dynamic)texture.dispose();
   }
   return rest;
 }
