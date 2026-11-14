@@ -14,10 +14,19 @@ const details = {
 export function mountScenes() {
   const scenes = document.querySelector('#zone-scenes');
   const links = document.querySelector('#scene-links');
+  const sceneMenu = links.closest('details');
+  sceneMenu.addEventListener('keydown',event=>{
+    if (event.key !== 'Escape' || !sceneMenu.open) return;
+    sceneMenu.open=false;
+    sceneMenu.querySelector('summary').focus();
+  });
+  document.addEventListener('click',event=>{
+    if (sceneMenu.open && (!sceneMenu.contains(event.target) || event.target.closest('#scene-links a'))) sceneMenu.open=false;
+  });
   const searchBar = document.querySelector('#directory');
   const roomQuery = document.querySelector('#room-query');
   const roomStars = document.querySelector('#room-stars');
-  const topScenes = document.querySelector('.top-scenes');
+  const manager = document.querySelector('#room-manage');
   const matches = document.querySelector('#room-matches');
   const directoryContent = document.querySelector('#directory-content');
   const homeSearch = document.querySelector('.site-search');
@@ -34,12 +43,16 @@ export function mountScenes() {
     const [accent, glow, heading, summary] = details[zone.id];
     const marker = 'scene-' + zone.id;
     const link = Object.assign(document.createElement('a'), { href: '#' + marker, textContent: zone.name });
+    const caption = Object.assign(document.createElement('small'), {textContent:zone.label});
+    const arrow = Object.assign(document.createElement('span'), {textContent:'↗'});
+    arrow.setAttribute('aria-hidden','true');
+    link.append(caption,arrow);
     links.append(link);
-    topScenes.append(link.cloneNode(true));
 
     const section = document.createElement('section');
     section.className = 'scene';
     section.id = marker;
+    section.dataset.room=zone.id;
     section.style.setProperty('--accent-room', accent);
     section.style.setProperty('--glow-room', glow);
     section.setAttribute('aria-labelledby', marker + '-title');
@@ -59,14 +72,15 @@ export function mountScenes() {
             <a class="scene-next" href="#${next ? 'scene-' + next.id : 'zones'}">${next ? '下一站 · '+ next.name : '返回场景分类'} ↓</a>
           </div>
         </div>
-        <div class="pixel-wipe" aria-hidden="true">${'<i></i>'.repeat(12)}</div>
+        ${sceneDecoration(zone.id)}
+        <div class="chapter-strip" aria-hidden="true"></div>
       </div></div>
       <div class="room-directory pixel-directory" id="${marker}-links" tabindex="-1">
-        <h3>${zone.name}的网址</h3><div class="room-groups"></div>
+        <div class="room-heading"><h3>网址收藏</h3><span>${zone.name}</span></div><div class="room-groups"></div>
       </div>`;
     const paint=createRoomFrame(section.querySelector('img'),zone.id);
     roomFrames.set(section,{paint,progress:-1});
-    roomStats.set(zone.id, {stats:section.querySelector('.scene-index'),list:section.querySelector('.room-groups')});
+    roomStats.set(zone.id, {stats:section.querySelector('.scene-index'),list:section.querySelector('.room-groups'),strip:section.querySelector('.chapter-strip')});
     scenes.append(section);
   }
 
@@ -78,11 +92,15 @@ export function mountScenes() {
     const starOnly = roomStars.getAttribute('aria-pressed') === 'true';
     const visible = new Set();
     matches.replaceChildren();
-    matches.hidden = !query && !starOnly;
+
     for (const zone of rooms) {
-      const {stats,list} = roomStats.get(zone.id);
+      const {stats,list,strip} = roomStats.get(zone.id);
       const categories = groups.filter(group => groupOwners.get(group.id) === zone.id);
-      stats.textContent = categories.reduce((count,group)=>count+group.items.length,0) + ' 个网址 · ' + categories.map(group=>group.title).join(' · ');
+      const total=categories.reduce((count,group)=>count+group.items.length,0);
+      stats.textContent = total + ' 个网址 · ' + categories.map(group=>group.title).join(' · ');
+      if (zone.id==='court') roomFrames.get(stats.closest('.scene')).total=total;
+      strip.replaceChildren(...categories.map(group=>Object.assign(document.createElement('span'),{textContent:group.title})));
+      scheduleScenes();
       list.replaceChildren();
       let matchCount = 0;
       for (const group of categories) {
@@ -94,6 +112,7 @@ export function mountScenes() {
         const category = document.createElement('section');
         category.className = 'room-category';
         const title = Object.assign(document.createElement('h4'),{textContent:group.title});
+        title.append(Object.assign(document.createElement('small'),{textContent:entries.length}));
         const grid = document.createElement('div');
         grid.className = 'room-card-grid';
         for (const item of entries) {
@@ -101,12 +120,23 @@ export function mountScenes() {
           card.className = 'room-card';
           card.dataset.site = item.id;
           const link = Object.assign(document.createElement('a'),{
-            href:item.url,target:'_blank',rel:'noopener noreferrer',textContent:item.name + ' ↗',
+            href:item.url,target:'_blank',rel:'noopener noreferrer',
           });
           const note = Object.assign(document.createElement('small'),{
             textContent:item.description || new URL(item.url).hostname,
           });
-          link.append(note);
+          const mark = Object.assign(document.createElement('span'), {className:'room-mark',textContent:item.name.trim().slice(0,1)});
+          mark.setAttribute('aria-hidden','true');
+          if (/^(assets|uploads|style)\/[A-Za-z0-9_./-]+$/.test(item.icon||'') && !item.icon.includes('..')) {
+            const icon = Object.assign(document.createElement('img'), {src:'navigation/icons/'+item.icon.split('/').at(-1),loading:'lazy',alt:''});
+            icon.addEventListener('error',()=>icon.remove(),{once:true});
+            mark.append(icon);
+          }
+          const text = Object.assign(document.createElement('span'),{className:'room-card-text'});
+          text.append(Object.assign(document.createElement('strong'),{textContent:item.name}),note);
+          const exit = Object.assign(document.createElement('span'),{className:'room-card-exit',textContent:'↗'});
+          exit.setAttribute('aria-hidden','true');
+          link.append(mark,text,exit);
           const star = Object.assign(document.createElement('button'),{type:'button',textContent:stars.has(item.id)?'★':'☆'});
           star.dataset.star = item.id;
           star.setAttribute('aria-pressed',String(stars.has(item.id)));
@@ -114,14 +144,16 @@ export function mountScenes() {
           const edit = Object.assign(document.createElement('button'),{type:'button',textContent:'编辑'});
           edit.dataset.edit=item.id;
           edit.setAttribute('aria-label','编辑：'+item.name);
-          card.append(link,star,edit);
+          const actions = Object.assign(document.createElement('div'),{className:'room-card-actions'});
+          actions.append(star,edit);
+          card.append(link,actions);
           grid.append(card);
         }
         category.append(title,grid);
         list.append(category);
       }
       if (!matchCount) list.textContent = '本场景没有符合条件的网址。';
-      if (matchCount && !matches.hidden) matches.append(Object.assign(document.createElement('a'), {
+      if (matchCount) matches.append(Object.assign(document.createElement('a'), {
         href:'#scene-'+zone.id+'-links',textContent:zone.name+' · '+matchCount,
       }));
     }
@@ -137,14 +169,20 @@ export function mountScenes() {
     roomStars.setAttribute('aria-pressed',String(next));
     renderRooms();
   });
+  document.querySelector('[data-open-search]').addEventListener('click',()=>searchBar.showModal());
+  document.querySelector('#manage-links').addEventListener('click',()=>manager.showModal());
+  matches.addEventListener('click',event=>{
+    const link=event.target.closest('a');
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    searchBar.close();
+  });
   homeSearch.addEventListener('submit',event=>{
     event.preventDefault();
     roomQuery.value=new FormData(homeSearch).get('q');
     roomStars.setAttribute('aria-pressed','false');
     renderRooms();
-    if (location.hash !== '#directory') history.pushState(history.state,'','#directory');
-    searchBar.scrollIntoView();
-    roomQuery.focus({preventScroll:true});
+    searchBar.showModal();
+    roomQuery.focus();
   });
 
   async function loadDirectory() {
@@ -159,7 +197,8 @@ export function mountScenes() {
       hidden.hidden=true;
       hidden.append(...[...content.children].filter(node=>node!==footer));
       directoryContent.replaceChildren(hidden,footer,...controls);
-      searchBar.append(footer);
+      document.querySelector('#room-tools').append(footer);
+      footer.querySelector('#add-site').addEventListener('click',()=>manager.close());
       // Management actions reuse the directory's storage, validation and dialogs.
       await import('./directory.js?v=3');
     } catch {
@@ -171,21 +210,21 @@ export function mountScenes() {
   const sceneObserver = new IntersectionObserver(entries=>{
     for (const entry of entries) {
       const id=entry.target.closest('.scene').id;
-      for (const nav of [links,topScenes]) nav.querySelector('a[href="#'+id+'"]').toggleAttribute('data-active',entry.isIntersecting);
+      links.querySelector('a[href="#'+id+'"]').toggleAttribute('data-active',entry.isIntersecting);
     }
   },{threshold:.55});
   const panels = [...scenes.querySelectorAll('.scene')];
   const preload = new IntersectionObserver(entries => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
-      const frame = roomFrames.get(entry.target);
+      const frame = roomFrames.get(entry.target.closest('.scene'));
       if (frame.progress < 0) frame.paint(.1);
       preload.unobserve(entry.target);
     }
   },{rootMargin:'560px'});
   for (const scene of panels) {
     sceneObserver.observe(scene.querySelector('.scene-screen'));
-    preload.observe(scene);
+    preload.observe(scene.firstElementChild);
   }
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -205,14 +244,27 @@ export function mountScenes() {
       const progress = staticView ? .66 : clamp(-top / range);
       const inset = staticView ? 1 : easing(clamp((progress-.13)/.57));
       const reveal = staticView ? 1 : easing(clamp((progress-.3)/.38));
-      const wipe = staticView ? 0 : easing(clamp((progress-.82)/.18));
+      const outro = staticView ? 0 : easing(clamp((progress-.76)/.24));
+      const sweep = staticView ? 1 : easing(clamp((progress-.08)/.62));
+      scene.style.setProperty('--sweep',sweep);
+      scene.style.setProperty('--outro',outro);
+      scene.toggleAttribute('data-static',staticView);
       scene.style.setProperty('--shot',inset);
       scene.style.setProperty('--copy',reveal);
       scene.toggleAttribute('data-copy',reveal>.1);
-      scene.style.setProperty('--wipe',wipe);
+      if (scene.dataset.room==='lab') {
+        const chapters=scene.querySelector('.chapter-strip').children;
+        const step=Math.min(chapters.length-1,Math.floor(sweep*chapters.length));
+        for (const [i,chapter] of Array.from(chapters).entries()) chapter.toggleAttribute('data-current',i===step);
+      }
       scene.style.setProperty('--track',progress);
       scene.style.setProperty('--opening',staticView ? 0 : 1 - easing(clamp(progress/.43)));
       const room = roomFrames.get(scene);
+      if (room.total !== undefined) {
+        const counter=scene.querySelector('.scene-counter strong');
+        const value=String(Math.round(room.total*sweep));
+        if (counter.textContent!==value) counter.textContent=value;
+      }
       const shot = Math.round(progress * 119)/119;
       if (shot !== room.progress) {
         room.progress = shot;
@@ -231,4 +283,14 @@ export function mountScenes() {
   if (linkedScene) linkedScene.scrollIntoView({behavior:'instant'});
   else if (location.hash.startsWith('#scene-')) document.getElementById(location.hash.slice(1))?.scrollIntoView({behavior:'instant'});
   scheduleScenes();
+}
+
+function sceneDecoration(id) {
+  if (id==='about') return '<div class="room-route" aria-hidden="true"><i></i><i></i><i></i><i></i></div>';
+  if (id==='works') return '<div class="room-scan" aria-hidden="true"></div>';
+  if (id==='coffee') return '<div class="room-record" aria-hidden="true"></div>';
+  if (id==='lab') return '<div class="room-shutter" aria-hidden="true"></div>';
+  if (id==='court') return '<div class="scene-counter" aria-hidden="true"><strong>0</strong><span>个网址</span><i></i></div>';
+  if (id==='pool') return '<div class="room-light" aria-hidden="true"></div>';
+  return '';
 }
