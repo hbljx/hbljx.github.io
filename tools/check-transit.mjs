@@ -8,6 +8,8 @@ let failed=false;
 try{
  for(const mobile of [false,true]){
   const name=mobile?'phone':'computer',context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:960},isMobile:mobile,hasTouch:mobile});
+  // This check starts after the first-visit guide has been read.
+  await context.addInitScript(() => localStorage.setItem('li-home-guide-seen', '1'));
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.stack));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(url);await page.waitForFunction(()=>window.__home||window.__homeStartupError,null,{timeout:60000});
   const result=await page.evaluate(async()=>{

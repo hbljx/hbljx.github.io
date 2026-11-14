@@ -3,7 +3,7 @@ import { appendCoral, SHALLOW_REEFS } from './coral-models.js';
 
 // Sculpted, vertex-coloured geometry still joins the existing fleet draw.
 // Tails and limbs taper their animation weights to zero at their attachment.
-export function createOceanModel(kind,{fishCount=18,groundAt}={}){
+export function createOceanModel(kind,{fishCount=18,groundAt,reefIndex}={}){
   const data={position:[],normal:[],color:[],swimWeight:[],swimAxis:[]};
   const color=new THREE.Color(),shade=new THREE.Color();let offset=[0,0,0];
   function append(geometry,tint,weight=0,axis=[.08,0,0]){
@@ -228,7 +228,9 @@ export function createOceanModel(kind,{fishCount=18,groundAt}={}){
     }
   }
   if(kind==='shore-corals'){
-    for(const [i,[x,z]] of SHALLOW_REEFS.entries())for(let j=0;j<5;j++){
+    const i = reefIndex;
+    const [x,z] = SHALLOW_REEFS[i];
+    for(let j=0;j<5;j++){
       const a=i*.71+j*2.4;
       const px=x+Math.cos(a)*(2+j%2),pz=z+Math.sin(a)*(1.8+j%3);
       appendCoral(append,{x:px,y:groundAt(px,pz)-.35,z:pz,

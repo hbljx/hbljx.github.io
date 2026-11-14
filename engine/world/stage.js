@@ -369,9 +369,9 @@ export function createStage(container, quality) {
     renderer.setSize(innerWidth, innerHeight);
   }
 
-  function setPixelRatio(ratio) {
-    quality.pixelRatio = ratio;
-    resize();
+  function setPixelRatio(value) {
+    quality.pixelRatio = value;
+    renderer.setPixelRatio(ratio());
   }
 
   function render() {

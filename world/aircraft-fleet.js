@@ -3,7 +3,7 @@ import { HOUSE, ROOF_PARKING } from './layout.js';
 import { AIRFIELD,createAirplane,aircraftObstacle } from './aircraft.js';
 import { createNavalAircraft } from './naval-aircraft.js';
 
-export function createAircraftFleet(carrier,oceanLife,vehicles=[],stage=null){
+export function createAircraftFleet(carrier,vehicles=[],stage=null){
   const first=createAirplane();Object.assign(first.userData,{label:'领地飞机',halfSpan:3.7,halfLength:3.2,seat:[0,.92,0]});
   const planes=[first,...carrier.deckAircraft.map(createNavalAircraft)],fields=new Map();
   fields.set(first,carrier.airfield);
@@ -15,11 +15,11 @@ export function createAircraftFleet(carrier,oceanLife,vehicles=[],stage=null){
   // The wheelhouse glass shares the canopy pass, keeping the populated deck
   // within the same draw budget. Its hidden source still tracks the ship.
   const cabinGlass=carrier.mesh.getObjectByName('carrier-cabin-glass');cabinGlass.visible=false;
-  const swimmers=[...oceanLife.creatures,...vehicles],count=planes.length+1+swimmers.length,bodyMatrices=[...planes.map(p=>p.matrixWorld),carrier.mesh.matrixWorld,...swimmers.map(p=>p.matrixWorld)],canopyMatrices=[...planes.map(p=>p.userData.canopy.matrixWorld),cabinGlass.matrixWorld,...swimmers.map(p=>p.matrixWorld)],visible=new Float32Array(count).fill(1),shadow=new Float32Array(count),angles=new Float32Array(count);
+  const count=planes.length+1+vehicles.length,bodyMatrices=[...planes.map(p=>p.matrixWorld),carrier.mesh.matrixWorld,...vehicles.map(p=>p.matrixWorld)],canopyMatrices=[...planes.map(p=>p.userData.canopy.matrixWorld),cabinGlass.matrixWorld,...vehicles.map(p=>p.matrixWorld)],visible=new Float32Array(count).fill(1),shadow=new Float32Array(count),angles=new Float32Array(count);
   function combined(canopies=false){
-    const data={position:[],normal:[],color:[],aircraftIndex:[],propellerPart:[],propellerPivot:[],swimWeight:[],swimAxis:[]};
+    const data={position:[],normal:[],color:[],aircraftIndex:[],propellerPart:[],propellerPivot:[]};
     const sources=planes.map((plane,i)=>[canopies?plane.userData.canopy:plane,i]);
-    if(!canopies)sources.push(...swimmers.map((p,i)=>[p,planes.length+1+i]));
+    if(!canopies)sources.push(...vehicles.map((p,i)=>[p,planes.length+1+i]));
     if(canopies)sources.unshift([cabinGlass,planes.length]);
     sources.forEach(([mesh,i])=>{
       const attrs=mesh.geometry.attributes;
@@ -27,23 +27,20 @@ export function createAircraftFleet(carrier,oceanLife,vehicles=[],stage=null){
         for(const key of ['position','normal'])for(let k=0;k<3;k++)data[key].push(attrs[key].array[v*3+k]);
         if(attrs.color)for(let k=0;k<attrs.color.itemSize;k++)data.color.push(attrs.color.array[v*attrs.color.itemSize+k]);
         else data.color.push(mesh.material.color.r,mesh.material.color.g,mesh.material.color.b,mesh.material.opacity);
-        data.swimWeight.push(attrs.swimWeight?.getX(v)||0);
-        for(let k=0;k<3;k++)data.swimAxis.push(attrs.swimAxis?.array[v*3+k]||0);
         data.aircraftIndex.push(i);data.propellerPart.push(canopies?0:attrs.propellerPart?.getX(v)||0);
         for(let k=0;k<3;k++)data.propellerPivot.push(attrs.propellerPivot?attrs.propellerPivot.array[v*3+k]:[0,1.25,2.7][k]);
       }
     });
     const geometry=new THREE.BufferGeometry();
-    for(const [key,values]of Object.entries(data))geometry.setAttribute(key,new THREE.Float32BufferAttribute(values,key==='aircraftIndex'||key==='propellerPart'||key==='swimWeight'?1:key==='color'&&canopies?4:3));
+    for(const [key,values]of Object.entries(data))geometry.setAttribute(key,new THREE.Float32BufferAttribute(values,key==='aircraftIndex'||key==='propellerPart'?1:key==='color'&&canopies?4:3));
     return geometry;
   }
   function poseShader(material,matrices,flags){
     material.onBeforeCompile=shader=>{
-      shader.uniforms.uOceanTime=oceanLife.time;
       shader.uniforms.uAircraftMatrices={value:matrices};shader.uniforms.uAircraftVisibility={value:flags};shader.uniforms.uPropellerAngles={value:angles};
-      shader.vertexShader=`attribute float swimWeight; attribute vec3 swimAxis; uniform float uOceanTime; attribute float aircraftIndex; attribute float propellerPart; attribute vec3 propellerPivot; uniform mat4 uAircraftMatrices[${count}]; uniform float uAircraftVisibility[${count}]; uniform float uPropellerAngles[${count}];\n`+shader.vertexShader
+      shader.vertexShader=`attribute float aircraftIndex; attribute float propellerPart; attribute vec3 propellerPivot; uniform mat4 uAircraftMatrices[${count}]; uniform float uAircraftVisibility[${count}]; uniform float uPropellerAngles[${count}];\n`+shader.vertexShader
         .replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nfloat normalAngle=uPropellerAngles[int(aircraftIndex)]; if(propellerPart>.5)objectNormal.xy=mat2(cos(normalAngle),sin(normalAngle),-sin(normalAngle),cos(normalAngle))*objectNormal.xy; objectNormal=mat3(uAircraftMatrices[int(aircraftIndex)])*objectNormal;')
-        .replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed+=swimAxis*swimWeight*sin(uOceanTime*3.+position.z*2.+aircraftIndex); float propAngle=uPropellerAngles[int(aircraftIndex)]; if(propellerPart>.5)transformed.xy=mat2(cos(propAngle),sin(propAngle),-sin(propAngle),cos(propAngle))*(transformed.xy-propellerPivot.xy)+propellerPivot.xy; transformed=(uAircraftMatrices[int(aircraftIndex)]*vec4(transformed,1.)).xyz; if(uAircraftVisibility[int(aircraftIndex)]<.5)transformed=vec3(0.);');
+        .replace('#include <begin_vertex>','#include <begin_vertex>\nfloat propAngle=uPropellerAngles[int(aircraftIndex)]; if(propellerPart>.5)transformed.xy=mat2(cos(propAngle),sin(propAngle),-sin(propAngle),cos(propAngle))*(transformed.xy-propellerPivot.xy)+propellerPivot.xy; transformed=(uAircraftMatrices[int(aircraftIndex)]*vec4(transformed,1.)).xyz; if(uAircraftVisibility[int(aircraftIndex)]<.5)transformed=vec3(0.);');
     };
   }
   const bodyMaterial=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});poseShader(bodyMaterial,bodyMatrices,visible);
@@ -109,7 +106,7 @@ export function createAircraftFleet(carrier,oceanLife,vehicles=[],stage=null){
   const collisions=planes.map(aircraftObstacle);
   function update(cutaway=false){
     carrier.mesh.updateMatrixWorld(true);
-    vehicles.forEach((v,i)=>{v.updateMatrixWorld(true);const index=planes.length+1+oceanLife.creatures.length+i;shadow[index]=v.castShadow?1:0;angles[index]=v.userData.wheelAngle||0;});
+    vehicles.forEach((v,i)=>{v.updateMatrixWorld(true);const index=planes.length+1+i;shadow[index]=v.castShadow?1:0;angles[index]=v.userData.wheelAngle||0;});
     for(let i=0;i<planes.length;i++){
       const p=planes[i],v=p.position;p.updateMatrixWorld(true);angles[i]=p.userData.propeller.rotation.z;
       visible[i]=cutaway&&v.y<14&&v.x>HOUSE.x0-1&&v.x<HOUSE.x1+1&&v.z>HOUSE.z0-1&&v.z<HOUSE.z1+1?0:1;

@@ -5,7 +5,8 @@ export const tunnelCeiling=side=>TUNNEL_SILL+Math.sqrt(Math.max(0,TUNNEL_RADIUS*
 
 // One semicircle closes every section, including curves and both ramps.
 export function createTunnelGlazing(path){
-  const cross=Array.from({length:49},(_,i)=>{const a=Math.PI-i*Math.PI/48;return [Math.cos(a)*TUNNEL_RADIUS,TUNNEL_SILL+Math.sin(a)*TUNNEL_RADIUS];});
+  const sides = 24;
+  const cross=Array.from({length:sides+1},(_,i)=>{const a=Math.PI-i*Math.PI/sides;return [Math.cos(a)*TUNNEL_RADIUS,TUNNEL_SILL+Math.sin(a)*TUNNEL_RADIUS];});
   const positions=[],indices=[],rings=Math.ceil(path.length/1.25),p={};
   for(let i=0;i<=rings;i++){
     path.sample(path.length*i/rings,p);

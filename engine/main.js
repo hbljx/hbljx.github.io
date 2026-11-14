@@ -937,13 +937,7 @@ async function boot() {
   weatherFx.warmup(true);
   pool.warmup(true);
   extras.warmup?.(true);
-  // Compiling a shader alone does not upload off-screen vertex buffers.
-  // Draw every batch once under the loading screen, including culled panes
-  // and particles, so the first weather preview/camera move stays warm.
-  const warmObjects = [], cameraMask = stage.camera.layers.mask;
-  stage.scene.traverse(o => {
-    if (o.isMesh || o.isPoints || o.isLine) { warmObjects.push([o, o.frustumCulled]); o.frustumCulled = false; }
-  });
+  const cameraMask = stage.camera.layers.mask;
   stage.camera.layers.enable(1);
   if (aerial) { await stage.renderer.compileAsync(aerial.scene, aerial.camera); aerial.render(); }
   // A full cloud deck turns the sun, and its shadow lookups, off. Compile
@@ -955,11 +949,10 @@ async function boot() {
   await stage.renderer.compileAsync(stage.scene, stage.camera);
   stage.sun.visible = true;
   await stage.renderer.compileAsync(stage.scene, stage.camera);
+  stage.camera.layers.mask = cameraMask;
   rig.update(1 / 60, player);
   stage.render();
   stage.sun.visible = sunOn;
-  stage.camera.layers.mask = cameraMask;
-  for (const [object, culled] of warmObjects) object.frustumCulled = culled;
   player.web.visible = false;
   atmosphere.warmup(false);
   weatherFx.warmup(false);
@@ -1017,10 +1010,16 @@ async function boot() {
   const debugEl = new URLSearchParams(location.search).has('debug') ? document.body.appendChild(Object.assign(document.createElement('pre'), { id: 'debugStats' })) : null;
   let debugClock = 0;
   const weatherFocus = new THREE.Vector3();
-  const governor = { t: 0, frames: 0, sum: 0, sq: 0, level: 0 };
+  const governor = { t: 0, frames: 0, sum: 0, sq: 0 };
+  const minPixelRatio = quality.mobile ? 0.65 : 0.5;
+  document.addEventListener('visibilitychange', () => {
+    last = performance.now();
+    governor.t = governor.frames = governor.sum = governor.sq = 0;
+  });
   let mapClock = 0, promptClock = 0, hoverClock = 0;
   let hudShown = false;
   let wasPaused = false;
+  let backdropReady = false;
   // Lying still on the pool's floor, looking up, the HUD fades away until the
   // next touch, key or mouse movement.
   let quiet = false, lastInput = performance.now(), underwater = null;
@@ -1030,17 +1029,19 @@ async function boot() {
   function loop(now) {
     if (bootFailed) return;
     requestAnimationFrame(loop);
-    if (document.hidden) { last = now; return; }
-    const elapsed = (now - last) / 1000;
+    if (document.hidden) return;
+    const browsing = panel.open && pageKeepsScene;
+    // Dock cards hold the camera still. Reuse the rendered backdrop while
+    // reading, and render another frame if the viewport was resized.
+    if (browsing && backdropReady) { last = now; return; }
+    const elapsed = Math.max(0, now - last) / 1000;
     const paused = minimap.isBigOpen() || panel.open || weatherMenuOpen() || isTravelling() || !!extras.locked;
     if (paused && !wasPaused) { player.cancel(); input.clear(); }
     wasPaused = paused;
-    // Panels pause movement, but the visible world keeps rendering every frame.
     last = now;
     const minute = Math.floor(Date.now() / 60000);
     if (minute !== timeMinute) { timeMinute = minute; if (timeMode === 'auto') applyWeather(); if (phone.up) phone.tick(); }
     const dt = Math.min(elapsed, 0.05);
-    const browsing = panel.open && pageKeepsScene;
 
     const move = paused || rig.introActive || portal?.busy ? { x: 0, z: 0, run: false, up: false, down: false } : input.read();
     const fp = rig.firstPerson && !rig.introActive;
@@ -1050,7 +1051,7 @@ async function boot() {
       if (!extras.locked) player.update(dt, move, rig.yaw, fp);
       extras.update?.(dt, elapsed, now);
       portal?.update(dt, player);
-      rig.update(dt, player);
+      rig.update(rig.introActive ? elapsed : dt, player);
     }
     const airborne = extras.activities?.current === 'airplane' && !extras.activities.flight.parked;
     stage.setClearance(rig.introActive ? stage.camera.position.distanceTo(player.pos) : 0,
@@ -1103,6 +1104,7 @@ async function boot() {
       else if (mouse.x >= 0) hover(mouse.x, mouse.y);
     }
     stage.render();
+    backdropReady = browsing;
     frameTimes[frameIndex = (frameIndex + 1) % frameTimes.length] = elapsed * 1000;
     if (debugEl && (debugClock += elapsed) > 0.5) {
       debugClock = 0;
@@ -1112,14 +1114,14 @@ async function boot() {
 
     // Re-check throughout the visit, including later camera angles. Use the
     // uncapped frame interval, so long GPU stalls cannot hide behind physics dt.
-    if (!rig.introActive && governor.level < 2) {
+    const pixelRatio = stage.renderer.getPixelRatio();
+    if (!browsing && pixelRatio > minPixelRatio) {
       governor.t += elapsed; governor.frames++; governor.sum += elapsed; governor.sq += elapsed * elapsed;
-      if (governor.t > 3) {
+      if (governor.t > 1.5 && governor.frames >= 4) {
         const avg = governor.sum / governor.frames;
         const jitter = Math.sqrt(Math.max(0, governor.sq / governor.frames - avg * avg));
         if (avg > 1 / 25 || (avg > 1 / 50 && jitter > 0.004)) {
-          governor.level++;
-          stage.setPixelRatio(Math.max(quality.mobile ? 0.85 : 1, stage.renderer.getPixelRatio() * 0.8));
+          stage.setPixelRatio(Math.max(minPixelRatio, pixelRatio * 0.8));
         }
         governor.t = governor.frames = governor.sum = governor.sq = 0;
       }
@@ -1128,7 +1130,7 @@ async function boot() {
   }
   requestAnimationFrame(loop);
 
-  addEventListener('resize', () => stage.resize());
+  addEventListener('resize', () => { backdropReady = false; stage.resize(); });
   // Handy when poking at it from the console.
   window.__home = {
     stage, world, player, avatar, rig, nav, sound, pets, cat, dog, extras, portal, worn, atmosphere, weatherFx, pool, weather, config, stats, setWeatherMode, getWeatherMode: () => weatherMode, setTimeMode, getTimeMode: () => timeMode, navigate, openPage, openPortal, go, setMood,

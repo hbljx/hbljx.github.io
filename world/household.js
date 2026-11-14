@@ -168,20 +168,26 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
   let riding=null,boarding=null;
   let transitSession=null;
   const transitSeat={};
+  // Leave room for both actors on the platform while the player waits at the stop.
+  const transitWait = stop => stop.service === 'metro'
+    ? { x: stop.at[0] + .85, z: stop.at[1] }
+    : { x: stop.at[0], z: stop.at[1] + 1.25 };
+  let waitX, waitZ;
   function sharedTransit(dt){
     const session=activities.transit.session;
     if(!session){
       if(transitSession){
         woman.cancel();
-        if(transitSession.phase!=='waiting'||transitSession.companionReady){const stop=transitSession.arrivalStop||transitSession.fromStop;woman.restore(stop.at[0]+(stop.service==='metro'?.85:0),stop.floor,stop.at[1]+(stop.service==='metro'?0:.75),player.heading);}
+        if(transitSession.phase!=='waiting'||transitSession.companionReady){const stop=transitSession.arrivalStop||transitSession.fromStop;const wait=transitWait(stop);woman.restore(wait.x,stop.floor,wait.z,player.heading);}
         femaleAvatar.update(0,still);
         transitSession=null;routine.resume();
       }return false;
     }
     if(transitSession!==session){
       leaveReading();leaveCinema();if(femaleSleep)wakeWoman();routine.pause();transitSession=session;routeClock=1;
+      ({ x: waitX, z: waitZ } = transitWait(session.fromStop));
     }
-    const stop=session.fromStop,waitX=stop.at[0]+(stop.service==='metro'?.85:0),waitZ=stop.at[1]+(stop.service==='metro'?0:.75);
+    const stop=session.fromStop;
     if(session.phase==='waiting'){
       if(!session.companionReady){
         routeClock+=dt;if(!woman.travelling&&routeClock>.7){routeClock=0;navigateWoman(waitX,stop.floor,waitZ);}
@@ -205,7 +211,13 @@ export function createHousehold({stage,world,player,avatar,nav,rig,sound},activi
       return false;
     }
     const car=v.mesh,h=v.getHeading?.()??car.rotation.y+Math.PI/2;
-    if(riding!==v){leaveReading();if(femaleSleep)wakeWoman();routine.pause();riding=v;boarding={x:car.position.x-Math.cos(h)*(v.halfWidth+.8),y:car.position.y,z:car.position.z+Math.sin(h)*(v.halfWidth+.8)};}
+    if (riding !== v) {
+      leaveReading(); if (femaleSleep) wakeWoman(); routine.pause(); riding = v;
+      const sideX = Math.cos(h), sideZ = -Math.sin(h);
+      const fromSide = (woman.pos.x - car.position.x) * sideX + (woman.pos.z - car.position.z) * sideZ;
+      const offset = (fromSide > 0 ? 1 : -1) * (v.halfWidth + .8);
+      boarding = { x: car.position.x + sideX * offset, y: car.position.y, z: car.position.z + sideZ * offset };
+    }
     if(!v.passengerReady){
       if(!woman.travelling)navigateWoman(boarding.x,boarding.y,boarding.z);
       woman.update(dt,IDLE,0);

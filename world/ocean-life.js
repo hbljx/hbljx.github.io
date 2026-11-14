@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { createOceanModel } from './ocean-models.js';
+import { SHALLOW_REEFS } from './coral-models.js';
 import { buildDeepSea, createSeabed, seabedAt } from './deep-sea.js';
 import { createWhaleWaterEffects } from './whale-water.js';
 
-// Shallow life shares the fleet batch. Abyss scenery draws only underwater,
+// Shallow life can be culled per animal or reef. Abyss scenery draws only underwater,
 // without extra lights, shadow passes or frame-by-frame geometry uploads.
 export function createOceanLife(deepBatch,tunnelPath=null){
   const creatures=[],tunnelCreatures=[],time={value:0};
@@ -23,19 +24,23 @@ export function createOceanLife(deepBatch,tunnelPath=null){
   function animal(kind,x,y,z,rx,rz,speed,phase=0){
     if(!cache.has(kind))cache.set(kind,createOceanModel(kind));
     const geometry=inTunnelGarden&&kind==='fish-school'?(tunnelSchool ||=createOceanModel(kind,{fishCount:8})):cache.get(kind);
-    const mesh=new THREE.Mesh(geometry);mesh.name=`ocean-${kind}-${creatures.length}`;
+    const mesh=new THREE.Mesh(geometry,deepMaterial);mesh.name=`ocean-${kind}-${creatures.length}`;
     mesh.userData={kind,x,y,z,rx,rz,speed,phase};mesh.position.set(x,y,z);mesh.updateMatrixWorld(true);
     if(kind==='whale'){
       const phase=(whaleCount++%4)*2.25;mesh.userData.whalePhase=phase;
       whaleWater.attach(mesh,phase);
     }
-    if(inTunnelGarden){mesh.material=deepMaterial;tunnelCreatures.push(mesh);tunnelGroup.add(mesh);}else if(y<-30){mesh.material=deepMaterial;deepCreatures.push(mesh);deepGroup.add(mesh);}else creatures.push(mesh);
+    if(inTunnelGarden){tunnelCreatures.push(mesh);tunnelGroup.add(mesh);}else if(y<-30){deepCreatures.push(mesh);deepGroup.add(mesh);}else creatures.push(mesh);
     return mesh;
   }
   for(const [x,z] of reefs)animal('reef',x,seabedAt(x,z)-.45,z,0,0,0);
-  const shoreCorals=new THREE.Mesh(createOceanModel('shore-corals',{groundAt:seabedAt}));
-  shoreCorals.name='ocean-shore-corals';shoreCorals.userData={kind:'reef'};
-  shoreCorals.updateMatrixWorld(true);creatures.push(shoreCorals);
+  for (const reefIndex of SHALLOW_REEFS.keys()) {
+    const geometry = createOceanModel('shore-corals', { groundAt: seabedAt, reefIndex });
+    const corals = new THREE.Mesh(geometry, deepMaterial);
+    corals.name = 'ocean-shore-corals';
+    corals.userData.kind = 'reef';
+    creatures.push(corals);
+  }
   // Keep nearshore whales close to the waterline so their backs and breaches
   // read clearly from the house and beach.
   animal('whale',-24,-1.8,64,16,8,.055);animal('whale',-75,-2,12,8,18,.045,2);
@@ -103,10 +108,10 @@ export function createOceanLife(deepBatch,tunnelPath=null){
     }
     // Follow the actual tunnel path so the glass scenery is also visible near
     // both portals, instead of relying on a rectangular world-space cutoff.
-    if(camera&&tunnelPath){
+    if (camera && tunnelPath && camera.position.y < -.5) {
       tunnelPath.near(camera.position.x,camera.position.z,tunnelView);
-      tunnelGroup.visible=camera.position.y<-.5&&tunnelView.distance<6;
-    }
+      tunnelGroup.visible = tunnelView.distance < 6;
+    } else tunnelGroup.visible = false;
     time.value+=Math.min(dt,.1);
     for(const mesh of allCreatures){const a=mesh.userData;if(a.kind==='reef')continue;const t=time.value*a.speed+a.phase;
       let x=a.x+Math.cos(t)*a.rx,z=a.z+Math.sin(t)*a.rz,y=a.y;
