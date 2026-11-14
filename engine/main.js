@@ -15,6 +15,7 @@ import { createAtmosphere } from './world/atmosphere.js';
 import { createWeatherFx } from './world/weather-fx.js';
 import { createMailbox } from './world/mailbox.js';
 import { createWeather, timeOfDay, WEATHER_LABELS, TIME_LABELS, WEATHER_PRESETS } from './weather.js';
+import { mountWeatherLocation } from './ui/weather-location.js';
 import { createPlayer } from './world/player.js';
 import { createRig } from './world/rig.js';
 import { createInput } from './input.js';
@@ -174,6 +175,7 @@ async function boot() {
   let weatherState = { data: null, status: config.weather ? 'loading' : 'off', condition: null };
   let weatherIconName = null;
   const weatherMenu = $('#weatherMenu');
+  let locationControls;
   const weatherMenuOpen = () => !!weatherMenu && !weatherMenu.hidden;
   function applyWeather(date = new Date()) {
     const { data, status, condition } = weatherState;
@@ -199,7 +201,7 @@ async function boot() {
     document.querySelector('meta[name="theme-color"]').content = background;
     if (!document.body.classList.contains('underwater')) document.body.style.background = background;
     // Weather symbol plus live temperature; clear skies also reflect day/night.
-    const live = data ? `${t(...condition.description)} ${Math.round(data.temperature)}°C` : status === 'off' ? t(...WEATHER_LABELS.clear) : status === 'locating' ? '正在请求定位' : status === 'denied' ? '未获定位权限，请允许定位后重试' : status === 'location-unavailable' ? '定位暂不可用，请重试' : status === 'loading' ? t('获取天气中', 'Getting the weather') : t('天气暂不可用', 'Weather unavailable');
+    const live = data ? `${t(...condition.description)} ${Math.round(data.temperature)}°C` : status === 'off' ? t(...WEATHER_LABELS.clear) : status === 'locating' ? '正在获取位置' : status === 'loading' ? t('获取天气中', 'Getting the weather') : status === 'location-required' ? '请选择天气位置' : status === 'denied' || status.startsWith('location-') ? '尚未获取天气位置' : t('天气暂不可用', 'Weather unavailable');
     const now = `${weatherMode === 'auto' ? live : t(...WEATHER_LABELS[weatherMode])} · ${t(...TIME_LABELS[mood])}`;
     const buttonWeather=weatherMode==='auto'?(condition?t(...condition.description):status==='off'?t(...WEATHER_LABELS.clear):t('天气未知','Weather unknown')):t(...WEATHER_LABELS[weatherMode]);
     const buttonLabel=`${buttonWeather} · ${t(...TIME_LABELS[mood])}`;
@@ -208,13 +210,14 @@ async function boot() {
     $('#moodButton').setAttribute('aria-label', buttonLabel);
     const line = weatherMenu?.querySelector('.now');
     if (line) line.textContent = now;
+    locationControls?.update(weatherState);
     for (const b of weatherMenu?.querySelectorAll('[data-weather], [data-time]') || []) {
       const checked = b.hasAttribute('data-weather') ? b.dataset.weather === weatherMode : b.dataset.time === timeMode;
       b.setAttribute('aria-checked', String(checked)); b.tabIndex = checked ? 0 : -1;
     }
   }
   const weather = createWeather({ onChange(state) { weatherState = state; applyWeather(); } });
-  const locateButton=document.createElement('button');locateButton.type='button';locateButton.textContent='重新获取位置';locateButton.id='weatherLocate';locateButton.addEventListener('click',()=>weather.requestLocation());weatherMenu?.querySelector('.actions')?.append(locateButton);
+  if(config.weather) locationControls=mountWeatherLocation(weatherMenu,weather,()=>setWeatherMode('auto'));
   // Without a weather city there is no data source to credit.
   if (!config.weather) weatherMenu?.querySelector('a[href*="open-meteo"]')?.closest('p')?.remove();
   function toggleWeatherMenu(open = weatherMenu?.hidden, restoreFocus = false) {

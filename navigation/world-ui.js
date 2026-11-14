@@ -57,20 +57,27 @@ dialog#panel[data-station="mailbox"] {
 `;
 document.head.append(guideStyle);
 const guideSeenKey='li-home-guide-seen';
+let settledAt=0;
 const ready=setInterval(()=>{
   const home=window.__home;
-  if(home?.player&&!document.querySelector('#loading, #panel[open]')){
+  if(home?.player&&!home.rig.introActive&&!document.querySelector('#loading')&&!document.hidden){
+    // Allow the final opening-camera frame and HUD to settle before a single guide opening.
+    if(!settledAt){settledAt=performance.now();return;}
+    if(performance.now()-settledAt<400)return;
     clearInterval(ready);brand.hidden=false;
+    document.documentElement.classList.remove('world-booting');
     document.querySelector('#portalButton')?.remove();
     document.querySelector('#minimap .badge.credit')?.remove();
 
+    if(document.querySelector('#panel[open]'))return;
     try{if(localStorage.getItem(guideSeenKey)==='1')return;}catch{}
     home.openPage('mailbox',{preserveScene:true});
     if(document.querySelector('#panel[data-station="mailbox"][open]')){
       try{localStorage.setItem(guideSeenKey,'1');}catch{}
     }
   }
-  else if(window.__homeStartupError||document.body.classList.contains('plain')){clearInterval(ready);}
+  else if(window.__homeStartupError||document.body.classList.contains('plain')){clearInterval(ready);document.documentElement.classList.remove('world-booting');}
+  else settledAt=0;
 },250);
 // F closes an open panel when focus is outside the embedded directory.
 window.addEventListener('keydown',event=>{

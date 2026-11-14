@@ -1,7 +1,8 @@
-// Open-Meteo current conditions, requested after browser location consent.
-// Weather never blocks world boot; refresh at most once per 30 minutes.
-// Location failure leaves the temperature empty and offers a retry.
+// Open-Meteo conditions for a selected city or a consented device location.
+// Automatic refresh is bounded to 30 minutes; an explicit retry bypasses the cache.
+// Location failures preserve any existing city and offer a manual alternative.
 import { config } from './config.js';
+import { requestBrowserLocation, validLocation, publishLocation } from './location.js';
 
 export const WEATHER_CITY = config.weather || null;
 export function weatherUrl(location){return 'https://api.open-meteo.com/v1/forecast?'+new URLSearchParams({latitude:location.latitude,longitude:location.longitude,timezone:'auto',current:'temperature_2m,weather_code,rain,showers,cloud_cover,wind_speed_10m',timeformat:'unixtime',forecast_days:1,daily:'sunrise,sunset'});}
@@ -88,15 +89,11 @@ export function createWeather({onChange,fetcher=fetch,storage,now=Date.now,geolo
   if(!storage)try{storage=localStorage;}catch{}
   let data=null,status='loading',location=WEATHER_CITY?.geolocate?null:WEATHER_CITY,pending=null,timer,disposed=false,lastAttempt=-Infinity,abort;
   const emit=next=>{status=next;if(!disposed)onChange?.({data,status,location,condition:data?weatherCondition(data):null});};
-  const locate=()=>new Promise((resolve,reject)=>{
-    if(!geolocation){reject({code:0});return;}
-    geolocation.getCurrentPosition(p=>resolve({latitude:Math.round(p.coords.latitude*1000)/1000,longitude:Math.round(p.coords.longitude*1000)/1000}),reject,{enableHighAccuracy:false,timeout:12000,maximumAge:300000});
-  });
-  async function refresh(){
-    if(disposed||pending||!location||now()-lastAttempt<INTERVAL)return pending;
+  async function refresh({force=false}={}){
+    if(disposed||pending||!location||(!force&&now()-lastAttempt<INTERVAL))return pending;
     lastAttempt=now();const key=`homecraft-weather-${location.latitude},${location.longitude}-v1`;
     if(!data)try{const c=JSON.parse(storage?.getItem(key));if(valid(c)&&now()-c.savedAt>=0&&now()-c.savedAt<MAX_AGE&&Math.abs(now()-c.time*1000)<MAX_AGE)data=c;}catch{}
-    if(data&&now()-data.savedAt<INTERVAL){emit('cached');return;}
+    if(!force&&data&&now()-data.savedAt<INTERVAL){emit('cached');return;}
     abort=new AbortController();const timeout=setTimeout(()=>abort.abort(),8000);
     pending=(async()=>{
       try{
@@ -110,14 +107,49 @@ export function createWeather({onChange,fetcher=fetch,storage,now=Date.now,geolo
       finally{clearTimeout(timeout);pending=null;}
     })();return pending;
   }
-  let locating=false;
+  let locating=false, requestId=0, started=false;
+  const selectedKey='homecraft-weather-city-v1';
+  async function useLocation(next,id){
+    if(pending){abort?.abort();await pending;}
+    if(disposed||id!==requestId)return;
+    data=null;location=next;lastAttempt=-Infinity;publishLocation(next);emit('loading');await refresh();
+  }
+  async function setLocation(next){
+    if(!validLocation(next)||disposed)return false;
+    const id=++requestId;locating=false;
+    const city={latitude:next.latitude,longitude:next.longitude,city:String(next.city||next.name||'所选城市').slice(0,100)};
+    try{storage?.setItem(selectedKey,JSON.stringify(city));}catch{}
+    await useLocation(city,id);return true;
+  }
   async function requestLocation(){
-    if(locating||disposed)return;locating=true;if(pending){abort?.abort();await pending;}if(disposed){locating=false;return;}data=null;location=null;emit('locating');
-    try{const next=await locate();if(disposed)return;location=next;lastAttempt=-Infinity;emit('loading');await refresh();}
-    catch(error){emit(error.code===1?'denied':'location-unavailable');}finally{locating=false;}
+    if(locating||disposed)return;locating=true;const id=++requestId;
+    if(pending){abort?.abort();await pending;}
+    if(disposed||id!==requestId)return;
+    emit('locating');
+    try{
+      const next=await requestBrowserLocation(geolocation);if(disposed||id!==requestId)return;
+      try{storage?.removeItem(selectedKey);}catch{}
+      await useLocation(next,id);
+    }catch(error){
+      if(!disposed&&id===requestId)emit(error.code===1?'denied':error.code===3?'location-timeout':error.code==='insecure'?'location-insecure':error.code==='unsupported'?'location-unsupported':'location-unavailable');
+    }finally{if(id===requestId)locating=false;}
   }
   const visible=()=>{if(!document.hidden)refresh();};
-  return{start(){if(WEATHER_CITY?.geolocate)requestLocation();else if(location){emit('loading');refresh();}else emit('off');timer=setInterval(visible,INTERVAL);document.addEventListener('visibilitychange',visible);},refresh,requestLocation,
-    dispose(){disposed=true;abort?.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);},
+  return{start(){
+    if(started||disposed)return;started=true;
+    if(WEATHER_CITY?.geolocate){
+      try{const saved=JSON.parse(storage?.getItem(selectedKey));if(validLocation(saved))location=saved;}catch{}
+      if(location){publishLocation(location);emit('loading');refresh();}
+      else{
+        emit('location-required');const initialRequest=requestId;
+        // Only reuse permission that was already granted. New permission is requested by a click.
+        globalThis.navigator?.permissions?.query({name:'geolocation'}).then(result=>{
+          if(result.state==='granted'&&!disposed&&requestId===initialRequest)requestLocation();
+        }).catch(()=>{});
+      }
+    }else if(location){publishLocation(location);emit('loading');refresh();}else emit('off');
+    timer=setInterval(visible,INTERVAL);document.addEventListener('visibilitychange',visible);
+  },refresh,requestLocation,setLocation,
+    dispose(){disposed=true;++requestId;abort?.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);},
     get state(){return{data,status,location,condition:data?weatherCondition(data):null};}};
 }

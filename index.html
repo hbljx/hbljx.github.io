@@ -15,6 +15,7 @@
 <link rel="icon" href="assets/li.png">
 <link rel="stylesheet" href="navigation/home.css">
 <link rel="stylesheet" href="navigation/scenes.css">
+<link rel="stylesheet" href="navigation/scene-effects.css">
 <script type="importmap">{"imports":{
   "three":"./vendor/three/three.module.min.js",
   "@engine/":"./engine/",
@@ -101,10 +102,16 @@
       <div class="hero-copy">
         <h1 id="home-title">像素<span>导航</span></h1>
         <p class="intro">七个场景，收好常用的网站。</p>
-        <form class="site-search" action="#directory" role="search">
-          <label class="visually-hidden" for="home-query">搜索本站网址</label>
-          <input type="search" name="q" id="home-query" placeholder="找网站、工具或资源" required>
-          <button type="submit" aria-label="搜索网址">查找 <span aria-hidden="true">→</span></button>
+        <form class="site-search" action="https://www.baidu.com/s" method="get" target="_blank" rel="noopener noreferrer" role="search" aria-label="网页搜索">
+          <fieldset class="search-engines"><legend class="visually-hidden">选择搜索引擎</legend>
+            <label><input type="radio" name="engine" value="baidu" checked><span>百度</span></label>
+            <label><input type="radio" name="engine" value="bing"><span>必应</span></label>
+            <label><input type="radio" name="engine" value="google"><span>谷歌</span></label>
+          </fieldset>
+          <div class="web-search-row"><label class="visually-hidden" for="home-query">搜索互联网</label>
+            <input type="search" name="wd" id="home-query" placeholder="用百度搜索网页" required autocomplete="off" maxlength="2000">
+            <button type="submit" aria-label="使用百度搜索">搜索 <span aria-hidden="true">↗</span></button>
+          </div>
         </form>
       </div>
       <div class="hero-bottom">

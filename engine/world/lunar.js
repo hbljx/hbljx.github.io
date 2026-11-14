@@ -1,3 +1,4 @@
+import { onLocation } from '../location.js';
 const RAD = Math.PI / 180, TAU = Math.PI * 2, SYNODIC = 29.530588853;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const wrap = x => ((x % TAU) + TAU) % TAU;
@@ -48,10 +49,5 @@ export function lunarSky(date = new Date(), latitude = 0, longitude = 0) {
 }
 
 export function locateForLunarSky(onChange) {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(
-    ({ coords }) => onChange(coords.latitude, coords.longitude),
-    () => {},
-    { enableHighAccuracy: true, timeout: 8000, maximumAge: 86400000 },
-  );
+  return onLocation(({latitude,longitude})=>onChange(latitude,longitude));
 }

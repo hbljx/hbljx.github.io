@@ -1,0 +1,149 @@
+/* A complete shot: foreground entrance → camera settles → reading hold → handoff.
+   Decorative layers never intercept links. All motion is reversible with the scroll. */
+.scene {--enter:0;--exit:0;--travel:0;--title-in:0;--body-in:0;--actions-in:0;--atmosphere:.9}
+.scene-cinema {min-height:220svh}
+.scene-screen {perspective:1200px;background:#111b15}
+.scene:nth-child(even) .scene-screen {background:#111b15}
+.scene:is([data-room=works],[data-room=coffee],[data-room=court]) .scene-screen::before {content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;background-image:var(--room-image);background-position:var(--room-focus,center);background-size:cover;opacity:calc((1 - var(--enter))*.22);transform:scale(1.07)}
+.scene[data-room] .scene-art,.scene[data-room]:nth-child(even) .scene-art {
+  inset:0;border-radius:0;transform:none;opacity:1;clip-path:none;
+}
+.scene-art img {transform:scale(calc(1.13 - var(--enter)*.08 + var(--exit)*.025));transform-origin:55% 45%}
+.scene-art::after {
+  background:linear-gradient(270deg,#07100eeb, #07100e8c 33%,transparent 75%);
+  opacity:calc(.35 + var(--title-in)*.65);
+}
+.scene:nth-child(even) .scene-art::after {background:linear-gradient(90deg,#07100eeb,#07100e8c 33%,transparent 75%)}
+.scene-info,.scene:nth-child(even) .scene-info {z-index:3;opacity:1;transform:none;padding-block:30px}
+.scene-info>* {transform:translate3d(0,calc((1 - var(--body-in))*22px),0);opacity:var(--body-in)}
+.scene-info :is(.kicker,h2) {transform:translate3d(0,calc((1 - var(--title-in))*32px),0);opacity:var(--title-in)}
+.scene-info .scene-actions {transform:translate3d(0,calc((1 - var(--actions-in))*15px),0);opacity:var(--actions-in)}
+.scene-info h2 {text-shadow:0 6px 35px #030b0940}
+.scene-info:focus-within>* {opacity:1;transform:none}
+.scene-description {color:#d5ddd5;text-shadow:0 2px 12px #0008}
+.scene-opening {z-index:2;bottom:12%;gap:16px;transform:translateY(calc((1 - var(--opening))*-25px))}
+.scene-opening span {font-size:clamp(44px,7vw,104px);letter-spacing:-.045em}
+.scene-opening small {font-size:12px;letter-spacing:.16em;opacity:.8}
+.scene-meter {height:1px;bottom:25px;z-index:4;background:#ffffff24}
+.scene-meter i {box-shadow:0 0 9px rgb(var(--glow-room)/.65)}
+.scene-folio {position:absolute;top:calc(var(--header) + 30px);left:var(--gutter);display:flex;align-items:center;gap:12px;z-index:3;color:#e6eddfa3;font:12px/1 Consolas,monospace;pointer-events:none}
+.scene-folio span {font-size:19px;color:var(--accent-room)}
+.scene-folio i {width:42px;height:1px;background:#ffffff3b}
+.scene-folio small {font-size:11px}
+.scene-fx {position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;isolation:isolate}
+.scene-fx>div {position:absolute;pointer-events:none}
+.scene-vignette {inset:0;background:linear-gradient(0deg,#111b15,transparent 19%,transparent 85%,#0b151348),radial-gradient(ellipse at 50% 40%,transparent 40%,#060e0e66);opacity:calc(.7 + var(--exit)*.3)}
+.scene-vignette::after {content:"";position:absolute;inset:0;background:linear-gradient(0deg,#111b15 0%,#111b15bb 35%,#111b1540);opacity:var(--exit)}
+.scene-motes {inset:0;opacity:calc(var(--atmosphere)*(1 - var(--exit))*.65)}
+.scene-motes i {position:absolute;left:var(--x);top:var(--y);width:calc(var(--z)*1px);height:calc(var(--z)*1px);background:var(--accent-room);opacity:calc(.12 + var(--seed)*.12);box-shadow:0 0 6px rgb(var(--glow-room)/.5);transform:translate3d(calc(var(--travel)*var(--z)*-13px),calc(var(--travel)*var(--z)*-54px),0)}
+.scene-fx svg {display:block;width:100%;height:100%;stroke:currentColor;stroke-width:1}
+.chapter-strip {position:absolute;z-index:3;display:flex;gap:24px;bottom:49px;left:var(--gutter);right:var(--gutter);overflow:hidden;pointer-events:none;opacity:calc(var(--actions-in)*.7);color:var(--accent-room);font-size:12px;letter-spacing:.06em;transform:translateX(calc((1 - var(--actions-in))*24px))}
+.chapter-strip span {flex:none;white-space:nowrap;border-bottom:1px solid #d4e2cd30;padding-bottom:8px}
+.scene:not([data-room=writing]):not([data-room=lab]) .chapter-strip {display:none}
+
+/* 01 · Moving through a sunlit window. The narrow foreground moves faster than the room. */
+.window-wings {inset:-4%;perspective:1000px;opacity:calc((1 - var(--enter))*.85)}
+.window-wings i {position:absolute;top:0;bottom:0;width:24%;border:12px solid #17241b;border-inline-width:20px;background:linear-gradient(100deg,#d2e7aa12,transparent 65%);box-shadow:inset 0 0 0 1px #e5f4bb55,0 0 35px #0009;transform-origin:left;transform:translateX(calc(var(--enter)*-95%)) rotateY(calc(var(--enter)*-35deg))}
+.window-wings i::after {content:"";position:absolute;left:0;right:0;top:38%;height:8px;background:#263425;box-shadow:0 1px #dae1ab55,0 3px 12px #0008}
+.window-wings i:last-child {right:0;transform-origin:right;transform:translateX(calc(var(--enter)*95%)) rotateY(calc(var(--enter)*35deg))}
+.window-sun {inset:-20%;background:linear-gradient(118deg,transparent 28%,#f1ecc115 32%,#fff3b837 34%,transparent 40%,#e9e8b214 48%,transparent 55%);transform:translateX(calc(var(--travel)*12%));mix-blend-mode:screen;opacity:calc(.6 - var(--exit)*.5)}
+.scene[data-room=about] .scene-art img {transform:translateX(calc((1 - var(--enter))*-2%)) scale(calc(1.15 - var(--enter)*.10))}
+
+/* 02 · An illuminated scanning plane has a feathered edge, a trailing grid and fine circuitry. */
+.scene[data-room=works] .scene-art {mask-image:linear-gradient(90deg,#000 calc(var(--enter)*122% - 22%),#0004 calc(var(--enter)*122% - 8%),transparent calc(var(--enter)*122% + 2%))}
+.scene[data-room=works] .scene-art img {transform:translateX(calc((1 - var(--enter))*3%)) scale(calc(1.12 - var(--enter)*.07))}
+.scan-field {inset:0;background:linear-gradient(#8bf8d917 1px,transparent 1px),linear-gradient(90deg,#8bf8d917 1px,transparent 1px);background-size:56px 56px;mask-image:linear-gradient(90deg,transparent calc(var(--enter)*122% - 30%),#000 calc(var(--enter)*122% - 12%),transparent calc(var(--enter)*122% + 2%));opacity:calc(1 - var(--enter))}
+.scan-edge {top:0;bottom:0;left:calc(var(--enter)*122% - 12%);width:1px;background:#d9fff0;box-shadow:0 0 7px 1px #acffe999,0 0 35px 10px #68dfbd33;opacity:calc((1 - var(--enter))*.8)}
+.circuit-traces {inset:0;color:#b6ffe0;opacity:calc(var(--atmosphere)*.55)}
+.circuit-traces path {stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--enter));stroke-width:.8}
+.circuit-nodes {fill:#b6ffe0;stroke:none;opacity:var(--enter)}
+
+/* 03 · Five individual paper edges peel away at different depths, with a warm spine highlight. */
+.paper-leaves {inset:-10%;perspective:1100px;opacity:calc(1 - var(--enter))}
+.paper-leaves i {--leaf:clamp(0,calc(var(--enter)*1.6 - var(--i)*.12),1);position:absolute;inset:-5% auto -5% calc(13% + var(--i)*17%);width:21%;transform-origin:left center;transform:translate3d(calc(var(--leaf)*-42vw),0,calc(var(--i)*8px)) rotateY(calc(var(--leaf)*-76deg)) rotateZ(calc(-4deg + var(--leaf)*-5deg));background:linear-gradient(90deg,#9a80641a,#ead9b24a 76%,#f3e0b778 98%,#fff3d3aa);border-right:1px solid #fbe4bda8;box-shadow:14px 0 25px #09091040;mask-image:linear-gradient(0deg,transparent,#000 15%,#000 85%,transparent)}
+.paper-leaves span {position:absolute;inset:20% 18%;background:repeating-linear-gradient(0deg,transparent 0 27px,#f1d6ae17 28px 29px);opacity:.65}
+.library-light {inset:0;background:linear-gradient(102deg,transparent 39%,#e7c19220 46%,transparent 54%);transform:translateX(calc((1 - var(--enter))*-40%));opacity:calc(.8 - var(--exit)*.6)}
+.scene[data-room=writing] .scene-art img {transform:translateX(calc(3% - var(--enter)*5%)) scale(1.09)}
+.scene[data-room=writing] .chapter-strip {transform:translateX(calc((1 - var(--actions-in))*65px))}
+
+/* 04 · A soft aperture follows the record's concentric grooves without a hard circle cut. */
+.scene[data-room=coffee] .scene-art {mask-image:radial-gradient(ellipse at 65% 46%,#000 calc(var(--enter)*78% + 8%),#000c calc(var(--enter)*78% + 14%),transparent calc(var(--enter)*78% + 24%))}
+.record-halo {inset:-15% -20% -15% 10%;color:#ffe4b9;opacity:calc((1 - var(--enter))*.48);transform:rotate(calc(-20deg + var(--travel)*60deg)) scale(calc(.72 + var(--enter)*.55))}
+.record-grooves {position:absolute;inset:10%;border-radius:50%;background:repeating-radial-gradient(ellipse,transparent 0 11px,#edd5a522 12px,transparent 13px 21px);mask-image:conic-gradient(transparent 0%,#000 20%,transparent 40%,#000 65%,transparent 90%)}
+.coffee-glow {inset:0;background:radial-gradient(ellipse at 72% 30%,#ffc78521,transparent 50%);opacity:calc(.7 - var(--exit)*.5);transform:translateY(calc(var(--travel)*-5%))}
+.scene[data-room=coffee] .scene-art img {transform:scale(calc(1.16 - var(--enter)*.11));transform-origin:65% 46%}
+
+/* 05 · Separate brushed-metal slats fold into the header in a progressive mechanical wave. */
+.shutter-slats {inset:0;perspective:900px;opacity:calc(1 - var(--enter))}
+.shutter-slats i {--lift:clamp(0,calc(var(--enter)*1.9 - var(--i)*.05),1);position:absolute;left:0;right:0;top:calc(var(--i)*5.556%);height:5.7%;transform-origin:center top;transform:translateY(calc(var(--lift)*-70vh)) rotateX(calc(var(--lift)*72deg));background:repeating-linear-gradient(0deg,#ffffff05 0 1px,transparent 1px 3px),linear-gradient(0deg,#181e1ce8,#373c32e8 47%,#77765bcc 50%,#252d27ef 56%,#202922ef);border-top:1px solid #c8c5a44a;border-bottom:1px solid #070f0ccc;box-shadow:0 6px 16px #0005}
+.shutter-slats span {position:absolute;inset:15% 5%;border-inline:1px solid #d4c99524}
+.workshop-rails {inset:0 3%;opacity:calc((1 - var(--enter))*.65)}
+.workshop-rails i {position:absolute;inset:0 auto 0 0;width:5px;background:linear-gradient(90deg,#0d1311,#99967a80,#15211a);box-shadow:0 0 15px #0007}
+.workshop-rails i:last-child {left:auto;right:0}
+.workshop-light {inset:0;background:linear-gradient(0deg,transparent calc(var(--enter)*120% - 20%),#f7d89322 calc(var(--enter)*120% - 10%),transparent calc(var(--enter)*120%));opacity:calc(1 - var(--enter))}
+.scene[data-room=lab] .scene-art img {transform:translateY(calc((1 - var(--enter))*2%)) scale(calc(1.10 - var(--enter)*.05))}
+.scene[data-room=lab] .chapter-strip span {transition:color .25s,border-color .25s;color:#e1d9c4a8}
+.scene[data-room=lab] .chapter-strip span[data-current] {color:var(--accent-room);border-color:var(--accent-room)}
+
+/* 06 · A rising horizon, precisely drawn orbital arcs and a signal trace. */
+.scene[data-room=court] .scene-art {mask-image:linear-gradient(0deg,#000 calc(var(--enter)*125% - 25%),#0008 calc(var(--enter)*125% - 8%),transparent calc(var(--enter)*125% + 3%))}
+.scene[data-room=court] .scene-art img {transform:translateY(calc((1 - var(--enter))*-5%)) scale(calc(1.15 - var(--enter)*.10))}
+.observatory-grid {inset:0;color:#a5e4ef;opacity:calc(var(--atmosphere)*.7);transform:translateY(calc((1 - var(--enter))*30px))}
+.orbital-lines {transform-origin:780px 340px;transform:rotate(calc(var(--travel)*24deg));stroke-opacity:.5}
+.signal-path {stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--enter));stroke:#caf8ff;stroke-width:1.5}
+.horizon-light {inset:0;background:linear-gradient(0deg,transparent calc(var(--enter)*125% - 25%),#a0edff26 calc(var(--enter)*125% - 16%),transparent calc(var(--enter)*125% - 4%));opacity:calc(1 - var(--enter))}
+.scene-counter {right:var(--gutter);bottom:12%;opacity:calc(var(--actions-in)*.82);color:#d3f1fa;text-shadow:0 3px 20px #00151d}
+.scene-counter strong {font-size:clamp(42px,6vw,90px);line-height:.95;font-weight:500;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
+.scene-counter span {margin-left:10px;font-size:13px;color:#c6dce2}
+.scene-counter i {display:block;height:1px;margin-top:13px;background:linear-gradient(90deg,#b6efff,#b6efff00);transform:scaleX(var(--enter));transform-origin:left}
+
+/* 07 · Block-shaped canopy silhouettes slide past the lens; daylight opens between them. */
+.garden-canopy {inset:-6%;opacity:calc((1 - var(--enter))*.88)}
+.garden-canopy i {position:absolute;width:38%;height:55%;left:calc((var(--i) - 3)*21%);top:-5%;background:linear-gradient(150deg,#173428,#091d17);clip-path:polygon(0 0,100% 0,100% 47%,87% 47%,87% 67%,73% 67%,73% 80%,57% 80%,57% 68%,43% 68%,43% 91%,29% 91%,29% 74%,13% 74%,13% 49%,0 49%);transform:translate3d(calc(var(--enter)*(var(--i) - 2.5)*9vw),calc(var(--enter)*-25vh),0) rotate(calc(var(--enter)*(var(--i) - 2.5)*4deg));box-shadow:inset 15px 8px 30px #7a975622}
+.garden-canopy i:nth-child(n+4) {left:calc((var(--i) - 3)*27% + 27%);height:45%;top:auto;bottom:-15%;rotate:180deg;transform:translate3d(calc(var(--enter)*(var(--i) - 2.5)*-9vw),calc(var(--enter)*-25vh),0)}
+.garden-rays {inset:-30%;background:conic-gradient(from 142deg at 64% 0%,transparent 0deg,#e6efbb1c 8deg,transparent 15deg,#e9f7c629 24deg,transparent 29deg,#f6ffd218 38deg,transparent 45deg);mix-blend-mode:screen;transform:rotate(calc(var(--travel)*-7deg));opacity:calc(.35 + var(--enter)*.4 - var(--exit)*.3)}
+.garden-bloom {inset:0;background:radial-gradient(ellipse at 64% 13%,#fff2bf55,transparent 47%);opacity:calc(.35 + var(--enter)*.20);transform:scale(calc(1 + var(--travel)*.15))}
+.scene[data-room=pool] .scene-art img {transform:scale(calc(1.04 + var(--enter)*.045));transform-origin:60% 40%}
+
+/* The final camera beat is specific to each room, then blends into its own link collection. */
+.scene[data-room=about] .scene-art {transform:translateY(calc(var(--exit)*-2%))}
+.scene[data-room=works] .scan-field {opacity:calc(1 - var(--enter) + var(--exit)*.18)}
+.scene[data-room=writing] .scene-art {transform:translateX(calc(var(--exit)*-3%))}
+.scene[data-room=coffee] .coffee-glow {opacity:calc(.7 - var(--exit)*.6);transform:scale(calc(1 + var(--exit)*.3))}
+.scene[data-room=lab] .scene-art {transform:translateY(calc(var(--exit)*-1.5%)) scale(calc(1 + var(--exit)*.025))}
+.scene[data-room=court] .observatory-grid {transform:translateY(calc((1 - var(--enter))*30px - var(--exit)*40px))}
+.scene[data-room=pool] .garden-bloom {opacity:calc(.35 + var(--enter)*.20 + var(--exit)*.25)}
+
+@media(max-width:700px) {
+  .scene-cinema {min-height:195svh}
+  .scene .scene-screen,.scene:nth-child(even) .scene-screen {padding-top:calc(var(--header) + 35svh);padding-bottom:70px}
+  .scene-info,.scene:nth-child(even) .scene-info {padding-block:0}
+  .scene[data-room] .scene-art::after {background:linear-gradient(0deg,#08130ef5 9%,#08130ece 36%,#08130e33 65%,transparent 85%);opacity:calc(.4 + var(--title-in)*.6)}
+  .scene-opening {bottom:16%;left:var(--gutter)}
+  .scene-opening span {font-size:clamp(36px,11vw,64px)}
+  .scene-folio {top:calc(var(--header) + 20px)}
+  .scene-folio i {width:25px}
+  .scene-info h2 {font-size:clamp(32px,9vw,56px)}
+  .scene-description {font-size:14px;line-height:1.6}
+  .scene-lead {font-size:19px}
+  .scene-actions {gap:8px 16px}
+  .chapter-strip {bottom:33px;font-size:10px;gap:13px;mask-image:linear-gradient(90deg,#000 85%,transparent)}
+  .scene-meter {bottom:19px}
+  .scene-counter {bottom:auto;top:28%;right:var(--gutter)}
+  .scene-counter strong {font-size:50px}
+  .scene-counter span {font-size:11px}
+  .scene-motes i:nth-child(n+11) {display:none}
+  .scene[data-room=coffee] .scene-art {mask-image:radial-gradient(ellipse at 55% 35%,#000 calc(var(--enter)*100% + 8%),#000c calc(var(--enter)*100% + 16%),transparent calc(var(--enter)*100% + 28%))}
+  .window-wings i {border-width:7px;width:19%}
+  .paper-leaves i {width:30%;left:calc(4% + var(--i)*22%)}
+  .record-halo {inset:-10% -50% 20% -35%}
+  .circuit-traces,.observatory-grid {opacity:calc(var(--atmosphere)*.35)}
+}
+/* Keep the entire composition legible with system motion reduction or a short viewport. */
+.scene[data-static] .scene-cinema {min-height:100svh}
+.scene[data-static] .scene-screen {position:relative}
+.scene[data-static] .scene-art {mask-image:none;opacity:1}
+.scene[data-static] .scene-art img {transform:none}
+.scene[data-static] .scene-art::after {opacity:1}
+.scene[data-static] :is(.scene-fx,.scene-folio,.chapter-strip,.scene-opening,.scene-meter) {display:none}
+.scene[data-static] .scene-info>* {transform:none;opacity:1}

@@ -2,6 +2,9 @@
 #li-brand b{font-size:27px;color:#ffdf8e}
 #li-brand span{font-size:13px}
 #li-brand[hidden]{display:none}
+.world-booting :is(#hud,#li-brand,#activity-ui,#shared-routine,#game-help,#panel){visibility:hidden!important;pointer-events:none!important}
+.world-mode dialog:not([open]){display:none!important}
+dialog#panel[data-station="mailbox"][open]{animation:none}
 body.reading #li-brand{visibility:hidden}
 /* The portal remains available at its 3D gate, not as a fixed HUD button. */
 #portalButton,#minimap .badge.credit{display:none!important}
@@ -48,6 +51,21 @@ body.reading:has(#panel[data-kind="embed"][open]) #hotbar { visibility: hidden; 
 }
 
 #game-help{width:min(760px,calc(100vw - 28px));max-width:none;max-height:min(82dvh,820px);padding:0;border:4px solid var(--line);background:var(--gui);color:var(--ink);box-shadow:8px 8px 0 #0007;font:15px/1.65 var(--text)}
+.weather-location {padding:0 0 14px;margin-bottom:14px;border-bottom:1px solid var(--field-edge)}
+#weatherMenu .location-source {font-weight:700;font-size:14px}
+#weatherMenu .location-message {margin:6px 0 12px;font-size:13px;line-height:1.6}
+#weatherMenu .location-actions {display:flex;gap:8px;flex-wrap:wrap}
+#weatherMenu .location-actions button {padding:0 10px;font-size:13px;flex:1}
+#weatherMenu button:disabled {opacity:.6;cursor:wait}
+.city-search {margin-top:14px}
+.city-search label {display:block;font-size:13px;margin-bottom:7px;font-weight:700}
+.city-search>div {display:flex;gap:7px}
+.city-search input {min-width:0;width:0;flex:1;min-height:44px;padding:7px;color:var(--ink);background:var(--field);border:1px solid var(--field-edge);font:14px var(--text)}
+.city-search input::placeholder {color:var(--ink-soft)}
+#weatherMenu .city-search button {padding:0 10px;font-size:13px}
+.city-results {display:grid;gap:7px;margin-top:8px}
+#weatherMenu .city-results button {text-align:left;font-size:13px;padding:8px;line-height:1.5;overflow-wrap:anywhere}
+#weatherMenu .city-status:empty,#weatherMenu .location-message:empty,#weatherMenu .location-source:empty {display:none}
 #game-help::backdrop{background:#101918a6;backdrop-filter:blur(2px)}
 #game-help header{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;background:var(--gui);border-bottom:2px solid var(--line)}
 #game-help header small{font-size:10px;letter-spacing:1px;color:var(--ink-soft)}

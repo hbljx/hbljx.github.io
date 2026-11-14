@@ -9,16 +9,19 @@ function stylesheet(href) {
 }
 
 if (worldMode) {
+  document.documentElement.classList.add('world-booting');
   const assets = [
     'engine/style.css',
-    'navigation/world-ui.css?v=20261106-scene-help',
+    'navigation/world-ui.css?v=20261114-location-startup',
     'navigation/activities.css?v=20261107-airplane-controls',
   ];
   await Promise.all(assets.map(stylesheet));
   document.body.append(document.querySelector('#world-page').content.cloneNode(true));
-  await import('../engine/main.js?v=20261114-rendering');
-  await import('./world-ui.js?v=20261110-first-visit-guide');
+  await import('../engine/main.js?v=20261114-location-startup');
+  await import('./world-ui.js?v=20261114-stable-startup');
 } else {
+  const { mountWebSearch } = await import('./web-search.js');
+  mountWebSearch();
   const { mountScenes } = await import('./home-scenes.js');
   mountScenes();
 

@@ -1,5 +1,6 @@
 import { zones } from './zones.js?v=20261101-directory-merge';
 import { createRoomFrame } from './room-scenes.js';
+import { sceneDecoration, paintSceneMotion } from './scene-effects.js';
 
 const details = {
   about: ['#b8e675', '92 140 65', '把常用网址放在手边', '从随手收藏到每日打开的网站，常用入口都放在这里。'],
@@ -29,7 +30,6 @@ export function mountScenes() {
   const manager = document.querySelector('#room-manage');
   const matches = document.querySelector('#room-matches');
   const directoryContent = document.querySelector('#directory-content');
-  const homeSearch = document.querySelector('.site-search');
   const rooms = zones.filter(zone => details[zone.id]);
   const groupOwners = new Map();
   for (const zone of rooms) {
@@ -72,14 +72,14 @@ export function mountScenes() {
             <a class="scene-next" href="#${next ? 'scene-' + next.id : 'zones'}">${next ? '下一站 · '+ next.name : '返回场景分类'} ↓</a>
           </div>
         </div>
-        ${sceneDecoration(zone.id)}
+        ${sceneDecoration(zone.id,index)}
         <div class="chapter-strip" aria-hidden="true"></div>
       </div></div>
       <div class="room-directory pixel-directory" id="${marker}-links" tabindex="-1">
         <div class="room-heading"><h3>网址收藏</h3><span>${zone.name}</span></div><div class="room-groups"></div>
       </div>`;
     const paint=createRoomFrame(section.querySelector('img'),zone.id);
-    roomFrames.set(section,{paint,progress:-1});
+    roomFrames.set(section,{paint,progress:-1, current:null, top:0, range:1});
     roomStats.set(zone.id, {stats:section.querySelector('.scene-index'),list:section.querySelector('.room-groups'),strip:section.querySelector('.chapter-strip')});
     scenes.append(section);
   }
@@ -176,14 +176,6 @@ export function mountScenes() {
     if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     searchBar.close();
   });
-  homeSearch.addEventListener('submit',event=>{
-    event.preventDefault();
-    roomQuery.value=new FormData(homeSearch).get('q');
-    roomStars.setAttribute('aria-pressed','false');
-    renderRooms();
-    searchBar.showModal();
-    roomQuery.focus();
-  });
 
   async function loadDirectory() {
     try {
@@ -231,21 +223,43 @@ export function mountScenes() {
   const clamp = value => Math.min(1,Math.max(0,value));
   const easing = value => value * value * (3 - 2 * value);
   const compact = matchMedia('(max-height: 640px)');
-  let frame = 0;
-  function updateScenes() {
+  let frame = 0, lastTime = 0, needsMeasure = true;
+  function updateScenes(time) {
     frame = 0;
+    if (document.hidden) return;
     const height = window.innerHeight;
+    const staticView = reduced.matches || compact.matches;
+    // Measure as a batch before writing styles, including after a directory filter changes height.
+    if (needsMeasure) {
+      for (const scene of panels) {
+        scene.toggleAttribute('data-static',staticView);
+      }
+      for (const scene of panels) {
+        const cinema=scene.firstElementChild;
+        const room=roomFrames.get(scene);
+        room.top=cinema.getBoundingClientRect().top+scrollY;
+        room.range=Math.max(1,cinema.offsetHeight-cinema.firstElementChild.offsetHeight);
+        room.height=cinema.offsetHeight;
+      }
+      needsMeasure=false;
+    }
+    const dt=Math.min(64,Math.max(1,time-(lastTime || time-16)));
+    lastTime=time;
+    let settling=false;
     for (const scene of panels) {
-      const cinema=scene.firstElementChild;
-      const {top,bottom} = cinema.getBoundingClientRect();
-      if (top > height * 1.3 || bottom < -height * .25) continue;
-      const range = Math.max(1,cinema.offsetHeight - cinema.firstElementChild.offsetHeight);
-      const staticView = reduced.matches || compact.matches;
-      const progress = staticView ? .66 : clamp(-top / range);
+      const room=roomFrames.get(scene);
+      const top=room.top-scrollY;
+      if (top > height * 1.1 || top+room.height < 0) { room.current=null; continue; }
+      const target=staticView ? .66 : clamp(-top/room.range);
+      // Smooth wheel steps, but snap anchor jumps and restoration to the correct composition.
+      if (room.current===null || Math.abs(target-room.current)>.38 || staticView) room.current=target;
+      else room.current+=(target-room.current)*(1-Math.exp(-dt/65));
+      if (Math.abs(target-room.current)<.0002) room.current=target;
+      else settling=true;
+      const progress=room.current;
       const inset = staticView ? 1 : easing(clamp((progress-.13)/.57));
-      const reveal = staticView ? 1 : easing(clamp((progress-.3)/.38));
-      const outro = staticView ? 0 : easing(clamp((progress-.76)/.24));
-      const sweep = staticView ? 1 : easing(clamp((progress-.08)/.62));
+      const reveal = staticView ? 1 : easing(clamp((progress-.20)/.27));
+      const {entry:sweep,exit:outro}=paintSceneMotion(scene,progress,staticView);
       scene.style.setProperty('--sweep',sweep);
       scene.style.setProperty('--outro',outro);
       scene.toggleAttribute('data-static',staticView);
@@ -258,39 +272,32 @@ export function mountScenes() {
         for (const [i,chapter] of Array.from(chapters).entries()) chapter.toggleAttribute('data-current',i===step);
       }
       scene.style.setProperty('--track',progress);
-      scene.style.setProperty('--opening',staticView ? 0 : 1 - easing(clamp(progress/.43)));
-      const room = roomFrames.get(scene);
+      scene.style.setProperty('--opening',staticView ? 0 : 1 - easing(clamp((progress-.06)/.20)));
       if (room.total !== undefined) {
         const counter=scene.querySelector('.scene-counter strong');
         const value=String(Math.round(room.total*sweep));
         if (counter.textContent!==value) counter.textContent=value;
       }
-      const shot = Math.round(progress * 119)/119;
+      const shot = progress;
       if (shot !== room.progress) {
         room.progress = shot;
         room.paint(shot);
       }
     }
+    if (settling) scheduleScenes();
   }
   function scheduleScenes() {
     if (!frame) frame = requestAnimationFrame(updateScenes);
   }
   window.addEventListener('scroll',scheduleScenes,{passive:true});
-  window.addEventListener('resize',scheduleScenes);
-  new ResizeObserver(scheduleScenes).observe(scenes);
-  reduced.addEventListener('change',scheduleScenes);
+  const measureScenes=()=>{needsMeasure=true;scheduleScenes();};
+  window.addEventListener('resize',measureScenes);
+  new ResizeObserver(measureScenes).observe(scenes);
+  reduced.addEventListener('change',measureScenes);
+  compact.addEventListener('change',measureScenes);
+  document.addEventListener('visibilitychange',measureScenes);
   const linkedScene = panels.find(scene => '#' + scene.id === location.hash);
   if (linkedScene) linkedScene.scrollIntoView({behavior:'instant'});
   else if (location.hash.startsWith('#scene-')) document.getElementById(location.hash.slice(1))?.scrollIntoView({behavior:'instant'});
   scheduleScenes();
-}
-
-function sceneDecoration(id) {
-  if (id==='about') return '<div class="room-route" aria-hidden="true"><i></i><i></i><i></i><i></i></div>';
-  if (id==='works') return '<div class="room-scan" aria-hidden="true"></div>';
-  if (id==='coffee') return '<div class="room-record" aria-hidden="true"></div>';
-  if (id==='lab') return '<div class="room-shutter" aria-hidden="true"></div>';
-  if (id==='court') return '<div class="scene-counter" aria-hidden="true"><strong>0</strong><span>个网址</span><i></i></div>';
-  if (id==='pool') return '<div class="room-light" aria-hidden="true"></div>';
-  return '';
 }
