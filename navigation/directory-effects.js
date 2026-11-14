@@ -1,3 +1,4 @@
+import { mountSpectacle } from './directory-spectacle.js';
 // Lightweight effects: animation is restricted to visible directories and cards.
 export function mountDirectoryEffects(root) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -21,6 +22,7 @@ export function mountDirectoryEffects(root) {
     room.prepend(decor,bridge);
     observer.observe(room);
   }
+  mountSpectacle(root);
   let observed=[];
   function refresh() {
     observed.forEach(node=>observer.unobserve(node));
