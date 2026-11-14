@@ -19,24 +19,10 @@ if (worldMode) {
   await import('../engine/main.js?v=20261114-rendering');
   await import('./world-ui.js?v=20261110-first-visit-guide');
 } else {
-  const [{ zones }, { createIslandScene, drawZoneIcon }] = await Promise.all([
-    import('./zones.js?v=20261101-directory-merge'), import('./pixel-island.js'),
+  const [{ createIslandScene }, { mountScenes }] = await Promise.all([
+    import('./pixel-island.js'), import('./home-scenes.js'),
   ]);
-  const cards = document.querySelector('#zone-cards');
-  for (const zone of zones.filter(zone => zone.id !== 'blog')) {
-    const card = Object.assign(document.createElement('a'), {
-      className: 'zone-card', href: 'directory.html?home=1&zone=' + encodeURIComponent(zone.id),
-    });
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-hidden', 'true');
-    drawZoneIcon(canvas, zone.id);
-    const label = Object.assign(document.createElement('strong'), { textContent: zone.name });
-    const detail = Object.assign(document.createElement('small'), { textContent: zone.label });
-    const arrow = Object.assign(document.createElement('span'), { textContent: '↗' });
-    arrow.setAttribute('aria-hidden', 'true');
-    card.append(canvas,label,detail,arrow);
-    cards.append(card);
-  }
+  mountScenes();
 
   const hero = document.querySelector('.hero');
   const stage = document.querySelector('.hero-stage');

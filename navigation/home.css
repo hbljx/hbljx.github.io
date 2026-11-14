@@ -65,34 +65,16 @@ input,button {font:inherit}
 .scene-progress i {display:block;width:100%;height:100%;background:var(--lime);transform-origin:left;transform:scaleX(calc(.14 + var(--progress) * .86))}
 .stage-copy {left:58%;right:var(--gutter);transform:translateY(calc(-50% + (1 - var(--reveal)) * 38px));opacity:var(--reveal);visibility:hidden}
 .stage-copy[data-visible] {visibility:visible}
-.stage-copy .kicker,.zones-heading .kicker {color:#405d34}
-.stage-copy h2,.zones-heading h2 {font-size:clamp(36px,5.3vw,85px)}
-.stage-copy h2 span,.zones-heading h2 span {color:#5c8e35}
+.stage-copy .kicker {color:#405d34}
+.stage-copy h2 {font-size:clamp(36px,5.3vw,85px)}
+.stage-copy h2 span {color:#5c8e35}
 .stage-copy>p:not(.kicker) {margin:20px 0 25px;color:#4b5d48;line-height:1.7}
 .solid-link {background:#203722;color:#f1facd}
 .solid-link:hover {background:#3c5b32}
-.zones-section {padding:clamp(55px,8vw,126px) var(--gutter);scroll-margin-top:var(--header);border-top:1px solid #dce2d5}
-.zones-heading {display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:36px}
-#zone-cards {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.zone-card {position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:end;min-height:206px;padding:21px 17px;overflow:hidden;border-radius:8px;color:#f2f5e9;background:#1d2d20;box-shadow:inset 0 0 0 1px #b5d49c37}
-.zone-card canvas {position:absolute;z-index:-1;image-rendering:pixelated;top:-10px;right:-7px;width:165px;opacity:.9;transition:transform .38s cubic-bezier(.2,.75,.2,1)}
-.zone-card::after {content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(0deg,#102015 8%,transparent 78%)}
-.zone-card:hover canvas,.zone-card:focus-visible canvas {transform:translate(-5px,-6px) scale(1.12)}
-.zone-card strong {font-size:clamp(17px,1.55vw,23px);letter-spacing:-.045em;padding-right:24px}
-.zone-card small {margin-top:5px;font-size:13px;color:#c1d2b9}
-.zone-card span {position:absolute;right:16px;bottom:20px;color:var(--lime);font-size:20px}
-.zone-card:last-child {grid-column:span 2}
 .home-footer {padding:28px var(--gutter);background:var(--night);color:#d6e0cf;display:flex;justify-content:space-between;gap:20px;font-size:14px}
 .world-mode {background:#7fb2e8}
 .world-mode :is(.site-header,#flat-home) {display:none}
-.back-flat {position:fixed;z-index:20;right:max(16px,env(safe-area-inset-right));top:calc(max(16px, env(safe-area-inset-top)) + 112px);display:flex;align-items:center;min-height:44px;padding:0 12px;background:#18331e;color:#e6ffd8;border:2px solid #a3c484;border-radius:4px;font:700 13px/1 system-ui,sans-serif}
-.back-flat:hover {background:#2f5131}
-body.reading .back-flat {visibility:hidden}
-@media(max-width:950px) {
-  .brand small {display:none}
-  #zone-cards {grid-template-columns:repeat(3,minmax(0,1fr))}
-  .zone-card:last-child {grid-column:span 3}
-}
+@media(max-width:950px) { .brand small {display:none} }
 @media(max-width:700px) {
   :root {--header:62px}
   .site-header {display:flex;justify-content:space-between;gap:12px}
@@ -111,15 +93,6 @@ body.reading .back-flat {visibility:hidden}
   .stage-copy {top:56%;left:var(--gutter);transform:translateY(calc((1 - var(--reveal)) * 26px))}
   .stage-copy .kicker {margin-bottom:9px}
   .stage-copy>p:not(.kicker) {margin:12px 0}
-  .zones-heading {align-items:start;flex-direction:column;margin-bottom:22px}
-  .zones-heading .kicker {margin-bottom:10px}
-  #zone-cards {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .zone-card {min-height:165px;padding:14px 11px}
-  .zone-card canvas {width:135px}
-  .zone-card small {font-size:12px}
-  .zone-card span {right:10px;bottom:12px}
-  .zone-card:last-child {grid-column:span 2}
-  .back-flat {right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 106px)}
 }
 @media(max-height:610px) and (max-width:700px) {
   .hero-copy {bottom:52px}
@@ -132,5 +105,4 @@ body.reading .back-flat {visibility:hidden}
   html:not(.world-mode) {scroll-behavior:auto}
   .hero {height:auto}
   .hero-stage {position:relative}
-  .zone-card canvas,.hero-copy {transition:none}
 }

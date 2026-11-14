@@ -161,9 +161,61 @@ const objects = {
   pool: [block(-.75,0,-.75,'earth',1.46,.54,1.45), block(-.63,.54,-.62,'wood',1.22,.31,1.23), block(-.15,.85,-.13,'leaves',.25,1.05,.27), block(-.53,1.44,-.47,'leaves',1,.71,1), block(-.18,2.15,-.14,'gold',.44,.3,.45)],
 };
 
-export function drawZoneIcon(canvas, id) {
-  canvas.width = 120;
-  canvas.height = 100;
+export function drawZoneScene(canvas, id, accent) {
+  canvas.width = 420;
+  canvas.height = 340;
   const ctx = canvas.getContext('2d');
-  if (ctx) paintBlocks(ctx, sorted(objects[id]), 61,69,17);
+  if (!ctx) return;
+  const origin = [210,179], tile = 18;
+  const floors = {about:'wood', works:'deep', writing:'wood', coffee:'path', lab:'rock', court:'deep', pool:'grass'};
+  const floor = [], decor = [];
+  for(let x=-4;x<=4;x++) for(let z=-4;z<=4;z++){
+    const edge = Math.abs(x)+Math.abs(z);
+    if(edge>7)continue;
+    const material = edge===7 ? 'rock' : floors[id];
+    floor.push(block(x,-1,z,material));
+    if (edge<7) floor.push(block(x,-2,z,'deep'));
+    if (edge<4) floor.push(block(x,-3,z,'rock'));
+  }
+  for(let x=-4;x<=4;x++){
+    if (id==='pool'){
+      decor.push(block(x,0,-3,'earth',.85,.47,.85),block(x,1,-3,'leaves',.9,.65,.9));
+    } else {
+      decor.push(block(x,0,-4,'deep',1,.34,1));
+      if (x<=3) decor.push(block(x,.34,-4,x%2?'rock':'deep',1,1.9,.35));
+      if (x%2===0) decor.push(block(x,.73,-3.65,id==='writing'?'gold':'glass',.72,.95,.1));
+    }
+  }
+  for (const [x,z] of [[-3,2],[2,2],[-2,-2],[2,-2]]) {
+    const festive = id==='pool'||id==='about'||id==='coffee';
+    decor.push(block(x,0,z,festive?'earth':'rock',.73,.55,.73));
+    decor.push(block(x+.14,.53,z+.13,festive?'leaves':'gold',.46,festive?.92:.28,.46));
+  }
+  const foreground = {
+    about:[block(-2,0,0,'lilac',1.65,.48,2),block(-2,.45,0,'lilac',.48,.58,2),block(.35,0,1.7,'wood',1.53,.48,1.13)],
+    works:[block(-2.8,0,.15,'deep',1.44,.64,.84),block(-2.5,.62,.17,'glass',.9,.49,.3),block(1.25,0,.3,'rock',1.45,.69,1.3)],
+    writing:[block(-2.9,0,-.9,'wood',.95,2.13,2),block(-2.7,.52,1,'gold',.56,.33,.1),block(1.5,0,1.58,'lilac',1.45,.62,1.05)],
+    coffee:[block(-3,0,-.9,'wood',1,1.04,3),block(-2.85,1.02,.6,'deep',.7,.48,.6),block(1.35,0,1.7,'wood',1.22,.7,1.22),block(1.7,.69,2,'gold',.31,.32,.31)],
+    lab:[block(-2.8,0,-1,'wood',.95,.98,2.5),block(-2.7,.99,.17,'gold',.55,.37,.65),block(1.45,0,1.15,'deep',1.35,.82,1.34)],
+    court:[block(-2.7,0,0,'rock',.55,.8,.55),block(-2,0,0,'lilac',.55,1.31,.55),block(1.6,0,-1,'blue',.65,2,.65),block(2.55,0,-1,'light',.65,2.75,.65)],
+    pool:[block(-3,0,-1,'leaves',1.65,.55,1.92),block(-2.7,.55,-.7,'lilac',.55,.45,.5),block(-2,.52,.1,'gold',.43,.44,.4),block(.62,.01,1.35,'blue',2.15,.28,1.62)],
+  };
+  ctx.fillStyle = accent;
+  for (let i=0;i<55;i++){
+    ctx.globalAlpha = .09+pixel(i+2)*.51;
+    ctx.fillRect(24+pixel(i+100)*366,30+pixel(i+81)*280,i%5===0?3:1,i%5===0?3:1);
+  }
+  ctx.globalAlpha = .45;
+  ctx.strokeStyle = accent;
+  ctx.setLineDash([1,8]);
+  for (const radius of [149,185]) {
+    ctx.beginPath();
+    ctx.ellipse(210,231,radius,radius*.34,0,0,Math.PI*2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.setLineDash([]);
+  paintBlocks(ctx,sorted(floor),...origin,tile);
+  const props = objects[id].map(piece=>({...piece,y:piece.y+.1}));
+  paintBlocks(ctx,sorted([...decor,...props,...foreground[id]]),...origin,tile);
 }

@@ -14,6 +14,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/li.png">
 <link rel="stylesheet" href="navigation/home.css">
+<link rel="stylesheet" href="navigation/scenes.css">
 <script type="importmap">{"imports":{
   "three":"./vendor/three/three.module.min.js",
   "@engine/":"./engine/",
@@ -88,7 +89,7 @@
 <body>
 <header class="site-header">
   <a class="brand" href="./" aria-label="Li+ 像素导航首页"><img src="assets/li.png" width="34" height="34" alt=""><span><b>LI<span>+</span></b><small>像素导航</small></span></a>
-  <nav aria-label="主导航"><a href="#home">首页</a><a href="#zones">场景分类</a><a href="directory.html?home=1">网址目录</a></nav>
+  <nav aria-label="主导航"><a href="#home">首页</a><a href="#zones">场景分类</a><a href="#directory">网址目录</a></nav>
   <a class="world-link" href="?view=3d"><span class="cube-mark" aria-hidden="true"></span>切换 3D 页面 <span aria-hidden="true">↗</span></a>
 </header>
 <main id="flat-home">
@@ -102,13 +103,12 @@
         <p class="kicker"><span></span> LI+ / PIXEL NAVIGATION</p>
         <h1 id="home-title">像素导航<span>.</span></h1>
         <p class="intro">好用的网址，都在这里。</p>
-        <form class="site-search" action="directory.html" role="search">
-          <input type="hidden" name="home" value="1">
+        <form class="site-search" action="#directory" role="search">
           <label class="visually-hidden" for="home-query">搜索本站网址</label>
           <input type="search" name="q" id="home-query" placeholder="搜索名称、域名或分类" required>
           <button type="submit" aria-label="搜索网址">搜索 <span aria-hidden="true">↗</span></button>
         </form>
-        <a class="hero-directory" href="directory.html?home=1">浏览全部网址 <span aria-hidden="true">↗</span></a>
+        <a class="hero-directory" href="#directory">浏览全部网址 <span aria-hidden="true">↗</span></a>
       </div>
       <div class="hero-bottom">
         <a class="scroll-link" href="#zones"><span aria-hidden="true">↓</span> 向下探索</a>
@@ -122,18 +122,18 @@
       </div>
     </div>
   </section>
-  <section class="zones-section" id="zones" aria-labelledby="zones-title">
-    <div class="zones-heading">
-      <div><p class="kicker"><span></span> PIXEL ISLAND / DIRECTORY</p><h2 id="zones-title">选个场景出发<span>.</span></h2></div>
-      <a class="solid-link" href="directory.html?home=1">全部网址 ↗</a>
-    </div>
-    <div id="zone-cards"></div>
-    <noscript><p><a href="directory.html?home=1">打开网址目录</a></p></noscript>
+  <section id="zones" aria-label="场景分类">
+    <div class="scene-picker"><h2>选择场景</h2><nav aria-label="场景跳转" id="scene-links"></nav></div>
+    <div id="zone-scenes"></div>
+  </section>
+  <section id="directory" class="pixel-directory" aria-labelledby="directory-title">
+    <p class="kicker"><span></span> LI+ / DIRECTORY</p>
+    <h2 id="directory-title" tabindex="-1">网址目录<span>.</span></h2>
+    <div id="directory-content"><p role="status">正在加载网址目录…</p><noscript><p>请启用 JavaScript 查看目录。</p></noscript></div>
   </section>
   <footer class="home-footer"><strong>LI<span>+</span> 像素导航</strong><a href="#home">回到顶部 ↑</a></footer>
 </main>
 <template id="world-page">
-<a class="back-flat" href="./">切换 2D 页面 ↗</a>
 <main id="world" aria-label="Li+ 像素导航"></main>
 <div id="loading"><div class="bar"><i></i></div></div>
 

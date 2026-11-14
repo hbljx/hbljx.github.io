@@ -200,6 +200,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const inFrame=window.parent!==window;
 document.body.classList.toggle('embedded',inFrame);
 const params=new URLSearchParams(location.search);
+const inline=document.querySelector('#directory-content') !== null;
 const fromHome=!inFrame&&params.get('home')==='1';
 let zone=zones.find(z=>z.id===params.get('zone'))||zones[0],groupId='all',filter='all',editingId=null,store,base,data;
 let storage;try{storage=localStorage;}catch{}
@@ -215,11 +216,16 @@ const entries=()=>allGroups().flatMap(g=>g.items.map(item=>({...item,groupId:g.i
 function inZone(g){return !zone.groups.length||zone.groups.includes(g.id)||(zone.id==='about'&&g.id==='quickLinks');}
 const domain=url=>{try{return new URL(url).hostname.replace(/^www\./,'');}catch{return url;}};
 function refreshData(){data=store.getData();$('#undo').hidden=!store.canUndo();render();}
-function applyZone(id){zone=zones.find(z=>z.id===id)||zones[0];groupId='all';filter='all';$('#query').value='';try{const u=new URL(location.href);u.searchParams.set('zone',zone.id);u.searchParams.delete('q');history.replaceState(null,'',u);}catch{}render();}
+function applyZone(id, query = ''){zone=zones.find(z=>z.id===id)||zones[0];groupId='all';filter='all';$('#query').value=query;if(!inline){const u=new URL(location.href);u.searchParams.set('zone',zone.id);u.searchParams.delete('q');history.replaceState(history.state,'',u);}render();}
+let publishedData;
 function render(){
   if(!data)return;
-  document.title=`${zone.name} · Li+ 像素导航`;
+  if(!inline)document.title=`${zone.name} · Li+ 像素导航`;
   $('#total-count').textContent=entries().length;
+  if(inline&&publishedData!==data){
+    publishedData=data;
+    document.dispatchEvent(new CustomEvent('li-directory-update',{detail:allGroups()}));
+  }
   $('#zone-nav').innerHTML=zones.map(z=>`<button type="button" data-zone="${z.id}" aria-current="${z.id===zone.id}">${esc(z.name)}</button>`).join('');
   const available=allGroups().filter(inZone);
   const sideCount=available.reduce((n,g)=>n+g.items.length,0);
@@ -264,7 +270,7 @@ function closeDirectory(){
 }
 function visitLink(event){
   const link=event.target.closest?.('a[data-visit]');
-  if(!link||event.defaultPrevented||fromHome)return;
+  if(!link||event.defaultPrevented||fromHome||inline)return;
   // Let the native link open its destination before removing the hosting iframe/tab.
   setTimeout(closeDirectory,0);
 }
@@ -306,7 +312,7 @@ $('#import').addEventListener('click',()=>$('#import-file').click());
 $('#import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>8*1024*1024)throw new Error('备份文件过大，请使用本站导出的 JSON。');const incoming=JSON.parse(await file.text());store.importData(incoming);if(Array.isArray(incoming.liPlusFavorites)){const nextStars=new Set(incoming.liPlusFavorites.filter(id=>typeof id==='string'));if(!writeArray(STAR,[...nextStars])){refreshData();toast('网址已导入，但星标保存失败，原有星标已保留。');return;}stars=nextStars;}refreshData();toast('备份已导入，可撤销网址变更');}catch(error){toast(error.message);}finally{e.target.value='';}});
 window.addEventListener('storage',event=>{if(event.key===null||event.key===NavigationStore.STORAGE_KEY){store=NavigationStore.create(base,storage);refreshData();}if(event.key===null||event.key===STAR){stars=new Set(readArray(STAR));render();}});
 window.addEventListener('keydown',event=>{
-  if(event.defaultPrevented||event.isComposing||document.querySelector('dialog[open]'))return;
+  if(inline||event.defaultPrevented||event.isComposing||document.querySelector('dialog[open]'))return;
   const typing=event.target?.closest?.('input,textarea,select')||event.target?.isContentEditable;
   const toggle=event.key.toLowerCase()==='f'&&!event.repeat&&!event.ctrlKey&&!event.altKey&&!event.metaKey&&!typing;
   if(!toggle&&!(event.key==='Escape'&&inFrame))return;
@@ -327,3 +333,9 @@ try{
   }
   render();document.body.dataset.ready='true';if(store.getNotice())toast(store.getNotice());
 }catch(error){$('#result-title').textContent='目录暂时未能加载';$('#cards').textContent=error.message;}
+
+export function showDirectory(id, query = '') {
+  if (!inline || !data) return;
+  $('#search-mode').value = 'local';
+  applyZone(id, query);
+}
