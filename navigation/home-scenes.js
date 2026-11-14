@@ -1,5 +1,5 @@
 import { zones } from './zones.js?v=20261101-directory-merge';
-import { drawZoneScene } from './pixel-island.js';
+import { createRoomFrame } from './room-scenes.js';
 
 const details = {
   about: ['#b8e675', '92 140 65', '把常用网址放在手边', '从随手收藏到每日打开的网站，常用入口都放在这里。'],
@@ -19,6 +19,7 @@ export function mountScenes() {
   const homeSearch = document.querySelector('.site-search');
   const rooms = zones.filter(zone => details[zone.id]);
   const roomStats = new Map();
+  const roomFrames = new Map();
 
   for (const [index, zone] of rooms.entries()) {
     const [accent, glow, heading, summary] = details[zone.id];
@@ -35,7 +36,9 @@ export function mountScenes() {
     const next = rooms[index+1];
     section.innerHTML = `
       <div class="scene-screen">
-        <div class="scene-art"><canvas aria-hidden="true"></canvas></div>
+        <div class="scene-art"><img alt="" width="1440" height="960" decoding="async"></div>
+        <div class="scene-opening" aria-hidden="true"><span>${zone.name}</span><small>↓ 滚动探索</small></div>
+        <div class="scene-meter" aria-hidden="true"><i></i></div>
         <div class="scene-info">
           <p class="kicker"><span></span> ${zone.en}</p>
           <h2 id="${marker}-title">${zone.name}<span>.</span></h2>
@@ -49,7 +52,8 @@ export function mountScenes() {
         </div>
         <div class="pixel-wipe" aria-hidden="true">${'<i></i>'.repeat(12)}</div>
       </div>`;
-    drawZoneScene(section.querySelector('canvas'),zone.id,accent);
+    const paint=createRoomFrame(section.querySelector('img'),zone.id);
+    roomFrames.set(section,{paint,progress:-1});
     roomStats.set(zone.id, {stats:section.querySelector('.scene-index'),samples:section.querySelector('.scene-samples')});
     scenes.append(section);
   }
@@ -137,21 +141,48 @@ export function mountScenes() {
     }
   },{threshold:.55});
   const panels = [...scenes.querySelectorAll('.scene')];
-  panels.forEach(scene=>sceneObserver.observe(scene));
+  const preload = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const frame = roomFrames.get(entry.target);
+      if (frame.progress < 0) frame.paint(.1);
+      preload.unobserve(entry.target);
+    }
+  },{rootMargin:'560px'});
+  for (const scene of panels) {
+    sceneObserver.observe(scene);
+    preload.observe(scene);
+  }
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const clamp = value => Math.min(1,Math.max(0,value));
+  const easing = value => value * value * (3 - 2 * value);
+  const compact = matchMedia('(max-height: 640px)');
   let frame = 0;
   function updateScenes() {
     frame = 0;
     const height = window.innerHeight;
     for (const scene of panels) {
       const {top,bottom} = scene.getBoundingClientRect();
-      const entry = reduced.matches ? 1 : 1 - clamp(top/(height*.83));
-      const exit = reduced.matches ? 0 : 1 - clamp(bottom/(height*.48));
-      scene.style.setProperty('--entry',entry);
-      scene.style.setProperty('--exit',exit);
-      scene.style.setProperty('--wipe',exit);
+      if (top > height * 1.3 || bottom < -height * .25) continue;
+      const range = Math.max(1,scene.offsetHeight - scene.firstElementChild.offsetHeight);
+      const staticView = reduced.matches || compact.matches;
+      const progress = staticView ? .66 : clamp(-top / range);
+      const inset = staticView ? 1 : easing(clamp((progress-.13)/.57));
+      const reveal = staticView ? 1 : easing(clamp((progress-.3)/.38));
+      const wipe = staticView ? 0 : easing(clamp((progress-.82)/.18));
+      scene.style.setProperty('--shot',inset);
+      scene.style.setProperty('--copy',reveal);
+      scene.toggleAttribute('data-copy',reveal>.1);
+      scene.style.setProperty('--wipe',wipe);
+      scene.style.setProperty('--track',progress);
+      scene.style.setProperty('--opening',staticView ? 0 : 1 - easing(clamp(progress/.43)));
+      const room = roomFrames.get(scene);
+      const shot = Math.round(progress * 119)/119;
+      if (shot !== room.progress) {
+        room.progress = shot;
+        room.paint(shot);
+      }
     }
   }
   function scheduleScenes() {
@@ -159,6 +190,7 @@ export function mountScenes() {
   }
   window.addEventListener('scroll',scheduleScenes,{passive:true});
   window.addEventListener('resize',scheduleScenes);
+  new ResizeObserver(scheduleScenes).observe(scenes);
   reduced.addEventListener('change',scheduleScenes);
   const linkedScene = panels.find(scene => '#' + scene.id === location.hash);
   if (linkedScene) linkedScene.scrollIntoView({behavior:'instant'});

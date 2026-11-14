@@ -8,47 +8,48 @@
 .scene-picker a {padding:11px 12px;border:1px solid #afcf9a3b;border-radius:3px;font-size:13px}
 .scene-picker a:is(:hover,[data-active]) {background:#c7f776;color:#192516}
 .scene {
-  --entry:1;--exit:0;--wipe:0;
-  min-height:100svh;scroll-margin-top:var(--header);
-  background:#0c1510;color:#f1f5e9;
+  --shot:0;--copy:0;--wipe:0;--track:0;
+  min-height:178svh;background:#0d1710;color:#f5f7ed;
 }
 .scene-screen {
-  min-height:100svh;position:relative;isolation:isolate;overflow:hidden;
-  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);
-  align-items:center;padding:calc(var(--header) + 40px) var(--gutter) 46px;
-  background:radial-gradient(ellipse at 76% 49%,rgb(var(--glow-room)/.48),transparent 55%),#0c1510;
+  min-height:100svh;position:sticky;top:0;isolation:isolate;overflow:hidden;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  align-items:center;padding:calc(var(--header) + 25px) var(--gutter) 45px;
+  background:radial-gradient(ellipse at 80% 46%,rgb(var(--glow-room)/.23),transparent 60%),#0d1710;
 }
-.scene:nth-child(even) .scene-screen {grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);background:radial-gradient(ellipse at 24% 49%,rgb(var(--glow-room)/.48),transparent 55%),#0c1510}
+.scene:nth-child(even) .scene-screen {background:radial-gradient(ellipse at 20% 46%,rgb(var(--glow-room)/.23),transparent 60%),#0d1710}
 .scene-art {
-  position:relative;grid-column:2;grid-row:1;min-width:0;display:grid;place-items:center;
-  transform:translateY(calc((1 - var(--entry)) * 90px - var(--exit) * 82px)) scale(calc(.89 + var(--entry)*.11 - var(--exit)*.07));
+  position:absolute;z-index:-1;display:grid;place-items:center;overflow:hidden;
+  inset:calc(var(--shot)*(var(--header) + 20px)) calc(var(--shot)*50%) calc(var(--shot)*45px) calc(var(--shot)*var(--gutter));
+  border-radius:calc(var(--shot)*26px);background:radial-gradient(ellipse at 52% 46%,rgb(var(--glow-room)/.32),#0e1711 76%);
 }
-.scene:nth-child(even) .scene-art {grid-column:1}
-.scene-art::before {
-  content:"";position:absolute;inset:0;
-  background:linear-gradient(#ddf6ce19 1px,transparent 1px),linear-gradient(90deg,#ddf6ce19 1px,transparent 1px);
-  background-size:34px 34px;mask-image:radial-gradient(ellipse at center,#000,transparent 72%);
+.scene:nth-child(even) .scene-art {left:calc(var(--shot)*50%);right:calc(var(--shot)*var(--gutter))}
+.scene-info {
+  position:relative;grid-column:2;grid-row:1;padding-left:clamp(20px,4vw,68px);
+  color:#fff;transform:translateY(calc((1 - var(--copy))*35px));opacity:var(--copy);
 }
-.scene-art canvas {position:relative;width:min(115%,780px);height:auto;image-rendering:pixelated}
-.scene-info {position:relative;grid-column:1;grid-row:1}
-.scene:nth-child(even) .scene-info {grid-column:2;padding-left:clamp(20px,4vw,66px)}
-.scene-info h2 {font-size:clamp(46px,6.4vw,105px);overflow-wrap:anywhere}
+.scene-info:focus-within {opacity:1;transform:none;z-index:4}
+.scene:not([data-copy]) .scene-info:not(:focus-within) {pointer-events:none}
+.scene:nth-child(even) .scene-info {grid-column:1;padding-left:0;padding-right:clamp(20px,4vw,68px)}
+.scene-info h2 {font-size:clamp(44px,6vw,97px);overflow-wrap:anywhere}
 .scene-info h2 span {color:var(--accent-room)}
 .scene-info .kicker {text-transform:uppercase;color:var(--accent-room)}
 .scene-info .kicker span {background:currentColor}
 .scene-lead {font-size:clamp(19px,2vw,29px);font-weight:750;margin:20px 0 7px}
-.scene-description {color:#d2ded0;max-width:32ch;line-height:1.75;margin:0}
-.scene-index {display:grid;gap:7px;margin:25px 0 22px;padding-left:12px;border-left:3px solid var(--accent-room);font-size:14px;color:#d2ded0;line-height:1.55;min-height:42px}
+.scene-description {color:#d2ded0;max-width:34ch;line-height:1.7;margin:0}
+.scene-index {display:grid;gap:6px;margin:21px 0 17px;padding-left:12px;border-left:3px solid var(--accent-room);font-size:14px;color:#d2ded0;line-height:1.55}
 .scene-index strong {color:var(--accent-room)}
 .scene-actions {display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .scene-enter,.scene-next {display:inline-flex;align-items:center;min-height:44px;gap:7px;font-size:14px;font-weight:750}
 .scene-enter {padding:0 13px;color:#112015;background:var(--accent-room);box-shadow:inset 0 -3px #101f193f;border-radius:3px}
 .scene-next:hover {color:var(--accent-room)}
-.pixel-wipe {position:absolute;inset:auto 0 0;display:flex;height:22svh;pointer-events:none;align-items:end;z-index:2}
-.pixel-wipe i {flex:1;height:100%;background:#0c1510;transform-origin:bottom;transform:scaleY(clamp(0,var(--wipe),1))}
-.pixel-wipe i:nth-child(3n) {transform:scaleY(clamp(0,calc(var(--wipe)*1.8),1))}
-.pixel-wipe i:nth-child(4n+1) {transform:scaleY(clamp(0,calc(var(--wipe)*.58),1))}
-.pixel-wipe i:nth-child(5n) {transform:scaleY(clamp(0,calc(var(--wipe)*1.35),1))}
+.scene-meter {position:absolute;z-index:2;left:var(--gutter);right:var(--gutter);bottom:21px;height:2px;background:#d2ffb630}
+.scene-meter i {display:block;width:100%;height:100%;background:var(--accent-room);transform-origin:left;transform:scaleX(var(--track))}
+.pixel-wipe {position:absolute;inset:0;display:flex;pointer-events:none;align-items:end;z-index:3}
+.pixel-wipe i {flex:1;height:100%;background:linear-gradient(var(--accent-room) 0 2px,#0d1710 2px);box-shadow:0 -9px 35px rgb(var(--glow-room)/.23);transform-origin:bottom;transform:scaleY(calc(var(--wipe)*.7))}
+.pixel-wipe i:nth-child(3n) {transform:scaleY(calc(var(--wipe)*.9))}
+.pixel-wipe i:nth-child(4n+1) {transform:scaleY(calc(var(--wipe)*.66))}
+.pixel-wipe i:nth-child(5n) {transform:scaleY(calc(var(--wipe)*.81))}
 
 .pixel-directory {
   color-scheme:dark;--ink:#edf3e6;--paper:#121d16;--line:#395641;--green:#b9ea74;--muted:#b2c7ae;
@@ -125,14 +126,17 @@
 @media(max-width:700px) {
   .scene-picker {padding-block:22px;gap:12px}
   .scene-picker a {padding:9px 7px}
-  .scene .scene-screen,.scene:nth-child(even) .scene-screen {grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr;padding:calc(var(--header) + 15px) var(--gutter) 32px;gap:2px;background:radial-gradient(ellipse at 50% 30%,rgb(var(--glow-room)/.48),transparent 54%),#0c1510}
-  .scene .scene-art,.scene:nth-child(even) .scene-art {grid-column:1;grid-row:1}
-  .scene .scene-info,.scene:nth-child(even) .scene-info {grid-column:1;grid-row:2;padding:0}
-  .scene-art canvas {width:min(100%,clamp(240px,43svh,430px))}
-  .scene-info .kicker {margin-bottom:10px}
-  .scene-info h2 {font-size:clamp(38px,10vw,64px)}
-  .scene-lead {margin-top:12px}
-  .scene-index {margin-block:13px}
+  .scene {min-height:156svh}
+  .scene .scene-screen,.scene:nth-child(even) .scene-screen {grid-template-columns:1fr;align-items:end;padding:calc(var(--header) + 37svh) var(--gutter) 28px}
+  .scene .scene-art,.scene:nth-child(even) .scene-art {
+    inset:calc(var(--shot)*(var(--header) + 8px)) calc(var(--shot)*var(--gutter)) calc(var(--shot)*57%) calc(var(--shot)*var(--gutter));
+  }
+  .scene .scene-info,.scene:nth-child(even) .scene-info {grid-column:1;grid-row:1;padding:0}
+  .scene-info .kicker {margin-bottom:6px}
+  .scene-info h2 {font-size:clamp(32px,9vw,56px)}
+  .scene-lead {margin-top:8px}
+  .scene-index {margin-block:10px}
+  .scene-meter {bottom:14px}
   .pixel-directory .workspace {grid-template-columns:minmax(0,1fr);gap:10px;padding-top:12px}
   .pixel-directory .sidebar {padding:0;border:0}
   .pixel-directory .sidebar #zone-nav {display:flex;overflow-x:auto}
@@ -140,23 +144,57 @@
   .pixel-directory #group-nav {flex-wrap:nowrap;overflow-x:auto}
   .pixel-directory #group-nav button {flex:none}
 }
-.scene-info > :not(.scene-actions) {transform:translateY(calc((1 - var(--entry)) * 24px - var(--exit)*22px))}
 .pixel-directory.directory-standalone {margin:0}
 .pixel-directory #group-nav button[aria-current=true] {color:#142111;background:var(--green)}
 .pixel-directory #editor-error {color:#ffaaa0}
 .pixel-directory .site-card:hover {border-color:#92b672;box-shadow:inset 0 -3px #08130c}
 .pixel-directory .search-panel .primary {box-shadow:inset 0 -3px #24381b38}
 @media(prefers-reduced-motion:reduce) {
-  .scene-art,.scene-info > :not(.scene-actions) {transform:none}
+  .scene {min-height:100svh;--shot:1;--copy:1}
+  .scene-screen {position:relative}
+  .scene-info {transform:none;opacity:1}
+  .scene-meter {display:none}
   .pixel-wipe {display:none}
 }
 .scene-samples {display:flex;gap:6px;flex-wrap:wrap;margin:-8px 0 17px}
 .scene-samples a {max-width:100%;overflow-wrap:anywhere;padding:8px 10px;border:1px solid #c8ead638;font-size:13px;line-height:1.4;background:#14231a}
 .scene-samples a:hover {border-color:var(--accent-room);color:var(--accent-room)}
-.scene-info > .scene-samples {transform:none}
 @media(max-width:700px) {
   .scene-samples {margin:0 0 10px}
   .scene-samples a {padding:7px 8px}
 }
 #flat-home #directory-title {margin-bottom:clamp(22px,3vw,38px)}
 .pixel-directory .group-section small {margin-left:7px}
+
+@media(max-height:640px) {
+  .scene {--shot:1;--copy:1;min-height:100svh}
+  .scene-screen {position:relative}
+  .scene-info {transform:none;opacity:1}
+  .scene-meter,.pixel-wipe {display:none}
+}
+.scene-opening {
+  position:absolute;left:var(--gutter);bottom:clamp(38px,8vh,102px);z-index:1;pointer-events:none;
+  display:grid;gap:9px;opacity:var(--opening,1);transform:translateY(calc((1 - var(--opening,1))*18px));
+  text-shadow:0 3px 18px #000,0 2px #000;
+}
+.scene-opening span {font-size:clamp(40px,7vw,110px);font-weight:900;line-height:1.05;letter-spacing:-.07em}
+.scene-opening small {font-size:14px;font-weight:700;color:var(--accent-room)}
+@media(max-width:700px) {
+  .scene-opening {bottom:11svh}
+}
+@media(prefers-reduced-motion:reduce),(max-height:640px) {
+  .scene-opening {display:none}
+}
+
+.scene-art img {
+  display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:cover;
+  transform:translateY(var(--camera-y,0%)) scale(var(--camera-scale,1.19));
+}
+.scene-art::after {
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(0deg,#06110f9e,transparent 57%);
+  opacity:calc(1 - var(--shot)*.74);
+}
+@media(prefers-reduced-motion:reduce),(max-height:640px) {
+  .scene-art img {transform:none}
+}
