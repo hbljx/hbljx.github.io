@@ -15,15 +15,6 @@ const details = {
 export function mountScenes() {
   const scenes = document.querySelector('#zone-scenes');
   const links = document.querySelector('#scene-links');
-  const sceneMenu = links.closest('details');
-  sceneMenu.addEventListener('keydown',event=>{
-    if (event.key !== 'Escape' || !sceneMenu.open) return;
-    sceneMenu.open=false;
-    sceneMenu.querySelector('summary').focus();
-  });
-  document.addEventListener('click',event=>{
-    if (sceneMenu.open && (!sceneMenu.contains(event.target) || event.target.closest('#scene-links a'))) sceneMenu.open=false;
-  });
   const searchBar = document.querySelector('#directory');
   const roomQuery = document.querySelector('#room-query');
   const roomStars = document.querySelector('#room-stars');
@@ -46,7 +37,7 @@ export function mountScenes() {
     const caption = Object.assign(document.createElement('small'), {textContent:zone.label});
     const arrow = Object.assign(document.createElement('span'), {textContent:'↗'});
     arrow.setAttribute('aria-hidden','true');
-    link.append(caption,arrow);
+    link.prepend(Object.assign(document.createElement('img'),{src:'assets/ui/'+zone.id+'.png',alt:'',width:24,height:24}));
     links.append(link);
 
     const section = document.createElement('section');
@@ -125,13 +116,8 @@ export function mountScenes() {
           const note = Object.assign(document.createElement('small'),{
             textContent:item.description || new URL(item.url).hostname,
           });
-          const mark = Object.assign(document.createElement('span'), {className:'room-mark',textContent:item.name.trim().slice(0,1)});
-          mark.setAttribute('aria-hidden','true');
-          if (/^(assets|uploads|style)\/[A-Za-z0-9_./-]+$/.test(item.icon||'') && !item.icon.includes('..')) {
-            const icon = Object.assign(document.createElement('img'), {src:'navigation/icons/'+item.icon.split('/').at(-1),loading:'lazy',alt:''});
-            icon.addEventListener('error',()=>icon.remove(),{once:true});
-            mark.append(icon);
-          }
+          const mark = Object.assign(document.createElement('span'), {className:'room-mark'});
+          mark.append(Object.assign(document.createElement('img'), {src:'assets/ui/'+zone.id+'.png',loading:'lazy',alt:''}));
           const text = Object.assign(document.createElement('span'),{className:'room-card-text'});
           text.append(Object.assign(document.createElement('strong'),{textContent:item.name}),note);
           const exit = Object.assign(document.createElement('span'),{className:'room-card-exit',textContent:'↗'});
@@ -169,7 +155,7 @@ export function mountScenes() {
     roomStars.setAttribute('aria-pressed',String(next));
     renderRooms();
   });
-  document.querySelector('[data-open-search]').addEventListener('click',()=>searchBar.showModal());
+  document.querySelector('[data-open-search]')?.addEventListener('click',()=>searchBar.showModal());
   document.querySelector('#manage-links').addEventListener('click',()=>manager.showModal());
   matches.addEventListener('click',event=>{
     const link=event.target.closest('a');

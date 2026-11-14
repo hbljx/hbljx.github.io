@@ -24,6 +24,8 @@ if (worldMode) {
   mountWebSearch();
   const { mountScenes } = await import('./home-scenes.js');
   mountScenes();
+  const { mountPixelImages } = await import('./pixel-images.js');
+  mountPixelImages();
 
   const hero = document.querySelector('.hero');
   const stage = document.querySelector('.hero-stage');

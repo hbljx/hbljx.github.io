@@ -1,0 +1,6 @@
+// Replace decorative text glyphs with the shared pixel image set, including dynamic cards.
+export function mountPixelImages(){
+ const names={'↓':'down','↑':'down','↗':'exit','☆':'star','★':'star','×':'close','⌕':'blog'};
+ function paint(root){const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);for(const node of nodes){if(node.parentElement.closest('script,style,textarea,input,option'))continue;let value=node.nodeValue;if(!/[↓↑↗☆★×⌕]/.test(value))continue;const fragment=document.createDocumentFragment();for(const part of value.split(/([↓↑↗☆★×⌕])/)){if(names[part]){const img=document.createElement('img');img.src='assets/ui/'+names[part]+'.png';img.alt='';img.className='pixel-ui-icon';if(part==='↑')img.style.transform='rotate(180deg)';fragment.append(img)}else fragment.append(document.createTextNode(part))}node.replaceWith(fragment)}}
+ paint(document.querySelector('#flat-home'));const observer=new MutationObserver(records=>{observer.disconnect();for(const r of records)for(const n of r.addedNodes){if(n.nodeType===1)paint(n);else if(n.nodeType===3&&n.parentElement)paint(n.parentElement)}observe()});function observe(){observer.observe(document.querySelector('#flat-home'),{childList:true,subtree:true})}observe();
+}
