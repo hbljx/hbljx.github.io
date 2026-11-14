@@ -14,6 +14,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/li.png">
 <link rel="stylesheet" href="navigation/home.css">
+<link rel="stylesheet" href="navigation/search-inventory.css">
 <link rel="stylesheet" href="navigation/scenes.css">
 <link rel="stylesheet" href="navigation/scene-effects.css">
 <script type="importmap">{"imports":{
@@ -104,18 +105,18 @@
         <p class="intro">七个场景，收好常用的网站。</p>
         <form class="site-search" action="https://www.baidu.com/s" method="get" target="_blank" rel="noopener noreferrer" role="search" aria-label="网页搜索">
           <fieldset class="search-engines"><legend class="visually-hidden">选择搜索引擎</legend>
-            <label><input type="radio" name="engine" value="baidu" checked><span>百度</span></label>
-            <label><input type="radio" name="engine" value="bing"><span>必应</span></label>
-            <label><input type="radio" name="engine" value="google"><span>谷歌</span></label>
+            <label><input type="radio" name="engine" value="baidu" checked><span><img class="search-gem search-gem-baidu" src="assets/ui/search-gem.png" width="26" height="34" alt="">百度</span></label>
+            <label><input type="radio" name="engine" value="bing"><span><img class="search-gem search-gem-bing" src="assets/ui/search-gem.png" width="26" height="34" alt="">必应</span></label>
+            <label><input type="radio" name="engine" value="google"><span><img class="search-gem search-gem-google" src="assets/ui/search-gem.png" width="26" height="34" alt="">谷歌</span></label>
           </fieldset>
           <div class="web-search-row"><label class="visually-hidden" for="home-query">搜索互联网</label>
             <input type="search" name="wd" id="home-query" placeholder="用百度搜索网页" required autocomplete="off" maxlength="2000">
-            <button type="submit" aria-label="使用百度搜索">搜索 <span aria-hidden="true">↗</span></button>
+            <button type="submit" aria-label="使用百度搜索"><img src="assets/ui/search.svg" width="28" height="28" alt=""></button>
           </div>
         </form>
       </div>
       <div class="hero-bottom">
-        <a class="scroll-link" href="#zones"><span aria-hidden="true">↓</span> 向下探索</a>
+        <a class="scroll-link" href="#zones"><span class="terminal-prompt" aria-hidden="true">&gt;_</span> 向下探索</a>
         <div class="scene-progress" aria-hidden="true"><i></i></div>
       </div>
       <div class="stage-copy">
@@ -133,7 +134,7 @@
     <header><h2 id="room-search-title">找网址</h2><form method="dialog"><button aria-label="关闭搜索">×</button></form></header>
     <div class="room-query-row"><label class="visually-hidden" for="room-query">搜索网址</label>
       <input id="room-query" type="search" placeholder="输入名称或关键词">
-      <button id="room-stars" type="button" aria-pressed="false">☆ 收藏</button>
+
     </div>
     <p id="room-result-count" role="status"></p>
     <nav id="room-matches" aria-label="搜索结果所在场景"></nav>
@@ -143,7 +144,7 @@
     <div id="room-tools"></div>
   </dialog>
   <div id="directory-content" class="pixel-directory"></div>
-  <section id="about-us" class="about-us"><p class="kicker">ABOUT LI+</p><h2>把好用的网站，收藏进一个小世界。</h2><p>Li+ 像素导航是一座 Minecraft 风格的网址小岛。我们把日常、AI、灵感、音乐、工具、行情与社区整理成七个场景，让每一次寻找都有清晰的方向。</p><p>你可以直接搜索互联网，按场景发现常用网站，收藏喜欢的入口，也可以进入 3D 家园，在方块搭建的世界里漫步探索。希望这里既是你的日常起点，也是忙碌间隙可以停留的小天地。</p><a class="solid-link" href="?view=3d">进入我们的像素家园</a></section><footer class="home-footer"><strong>LI<span>+</span> 像素导航</strong><div><button type="button" id="manage-links">管理网址</button><a href="#home">回到顶部 ↑</a></div></footer>
+  <section id="about-us" class="about-us"><p class="kicker">ABOUT LI+ / 关于我们</p><h2>把好用的网站，收藏进一个小世界。</h2><p>Li+ 像素导航是一座 Minecraft 风格的网址小岛。我们把日常、AI、灵感、音乐、工具、行情与社区整理成七个场景，让每一次寻找都有清晰的方向。</p><p>你可以直接搜索互联网，按场景发现常用网站，收藏喜欢的入口，也可以进入 3D 家园，在方块搭建的世界里漫步探索。希望这里既是你的日常起点，也是忙碌间隙可以停留的小天地。</p><a class="solid-link" href="?view=3d">进入我们的像素家园</a></section><footer class="home-footer"><strong>LI<span>+</span> 像素导航</strong><div><button type="button" id="manage-links">管理网址</button><a href="#home">回到顶部</a></div></footer>
 </main>
 <template id="world-page">
 <main id="world" aria-label="Li+ 像素导航"></main>

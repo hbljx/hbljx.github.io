@@ -89,8 +89,6 @@
 .pixel-directory .site-description {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px}
 .pixel-directory .card-actions {display:flex;justify-content:flex-end;gap:4px;padding:0 8px 8px}
 .pixel-directory .card-actions button {min-height:38px;font-size:13px}
-.pixel-directory .card-actions .star {margin-right:auto;font-size:17px}
-.pixel-directory .card-actions .star[aria-pressed=true] {color:#142111}
 .pixel-directory :is(#empty,#toast) {padding:14px;background:#202f23;color:var(--ink)}
 .pixel-directory #toast {position:fixed;z-index:8;bottom:18px;left:50%;transform:translateX(-50%);margin:0;border:1px solid var(--green)}
 .pixel-directory footer {display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;padding:14px 0;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
@@ -211,13 +209,9 @@
 .room-mark {display:grid;place-items:center;position:relative;width:46px;height:46px;background:#314937;color:var(--accent-room);font-size:20px;font-weight:800;border-radius:8px}
 .room-mark img {position:absolute;inset:0;margin:auto;width:29px;height:29px;object-fit:contain;background:#314937}
 .room-card-exit {font-size:20px;color:var(--accent-room)}
-.room-card-actions {display:flex;align-items:center;justify-content:flex-end;gap:5px;margin:0 14px 10px;border-top:1px solid #a0ba9030;padding-top:6px}
-.room-card-actions button {font-size:14px;min-width:48px;border-color:transparent;background:transparent}
-.room-card-actions [data-star] {font-size:20px}
 @media(max-width:700px) {
   .room-card-grid {grid-template-columns:1fr}
   .room-card>a {padding:15px 12px;gap:11px}
 }
 .room-card>a:focus-visible {outline-offset:-4px}
-.room-card-actions button:hover {border-color:#9cb79060}
 .room-card-text small {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal}

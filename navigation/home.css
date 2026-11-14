@@ -50,20 +50,6 @@ input,button {font:inherit}
 .hero-copy h1 {font-size:clamp(58px,7.7vw,124px);white-space:nowrap}
 .hero-copy h1 span,.home-footer strong span {color:var(--lime)}
 .intro {margin:20px 0 28px;font-size:clamp(16px,1.65vw,24px);color:#c6d3c1}
-.site-search {width:min(100%,420px);display:flex;gap:5px;padding:5px;background:#15231ae8;border:1px solid #aac89a65;border-radius:7px}
-.site-search input {border:0;background:none;color:#fff;padding:0 10px;min-width:0;flex:1;font-size:16px}
-.site-search input::placeholder {color:#b4c3b0}
-.site-search button {border:0;border-radius:4px;background:var(--lime);color:#14220c;font-weight:750;min-height:44px;padding:0 13px;cursor:pointer}
-.site-search {display:block;padding:7px;width:min(100%,460px);background:#102016e8;border-color:#bed8a859;box-shadow:0 12px 35px #0002}
-.search-engines {display:flex;gap:6px;border:0;margin:0 0 7px;padding:0;min-width:0}
-.search-engines label {position:relative;flex:1;cursor:pointer}
-.site-search .search-engines input {position:absolute;width:1px;height:1px;opacity:0;padding:0}
-.search-engines span {display:flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border-radius:4px;color:#c0cfb8;font-size:14px;border:1px solid transparent;transition:background .15s,color .15s}
-.search-engines input:checked+span {color:var(--lime);background:#c7f77614;border-color:#c7f77638;font-weight:750}
-.search-engines input:focus-visible+span {outline:2px solid var(--lime);outline-offset:1px}
-.search-engines label:hover span {background:#c7f77619}
-.web-search-row {display:flex;gap:6px;border-top:1px solid #c7f77625;padding-top:7px}
-.site-search .web-search-row input {width:0;min-height:46px}
 .hero-bottom {position:absolute;bottom:calc(22px + env(safe-area-inset-bottom));left:var(--gutter);right:var(--gutter);color:#e3eade;display:flex;justify-content:space-between;align-items:center;opacity:var(--fade)}
 .hero-bottom[aria-hidden="true"] {visibility:hidden}
 .scroll-link {display:flex;gap:10px;align-items:center;min-height:44px;font-size:13px}
@@ -129,8 +115,6 @@ html:not(.world-mode) :is(input[type=search],input[type=text],input[type=url],te
 .nav-search:hover {color:var(--lime)}
 .site-header nav a {white-space:nowrap}
 .hero-copy .intro {color:#e4eddf;line-height:1.6;margin-bottom:20px}
-.site-search {padding:6px;border-radius:11px}
-.site-search button {border-radius:7px;min-width:79px}
 .home-footer div {display:flex;flex-wrap:wrap;gap:15px;align-items:center;justify-content:end}
 .home-footer button {background:transparent;color:inherit;border:0;padding:0;min-height:44px}
 .home-footer button:hover {color:var(--lime)}
@@ -165,15 +149,6 @@ html:not(.world-mode) :is(input[type=search],input[type=text],input[type=url],te
 #scene-links a{display:flex;align-items:center;gap:8px;padding:8px 13px;border:1px solid #accb8b22;border-radius:8px;font-size:13px;transition:background .2s,transform .2s;flex-shrink:0}
 #scene-links a:hover,#scene-links a[data-active]{background:#a9d97320;border-color:#c7f77677;transform:translateY(-2px)}
 #scene-links img,.pixel-ui-icon{width:24px;height:24px;object-fit:contain;image-rendering:pixelated;vertical-align:middle}
-.site-search{padding:12px!important;background:linear-gradient(135deg,#172c24ee,#10201bea)!important;border:1px solid #b5db9870!important;border-radius:18px!important;box-shadow:0 16px 50px #0005,inset 0 1px #e7ffdd20;backdrop-filter:blur(18px);transition:box-shadow .25s,transform .25s,border-color .25s}
-.site-search:focus-within{border-color:#c7f776!important;box-shadow:0 0 0 4px #c7f77620,0 22px 55px #0006;transform:translateY(-3px)}
-.search-engines{border:0;display:flex;gap:8px;padding:0 0 10px;margin:0}
-.search-engines label span{display:block;padding:7px 16px;border-radius:8px;transition:background .2s,color .2s}
-.search-engines input:checked+span{background:#c7f776!important;color:#172514!important}
-.web-search-row{display:flex;align-items:center;gap:8px;background:#07181080;border-radius:10px;padding:5px}
-.site-search input[type=search]{min-width:0;flex:1;background:transparent!important;color:#f0f7e9!important;border:0!important;min-height:48px;padding:10px}
-.site-search button{min-height:48px;border:0;padding:0 18px;border-radius:9px!important;transition:transform .2s,box-shadow .2s}
-.site-search button:hover{transform:translateY(-2px);box-shadow:0 5px 0 #547333}
 .scroll-link{display:inline-flex;align-items:center;gap:14px;padding:10px 20px 10px 10px;border:1px solid #c7f77670;border-radius:40px;background:#10251cbb;backdrop-filter:blur(12px);box-shadow:0 8px 28px #0004;transition:background .2s,transform .2s}
 .scroll-link>span{display:grid;place-items:center;width:40px;height:40px;background:#c7f776;border-radius:50%;animation:explore-bob 2s ease-in-out infinite}
 .scroll-link:hover{background:#294333;transform:translateY(-3px)}
@@ -183,7 +158,7 @@ html:not(.world-mode) :is(input[type=search],input[type=text],input[type=url],te
 .about-us>p:not(.kicker){max-width:780px;line-height:2;color:#4a6049}
 .about-us .solid-link{margin-top:18px}
 .room-mark img{image-rendering:pixelated;object-fit:contain!important}
-@media(max-width:700px){:root{--header:116px}.site-header{display:grid;grid-template-rows:58px 58px;gap:0 12px}.site-header #scene-links{justify-content:flex-start}.site-header nav{gap:16px}.hero-copy{bottom:90px}.hero-copy h1{font-size:46px}.site-search{padding:8px!important}.search-engines label span{padding:5px 12px}.web-search-row input{width:100px}.about-us{padding-block:56px}}
+@media(max-width:700px){:root{--header:116px}.site-header{display:grid;grid-template-rows:58px 58px;gap:0 12px}.site-header #scene-links{justify-content:flex-start}.site-header nav{gap:16px}.hero-copy{bottom:90px}.hero-copy h1{font-size:46px}.about-us{padding-block:56px}}
 @media(prefers-reduced-motion:reduce){.scroll-link>span{animation:none}.site-search,.scroll-link,#scene-links a,.site-search button{transition:none;transform:none!important}}
 /* Keep all primary destinations on one continuous row. */
 :root{--header:78px}
@@ -200,3 +175,29 @@ html:not(.world-mode) :is(input[type=search],input[type=text],input[type=url],te
 .site-header>.brand{margin-right:auto}
 .site-header>.world-link{margin-left:auto}
 @media(max-width:1100px){.site-header>.brand{margin-right:0}.site-header>.world-link{margin-left:0}}
+/* About: a double-framed pixel workbench. */
+.about-us {
+  margin:32px var(--gutter);padding:48px clamp(20px,4vw,64px);background:#14291d;color:#f0f6e6;
+  border:3px solid #92ac69;border-radius:0;outline:1px solid #445d39;outline-offset:6px;
+  box-shadow:inset 0 0 0 5px #0a1911,inset 0 0 0 6px #536b42,6px 8px 0 #09160e;
+}
+.about-us .kicker {display:inline-flex;padding:9px 13px;background:#263d25;border:1px solid #7c9658;color:#c7f776;letter-spacing:.08em}
+.about-us h2 {max-width:850px;font-size:clamp(27px,3.5vw,46px);line-height:1.35}
+.about-us>p:not(.kicker) {max-width:840px;color:#c3d1b8;line-height:1.95}
+.about-us .solid-link {margin-top:18px;border:2px solid #dbff9d;border-radius:0;background:#c7f776;color:#172713;box-shadow:4px 4px 0 #627d36;transition:transform .12s,box-shadow .12s}
+.about-us .solid-link:hover {background:#dcffa1}
+.about-us .solid-link:active {transform:translate(3px,3px);box-shadow:1px 1px 0 #627d36}
+/* Terminal controls share the same prompt, fine rule and dark surface. */
+.scroll-link,.home-footer :is(a,button),#room-tools button,.directory-standalone footer button {
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 16px;
+  background:#101614;color:#b3db95;border:1px solid #63834d;border-radius:0;
+  font:600 14px/1.4 Consolas,'Microsoft YaHei',monospace;box-shadow:none;backdrop-filter:none;
+  transition:background .15s,border-color .15s;
+}
+.scroll-link>span {display:inline;width:auto;height:auto;background:none;border:0;border-radius:0;color:#c7f776;font:inherit;animation:none}
+.home-footer :is(a,button)::before,#room-tools button::before,.directory-standalone footer button::before {content:'>_';color:#c7f776}
+.scroll-link:hover,.home-footer :is(a,button):hover,#room-tools button:hover,.directory-standalone footer button:hover {background:#1b2a20;border-color:#c7f776;color:#e5ffd2;transform:none}
+.scroll-link:active,.home-footer :is(a,button):active,#room-tools button:active {background:#26372a}
+.home-footer {border-top:1px solid #3e5536;align-items:center}
+@media(max-width:700px){.about-us {margin:24px var(--gutter);padding:28px 20px}.home-footer {flex-direction:column;align-items:flex-start}.home-footer div{justify-content:flex-start}.scroll-link {padding:10px 14px}}
+@media(prefers-reduced-motion:reduce){.about-us .solid-link,.scroll-link,.home-footer :is(a,button){transition:none}}

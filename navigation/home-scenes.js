@@ -17,7 +17,6 @@ export function mountScenes() {
   const links = document.querySelector('#scene-links');
   const searchBar = document.querySelector('#directory');
   const roomQuery = document.querySelector('#room-query');
-  const roomStars = document.querySelector('#room-stars');
   const manager = document.querySelector('#room-manage');
   const matches = document.querySelector('#room-matches');
   const directoryContent = document.querySelector('#directory-content');
@@ -78,9 +77,8 @@ export function mountScenes() {
   let snapshot;
   function renderRooms() {
     if (!snapshot) return;
-    const {groups,stars} = snapshot;
+    const {groups} = snapshot;
     const query = roomQuery.value.trim().toLocaleLowerCase();
-    const starOnly = roomStars.getAttribute('aria-pressed') === 'true';
     const visible = new Set();
     matches.replaceChildren();
 
@@ -95,8 +93,7 @@ export function mountScenes() {
       list.replaceChildren();
       let matchCount = 0;
       for (const group of categories) {
-        const entries = group.items.filter(item => (!starOnly || stars.has(item.id)) &&
-          [item.name,item.url,item.description,item.section,group.title,...(item.aliases || [])].join(' ').toLocaleLowerCase().includes(query));
+        const entries = group.items.filter(item => [item.name,item.url,item.description,item.section,group.title,...(item.aliases || [])].join(' ').toLocaleLowerCase().includes(query));
         if (!entries.length) continue;
         entries.forEach(item => visible.add(item.id));
         matchCount += entries.length;
@@ -123,16 +120,7 @@ export function mountScenes() {
           const exit = Object.assign(document.createElement('span'),{className:'room-card-exit',textContent:'↗'});
           exit.setAttribute('aria-hidden','true');
           link.append(mark,text,exit);
-          const star = Object.assign(document.createElement('button'),{type:'button',textContent:stars.has(item.id)?'★':'☆'});
-          star.dataset.star = item.id;
-          star.setAttribute('aria-pressed',String(stars.has(item.id)));
-          star.setAttribute('aria-label',(stars.has(item.id)?'取消星标：':'添加星标：')+item.name);
-          const edit = Object.assign(document.createElement('button'),{type:'button',textContent:'编辑'});
-          edit.dataset.edit=item.id;
-          edit.setAttribute('aria-label','编辑：'+item.name);
-          const actions = Object.assign(document.createElement('div'),{className:'room-card-actions'});
-          actions.append(star,edit);
-          card.append(link,actions);
+          card.append(link);
           grid.append(card);
         }
         category.append(title,grid);
@@ -150,11 +138,6 @@ export function mountScenes() {
     renderRooms();
   });
   roomQuery.addEventListener('input',renderRooms);
-  roomStars.addEventListener('click',()=>{
-    const next=roomStars.getAttribute('aria-pressed')!=='true';
-    roomStars.setAttribute('aria-pressed',String(next));
-    renderRooms();
-  });
   document.querySelector('[data-open-search]')?.addEventListener('click',()=>searchBar.showModal());
   document.querySelector('#manage-links').addEventListener('click',()=>manager.showModal());
   matches.addEventListener('click',event=>{
