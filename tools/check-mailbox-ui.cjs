@@ -47,7 +47,7 @@ const script = `
       requests.push(route.request().postDataJSON());
       return route.fulfill({ status: requests.length === 1 ? 403 : 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(requests.length === 1 ? { ok: false, code: 'verify' } : { ok: true, code: 'sent' }) });
     });
-    await page.goto(`${base}/?lang=zh`);
+    await page.goto(`${base}/?view=3d&lang=zh`);
     await page.waitForFunction(() => window.__home);
     assert.equal(scripts, 0, 'World startup loaded the verification script');
     await page.evaluate(() => window.__home.go('mailbox'));

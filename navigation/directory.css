@@ -121,3 +121,5 @@ dialog input,dialog select,dialog textarea{font-size:16px}
   .card-actions button{padding:6px;min-width:40px}
 }
 @media(max-width:360px){.workspace{grid-template-columns:92px minmax(0,1fr);gap:9px}.embedded .workspace{gap:9px}.sidebar{padding-right:6px}.site-main{align-items:flex-start}.site-mark{display:none}.card-actions button{padding:5px}}
+
+#home-return { display:inline-flex; align-items:center; min-height:44px; margin-bottom:10px; font-weight:700; }

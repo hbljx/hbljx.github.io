@@ -1,3 +1,4 @@
+import { worldPage } from './world-page.mjs';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 const {chromium}=await import(process.env.HOMECRAFT_PLAYWRIGHT||'playwright');
 const url=process.argv[2]||readFileSync(new URL('./.serve-url',import.meta.url),'utf8').trim();
@@ -6,7 +7,7 @@ const browser=await chromium.launch({channel:'chrome',args:['--use-angle=swiftsh
 try{
  const page=await browser.newPage({viewport:{width:1440,height:960}}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
- await page.goto(url);await page.waitForFunction(()=>window.__home||window.__homeStartupError,null,{timeout:60000});
+ await page.goto(worldPage(url));await page.waitForFunction(()=>window.__home||window.__homeStartupError,null,{timeout:60000});
  const results=await page.evaluate(async()=>{
   if(window.__homeStartupError)throw new Error(window.__homeStartupError);
   const h=__home,w=h.world,c=w.carrier,f=w.aircraftFleet;

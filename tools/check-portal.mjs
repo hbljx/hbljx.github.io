@@ -6,6 +6,7 @@
 //   npm run check:portal [-- http://127.0.0.1:<port>]
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { mkdirSync, readFileSync } from 'node:fs';
 
 const remembered = () => { try { return readFileSync(new URL('./.serve-url', import.meta.url), 'utf8').trim(); } catch { return ''; } };
@@ -20,10 +21,11 @@ const views = [
   { name: 'phone', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   { name: 'reduced', viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' },
 ];
-const DIRECTORY = ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json'];
+const DIRECTORY = ['https://homecraft.terryhu.cn/worlds.json', 'https://terryhu7.github.io/homecraft/worlds.json', '**/navigation/portal-worlds.json'];
 try {
   for (const { name, ...view } of views) {
     const context = await browser.newContext({ ...view, locale: 'zh-CN' });
+    await context.addInitScript(() => localStorage.setItem('li-home-guide-seen', '1'));
     const page = await context.newPage(), errors = [];
     page.on('pageerror', e => errors.push(e.message));
     const starter = { name: 'Starter', url: `${base}/`, homecraft: true };
@@ -62,11 +64,11 @@ try {
     };
     const close = async () => { await page.locator('#panel .close').click(); await page.waitForFunction(() => !document.querySelector('#panel').open); };
 
-    await page.goto(`${base}/?lang=zh`); await ready();
+    await page.goto(`${base}/?view=3d&lang=zh`); await ready();
     await page.evaluate(() => {
       const h = __home; h.setTimeMode('day'); const f = h.portal.front; h.player.teleport(f.x + Math.sin(f.heading) * 3, f.z + Math.cos(f.heading) * 3); h.rig.set(f.heading + .05, .35, 9); h.rig.recenter(h.player);
     });
-    await page.screenshot({ path: new URL(`${name}-door.png`, out).pathname });
+    await page.screenshot({ path: fileURLToPath(new URL(`${name}-door.png`, out)) });
     // Click the real 3D portal, rather than calling a synthetic DOM control.
     const point = await page.evaluate(() => __home.project(__home.portal.root.position.x, 1.2, __home.portal.root.position.z + .1));
     if (view.hasTouch) await page.touchscreen.tap(point.x, point.y); else await page.mouse.click(point.x, point.y);
@@ -80,7 +82,7 @@ try {
     assert.equal(await page.locator('.world-footer a').getAttribute('href'), 'https://example.com/join');
     assert.equal(await page.locator('#loading').count(), 0, 'Opening the list started a journey');
     const before = await page.evaluate(() => __home.player.pos.toArray());
-    await page.screenshot({ path: new URL(`${name}-list.png`, out).pathname });
+    await page.screenshot({ path: fileURLToPath(new URL(`${name}-list.png`, out)) });
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.querySelector('#panel').open);
     assert.deepEqual(await page.evaluate(() => __home.player.pos.toArray()), before);
@@ -95,11 +97,11 @@ try {
     if (name !== 'reduced') {
       assert(await page.evaluate(() => __home.portal.busy), 'Did not walk into the portal');
       await page.waitForTimeout(900);
-      await page.screenshot({ path: new URL(`${name}-departure.png`, out).pathname });
+      await page.screenshot({ path: fileURLToPath(new URL(`${name}-departure.png`, out)) });
     }
     await page.locator('#loading .bar[role="progressbar"]').waitFor({ state: 'visible', timeout: 10000 });
     await page.waitForFunction(() => document.querySelector('#loading .loading-label')?.textContent.includes('Neighbour'));
-    await page.screenshot({ path: new URL(`${name}-loading.png`, out).pathname });
+    await page.screenshot({ path: fileURLToPath(new URL(`${name}-loading.png`, out)) });
     await page.waitForFunction(() => typeof window.__releaseWorldNavigation === 'function');
     await page.evaluate(() => window.__releaseWorldNavigation());
 
@@ -110,7 +112,7 @@ try {
     if (name !== 'reduced') {
       await page.evaluate(() => __home.setTimeMode('day'));
       await page.waitForFunction(() => !document.querySelector('#loading'));
-      await page.screenshot({ path: new URL(`${name}-arrival.png`, out).pathname });
+      await page.screenshot({ path: fileURLToPath(new URL(`${name}-arrival.png`, out)) });
     }
     await ready();
     const arrived = new URL(page.url());

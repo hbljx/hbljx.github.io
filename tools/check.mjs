@@ -12,6 +12,7 @@
 // regressions, not real-phone smoothness. Try a real phone before you ship.
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { worldPage } from './world-page.mjs';
 
 const { chromium } = await import(process.env.HOMECRAFT_PLAYWRIGHT || 'playwright').catch(() => {
   console.log('The browser check needs Playwright: run npm install once, then try again. (npm run check:site needs nothing installed.)');
@@ -20,7 +21,7 @@ const { chromium } = await import(process.env.HOMECRAFT_PLAYWRIGHT || 'playwrigh
 const remembered = () => { try { return readFileSync(new URL('./.serve-url', import.meta.url), 'utf8').trim(); } catch { return ''; } };
 const url = process.argv[2] || remembered();
 if (!url) { console.log('Nothing is being served. Run python3 tools/serve.py first, or pass the address.'); process.exit(1); }
-if (!(await fetch(url).catch(() => null))) { console.log(`Nothing answers at ${url}: start the site first (python3 tools/serve.py).`); process.exit(1); }
+if (!(await fetch(url, { method: 'HEAD' }).catch(() => null))) { console.log(`Nothing answers at ${url}: start the site first (python3 tools/serve.py).`); process.exit(1); }
 const out = fileURLToPath(new URL('./.check/', import.meta.url));
 mkdirSync(out, { recursive: true });
 const gpu = process.platform === 'darwin'
@@ -48,7 +49,7 @@ for (const view of VIEWS) {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('response', async r => { try { bytes += (await r.body()).length; } catch {} });
   const start = Date.now();
-  await page.goto(url, { waitUntil: 'load' });
+  await page.goto(worldPage(url), { waitUntil: 'load' });
   await page.waitForFunction(() => window.__home?.player || window.__homeStartupError, null, { timeout: 60000 });
   const bootMs = Date.now() - start;
   const startup = await page.evaluate(() => window.__homeStartupError || null);

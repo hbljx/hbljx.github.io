@@ -1,3 +1,4 @@
+import { worldPage } from './world-page.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -13,7 +14,7 @@ try {
     const page = await context.newPage(), errors = [];
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-    await page.goto(url); await page.waitForFunction(() => window.__home || window.__homeStartupError, null, { timeout: 60000 });
+    await page.goto(worldPage(url)); await page.waitForFunction(() => window.__home || window.__homeStartupError, null, { timeout: 60000 });
     const result = await page.evaluate(() => {
       if (window.__homeStartupError) return { startup: window.__homeStartupError };
       const h = __home, a = h.extras.activities, p = h.player, sub = h.world.submarine, empty = { x: 0, z: 0, run: false };

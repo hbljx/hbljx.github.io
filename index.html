@@ -3,19 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#7fb2e8">
-<!-- The world draws its own day and night. -->
-<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#10160f">
 <meta name="darkreader-lock">
 <title>Li+ 像素导航</title>
-<meta name="description" content="Li+ 的 3D 导航之家。158 个网址，18 个分类，走进我的世界，把好用的留在手边。">
+<meta name="description" content="Li+ 像素导航。找网址，探索分类，也可以进入 Minecraft 风格的 3D 家园。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Li+ 像素导航">
 <meta property="og:description" content="好用的网址，都在这里。">
 <meta property="og:image" content="assets/li.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/li.png">
-<link rel="stylesheet" href="engine/style.css">
+<link rel="stylesheet" href="navigation/home.css">
 <script type="importmap">{"imports":{
   "three":"./vendor/three/three.module.min.js",
   "@engine/":"./engine/",
@@ -74,10 +72,68 @@
   "./engine/world/landscape.js":"./engine/world/landscape.js?v=20261111-clear-sea",
   "@config":"./home.config.js?v=20261106-terry-only"
 }}</script>
-<link rel="stylesheet" href="navigation/world-ui.css?v=20261106-scene-help">
-<link rel="stylesheet" href="navigation/activities.css?v=20261107-airplane-controls">
+<script>
+  const params = new URLSearchParams(location.search);
+  const door = new URLSearchParams(location.hash.slice(1)).get('homecraft') === '1' && params.has('from');
+  if (params.get('view') === '3d' || door || params.has('debug') || params.has('plain')) {
+    document.documentElement.classList.add('world-mode');
+    if (door && params.get('view') !== '3d') {
+      const url = new URL(location.href);
+      url.searchParams.set('view', '3d');
+      history.replaceState(history.state, '', url);
+    }
+  }
+</script>
 </head>
 <body>
+<header class="site-header">
+  <a class="brand" href="./" aria-label="Li+ 像素导航首页"><img src="assets/li.png" width="34" height="34" alt=""><span><b>LI<span>+</span></b><small>像素导航</small></span></a>
+  <nav aria-label="主导航"><a href="#home">首页</a><a href="#zones">场景分类</a><a href="directory.html?home=1">网址目录</a></nav>
+  <a class="world-link" href="?view=3d"><span class="cube-mark" aria-hidden="true"></span>切换 3D 页面 <span aria-hidden="true">↗</span></a>
+</header>
+<main id="flat-home">
+  <section id="home" class="hero" aria-labelledby="home-title">
+    <div class="hero-stage">
+      <div class="stage-art">
+        <div class="art-grid"></div>
+        <canvas id="island" aria-hidden="true"></canvas>
+      </div>
+      <div class="hero-copy">
+        <p class="kicker"><span></span> LI+ / PIXEL NAVIGATION</p>
+        <h1 id="home-title">像素导航<span>.</span></h1>
+        <p class="intro">好用的网址，都在这里。</p>
+        <form class="site-search" action="directory.html" role="search">
+          <input type="hidden" name="home" value="1">
+          <label class="visually-hidden" for="home-query">搜索本站网址</label>
+          <input type="search" name="q" id="home-query" placeholder="搜索名称、域名或分类" required>
+          <button type="submit" aria-label="搜索网址">搜索 <span aria-hidden="true">↗</span></button>
+        </form>
+        <a class="hero-directory" href="directory.html?home=1">浏览全部网址 <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="hero-bottom">
+        <a class="scroll-link" href="#zones"><span aria-hidden="true">↓</span> 向下探索</a>
+        <div class="scene-progress" aria-hidden="true"><i></i></div>
+      </div>
+      <div class="stage-copy">
+        <p class="kicker"><span></span> EXPLORE THE ISLAND</p>
+        <h2>每个场景，<br>一组常用网址<span>.</span></h2>
+        <p>从 AI 工作台到音乐咖啡吧，按场景找到想去的地方。</p>
+        <a class="solid-link" href="#zones">查看场景 <span aria-hidden="true">↓</span></a>
+      </div>
+    </div>
+  </section>
+  <section class="zones-section" id="zones" aria-labelledby="zones-title">
+    <div class="zones-heading">
+      <div><p class="kicker"><span></span> PIXEL ISLAND / DIRECTORY</p><h2 id="zones-title">选个场景出发<span>.</span></h2></div>
+      <a class="solid-link" href="directory.html?home=1">全部网址 ↗</a>
+    </div>
+    <div id="zone-cards"></div>
+    <noscript><p><a href="directory.html?home=1">打开网址目录</a></p></noscript>
+  </section>
+  <footer class="home-footer"><strong>LI<span>+</span> 像素导航</strong><a href="#home">回到顶部 ↑</a></footer>
+</main>
+<template id="world-page">
+<a class="back-flat" href="./">切换 2D 页面 ↗</a>
 <main id="world" aria-label="Li+ 像素导航"></main>
 <div id="loading"><div class="bar"><i></i></div></div>
 
@@ -148,10 +204,13 @@
     <p>走进球场按 E，按住空格或投篮按钮蓄力，等指针进绿色区再松手。面板会记录得分和出手次数。</p>
   </div>
 </article></section>
-
+<div id="li-brand" hidden><b>LI+</b><span>像素导航</span></div>
+</template>
+<noscript><style>.world-mode :is(.site-header,#flat-home){display:revert}</style></noscript>
 <!-- file:// cannot load the world modules. -->
 <script>
-if (location.protocol === 'file:') {
+if (location.protocol === 'file:' && document.documentElement.classList.contains('world-mode')) {
+  document.body.append(document.querySelector('#world-page').content.cloneNode(true));
   const zh = /^zh/i.test(navigator.language), note = document.createElement('aside');
   note.id = 'startupNotice';
   note.innerHTML = zh
@@ -160,11 +219,10 @@ if (location.protocol === 'file:') {
   document.getElementById('pages').before(note);
   document.getElementById('loading')?.remove();
   document.body.classList.add('plain');
+  const css = document.createElement('link');
+  css.rel = 'stylesheet'; css.href = 'engine/style.css'; document.head.append(css);
 }
 </script>
-<noscript><style>#world,#hud,#loading{display:none}#pages{display:block}</style></noscript>
-<script type="module" src="engine/main.js?v=20261114-rendering"></script>
-<div id="li-brand" hidden><b>LI+</b><span>像素导航</span></div>
-<script type="module" src="navigation/world-ui.js?v=20261110-first-visit-guide"></script>
+<script type="module" src="navigation/home.js"></script>
 </body>
 </html>

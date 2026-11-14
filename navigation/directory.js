@@ -200,6 +200,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const inFrame=window.parent!==window;
 document.body.classList.toggle('embedded',inFrame);
 const params=new URLSearchParams(location.search);
+const fromHome=!inFrame&&params.get('home')==='1';
 let zone=zones.find(z=>z.id===params.get('zone'))||zones[0],groupId='all',filter='all',editingId=null,store,base,data;
 let storage;try{storage=localStorage;}catch{}
 const readArray=key=>{try{const v=JSON.parse(storage?.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
@@ -214,7 +215,7 @@ const entries=()=>allGroups().flatMap(g=>g.items.map(item=>({...item,groupId:g.i
 function inZone(g){return !zone.groups.length||zone.groups.includes(g.id)||(zone.id==='about'&&g.id==='quickLinks');}
 const domain=url=>{try{return new URL(url).hostname.replace(/^www\./,'');}catch{return url;}};
 function refreshData(){data=store.getData();$('#undo').hidden=!store.canUndo();render();}
-function applyZone(id){zone=zones.find(z=>z.id===id)||zones[0];groupId='all';filter='all';$('#query').value='';try{const u=new URL(location.href);u.searchParams.set('zone',zone.id);history.replaceState(null,'',u);}catch{}render();}
+function applyZone(id){zone=zones.find(z=>z.id===id)||zones[0];groupId='all';filter='all';$('#query').value='';try{const u=new URL(location.href);u.searchParams.set('zone',zone.id);u.searchParams.delete('q');history.replaceState(null,'',u);}catch{}render();}
 function render(){
   if(!data)return;
   document.title=`${zone.name} · Li+ 像素导航`;
@@ -256,13 +257,14 @@ function card(i){
 }
 function closeDirectory(){
   if(inFrame){window.parent.postMessage({type:'li-nav-close'},location.origin);return;}
+  if(fromHome){location.assign('./');return;}
   window.close();
   // Manually opened browser tabs may not be script-closable; return those to the world.
-  setTimeout(()=>location.replace(new URL('./',location.href).href),80);
+  setTimeout(()=>location.replace(new URL('./?view=3d',location.href).href),80);
 }
 function visitLink(event){
   const link=event.target.closest?.('a[data-visit]');
-  if(!link||event.defaultPrevented)return;
+  if(!link||event.defaultPrevented||fromHome)return;
   // Let the native link open its destination before removing the hosting iframe/tab.
   setTimeout(closeDirectory,0);
 }
@@ -316,5 +318,12 @@ try{
   store=NavigationStore.create(base,storage);data=store.getData();
   $('#search-mode').innerHTML='<option value="local">本站网址</option>'+data.engines.map(e=>`<option value="${esc(e.id)}">${esc(e.id==='search_1'?'百度':e.name)}</option>`).join('');
   $('#search-mode').value=data.engines.some(e=>e.id==='search_1')?'search_1':'local';
+  if(fromHome){
+    $('#home-return').hidden=false;
+    if(params.has('q')){
+      $('#search-mode').value='local';
+      $('#query').value=params.get('q');
+    }
+  }
   render();document.body.dataset.ready='true';if(store.getNotice())toast(store.getNotice());
 }catch(error){$('#result-title').textContent='目录暂时未能加载';$('#cards').textContent=error.message;}

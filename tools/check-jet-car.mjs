@@ -1,3 +1,4 @@
+import { worldPage } from './world-page.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -13,7 +14,7 @@ try {
     const page = await context.newPage(), errors = [];
     page.on('pageerror', e => errors.push(e.stack));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-    await page.goto(url);
+    await page.goto(worldPage(url));
     await page.waitForFunction(() => window.__home || window.__homeStartupError, null, { timeout: 60000 });
     const result = await page.evaluate(async () => {
       if (window.__homeStartupError) return { startup: window.__homeStartupError };

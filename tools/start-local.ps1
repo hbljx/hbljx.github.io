@@ -5,7 +5,7 @@ $previewUrl = 'http://127.0.0.1:5573/'
 # A stable origin preserves browser-local edits and starred links across restarts.
 try {
     $existing = Invoke-WebRequest -Uri $previewUrl -UseBasicParsing -TimeoutSec 2
-    if ($existing.Content -like '*Li+*' -and $existing.Content -like '*navigation/world-ui.js*') {
+    if ($existing.Content -like '*Li+*' -and ($existing.Content -like '*navigation/home.js*' -or $existing.Content -like '*navigation/world-ui.js*')) {
         Start-Process $previewUrl
         exit 0
     }

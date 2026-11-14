@@ -1,3 +1,4 @@
+import { worldPage } from './world-page.mjs';
 import {chromium} from 'playwright';
 import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
@@ -9,7 +10,7 @@ try{
  for(const mobile of [false,true]){
   const name=mobile?'phone':'computer',page=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1100,height:760},isMobile:mobile,hasTouch:mobile}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
-  await page.goto(url);await page.waitForFunction(()=>window.__home?.world?.transit,null,{timeout:60000});
+  await page.goto(worldPage(url));await page.waitForFunction(()=>window.__home?.world?.transit,null,{timeout:60000});
   const result=await page.evaluate(async()=>{
    const {tunnelCeiling,TUNNEL_RADIUS}=await import('/world/tunnel-glazing.js');
    const {path,waterMask}=__home.world.transit.tunnel,{mask,bounds,waterY}=waterMask,{data,width,height}=mask.image;
