@@ -26,6 +26,10 @@ if (worldMode) {
   mountScenes();
   const { mountPixelImages } = await import('./pixel-images.js');
   mountPixelImages();
+  const { mountAboutEffects } = await import('./about-effects.js');
+  mountAboutEffects();
+  const { mountScenePointers } = await import('./scene-pointers.js');
+  mountScenePointers();
 
   const hero = document.querySelector('.hero');
   const stage = document.querySelector('.hero-stage');

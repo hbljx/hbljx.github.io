@@ -1,0 +1,47 @@
+.about-us.about-enhanced{position:relative;isolation:isolate;overflow:hidden;background:#101f1b;--light-x:65%;--light-y:25%;border-color:#96c87a;min-height:650px}
+.about-enhanced> :not(.about-atmosphere){position:relative;z-index:1}
+.about-atmosphere{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:radial-gradient(380px circle at var(--light-x) var(--light-y),#89ffc416,transparent 80%)}
+.about-aurora{position:absolute;inset:-40%;background:conic-gradient(from 80deg,transparent,#69f4c522,transparent 35%,#b6a0ff20,transparent 70%);filter:blur(35px);animation:about-orbit 35s linear infinite}
+.about-matrix{position:absolute;inset:0;background-image:linear-gradient(#a0ffc00c 1px,transparent 1px),linear-gradient(90deg,#a0ffc00c 1px,transparent 1px);background-size:40px 40px;transform:perspective(600px) rotateX(30deg) scale(1.2);mask-image:linear-gradient(transparent,#000);animation:about-grid 12s linear infinite}
+.about-portal{position:absolute;width:360px;height:360px;right:-90px;top:20px;opacity:.32;translate:var(--parallax-x,0px) var(--parallax-y,0px);transition:translate .25s}
+.about-portal i{position:absolute;inset:0;border:2px dashed #a8f3bb;border-radius:50%;animation:about-orbit 28s linear infinite;box-shadow:0 0 35px #85f4ba20,inset 0 0 35px #85f4ba20}
+.about-portal i:nth-child(2){inset:15%;border-style:solid;transform:rotateX(55deg);animation-direction:reverse}
+.about-portal i:nth-child(3){inset:28%;border-radius:20%;animation-duration:16s}
+.about-portal b{position:absolute;inset:0;display:grid;place-items:center;font:800 60px/1 monospace;color:#ceff9c;text-shadow:0 0 30px #a3ffb6}
+.about-star{position:absolute;width:4px;height:4px;background:#ccffab;box-shadow:0 0 12px #a4ffa8;animation:about-drift calc(5s + var(--n)*.3s) calc(var(--n)*-.5s) ease-in-out infinite alternate}
+.about-scanner{position:absolute;inset:0;background:linear-gradient(transparent 45%,#b4ffbd18 49%,#caffc55a 50%,transparent 51%);opacity:0;transform:translateY(-100%)}
+.about-playing .about-scanner{animation:about-scan 1.8s ease-out both}
+.about-enhanced .kicker:before{content:'';display:inline-block;width:7px;height:7px;margin-right:10px;background:#beff85;box-shadow:0 0 12px #b9ff90;animation:about-beacon 2.5s ease-in-out infinite}
+.about-enhanced h2{max-width:900px;letter-spacing:-.03em;text-shadow:0 0 28px #b5ff9b18}
+.about-typed>span{position:relative}
+.about-playing .about-typed>span{animation:about-type 1ms calc(var(--char)*65ms + 350ms) both}
+.about-playing .about-typed>span:after{content:'';position:absolute;right:-2px;top:.1em;height:1em;width:2px;background:#c7ff90;box-shadow:0 0 8px #baff8c;opacity:0;animation:about-caret 65ms calc(var(--char)*65ms + 350ms) both}
+.about-playing>p:not(.kicker){animation:about-rise .8s calc(var(--typing-time) + 200ms) backwards}
+.about-playing>p:not(.kicker)+p{animation-delay:calc(var(--typing-time) + 380ms)}
+.about-constellation{display:flex;flex-wrap:wrap;gap:10px;max-width:900px;margin-top:26px;padding-block:20px;border-top:1px solid #9ac67a33;border-bottom:1px solid #9ac67a33}
+.about-constellation a{display:flex;align-items:center;gap:8px;min-height:44px;padding:9px 12px;background:#142c25d9;border:1px solid #82c9a34a;color:#d9f0cd;font-size:13px;transition:transform .25s,border-color .25s,box-shadow .25s}
+.about-constellation img{image-rendering:pixelated;transition:transform .3s}
+.about-constellation a:hover,.about-constellation a:focus-visible{transform:translateY(-5px);border-color:#c7f776;box-shadow:0 5px 22px #88fca52a;color:#e6ffbd}
+.about-constellation a:hover img{transform:rotate(-12deg) scale(1.2)}
+.about-playing .about-constellation a{animation:about-rise .7s calc(var(--typing-time) + 400ms + var(--n)*85ms) backwards}
+.about-actions{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-top:24px}
+.about-enhanced .about-actions .solid-link{margin:0;position:relative;overflow:hidden;transition:box-shadow .25s,translate .25s}
+.about-enhanced .solid-link:after{content:'';position:absolute;inset:-100%;background:linear-gradient(110deg,transparent 42%,#fff8 50%,transparent 58%);animation:about-shine 6s ease-in-out infinite;pointer-events:none}
+.about-enhanced .solid-link:hover{box-shadow:4px 4px 0 #627d36,0 0 32px #b4ff7855;translate:0 -3px}
+.about-replay{border:1px solid #81ab7855;background:#10251bbb;color:#c5e7b4;min-height:44px;padding:10px 14px;cursor:pointer;font:inherit;font-size:13px}
+.about-replay:hover{border-color:#c7f776;color:#e5ffcf}
+.about-enhanced :is(a,button):focus-visible{outline:2px solid #dcffa1;outline-offset:4px}
+.about-click-wave{position:absolute;width:24px;height:24px;margin:-12px;border:2px solid #c7f776;border-radius:25%;animation:about-wave .9s ease-out forwards}
+.about-enhanced:not(.about-visible) *,.about-paused *{animation-play-state:paused!important}
+@keyframes about-type{from{opacity:0}to{opacity:1}}
+@keyframes about-caret{0%,99%{opacity:1}100%{opacity:0}}
+@keyframes about-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes about-orbit{to{rotate:360deg}}
+@keyframes about-grid{to{background-position:0 40px,0 40px}}
+@keyframes about-drift{to{translate:12px -45px;opacity:.2}}
+@keyframes about-scan{20%{opacity:.8}100%{opacity:0;transform:translateY(100%)}}
+@keyframes about-beacon{50%{opacity:.4;box-shadow:0 0 3px #b9ff90}}
+@keyframes about-shine{0%,65%{translate:-65% 0}100%{translate:65% 0}}
+@keyframes about-wave{to{transform:scale(15) rotate(40deg);opacity:0}}
+@media(max-width:700px){.about-us.about-enhanced{min-height:0;padding:32px 22px}.about-portal{width:230px;height:230px;right:-95px;opacity:.2}.about-star:nth-of-type(n+12){display:none}.about-constellation{gap:8px}.about-constellation a{flex:1 1 125px}.about-actions{gap:14px}.about-enhanced h2{font-size:29px}.about-aurora{filter:blur(18px)}}
+@media(prefers-reduced-motion:reduce){.about-enhanced *,.about-enhanced *:before,.about-enhanced *:after{animation:none!important;transition:none!important}.about-scanner,.about-click-wave,.about-typed>span:after{display:none}.about-portal{translate:0 0}.about-replay{display:none}}
