@@ -88,16 +88,16 @@
 </head>
 <body>
 <header class="site-header">
-  <a class="brand" href="./" aria-label="Li+ 像素导航首页"><img src="assets/li.png" width="34" height="34" alt=""><span><b>LI<span>+</span></b><small>像素导航</small></span></a>
+  <a class="brand" href="./" aria-label="Li+ 像素导航首页"><img src="assets/scenes/brand.webp" width="38" height="38" alt=""><span><b>LI<span>+</span></b><small>像素导航</small></span></a>
   <nav aria-label="主导航"><a href="#home">首页</a><a href="#zones">场景分类</a><a href="#directory">网址目录</a></nav>
+  <nav class="top-scenes" aria-label="场景直达"></nav>
   <a class="world-link" href="?view=3d"><span class="cube-mark" aria-hidden="true"></span>切换 3D 页面 <span aria-hidden="true">↗</span></a>
 </header>
 <main id="flat-home">
   <section id="home" class="hero" aria-labelledby="home-title">
     <div class="hero-stage">
       <div class="stage-art">
-        <div class="art-grid"></div>
-        <canvas id="island" aria-hidden="true"></canvas>
+        <img id="hero-image" alt="" src="assets/scenes/hero.webp" width="1280" height="853" fetchpriority="high">
       </div>
       <div class="hero-copy">
         <p class="kicker"><span></span> LI+ / PIXEL NAVIGATION</p>
@@ -123,14 +123,17 @@
     </div>
   </section>
   <section id="zones" aria-label="场景分类">
+    <div id="directory" class="room-search pixel-directory" tabindex="-1" aria-label="场景网址筛选">
+      <label for="room-query">网址目录</label>
+      <input id="room-query" type="search" placeholder="搜索所有场景的网址">
+      <button id="room-stars" type="button" aria-pressed="false">☆ 星标收藏</button>
+      <span id="room-result-count" role="status"></span>
+      <nav id="room-matches" aria-label="有搜索结果的场景" hidden></nav>
+    </div>
     <div class="scene-picker"><h2>选择场景</h2><nav aria-label="场景跳转" id="scene-links"></nav></div>
     <div id="zone-scenes"></div>
   </section>
-  <section id="directory" class="pixel-directory" aria-labelledby="directory-title">
-    <p class="kicker"><span></span> LI+ / DIRECTORY</p>
-    <h2 id="directory-title" tabindex="-1">网址目录<span>.</span></h2>
-    <div id="directory-content"><p role="status">正在加载网址目录…</p><noscript><p>请启用 JavaScript 查看目录。</p></noscript></div>
-  </section>
+  <div id="directory-content" class="pixel-directory"></div>
   <footer class="home-footer"><strong>LI<span>+</span> 像素导航</strong><a href="#home">回到顶部 ↑</a></footer>
 </main>
 <template id="world-page">

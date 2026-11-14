@@ -19,9 +19,7 @@ if (worldMode) {
   await import('../engine/main.js?v=20261114-rendering');
   await import('./world-ui.js?v=20261110-first-visit-guide');
 } else {
-  const [{ createIslandScene }, { mountScenes }] = await Promise.all([
-    import('./pixel-island.js'), import('./home-scenes.js'),
-  ]);
+  const { mountScenes } = await import('./home-scenes.js');
   mountScenes();
 
   const hero = document.querySelector('.hero');
@@ -30,7 +28,6 @@ if (worldMode) {
   const bottom = document.querySelector('.hero-bottom');
   const closing = document.querySelector('.stage-copy');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  const paint = createIslandScene(document.querySelector('#island'));
   let frame = 0, progress = -1, visible = true, scrollRange = 1;
   const clamp = value => Math.min(1,Math.max(0,value));
   const ease = value => value * value * (3 - 2 * value);
@@ -49,7 +46,7 @@ if (worldMode) {
     closing.inert = reveal < .1;
     closing.toggleAttribute('data-visible',!closing.inert);
   }
-  function render(now) {
+  function render() {
     frame = 0;
     if (!visible || document.hidden) return;
     const next = reduced.matches ? 0 : clamp(scrollY / scrollRange);
@@ -57,8 +54,7 @@ if (worldMode) {
       progress = next;
       updateScene();
     }
-    paint(progress,now/1000,!reduced.matches);
-    if (!reduced.matches) frame = requestAnimationFrame(render);
+
   }
   function start() {
     if (!frame && visible && !document.hidden) frame = requestAnimationFrame(render);
@@ -73,6 +69,7 @@ if (worldMode) {
     start();
   }).observe(hero);
   document.addEventListener('visibilitychange',start);
+  window.addEventListener('scroll',start,{passive:true});
   reduced.addEventListener('change',resize);
   resize();
 }

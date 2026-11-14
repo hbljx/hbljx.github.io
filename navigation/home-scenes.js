@@ -14,10 +14,19 @@ const details = {
 export function mountScenes() {
   const scenes = document.querySelector('#zone-scenes');
   const links = document.querySelector('#scene-links');
-  const directory = document.querySelector('#directory');
+  const searchBar = document.querySelector('#directory');
+  const roomQuery = document.querySelector('#room-query');
+  const roomStars = document.querySelector('#room-stars');
+  const topScenes = document.querySelector('.top-scenes');
+  const matches = document.querySelector('#room-matches');
   const directoryContent = document.querySelector('#directory-content');
   const homeSearch = document.querySelector('.site-search');
   const rooms = zones.filter(zone => details[zone.id]);
+  const groupOwners = new Map();
+  for (const zone of rooms) {
+    for (const group of zone.groups) if (!groupOwners.has(group)) groupOwners.set(group,zone.id);
+  }
+  groupOwners.set('quickLinks','about');
   const roomStats = new Map();
   const roomFrames = new Map();
 
@@ -26,6 +35,7 @@ export function mountScenes() {
     const marker = 'scene-' + zone.id;
     const link = Object.assign(document.createElement('a'), { href: '#' + marker, textContent: zone.name });
     links.append(link);
+    topScenes.append(link.cloneNode(true));
 
     const section = document.createElement('section');
     section.className = 'scene';
@@ -35,7 +45,7 @@ export function mountScenes() {
     section.setAttribute('aria-labelledby', marker + '-title');
     const next = rooms[index+1];
     section.innerHTML = `
-      <div class="scene-screen">
+      <div class="scene-cinema"><div class="scene-screen">
         <div class="scene-art"><img alt="" width="1440" height="960" decoding="async"></div>
         <div class="scene-opening" aria-hidden="true"><span>${zone.name}</span><small>↓ 滚动探索</small></div>
         <div class="scene-meter" aria-hidden="true"><i></i></div>
@@ -44,100 +54,124 @@ export function mountScenes() {
           <h2 id="${marker}-title">${zone.name}<span>.</span></h2>
           <p class="scene-lead">${heading}</p><p class="scene-description">${summary}</p>
           <div class="scene-index"></div>
-          <div class="scene-samples" aria-label="本区常用网址"></div>
           <div class="scene-actions">
-            <a class="scene-enter" data-directory-zone="${zone.id}" href="#directory">浏览本区网址 <span aria-hidden="true">↗</span></a>
-            <a class="scene-next" href="#${next ? 'scene-' + next.id : 'directory'}">${next ? '下一站 · '+ next.name : '查看全部网址'} ↓</a>
+            <a class="scene-enter" href="#${marker}-links">查看本区全部网址 <span aria-hidden="true">↓</span></a>
+            <a class="scene-next" href="#${next ? 'scene-' + next.id : 'zones'}">${next ? '下一站 · '+ next.name : '返回场景分类'} ↓</a>
           </div>
         </div>
         <div class="pixel-wipe" aria-hidden="true">${'<i></i>'.repeat(12)}</div>
+      </div></div>
+      <div class="room-directory pixel-directory" id="${marker}-links" tabindex="-1">
+        <h3>${zone.name}的网址</h3><div class="room-groups"></div>
       </div>`;
     const paint=createRoomFrame(section.querySelector('img'),zone.id);
     roomFrames.set(section,{paint,progress:-1});
-    roomStats.set(zone.id, {stats:section.querySelector('.scene-index'),samples:section.querySelector('.scene-samples')});
+    roomStats.set(zone.id, {stats:section.querySelector('.scene-index'),list:section.querySelector('.room-groups')});
     scenes.append(section);
   }
 
-  document.addEventListener('li-directory-update',({detail})=>{
+  let snapshot;
+  function renderRooms() {
+    if (!snapshot) return;
+    const {groups,stars} = snapshot;
+    const query = roomQuery.value.trim().toLocaleLowerCase();
+    const starOnly = roomStars.getAttribute('aria-pressed') === 'true';
+    const visible = new Set();
+    matches.replaceChildren();
+    matches.hidden = !query && !starOnly;
     for (const zone of rooms) {
-      const {stats,samples} = roomStats.get(zone.id);
-      const groups = detail.filter(group => zone.groups.includes(group.id) || (zone.id === 'about' && group.id === 'quickLinks'));
-      const count = groups.reduce((total,group)=>total + group.items.length,0);
-      stats.replaceChildren();
-      const number = Object.assign(document.createElement('strong'), {textContent: count + ' 个网址'});
-      const categories = Object.assign(document.createElement('span'), {textContent: groups.map(group=>group.title).join(' · ')});
-      stats.append(number,categories);
-      samples.replaceChildren();
-      for(const item of groups.flatMap(group=>group.items).slice(0,3)){
-        const sample = Object.assign(document.createElement('a'), {
-          href:item.url, target:'_blank', rel:'noopener noreferrer', textContent:item.name + ' ↗',
-        });
-        samples.append(sample);
+      const {stats,list} = roomStats.get(zone.id);
+      const categories = groups.filter(group => groupOwners.get(group.id) === zone.id);
+      stats.textContent = categories.reduce((count,group)=>count+group.items.length,0) + ' 个网址 · ' + categories.map(group=>group.title).join(' · ');
+      list.replaceChildren();
+      let matchCount = 0;
+      for (const group of categories) {
+        const entries = group.items.filter(item => (!starOnly || stars.has(item.id)) &&
+          [item.name,item.url,item.description,item.section,group.title,...(item.aliases || [])].join(' ').toLocaleLowerCase().includes(query));
+        if (!entries.length) continue;
+        entries.forEach(item => visible.add(item.id));
+        matchCount += entries.length;
+        const category = document.createElement('section');
+        category.className = 'room-category';
+        const title = Object.assign(document.createElement('h4'),{textContent:group.title});
+        const grid = document.createElement('div');
+        grid.className = 'room-card-grid';
+        for (const item of entries) {
+          const card = document.createElement('article');
+          card.className = 'room-card';
+          card.dataset.site = item.id;
+          const link = Object.assign(document.createElement('a'),{
+            href:item.url,target:'_blank',rel:'noopener noreferrer',textContent:item.name + ' ↗',
+          });
+          const note = Object.assign(document.createElement('small'),{
+            textContent:item.description || new URL(item.url).hostname,
+          });
+          link.append(note);
+          const star = Object.assign(document.createElement('button'),{type:'button',textContent:stars.has(item.id)?'★':'☆'});
+          star.dataset.star = item.id;
+          star.setAttribute('aria-pressed',String(stars.has(item.id)));
+          star.setAttribute('aria-label',(stars.has(item.id)?'取消星标：':'添加星标：')+item.name);
+          const edit = Object.assign(document.createElement('button'),{type:'button',textContent:'编辑'});
+          edit.dataset.edit=item.id;
+          edit.setAttribute('aria-label','编辑：'+item.name);
+          card.append(link,star,edit);
+          grid.append(card);
+        }
+        category.append(title,grid);
+        list.append(category);
       }
+      if (!matchCount) list.textContent = '本场景没有符合条件的网址。';
+      if (matchCount && !matches.hidden) matches.append(Object.assign(document.createElement('a'), {
+        href:'#scene-'+zone.id+'-links',textContent:zone.name+' · '+matchCount,
+      }));
     }
-  });
-
-  let controller;
-  let loading;
-  function loadDirectory() {
-    loading ??= (async () => {
-      const response = await fetch('directory.html');
-      if (!response.ok) throw new Error('Directory unavailable');
-      const source = new DOMParser().parseFromString(await response.text(),'text/html');
-      const content = source.querySelector('main');
-      const controls = source.querySelectorAll('body > :is(dialog, #toast, #import-file)');
-      if (!content || controls.length !== 5) throw new Error('Directory markup incomplete');
-      content.querySelectorAll('#home-return, .legacy-link').forEach(element=>element.remove());
-      const wrapper = Object.assign(document.createElement('div'), {className:'directory-body'});
-      wrapper.append(...content.children);
-      directoryContent.replaceChildren(wrapper,...controls);
-      controller = await import('./directory.js?v=2');
-      return controller;
-    })().catch(() => {
-      directoryContent.innerHTML = '<p role="alert">网址目录暂时未能加载。<button type="button">重试</button></p>';
-      directoryContent.querySelector('button').onclick = loadDirectory;
-      loading = undefined;
-    });
-    return loading;
+    document.querySelector('#room-result-count').textContent = visible.size+' 个网址';
   }
-
-  function openDirectory(zone = 'blog', query = '') {
-    if (location.hash !== '#directory') history.pushState(history.state,'','#directory');
-    directory.scrollIntoView({behavior:'instant'});
-    document.querySelector('#directory-title').focus({preventScroll:true});
-    if (controller) controller.showDirectory(zone,query);
-    else loadDirectory().then(module=>module?.showDirectory(zone,query));
-  }
-
-  document.querySelector('#flat-home').addEventListener('click',event=>{
-    const anchor = event.target.closest('a[href="#directory"]');
-    if (!anchor || event.ctrlKey || event.shiftKey || event.metaKey || event.altKey) return;
-    event.preventDefault();
-    openDirectory(anchor.dataset.directoryZone);
+  document.addEventListener('li-directory-update',({detail})=>{
+    snapshot=detail;
+    renderRooms();
   });
-  document.querySelector('.site-header a[href="#directory"]').addEventListener('click',event=>{
-    if (event.ctrlKey || event.shiftKey || event.metaKey || event.altKey) return;
-    event.preventDefault();
-    openDirectory();
+  roomQuery.addEventListener('input',renderRooms);
+  roomStars.addEventListener('click',()=>{
+    const next=roomStars.getAttribute('aria-pressed')!=='true';
+    roomStars.setAttribute('aria-pressed',String(next));
+    renderRooms();
   });
   homeSearch.addEventListener('submit',event=>{
     event.preventDefault();
-    openDirectory('blog',new FormData(homeSearch).get('q'));
+    roomQuery.value=new FormData(homeSearch).get('q');
+    roomStars.setAttribute('aria-pressed','false');
+    renderRooms();
+    if (location.hash !== '#directory') history.pushState(history.state,'','#directory');
+    searchBar.scrollIntoView();
+    roomQuery.focus({preventScroll:true});
   });
-  const directoryObserver = new IntersectionObserver(([entry])=>{
-    if (entry.isIntersecting) {
-      directoryObserver.disconnect();
-      loadDirectory();
+
+  async function loadDirectory() {
+    try {
+      const response=await fetch('directory.html');
+      if (!response.ok) throw new Error('Directory unavailable');
+      const source=new DOMParser().parseFromString(await response.text(),'text/html');
+      const content=source.querySelector('main');
+      const footer=content.querySelector('footer');
+      const controls=[...source.querySelectorAll('body > :is(dialog, #toast, #import-file)')];
+      const hidden=document.createElement('div');
+      hidden.hidden=true;
+      hidden.append(...[...content.children].filter(node=>node!==footer));
+      directoryContent.replaceChildren(hidden,footer,...controls);
+      searchBar.append(footer);
+      // Management actions reuse the directory's storage, validation and dialogs.
+      await import('./directory.js?v=3');
+    } catch {
+      directoryContent.textContent='网址暂时无法加载，请刷新重试。';
     }
-  },{rootMargin:'320px'});
-  directoryObserver.observe(directory);
-  // Load once after the initial render so counts reflect the same saved directory.
-  if ('requestIdleCallback' in window) requestIdleCallback(loadDirectory,{timeout:1800});
-  else setTimeout(loadDirectory,400);
+  }
+  void loadDirectory();
 
   const sceneObserver = new IntersectionObserver(entries=>{
     for (const entry of entries) {
-      links.querySelector('a[href="#'+entry.target.id+'"]').toggleAttribute('data-active',entry.isIntersecting);
+      const id=entry.target.closest('.scene').id;
+      for (const nav of [links,topScenes]) nav.querySelector('a[href="#'+id+'"]').toggleAttribute('data-active',entry.isIntersecting);
     }
   },{threshold:.55});
   const panels = [...scenes.querySelectorAll('.scene')];
@@ -150,7 +184,7 @@ export function mountScenes() {
     }
   },{rootMargin:'560px'});
   for (const scene of panels) {
-    sceneObserver.observe(scene);
+    sceneObserver.observe(scene.querySelector('.scene-screen'));
     preload.observe(scene);
   }
 
@@ -163,9 +197,10 @@ export function mountScenes() {
     frame = 0;
     const height = window.innerHeight;
     for (const scene of panels) {
-      const {top,bottom} = scene.getBoundingClientRect();
+      const cinema=scene.firstElementChild;
+      const {top,bottom} = cinema.getBoundingClientRect();
       if (top > height * 1.3 || bottom < -height * .25) continue;
-      const range = Math.max(1,scene.offsetHeight - scene.firstElementChild.offsetHeight);
+      const range = Math.max(1,cinema.offsetHeight - cinema.firstElementChild.offsetHeight);
       const staticView = reduced.matches || compact.matches;
       const progress = staticView ? .66 : clamp(-top / range);
       const inset = staticView ? 1 : easing(clamp((progress-.13)/.57));
@@ -194,5 +229,6 @@ export function mountScenes() {
   reduced.addEventListener('change',scheduleScenes);
   const linkedScene = panels.find(scene => '#' + scene.id === location.hash);
   if (linkedScene) linkedScene.scrollIntoView({behavior:'instant'});
+  else if (location.hash.startsWith('#scene-')) document.getElementById(location.hash.slice(1))?.scrollIntoView({behavior:'instant'});
   scheduleScenes();
 }

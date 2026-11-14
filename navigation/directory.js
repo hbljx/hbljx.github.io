@@ -217,14 +217,15 @@ function inZone(g){return !zone.groups.length||zone.groups.includes(g.id)||(zone
 const domain=url=>{try{return new URL(url).hostname.replace(/^www\./,'');}catch{return url;}};
 function refreshData(){data=store.getData();$('#undo').hidden=!store.canUndo();render();}
 function applyZone(id, query = ''){zone=zones.find(z=>z.id===id)||zones[0];groupId='all';filter='all';$('#query').value=query;if(!inline){const u=new URL(location.href);u.searchParams.set('zone',zone.id);u.searchParams.delete('q');history.replaceState(history.state,'',u);}render();}
-let publishedData;
+let publishedData, publishedStars;
 function render(){
   if(!data)return;
   if(!inline)document.title=`${zone.name} · Li+ 像素导航`;
   $('#total-count').textContent=entries().length;
-  if(inline&&publishedData!==data){
+  if(inline&&(publishedData!==data||publishedStars!==stars)){
     publishedData=data;
-    document.dispatchEvent(new CustomEvent('li-directory-update',{detail:allGroups()}));
+    publishedStars=stars;
+    document.dispatchEvent(new CustomEvent('li-directory-update',{detail:{groups:allGroups(),stars}}));
   }
   $('#zone-nav').innerHTML=zones.map(z=>`<button type="button" data-zone="${z.id}" aria-current="${z.id===zone.id}">${esc(z.name)}</button>`).join('');
   const available=allGroups().filter(inZone);
@@ -245,6 +246,7 @@ function render(){
   $('#result-title').textContent=filter==='stars'?'星标收藏':groupId==='all'?zone.name:(allGroups().find(g=>g.id===groupId)?.title||zone.name);
   $('#result-eyebrow').textContent=q?'SEARCH RESULTS':'YOUR COLLECTION';
   $('#result-count').textContent=`${count} 个网址`;
+  if(inline)return;
   $('#cards').innerHTML=groups.map(g=>{
     const sections=[...new Set(g.items.map(i=>i.section||''))];
     return sections.map(section=>{
@@ -333,9 +335,3 @@ try{
   }
   render();document.body.dataset.ready='true';if(store.getNotice())toast(store.getNotice());
 }catch(error){$('#result-title').textContent='目录暂时未能加载';$('#cards').textContent=error.message;}
-
-export function showDirectory(id, query = '') {
-  if (!inline || !data) return;
-  $('#search-mode').value = 'local';
-  applyZone(id, query);
-}
