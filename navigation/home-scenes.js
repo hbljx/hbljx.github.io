@@ -1,3 +1,4 @@
+import { mountDirectoryEffects } from './directory-effects.js';
 import { zones } from './zones.js?v=20261101-directory-merge';
 import { createRoomFrame } from './room-scenes.js';
 import { sceneDecoration, paintSceneMotion } from './scene-effects.js';
@@ -74,9 +75,11 @@ export function mountScenes() {
     scenes.append(section);
   }
 
+  const directoryEffects = mountDirectoryEffects(scenes);
   let snapshot;
   function renderRooms() {
     if (!snapshot) return;
+    const previousCards = directoryEffects.beforeRender();
     const {groups} = snapshot;
     const query = roomQuery.value.trim().toLocaleLowerCase();
     const visible = new Set();
@@ -131,6 +134,7 @@ export function mountScenes() {
         href:'#scene-'+zone.id+'-links',textContent:zone.name+' · '+matchCount,
       }));
     }
+    directoryEffects.afterRender(previousCards);
     document.querySelector('#room-result-count').textContent = visible.size+' 个网址';
   }
   document.addEventListener('li-directory-update',({detail})=>{

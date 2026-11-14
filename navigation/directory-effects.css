@@ -1,0 +1,57 @@
+.directory-fx{position:relative;isolation:isolate;overflow:hidden;--mx:50%;--my:50%}
+.directory-atmosphere{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;opacity:.65}
+.fx-grid{position:absolute;inset:0;background-image:linear-gradient(rgb(var(--glow-room)/.18) 1px,transparent 1px),linear-gradient(90deg,rgb(var(--glow-room)/.18) 1px,transparent 1px);background-size:64px 64px;transform:perspective(650px) rotateX(28deg) translateX(var(--grid-shift,0px)) scale(1.2);transform-origin:center top;mask-image:linear-gradient(#000,transparent 1000px);transition:transform .8s}
+.fx-orbit{position:absolute;right:-160px;top:80px;width:550px;height:550px;border:1px solid rgb(var(--glow-room)/.4);border-radius:50%;background:repeating-radial-gradient(circle,transparent 0 88px,rgb(var(--glow-room)/.15) 89px 90px);animation:fx-orbit 28s linear infinite}
+.fx-mote{position:absolute;width:4px;height:4px;background:var(--accent-room);box-shadow:0 0 14px var(--accent-room);animation:fx-drift var(--duration) ease-in-out infinite alternate;animation-delay:calc(var(--i)*-.7s)}
+.fx-bridge{height:130px;position:absolute;inset:0 0 auto;pointer-events:none;overflow:hidden;mask-image:linear-gradient(#000,transparent)}
+.fx-bridge i{position:absolute;top:-12px;width:12px;height:12px;background:var(--accent-room);box-shadow:0 0 20px rgb(var(--glow-room)/.5);opacity:0}
+.fx-visible .fx-bridge i{animation:fx-dissolve 2.8s calc(var(--i)*45ms) both}
+.room-heading,.room-category h4{position:relative}
+.room-category h4{width:fit-content}
+.room-category h4:after{content:'';position:absolute;inset:-4px -12px;border-right:3px solid var(--accent-room);background:linear-gradient(90deg,transparent,rgb(var(--glow-room)/.25));opacity:0;pointer-events:none}
+.room-category h4.fx-entered:after{animation:fx-scan .8s var(--delay) both}
+.directory-fx .room-card{position:relative;transform:perspective(750px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .18s,border-color .2s,box-shadow .2s;background-color:#15231f}
+.directory-fx .room-card.fx-entered{animation:fx-assemble .65s var(--delay) backwards}
+.directory-fx .room-card:before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(240px circle at var(--mx) var(--my),rgb(var(--glow-room)/.38),transparent 80%);opacity:0;transition:opacity .25s}
+.directory-fx .room-card:hover:before,.directory-fx .room-card:focus-within:before{opacity:1}
+.directory-fx .room-card:hover,.directory-fx .room-card:focus-within{box-shadow:0 8px 28px #0005,0 0 18px rgb(var(--glow-room)/.22);border-color:var(--accent-room)}
+.room-mark,.room-card-exit{transition:transform .3s,box-shadow .3s}
+.room-card:hover .room-mark,.room-card:focus-within .room-mark{transform:translateY(-4px) rotate(-5deg);box-shadow:0 5px 18px rgb(var(--glow-room)/.4)}
+.room-card:hover .room-card-exit{transform:translate(3px,-3px)}
+.fx-pulse{position:absolute;width:30px;height:30px;margin:-15px;border:3px solid var(--accent-room,#9af7d4);box-shadow:0 0 12px var(--accent-room,#9af7d4),inset 0 0 12px var(--accent-room,#9af7d4);border-radius:35%;pointer-events:none;animation:fx-pulse .65s ease-out forwards}
+.fx-filter .room-heading:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent,rgb(var(--glow-room)/.35),transparent);animation:fx-scan .6s both}
+.fx-spectrum{display:none;position:absolute;top:100px;left:0;right:0;height:220px;align-items:end;gap:2%;opacity:.25}
+.fx-spectrum i{flex:1;height:var(--level);background:linear-gradient(transparent,var(--accent-room));transform-origin:bottom;animation:fx-beat 1.6s calc(var(--i)*-.13s) ease-in-out infinite alternate}
+[data-room=about] .directory-fx{--accent-room:#ffdb91;--glow-room:190 139 61}
+[data-room=about] .fx-grid{background-size:100px 100px;opacity:.4}
+[data-room=works] .fx-mote{height:60px;width:2px;animation-name:fx-data}
+[data-room=works] .fx-grid{background-size:36px 72px}
+[data-room=writing] .fx-mote{width:16px;height:20px;background:transparent;border:1px solid var(--accent-room);border-radius:0 6px 0 0;animation-name:fx-page}
+[data-room=writing] .room-card.fx-entered{transform-origin:left center;animation-name:fx-book}
+[data-room=coffee] .fx-spectrum{display:flex}
+[data-room=coffee] .room-mark:after{content:'';position:absolute;inset:-5px;border:1px solid var(--accent-room);border-radius:50%;opacity:0;box-shadow:0 0 0 4px rgb(var(--glow-room)/.15),0 0 0 9px rgb(var(--glow-room)/.1);transition:opacity .3s}
+[data-room=coffee] .room-card:hover .room-mark:after{opacity:1;animation:fx-orbit 4s linear infinite}
+[data-room=lab] .directory-fx{--accent-room:#8bdfff;--glow-room:48 142 190}
+[data-room=lab] .fx-grid{background-size:24px 24px;transform:translateX(var(--grid-shift,0px))}
+[data-room=lab] .room-card.fx-entered{animation-name:fx-mechanical}
+[data-room=lab] .room-card:hover .room-card-exit{box-shadow:5px -9px 0 -3px #fff,-8px 7px 0 -4px var(--accent-room)}
+[data-room=court] .fx-orbit{background:conic-gradient(from 0deg,transparent 65%,rgb(var(--glow-room)/.3));animation-duration:10s}
+[data-room=court] .fx-orbit:after{content:'';position:absolute;left:15%;top:15%;width:6px;height:6px;background:var(--accent-room);box-shadow:150px 45px 0 var(--accent-room),40px 290px 0 var(--accent-room)}
+[data-room=pool] .fx-mote:nth-child(3n){width:9px;height:14px;border-radius:80% 0 80% 0;background:#f4bde0;animation-name:fx-page}
+[data-room=pool] .room-card:after{content:'';position:absolute;bottom:0;left:0;width:0;height:8px;border-top:2px solid #9ddbaa;border-radius:50%;transition:width .6s;pointer-events:none}
+[data-room=pool] .room-card:hover:after{width:100%;box-shadow:0 -3px 10px #9ddbaa55}
+@keyframes fx-drift{to{translate:18px -70px;opacity:.2}}
+@keyframes fx-data{from{translate:0 -80px;opacity:0}to{translate:0 160px;opacity:.7}}
+@keyframes fx-page{to{translate:40px 90px;rotate:65deg;opacity:.1}}
+@keyframes fx-orbit{to{rotate:360deg}}
+@keyframes fx-beat{to{scale:1 .2}}
+@keyframes fx-dissolve{0%{opacity:0;transform:translateY(-20px) rotate(0)}20%{opacity:.8}100%{opacity:0;transform:translateY(var(--drop)) rotate(110deg) scale(.2)}}
+@keyframes fx-scan{0%{opacity:0;clip-path:inset(0 100% 0 0)}35%{opacity:1}100%{opacity:0;clip-path:inset(0 0 0 100%)}}
+@keyframes fx-assemble{from{opacity:0;translate:0 26px;rotate:2deg}to{opacity:1;translate:0 0;rotate:0deg}}
+@keyframes fx-book{from{opacity:0;transform:perspective(700px) rotateY(-28deg)}to{opacity:1;transform:perspective(700px) rotateY(0)}}
+@keyframes fx-mechanical{from{opacity:0;translate:-35px 0}to{opacity:1;translate:0 0}}
+@keyframes fx-pulse{to{transform:scale(12) rotate(45deg);opacity:0}}
+.directory-fx:not(.fx-visible) .directory-atmosphere *,.fx-paused .directory-atmosphere *,.fx-paused .fx-bridge i{animation-play-state:paused}
+.room-card:not(.fx-visible){animation-play-state:paused!important}
+@media(max-width:700px){.fx-mote:nth-child(n+13){display:none}.fx-orbit{width:320px;height:320px}.fx-spectrum{height:130px}.directory-fx .room-card:active{border-color:var(--accent-room);box-shadow:0 0 20px rgb(var(--glow-room)/.5)}}
+@media(prefers-reduced-motion:reduce){.directory-fx *,.directory-fx *:before,.directory-fx *:after{animation:none!important;transition:none!important}.directory-fx .room-card{transform:none!important}.fx-bridge{display:none}}
