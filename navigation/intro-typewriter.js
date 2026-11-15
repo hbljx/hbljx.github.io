@@ -24,8 +24,18 @@ export function mountIntroTypewriter() {
   }
   function type() {
     typed.textContent += characters[index++];
-    if (index === characters.length) { finish(); return; }
+    if (index === characters.length) {
+      intro.classList.remove('is-typing');
+      timer = setTimeout(restart, 1800);
+      return;
+    }
     timer = setTimeout(type, characters[index - 1] === '，' ? 300 : 110);
+  }
+  function restart() {
+    index = 0;
+    typed.textContent = '';
+    intro.classList.add('is-typing');
+    timer = setTimeout(type, 250);
   }
   reduced.addEventListener('change', finish);
   timer = setTimeout(type, 250);
