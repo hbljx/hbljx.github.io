@@ -55,7 +55,7 @@
 .footer-runner[data-night="true"] .runner-label i {background:#b1d67c}
 @media (max-width:700px) {
   .home-footer.footer-landscape {padding-top:0}
-  .footer-runner {margin-inline:-20px;height:404px}
+  .footer-runner {margin-inline:-20px;height:432px}
   .home-footer.footer-landscape>.footer-brand-plaque {grid-row:2}
   .home-footer.footer-landscape>.footer-icp {grid-row:3}
   .home-footer.footer-landscape>div {grid-row:4;grid-column:1/-1}
@@ -73,7 +73,7 @@
 
   .runner-results>span {padding:4px 8px}
   .runner-results b {font-size:17px}
-  .runner-toolbar {height:80px;padding:9px 16px;align-items:flex-start;box-sizing:border-box}
+  .runner-toolbar {height:108px;padding:9px 16px;align-items:flex-start;box-sizing:border-box}
   .runner-toolbar p {font-size:10px;line-height:23px}
   .runner-settings {gap:7px}
   .home-footer .footer-runner .runner-settings button {min-height:24px;font-size:10px}
