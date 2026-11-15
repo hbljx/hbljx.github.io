@@ -65,7 +65,7 @@
   top: 51%;
   width: min(54vw, 760px);
   aspect-ratio: 32 / 27;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, calc(-50% + 40px));
   display: block;
   pointer-events: none;
   opacity: .24;
@@ -78,7 +78,7 @@
   top: 51%;
   width: min(62vw, 870px);
   aspect-ratio: 1;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, calc(-50% + 40px));
   background: radial-gradient(ellipse, #031217d9 0%, #04161dc7 27%, #05161b75 49%, transparent 69%);
   opacity: .28;
   transition: opacity .65s ease;

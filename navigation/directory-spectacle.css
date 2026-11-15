@@ -16,11 +16,18 @@
 @keyframes device-spin{to{rotate:360deg}}
 @media(prefers-reduced-motion:reduce){.hyper-rays,.boot-door,.energy-field,.energy-trail,.shock-front,.search-beam{display:none}.spectacle-stage *{animation:none!important;transition:none!important}}
 
+/* Clip decoration without creating a scroll container: the installation sticks
+   to the viewport, bounded by its own directory's absolute background stage. */
+.directory-fx.has-installation,
+.has-installation .spectacle-stage { overflow: clip; }
 /* The illustrations belong to the directory background, never to its layout. */
 .directory-installation {
-  position: absolute;
-  top: -38px;
-  right: -34px;
+  --installation-top: -38px;
+  position: sticky;
+  top: calc(var(--header, 74px) + var(--installation-top));
+  margin-top: var(--installation-top);
+  margin-left: auto;
+  margin-right: -34px;
   display: block;
   width: clamp(440px, 48vw, 680px);
   aspect-ratio: 7 / 5;
@@ -41,8 +48,8 @@
 .has-installation .room-card:focus-within { background-color: rgb(28 48 37 / .96); }
 @media (max-width: 700px) {
   .directory-installation {
-    top: -20px;
-    right: -116px;
+    --installation-top: -20px;
+    margin-right: -116px;
     width: 370px;
     opacity: .38;
     mask-image: linear-gradient(90deg, transparent, #000 38%);
