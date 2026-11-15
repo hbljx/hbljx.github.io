@@ -74,7 +74,8 @@ input,button {font:inherit}
 .stage-copy>p:not(.kicker) {margin:20px 0 25px;color:#4b5d48;line-height:1.7}
 .solid-link {background:#203722;color:#f1facd}
 .solid-link:hover {background:#3c5b32}
-.home-footer {padding:28px var(--gutter);background:var(--night);color:#d6e0cf;display:flex;justify-content:space-between;gap:20px;font-size:14px}
+.home-footer {padding:28px var(--gutter);background:var(--night);color:#d6e0cf;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;font-size:14px}
+.footer-icp {text-align:center;white-space:nowrap}
 .world-mode {background:#7fb2e8}
 .world-mode :is(.site-header,#flat-home) {display:none}
 @media(max-width:950px) { .brand small {display:none} }
@@ -209,7 +210,7 @@ html:not(.world-mode) :is(input[type=search],input[type=text],input[type=url],te
 .scroll-link:hover,.home-footer :is(a,button):hover,#room-tools button:hover,.directory-standalone footer button:hover {background:#1b2a20;border-color:#c7f776;color:#e5ffd2;transform:none}
 .scroll-link:active,.home-footer :is(a,button):active,#room-tools button:active {background:#26372a}
 .home-footer {border-top:1px solid #3e5536;align-items:center}
-@media(max-width:700px){.about-us {margin:24px var(--gutter);padding:28px 20px}.home-footer {flex-direction:column;align-items:flex-start}.home-footer div{justify-content:flex-start}.scroll-link {padding:10px 14px}}
+@media(max-width:700px){.about-us {margin:24px var(--gutter);padding:28px 20px}.home-footer {padding-inline:12px;gap:16px 6px}.home-footer>strong {grid-column:1/-1}.home-footer div {display:contents}.footer-icp {grid-column:2;grid-row:2;font-size:12px}.home-footer #manage-links {grid-column:1;grid-row:2;justify-self:start}.home-footer a[href="#home"] {grid-column:3;grid-row:2;justify-self:end}.home-footer :is(a,button) {font-size:12px;padding:8px 4px;white-space:nowrap}.home-footer :is(a,button)::before {display:none}.scroll-link {padding:10px 14px}}
 @media(prefers-reduced-motion:reduce){.about-us .solid-link,.scroll-link,.home-footer :is(a,button){transition:none}}
 
 /* Tight pixel silhouette: visible arrow height follows the adjacent text. */

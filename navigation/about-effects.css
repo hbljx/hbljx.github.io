@@ -29,7 +29,7 @@
 .countdown-card{--countdown-accent:#c7f776;min-width:0;padding:20px 22px;background:#0b1b17de;border:1px solid #698a5966;box-shadow:inset 3px 0 var(--countdown-accent)}
 .countdown-card:nth-child(2){--countdown-accent:#8fe0c2}
 .countdown-card:nth-child(3){--countdown-accent:#e5d69b}
-.countdown-card h3{margin:0 0 16px;color:#dce8d2;font-size:14px;font-weight:500;letter-spacing:.08em}
+.countdown-card h3{margin:0 0 16px;color:#dce8d2;font-size:14px;font-weight:700;letter-spacing:.08em}
 .countdown-days{display:flex;align-items:baseline;gap:9px;color:#b9cbb2;font-size:13px}
 .countdown-days strong{color:var(--countdown-accent);font:700 clamp(32px,3.5vw,46px)/1 Consolas,monospace;font-variant-numeric:tabular-nums}
 .countdown-percent{display:flex;justify-content:space-between;gap:12px;margin:20px 0 8px;color:#acbea6;font-size:12px}

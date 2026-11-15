@@ -1,14 +1,16 @@
 // Procedural, perspective-projected installations. One shared scheduler only runs
 // while a canvas is on screen. Geometry and projection buffers are reused.
 const TAU = Math.PI * 2;
-const TYPES = new Set(['about', 'works', 'writing', 'court']);
+const TYPES = new Set(['about', 'works', 'writing', 'coffee', 'lab', 'court', 'pool']);
 const PALETTES = {
   about: ['255,206,133', '137,236,236'],
   works: ['117,255,216', '141,165,255'],
   writing: ['227,198,255', '255,223,168'],
+  coffee: ['255,198,127', '255,136,175'],
+  lab: ['126,222,255', '255,207,133'],
   court: ['113,216,255', '126,255,211'],
+  pool: ['242,174,229', '133,246,202'],
 };
-const LABELS = {about:'PERSONAL / NEXUS',works:'NEURAL / ENGINE',writing:'THE / LIVING ARCHIVE',court:'GLOBAL / OBSERVATORY'};
 const rgba = (color, alpha) => `rgba(${color},${alpha})`;
 
 class Installation {
@@ -63,6 +65,12 @@ class Installation {
     this.paper.addColorStop(.52, '#aa9abf');
     this.paper.addColorStop(.62, '#f5eaf6');
     this.paper.addColorStop(1, '#b6a3c6');
+    this.metal = c.createLinearGradient(170,110,380,285);
+    this.metal.addColorStop(0,'#4d6875');
+    this.metal.addColorStop(.25,'#152f3c');
+    this.metal.addColorStop(.5,'#73929a');
+    this.metal.addColorStop(.53,'#284350');
+    this.metal.addColorStop(1,'#10242f');
     this.draw();
   }
 
@@ -132,14 +140,10 @@ class Installation {
     if (this.type === 'about') this.crystal(t);
     else if (this.type === 'works') this.neural(t);
     else if (this.type === 'writing') this.book(t);
-    else this.globe(t);
-    c.font = '9px ui-monospace, Consolas, monospace';
-    c.letterSpacing = '2px'; c.textAlign = 'center';
-    c.fillStyle = rgba(primary,.65);
-    c.fillText(LABELS[this.type],280,376);
-    c.letterSpacing = '0px';
-    c.beginPath(); c.moveTo(232,356); c.lineTo(328,356); this.stroke(primary,.25);
-    this.dot(280,356,2,secondary,.8);
+    else if (this.type === 'coffee') this.resonance(t);
+    else if (this.type === 'lab') this.forge(t);
+    else if (this.type === 'pool') this.garden(t);
+    else if (this.type === 'court') this.globe(t);
   }
 
   crystal(t) {
@@ -315,6 +319,190 @@ class Installation {
     }
     c.font='8px ui-monospace, Consolas, monospace';c.textAlign='left';c.fillStyle=rgba(a,.65);c.fillText('SIGNAL STUDY',340,243);
   }
+
+  disc(radius, y, fill, color, alpha = .6) {
+    const c=this.ctx;
+    c.beginPath();
+    for(let i=0;i<=100;i++)this.vertex(Math.cos(i/100*TAU)*radius,y,Math.sin(i/100*TAU)*radius,i===0);
+    c.closePath();c.fillStyle=fill;c.fill();this.stroke(color,alpha,.9);
+  }
+
+  resonance(t) {
+    const c=this.ctx,a=this.colors[0],b=this.colors[1];
+    this.yaw=-.3;this.pitch=.82;this.cy=Math.cos(this.yaw);this.sy=Math.sin(this.yaw);this.cp=Math.cos(this.pitch);this.sp=Math.sin(this.pitch);
+    // A levitating machined platter, with a dark vinyl surface and etched grooves.
+    this.disc(116,-25,this.metal,a,.4);
+    this.disc(116,-18,'#111d24',a,.75);
+    this.disc(109,-12,'#111b21',a,.5);
+    for(let i=0;i<27;i++)this.ring(40+i*2.5,-11,0,TAU,i%4===0?b:a,i%4===0?.18:.09,.65);
+    for(let i=0;i<4;i++) {
+      this.ring(74+i*9,-10,t*.65+i*.12,.65,a,.25+i*.07,1.1);
+      this.ring(77+i*9,-10,t*.65+Math.PI+i*.12,.35,b,.26,.8);
+    }
+    this.disc(34,-9,'#61422e',a,.8);
+    this.ring(28,-8,0,TAU,a,.42);
+    this.ring(14,-8,0,TAU,a,.5);
+    const p=this.project(0,-3,0);this.dot(p[0],p[1],3.2,'255,244,218');
+    // A three-dimensional spectrum crown breathes around the record's perimeter.
+    c.globalCompositeOperation='lighter';
+    for(let i=0;i<72;i++) {
+      const angle=i/72*TAU,level=8+24*(.5+.5*Math.sin(i*.57+t*2.5))*(.65+.35*Math.sin(i*.23-t));
+      const x=Math.cos(angle)*134,z=Math.sin(angle)*134;
+      c.beginPath();this.vertex(x,-18,z,true);this.vertex(x,-18+level,z);
+      this.stroke(i%5===0?b:a,.35+level/90,2);
+      const tip=this.project(x,-18+level,z);this.dot(tip[0],tip[1],.9,'255,239,213',.8);
+    }
+    // Fine ribbon waveforms rise over the platter, phase shifted across layers.
+    for(let ribbon=0;ribbon<4;ribbon++) {
+      c.beginPath();
+      for(let i=0;i<=130;i++) {
+        const u=i/130,x=(u-.5)*275,envelope=Math.sin(u*Math.PI)**2;
+        const y=56+Math.sin(u*TAU*2.5-t*1.8+ribbon*.22)*23*envelope;
+        this.vertex(x,y,-44+ribbon*9,i===0);
+      }
+      this.stroke(ribbon%2?a:b,.2+ribbon*.08,.9);
+    }
+    c.globalCompositeOperation='source-over';
+    // Articulated tonearm, pivot, cartridge, and needle are separate solid pieces.
+    c.beginPath();this.vertex(111,17,-78,true);this.vertex(112,30,-73);this.vertex(87,30,32);this.vertex(71,24,49);
+    this.stroke('16,28,34',1,8);this.stroke('198,208,195',.95,3.2);
+    const pivot=this.project(111,18,-78);this.dot(pivot[0],pivot[1],6,a,.9);this.dot(pivot[0],pivot[1],2,'20,33,38');
+    c.beginPath();this.vertex(71,24,49,true);this.vertex(63,15,58);this.stroke(b,.95,7);
+    c.beginPath();this.vertex(63,15,58,true);this.vertex(63,-8,58);this.stroke(a,.8,.8);
+    for(let i=0;i<3;i++)this.ring(146+i*7,-36-i*5,t*.16+i,1.9,a,.16+i*.05);
+  }
+
+  plate(radius, y, rotation, fill, color, alpha = .5) {
+    const c=this.ctx;
+    c.beginPath();
+    for(let i=0;i<=6;i++) {
+      const a=i/6*TAU+rotation;
+      this.vertex(Math.cos(a)*radius,y,Math.sin(a)*radius,i===0);
+    }
+    c.closePath();c.fillStyle=fill;c.fill();this.stroke(color,alpha,1);
+  }
+
+  forge(t) {
+    const c=this.ctx,a=this.colors[0],b=this.colors[1],lift=Math.sin(t*.7)*5;
+    this.yaw=.45+Math.sin(t*.22)*.18;this.pitch=.54;this.cy=Math.cos(this.yaw);this.sy=Math.sin(this.yaw);this.cp=Math.cos(this.pitch);this.sp=Math.sin(this.pitch);
+    // Floating exploded assembly: chassis, circuit wafer, core, and upper lens.
+    this.plate(121,-94,Math.PI/6,this.metal,a,.7);
+    this.plate(121,-86,Math.PI/6,'#132b38',a,.7);
+    for(let j=0;j<6;j++) {
+      const angle=j/6*TAU+Math.PI/6,x=Math.cos(angle)*102,z=Math.sin(angle)*102;
+      c.beginPath();this.vertex(x,-85,z,true);this.vertex(x,58+lift,z);this.stroke(a,.16,.7);
+      const p=this.project(x,-84,z);this.dot(p[0],p[1],3.3,a,.75);this.dot(p[0],p[1],1,'22,39,46');
+      c.beginPath();this.vertex(x*.86,-84,z*.86,true);this.vertex(x*.65,-84,z*.65);this.vertex(x*.65,-39+lift,z*.65);
+      this.stroke(b,.5,1);
+    }
+    this.plate(89,-43+lift,Math.PI/6,'rgba(19,49,59,.86)',a,.8);
+    this.plate(85,-37+lift,Math.PI/6,'rgba(43,84,93,.3)',a,.55);
+    // Copper traces and contact pins spread from the processor to the wafer edge.
+    for(let side=0;side<4;side++)for(let i=0;i<9;i++) {
+      const u=(i-4)*7.5,angle=side*Math.PI/2,cs=Math.cos(angle),sn=Math.sin(angle);
+      c.beginPath();this.vertex(u*cs-36*sn,-26+lift,u*sn+36*cs,true);this.vertex(u*cs-54*sn,-26+lift,u*sn+54*cs);
+      this.vertex(u*cs-64*sn,-37+lift,u*sn+64*cs);this.stroke(i%3?a:b,.6,1);
+      const f=(t*.4+i*.08+side*.2)%1;
+      const p=this.project(u*cs-(39+f*23)*sn,-27-f*10+lift,u*sn+(39+f*23)*cs);
+      this.dot(p[0],p[1],1.2,a,.9);
+    }
+    // Beveled chip package.
+    for(let layer=0;layer<3;layer++) {
+      const r=38-layer*3,y=-27+lift+layer*6;
+      c.beginPath();this.vertex(-r,y,-r,true);this.vertex(r,y,-r);this.vertex(r,y,r);this.vertex(-r,y,r);c.closePath();
+      c.fillStyle=layer===2?this.metal:'#10232e';c.fill();this.stroke(a,.7,1);
+    }
+    c.globalCompositeOperation='lighter';
+    for(let i=0;i<5;i++) {
+      c.beginPath();this.vertex(-22+i*11,-14+lift,-24,true);this.vertex(-22+i*11,-14+lift,24);this.stroke(a,.5,.6);
+      c.beginPath();this.vertex(-24,-14+lift,-22+i*11,true);this.vertex(24,-14+lift,-22+i*11);this.stroke(a,.4,.6);
+    }
+    // Three-dimensional gear rim, alternating tooth heights and counter rotation.
+    for(let layer=0;layer<2;layer++) {
+      const y=42+lift+layer*7;
+      c.beginPath();
+      for(let i=0;i<=144;i++) {
+        const angle=i/144*TAU-t*.16,r=(i%6<3?91:84);
+        this.vertex(Math.cos(angle)*r,y,Math.sin(angle)*r,i===0);
+      }
+      this.stroke(a,layer?.75:.24,layer?1.25:.8);
+      this.ring(74,y,0,TAU,a,.3);
+    }
+    this.disc(62,46+lift,'rgba(76,171,199,.055)',a,.35);
+    this.ring(62,47+lift,-t*.5,1.35,b,.95,2);
+    for(let k=0;k<3;k++) {
+      const y=-12+((t*19+k*26)%72)+lift;
+      this.ring(25+y*.16,y,0,TAU,a,(1-(y+12-lift)/72)*.35,.8);
+    }
+    c.globalCompositeOperation='source-over';
+  }
+
+  petalVertex(u, v, angle, layer, bloom, first = false) {
+    const radius=10+u*(layer?78:111),width=Math.sin(Math.PI*u)*(.32+layer*.08);
+    const theta=angle+v*width;
+    const y=18+u*(layer?80:38)*bloom-Math.sin(u*Math.PI)*24+(1-v*v)*Math.sin(u*Math.PI)*19;
+    this.vertex(Math.cos(theta)*radius,y,Math.sin(theta)*radius,first);
+  }
+
+  garden(t) {
+    const c=this.ctx,a=this.colors[0],b=this.colors[1],bloom=1+Math.sin(t*.6)*.14;
+    this.yaw=t*.09;this.pitch=.35;this.cy=Math.cos(this.yaw);this.sy=Math.sin(this.yaw);this.cp=Math.cos(this.pitch);this.sp=Math.sin(this.pitch);
+    // A braided luminous stem emerges from concentric hydroponic terraces.
+    for(let k=0;k<3;k++)this.ring(66+k*22,-111-k*4,t*.12+k,TAU-.3,b,.25-k*.045,.9);
+    for(let strand=0;strand<3;strand++) {
+      c.beginPath();
+      for(let i=0;i<=70;i++) {
+        const u=i/70,angle=u*TAU*1.3+strand*TAU/3+t*.2,r=9*(1-u)+3;
+        this.vertex(Math.cos(angle)*r,-110+u*133,Math.sin(angle)*r,i===0);
+      }
+      this.stroke(b,.6,1.2);
+    }
+    // Leaves with curved silhouettes and individually drawn secondary veins.
+    for(let side=-1;side<=1;side+=2) {
+      const y=side===1?-57:-76;
+      c.beginPath();this.vertex(0,y,0,true);
+      for(let i=1;i<=40;i++) {
+        const u=i/40;
+        this.vertex(side*u*65,y+u*37,Math.sin(u*Math.PI)*22);
+      }
+      for(let i=39;i>=0;i--){const u=i/40;this.vertex(side*u*65,y+u*37,-Math.sin(u*Math.PI)*17);}
+      c.closePath();c.fillStyle=rgba(b,.12);c.fill();this.stroke(b,.6,.8);
+      c.beginPath();this.vertex(0,y,0,true);this.vertex(side*65,y+37,0);this.stroke(b,.7,.9);
+      for(let i=1;i<8;i++) {
+        const u=i/9;
+        for(let s=-1;s<=1;s+=2){c.beginPath();this.vertex(side*u*65,y+u*37,0,true);this.vertex(side*(u+.1)*65,y+(u+.1)*37,Math.sin(u*Math.PI)*17*s);this.stroke(b,.3,.6);}
+      }
+    }
+    // Two translucent corollas. Back petals are painted before front petals.
+    for(let pass=0;pass<2;pass++)for(let layer=0;layer<2;layer++)for(let petal=0;petal<7;petal++) {
+      const angle=petal/7*TAU+layer*.43;
+      if((Math.sin(angle-this.yaw)<0)!==Boolean(pass))continue;
+      c.beginPath();this.petalVertex(0,-1,angle,layer,bloom,true);
+      for(let i=1;i<=32;i++)this.petalVertex(i/32,-1,angle,layer,bloom);
+      for(let i=32;i>=0;i--)this.petalVertex(i/32,1,angle,layer,bloom);
+      c.closePath();c.fillStyle=rgba(layer?a:b,pass?.13:.055);c.fill();this.stroke(layer?a:b,pass?.65:.25,.85);
+      for(let vein=-2;vein<=2;vein++) {
+        c.beginPath();
+        for(let i=0;i<=32;i++)this.petalVertex(i/32,vein*.3,angle,layer,bloom,i===0);
+        this.stroke(vein? a:'255,226,245',vein?.14:.42,.65);
+      }
+    }
+    c.globalCompositeOperation='lighter';
+    for(let i=0;i<11;i++) {
+      const angle=i/11*TAU+t*.12;
+      c.beginPath();this.vertex(0,20,0,true);this.vertex(Math.cos(angle)*16,50+Math.sin(i)*8,Math.sin(angle)*16);this.stroke(a,.55,.9);
+      const p=this.project(Math.cos(angle)*16,50+Math.sin(i)*8,Math.sin(angle)*16);this.dot(p[0],p[1],2.2,'255,231,193',.9);
+    }
+    // Firefly constellations connect briefly as they travel around the flower.
+    for(let i=0;i<16;i++) {
+      const angle=i*2.399+t*.14,y=-70+((i*19+t*13)%170),r=123+Math.sin(i+t*.4)*12;
+      const p=this.project(Math.cos(angle)*r,y,Math.sin(angle)*r),x=p[0],py=p[1];
+      const glow=.35+.55*(.5+.5*Math.sin(t*1.2+i));
+      this.dot(x,py,5,i%3?a:b,glow*.09);this.dot(x,py,1.5,i%3?a:b,glow);
+      if(i%4===0){c.beginPath();c.moveTo(x,py);this.vertex(Math.cos(angle+.3)*r,y+17,Math.sin(angle+.3)*r);this.stroke(a,.12,.6);}
+    }
+    c.globalCompositeOperation='source-over';
+  }
 }
 
 // Coarse decorative continent silhouettes; densified into a stable point cloud.
@@ -363,7 +551,7 @@ export function mountInstallations(root) {
     if(!TYPES.has(type))continue;
     room.classList.add('has-installation');
     const canvas=document.createElement('canvas');canvas.className=`directory-installation installation-${type}`;
-    canvas.setAttribute('aria-hidden','true');room.querySelector('.room-heading').append(canvas);
+    canvas.setAttribute('aria-hidden','true');room.querySelector('.spectacle-stage').prepend(canvas);
     const item=new Installation(canvas,type);items.push(item);observer.observe(canvas);resize.observe(canvas);
   }
   reduced.addEventListener('change',()=>{for(const item of items){if(reduced.matches)item.time=0;item.draw();}sync();});

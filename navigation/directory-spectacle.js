@@ -11,9 +11,8 @@ export function mountSpectacle(root) {
   else active.delete(target);
  }),{threshold:0});
  rooms.forEach(room=>{
-  const type=room.closest('.scene').dataset.room;
   const stage=document.createElement('div');stage.className='spectacle-stage';stage.setAttribute('aria-hidden','true');
-  stage.innerHTML=`<div class="hyper-rays">${Array.from({length:24},(_,i)=>`<i style="--angle:${i*15}deg;--n:${i}"></i>`).join('')}</div>${['about','works','writing','court'].includes(type) ? '' : `<div class="theme-device device-${type}"><div class="device-halo"></div><div class="device-ring ring-a"></div><div class="device-ring ring-b"></div><div class="device-ring ring-c"></div><div class="device-heart"></div>${Array.from({length:8},(_,i)=>`<b style="--n:${i}"></b>`).join('')}</div>`} <div class="boot-door door-left"></div><div class="boot-door door-right"></div><div class="shock-front"></div><div class="search-beam"></div><svg class="energy-wires" width="100%" height="100%"></svg>`;
+  stage.innerHTML='<div class="shock-front"></div><div class="search-beam"></div><svg class="energy-wires" width="100%" height="100%"></svg>';
   room.prepend(stage);observer.observe(room);
  });
  mountInstallations(root);

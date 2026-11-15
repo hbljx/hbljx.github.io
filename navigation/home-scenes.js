@@ -5,13 +5,13 @@ import { sceneDecoration, paintSceneMotion } from './scene-effects.js';
 import { categoryIcon } from './category-icons.js';
 
 const details = {
-  about: ['#b8e675', '92 140 65', '把常用网址放在手边', '从随手收藏到每日打开的网站，常用入口都放在这里。'],
-  works: ['#9af7d4', '27 130 117', '从一个想法开始', '找 AI 对话、生图、开发工具与 API 服务，把灵感做成作品。'],
-  writing: ['#e0c4ff', '119 76 161', '翻开灵感书房', '从图书资源、图片设计到像素壁纸，随时查资料，也随时找灵感。'],
-  coffee: ['#ffcf8a', '166 92 43', '给今天配个好声音', '在音乐网站里找歌单、听专辑，为工作或休息挑一段伴奏。'],
-  lab: ['#f9d371', '151 116 44', '把工具收进车库', '从办公软件、软件资讯到网络工具，按需要打开有用的入口。'],
-  court: ['#a7e8ff', '57 119 163', '从这里看行情', '集中查看行情简报、行业指数和基金工具，快速找到每天关注的数据。'],
-  pool: ['#f4bde0', '127 73 111', '在花园发现好去处', '看看社区收藏和公益资源，发现值得逛的网站和平台。'],
+  about: ['#b8e675', '92 140 65', '从随手收藏到每日打开的网站，常用入口都放在这里。'],
+  works: ['#9af7d4', '27 130 117', '找 AI 对话、生图、开发工具与 API 服务，把灵感做成作品。'],
+  writing: ['#e0c4ff', '119 76 161', '从图书资源、图片设计到像素壁纸，随时查资料，也随时找灵感。'],
+  coffee: ['#ffcf8a', '166 92 43', '在音乐网站里找歌单、听专辑，为工作或休息挑一段伴奏。'],
+  lab: ['#f9d371', '151 116 44', '从办公软件、软件资讯到网络工具，按需要打开有用的入口。'],
+  court: ['#a7e8ff', '57 119 163', '集中查看行情简报、行业指数和基金工具，快速找到每天关注的数据。'],
+  pool: ['#f4bde0', '127 73 111', '看看社区收藏和公益资源，发现值得逛的网站和平台。'],
 };
 
 export function mountScenes() {
@@ -32,7 +32,7 @@ export function mountScenes() {
   const roomFrames = new Map();
 
   for (const [index, zone] of rooms.entries()) {
-    const [accent, glow, heading, summary] = details[zone.id];
+    const [accent, glow, summary] = details[zone.id];
     const marker = 'scene-' + zone.id;
     const link = Object.assign(document.createElement('a'), { href: '#' + marker, textContent: zone.name });
     const caption = Object.assign(document.createElement('small'), {textContent:zone.label});
@@ -57,7 +57,7 @@ export function mountScenes() {
         <div class="scene-info">
           <p class="kicker"><span></span> ${zone.en}</p>
           <h2 id="${marker}-title">${zone.name}<span>.</span></h2>
-          <p class="scene-lead">${heading}</p><p class="scene-description">${summary}</p>
+          <p class="scene-description">${summary}</p>
           <div class="scene-actions">
             <a class="scene-enter" href="#${marker}-links">查看本区全部网址 <span aria-hidden="true">↓</span></a>
             <a class="scene-next" href="#${next ? 'scene-' + next.id : 'zones'}">${next ? '下一站 · '+ next.name : '返回场景分类'} ↓</a>

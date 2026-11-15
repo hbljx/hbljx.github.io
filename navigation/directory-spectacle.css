@@ -1,30 +1,6 @@
 /* Large-scale choreography and seven distinct background installations. */
 .spectacle-stage{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;color:var(--accent-room)}
 .directory-fx>.room-heading,.directory-fx>.room-groups{position:relative;z-index:1}
-.theme-device{position:absolute;right:-45px;top:30px;width:440px;height:440px;opacity:.5;perspective:650px;filter:drop-shadow(0 0 12px rgb(var(--glow-room)/.5))}
-.device-halo{position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle,rgb(var(--glow-room)/.22),transparent 70%)}
-.device-ring{position:absolute;inset:12%;border:2px solid currentColor;border-radius:50%;box-shadow:inset 0 0 20px rgb(var(--glow-room)/.3);animation:device-spin 14s linear infinite}
-.ring-a{border-style:dashed;transform:rotateX(65deg)}
-.ring-b{inset:20%;animation-direction:reverse;transform:rotateY(65deg)}
-.ring-c{inset:29%;transform:rotateX(-40deg);animation-duration:9s}
-.device-heart{position:absolute;inset:40%;border:2px solid currentColor;background:rgb(var(--glow-room)/.3);box-shadow:0 0 45px rgb(var(--glow-room)/.7);animation:heart-breathe 4s ease-in-out infinite alternate}
-.theme-device>b{position:absolute;left:49%;top:49%;width:7px;height:7px;background:currentColor;transform:rotate(calc(var(--n)*45deg)) translateX(180px);animation:satellite 18s linear infinite}
-.device-coffee .device-halo{inset:8%;background:repeating-radial-gradient(circle,#101f1c 0 9px,#bc8d5733 10px 12px);border:2px solid currentColor;animation:device-spin 14s linear infinite}
-.device-coffee .device-ring{transform:none;border-style:dashed}.device-coffee .device-heart{border-radius:50%;inset:42%;background:currentColor}
-.device-lab .device-ring{border-radius:12%;border-width:7px;border-style:dashed;transform:none}
-.device-lab .device-heart{inset:37%;background:repeating-linear-gradient(45deg,transparent 0 8px,currentColor 9px 11px)}
-.device-pool .device-ring{border-radius:70% 20% 70% 20%;border-color:#8be2ab;animation:vine-grow 7s ease-in-out infinite alternate}
-.device-pool .device-heart{border-radius:60% 0;transform:rotate(45deg);background:#f7bee6}
-.device-pool>b{width:15px;height:10px;border-radius:80% 0;background:#f5c0ed;animation:butterfly 9s calc(var(--n)*-.8s) ease-in-out infinite alternate}
-.hyper-rays{position:absolute;top:0;left:0;width:100%;height:min(100vh,900px);opacity:0;overflow:hidden}
-.hyper-rays i{position:absolute;left:50%;top:42%;width:70%;height:2px;transform-origin:left;background:linear-gradient(90deg,transparent 20%,var(--accent-room),transparent);transform:rotate(var(--angle)) scaleX(.1)}
-.spectacle-boot .hyper-rays{animation:hyper-fade 1.5s both}
-.spectacle-boot .hyper-rays i{animation:hyper-jump 1.4s calc(var(--n)*9ms) both}
-.boot-door{display:none;position:absolute;top:0;height: min(90vh,850px);width:50%;background:linear-gradient(90deg,#102522e8,#28494399);border:1px solid currentColor}
-[data-room=lab] .boot-door{display:block;opacity:0}
-[data-room=lab] .spectacle-boot .door-left{left:0;animation:door-open 1.3s both}
-[data-room=lab] .spectacle-boot .door-right{right:0;animation:door-open-right 1.3s both}
-[data-room=pool] .spectacle-boot .theme-device{animation:garden-grow 2s both}
 .shock-front,.search-beam{position:absolute;left:0;right:0;height:70px;opacity:0;background:linear-gradient(transparent,rgb(var(--glow-room)/.22));border-bottom:2px solid currentColor;box-shadow:0 12px 30px rgb(var(--glow-room)/.2)}
 .search-beam{top:0;height:140px;border-bottom-style:dashed}
 .energy-wires{position:absolute;inset:0;overflow:visible}
@@ -38,61 +14,39 @@
 .target-lock .room-card-exit{border:1px solid currentColor;padding:0 4px;box-shadow:0 0 12px rgb(var(--glow-room)/.3)}
 .directory-fx:not(.fx-visible) .spectacle-stage *,.fx-paused .spectacle-stage *{animation-play-state:paused!important}
 @keyframes device-spin{to{rotate:360deg}}
-@keyframes heart-breathe{to{scale:1.16;opacity:.5}}
-@keyframes satellite{to{transform:rotate(calc(var(--n)*45deg + 360deg)) translateX(180px)}}
-@keyframes vine-grow{to{rotate:25deg;scale:1.12}}
-@keyframes butterfly{to{translate:-80px 100px;rotate:65deg;scale:.6}}
-@keyframes hyper-fade{0%{opacity:0}20%{opacity:.75}100%{opacity:0}}
-@keyframes hyper-jump{to{transform:rotate(var(--angle)) scaleX(1.7)}}
-@keyframes door-open{0%{opacity:1;translate:0}100%{opacity:0;translate:-100%}}
-@keyframes door-open-right{0%{opacity:1;translate:0}100%{opacity:0;translate:100%}}
-@keyframes garden-grow{from{clip-path:inset(100% 0 0)}to{clip-path:inset(0)}}
-@media(max-width:700px){.theme-device{width:290px;height:290px;right:-95px;opacity:.32}.theme-device>b:nth-last-child(-n+4){display:none}.energy-field,.energy-trail{display:none}.hyper-rays i:nth-child(2n){display:none}}
 @media(prefers-reduced-motion:reduce){.hyper-rays,.boot-door,.energy-field,.energy-trail,.shock-front,.search-beam{display:none}.spectacle-stage *{animation:none!important;transition:none!important}}
 
-/* Drawn installations have a dedicated exhibition area above the links. */
-.has-installation > .room-heading {
-  min-height: 400px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 28px 52% 40px 0;
-  isolation: isolate;
-}
-.has-installation > .room-heading h3 { font-size: clamp(38px, 4.6vw, 64px); }
-.has-installation > .room-heading > span { font-size: 18px; letter-spacing: .12em; }
+/* The illustrations belong to the directory background, never to its layout. */
 .directory-installation {
   position: absolute;
-  right: -24px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: -38px;
+  right: -34px;
   display: block;
-  width: min(560px, 55%);
+  width: clamp(440px, 48vw, 680px);
   aspect-ratio: 7 / 5;
   pointer-events: none;
-  z-index: -1;
+  opacity: .8;
+  mask-image: linear-gradient(90deg, transparent, #000 17%, #000 93%, transparent);
 }
-.has-installation .fx-orbit, .has-installation .fx-mote { display: none; }
+.has-installation .fx-orbit,
+.has-installation .fx-mote,
+.has-installation .fx-spectrum,
+.has-installation .fx-bridge { display: none; }
 .has-installation .fx-grid { opacity: .24; mask-image: linear-gradient(#0003, transparent 600px); }
-@media (min-width: 1600px) {
-  .has-installation > .room-heading { min-height: 420px; }
+/* A dark translucent surface keeps the artwork behind the readable link text. */
+.has-installation .room-card {
+  background-color: rgb(17 31 27 / .82);
 }
+.has-installation .room-card:hover,
+.has-installation .room-card:focus-within { background-color: rgb(28 48 37 / .96); }
 @media (max-width: 700px) {
-  .has-installation > .room-heading {
-    min-height: 372px;
-    justify-content: flex-start;
-    padding: 0 0 260px;
-    gap: 10px;
-  }
-  .has-installation > .room-heading h3 { font-size: 36px; }
-  .has-installation > .room-heading > span { font-size: 15px; }
   .directory-installation {
-    top: auto;
-    bottom: 0;
-    right: 50%;
-    transform: translateX(50%);
-    width: min(390px, 112%);
+    top: -20px;
+    right: -116px;
+    width: 370px;
+    opacity: .38;
+    mask-image: linear-gradient(90deg, transparent, #000 38%);
   }
+  .has-installation .room-card { background-color: rgb(17 31 27 / .9); }
+  .energy-field,.energy-trail { display:none; }
 }
