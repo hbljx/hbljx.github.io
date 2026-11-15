@@ -1,0 +1,25 @@
+/* Native cursors keep the exact hit point responsive, even as a trail fades. */
+@media (hover:hover) and (pointer:fine) {
+  html[data-about-pointer=journal] {
+    --about-cursor:url("cursors/quill.svg") 3 28;
+    --about-action-cursor:url("cursors/quill-link.svg") 3 28;
+  }
+  html[data-about-pointer=clockwork] {
+    --about-cursor:url("cursors/hourglass.svg") 3 2;
+    --about-action-cursor:url("cursors/hourglass-link.svg") 3 2;
+  }
+  html:not(.world-mode)[data-about-pointer],
+  html:not(.world-mode)[data-about-pointer] #flat-home,
+  html:not(.world-mode)[data-about-pointer] .garden-arrival,
+  html:not(.world-mode)[data-about-pointer] .garden-arrival * {
+    cursor:var(--about-cursor),auto;
+  }
+  html:not(.world-mode)[data-about-pointer] .garden-arrival :is(a,button,summary,select,[role=button]),
+  html:not(.world-mode)[data-about-pointer] .garden-arrival :is(a,button,summary,select,[role=button]) * {
+    cursor:var(--about-action-cursor),pointer;
+  }
+  html:not(.world-mode)[data-about-pointer] .garden-arrival :is(input,textarea,[contenteditable=true]),
+  html:not(.world-mode)[data-about-pointer] .garden-arrival [contenteditable=true] * {
+    cursor:text;
+  }
+}
