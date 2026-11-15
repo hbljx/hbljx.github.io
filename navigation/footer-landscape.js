@@ -17,7 +17,7 @@ export function mountFooterLandscape() {
         <g class="runner-icon-paused"><path fill="#645f43" d="M3 3h7v20H3zm12 0h7v20h-7z"/><path fill="#d7c68b" d="M3 2h6v18H3zm12 0h6v18h-6z"/><path fill="#fff0b4" d="M3 2h6v3H3zm12 0h6v3h-6z"/></g>
         <g class="runner-icon-over"><path fill="#5d6257" d="M4 4h16v3h3v12h-5v4H7v-4H2V7h2z"/><path fill="#c5c8aa" d="M4 2h15v3h3v12h-6v4H7v-4H1V5h3z"/><path fill="#f0eacb" d="M4 2h15v3H4z"/><path fill="#293b34" d="M4 7h5v5H4zm10 0h5v5h-5zm-4 6h4v3h-4zm-1 5h2v3H9zm4 0h2v3h-2z"/></g>
       </svg><span class="runner-eyebrow" hidden></span></span>
-      <h2 id="runner-dialog-title">方块世界，无限冒险</h2><p hidden></p>
+      <h2 id="runner-dialog-title">方块世界，无限冒险</h2>
       <span class="runner-results" hidden><span>本次距离<b data-result-score>00000</b></span><span>最高纪录<b data-result-best>00000</b></span></span>
       <button type="button" class="runner-start">开始奔跑 <span aria-hidden="true">→</span></button><span class="runner-start-hint">空格 / ↑ / Enter 开始</span>
     </aside>
@@ -31,7 +31,7 @@ export function mountFooterLandscape() {
   footer.prepend(game);
   const runner = new Runner();
   const overlay = game.querySelector('.runner-overlay');
-  const title = overlay.querySelector('h2'), message = overlay.querySelector('p');
+  const title = overlay.querySelector('h2');
   const eyebrow = overlay.querySelector('.runner-eyebrow');
   const start = game.querySelector('.runner-start'), hint = game.querySelector('.runner-start-hint');
   const scoreNode = game.querySelector('[data-score]'), bestNode = game.querySelector('[data-best]');
@@ -74,16 +74,13 @@ export function mountFooterLandscape() {
   function showState() {
     game.dataset.state = runner.state;
     overlay.hidden = runner.state === 'running';
-    eyebrow.hidden = runner.state === 'ready';
-    message.hidden = runner.state !== 'over';
+    eyebrow.hidden = runner.state !== 'paused';
     results.hidden = runner.state !== 'over';
     pauseButton.disabled = runner.state !== 'running' && runner.state !== 'paused';
     pauseButton.textContent = runner.state === 'paused' ? '继续' : '暂停';
     pauseButton.setAttribute('aria-label', runner.state === 'paused' ? '继续游戏' : '暂停游戏');
     if (runner.state === 'over') {
-      eyebrow.textContent = 'GAME OVER';
       title.textContent = '冒险结束';
-      message.textContent = '这次到这里。下一次，再往前一点。';
       game.querySelector('[data-result-score]').textContent = String(runner.score).padStart(5, '0');
       game.querySelector('[data-result-best]').textContent = String(best).padStart(5, '0');
       start.innerHTML = '重新奔跑 <span aria-hidden="true">↻</span>';

@@ -1,0 +1,16 @@
+/* 08 · A home built block by block. Shared scene typography and controls stay intact. */
+.about-scene {--accent-room:#f0cf91;--glow-room:154 118 65}
+.about-scene .scene-cinema {min-height:235svh}
+.about-scene .scene-art img {object-position:57% 50%;transform:scale(calc(1.09 - var(--enter)*.06 + var(--exit)*.08))}
+.about-build {position:absolute;inset:-1px;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(8,1fr);pointer-events:none}
+.about-build i {background:#16251e;box-shadow:inset 1px 1px #ddbd7920;transform-origin:50% 100%}
+.about-image-ready .about-build i {animation:about-block-build .65s var(--delay) cubic-bezier(.23,1,.32,1) both}
+@keyframes about-block-build {0%{transform:scale(1);opacity:1}65%{opacity:.9}100%{transform:translateY(-14px) scale(0);opacity:0}}
+.about-scene-exit {position:absolute;inset:0;pointer-events:none;z-index:2;background:#111b15;clip-path:polygon(0 100%,0 65%,12% 65%,12% 48%,25% 48%,25% 30%,38% 30%,38% 15%,50% 15%,50% 30%,63% 30%,63% 48%,76% 48%,76% 65%,88% 65%,88% 80%,100% 80%,100% 100%);transform:translateY(calc((1 - var(--exit))*100%));opacity:var(--exit)}
+.about-scene .scene-info {opacity:calc(1 - var(--exit)*.5)}
+.about-scene-caption {position:absolute;bottom:40px;left:var(--gutter);right:var(--gutter);z-index:3;display:flex;justify-content:space-between;gap:16px;color:#efdbb2;font-size:12px;letter-spacing:.1em;opacity:var(--actions-in)}
+.about-image-error .about-build {display:none}
+.about-image-error .scene-art {background:linear-gradient(135deg,#344335,#16261e 60%,#695333)}
+.about-scene .scene-opening small {letter-spacing:.08em}
+@media(max-width:700px){.about-scene .scene-cinema{min-height:205svh}.about-scene .scene-info{padding-bottom:68px}.about-scene-caption{bottom:33px;font-size:10px;letter-spacing:0}.about-scene .scene-opening small{max-width:280px;line-height:1.8}.about-scene .scene-art img{object-position:60% 50%}}
+@media(prefers-reduced-motion:reduce),(max-height:640px){.about-scene .scene-cinema{min-height:100svh}.about-build,.about-scene-exit{display:none}.about-scene .scene-art img{transform:none}.about-scene .scene-info{opacity:1}}

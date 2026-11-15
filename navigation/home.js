@@ -52,6 +52,8 @@ if (worldMode) {
   mountIntroTypewriter();
   const { mountScenes } = await import('./home-scenes.js');
   mountScenes();
+  const { mountAboutScene } = await import('./about-scene.js');
+  mountAboutScene();
   const { mountPixelImages } = await import('./pixel-images.js');
   mountPixelImages();
   const { mountAboutEffects } = await import('./about-effects.js');

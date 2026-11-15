@@ -3,7 +3,7 @@
 .site-header a[href="#home"] {--item-accent:#80caff}
 .site-header a[href="#category-common-sites"] {--item-accent:#7ee5d1}
 .site-header a[href="#category-software-news"] {--item-accent:#ffbd75}
-.site-header a[href="#about-us"] {--item-accent:#ff9dca}
+.site-header :is(a[href="#about-us"],a[href="#scene-about-us"]) {--item-accent:#ff9dca}
 .site-header .world-link {--item-accent:#c39aff}
 .site-header :is(nav a,.about-nav,.world-link) {
   --button-base:color-mix(in srgb,var(--item-accent) 48%,#13210d);

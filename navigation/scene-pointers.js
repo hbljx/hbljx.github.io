@@ -1,7 +1,7 @@
 // One viewport canvas, bounded trails, and an animation loop that sleeps when idle.
 export function mountScenePointers() {
- const modes={about:'comet',works:'lightning',writing:'ribbon',coffee:'stardust',lab:'scanner',court:'water',pool:'fairy'};
- const colors=['#c7ff83','#8dffe6','#dab4ff','#ffd68e','#8eeaff','#91dcff','#ffbce5','#c6ff98'];
+ const modes={about:'comet',works:'lightning',writing:'ribbon',coffee:'stardust',lab:'scanner',court:'water',pool:'fairy',team:'builder'};
+ const colors=['#c7ff83','#8dffe6','#dab4ff','#ffd68e','#8eeaff','#91dcff','#ffbce5','#f0cf91','#c6ff98'];
  const names=Object.values(modes).concat('magnet');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)'),fine=matchMedia('(hover:hover) and (pointer:fine)');
  const canvas=document.createElement('canvas');canvas.className='scene-pointer-canvas';canvas.setAttribute('aria-hidden','true');
@@ -59,6 +59,17 @@ export function mountScenePointers() {
    const fx=x+22+Math.cos(now*.004)*12,fy=y-23+Math.sin(now*.005)*9;
    ctx.globalAlpha=fade*.45;ctx.beginPath();ctx.ellipse(fx-7,fy-2,8,3+Math.abs(Math.sin(now*.02))*6,-.6,0,7);ctx.ellipse(fx+7,fy-2,8,3+Math.abs(Math.sin(now*.02))*6,.6,0,7);ctx.fill();
    ctx.globalAlpha=fade;ctx.fillStyle='#fff5ca';ctx.fillRect(fx-3,fy-5,6,10);star(fx-15,fy+14,3);
+  }else if(mode==='builder'){
+   // Isometric blocks settle onto a snapped path; no orbit, spark or ribbon trail.
+   ctx.shadowBlur=0;
+   particles.forEach(p=>{
+    const t=(now-p.t)/p.life,lift=Math.max(0,1-t*5)*16;
+    const px=p.x,py=p.y-lift;
+    ctx.globalAlpha=Math.min(1,t*8)*(1-t)*.8;
+    ctx.fillStyle='#f0cf91';ctx.beginPath();ctx.moveTo(px,py-8);ctx.lineTo(px+12,py-2);ctx.lineTo(px,py+4);ctx.lineTo(px-12,py-2);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#a78b54';ctx.beginPath();ctx.moveTo(px-12,py-2);ctx.lineTo(px,py+4);ctx.lineTo(px,py+14);ctx.lineTo(px-12,py+8);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#647b48';ctx.beginPath();ctx.moveTo(px,py+4);ctx.lineTo(px+12,py-2);ctx.lineTo(px+12,py+8);ctx.lineTo(px,py+14);ctx.closePath();ctx.fill();
+   });
   }else if(mode==='magnet'){
    const force=1-Math.exp(-dt/110);blocks.forEach((b,i)=>{const moving=age<120,angle=i*Math.PI/6+now*.0004;const radius=moving?38+i%3*8:23;const tx=x+Math.cos(angle)*radius,ty=y+Math.sin(angle)*radius;b.x+=(tx-b.x)*force;b.y+=(ty-b.y)*force;ctx.globalAlpha=fade*(.35+i%3*.2);ctx.fillRect(b.x-3,b.y-3,6,6);ctx.strokeRect(b.x-4,b.y-4,8,8);});
   }
@@ -73,6 +84,10 @@ export function mountScenePointers() {
   if(moved-spawn>24){spawn=moved;const speed=Math.min(60,Math.hypot(x-lastX,y-lastY));
    if(mode==='comet'||mode==='stardust')for(let i=0;i<3;i++)particles.push({x:x+(Math.random()-.5)*12,y:y+(Math.random()-.5)*12,t:moved,life:mode==='comet'?600:1100,vx:(lastX-x)*.7+(Math.random()-.5)*30,vy:(lastY-y)*.7+(Math.random()-.5)*30,size:mode==='comet'?4+speed*.08:3+Math.random()*4,color:colors[(names.indexOf(mode)+i)%8]});
    if(mode==='water'&&(particles.length===0||moved-particles.at(-1).t>100))particles.push({x,y,t:moved,life:1000,size:45});
+   if(mode==='builder'){
+    const bx=Math.round(x/24)*24,by=Math.round(y/18)*18;
+    if(!particles.some(p=>p.x===bx&&p.y===by))particles.push({x:bx,y:by,t:moved,life:950});
+   }
    if(particles.length>100)particles.splice(0,particles.length-100);
   }wake();
  },{passive:true});
