@@ -1,13 +1,14 @@
 /* Five coordinated effects; text is never blurred or scaled. */
-.site-header {--nav-rest-accent:#c7f776}
-.site-header a[href="#home"] {--item-accent:#c7f776}
-.site-header a[href="#category-common-sites"] {--item-accent:#80caff}
+.site-header a[href="#home"] {--item-accent:#80caff}
+.site-header a[href="#category-common-sites"] {--item-accent:#7ee5d1}
 .site-header a[href="#category-software-news"] {--item-accent:#ffbd75}
-.site-header a[href="#about-us"] {--item-accent:#d6a2ff}
-.site-header :is(nav a,.about-nav) {
-  color:var(--nav-rest-accent);
-  background:color-mix(in srgb,var(--nav-rest-accent) 12%,#0b160f);
-  border:1px solid color-mix(in srgb,var(--nav-rest-accent) 40%,transparent);
+.site-header a[href="#about-us"] {--item-accent:#ff9dca}
+.site-header .world-link {--item-accent:#c39aff}
+.site-header :is(nav a,.about-nav,.world-link) {
+  --button-base:color-mix(in srgb,var(--item-accent) 48%,#13210d);
+  color:#13210d;
+  background:var(--item-accent);
+  border:1px solid color-mix(in srgb,var(--item-accent) 65%,#fff);
   border-radius:5px;
 }
 .site-header.header-enhanced {
@@ -39,8 +40,8 @@
 .header-enhanced :is(nav a,.about-nav,.world-link) {
   position:relative;isolation:isolate;overflow:hidden;min-height:40px;
   display:inline-flex;align-items:center;justify-content:center;
-  border:1px solid #b9d49b26;border-radius:5px;padding:9px 10px;
-  box-shadow:0 3px 0 #030a05,inset 0 1px #eaffd508;
+  border-radius:5px;padding:9px 10px;
+  box-shadow:0 3px 0 var(--button-base),0 0 18px color-mix(in srgb,var(--item-accent) 14%,transparent);
   transition:transform .18s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,color .18s ease;
 }
 .header-enhanced :is(nav a,.about-nav,.world-link)::after {
@@ -48,20 +49,9 @@
   background:linear-gradient(110deg,transparent 25%,#efffd528 50%,transparent 75%);
   transform:translateX(-150%);
 }
-.site-header.header-enhanced :is(nav a,.about-nav) {
-  transform:none;color:var(--nav-rest-accent);
-  background:color-mix(in srgb,var(--nav-rest-accent) 12%,#0b160f);
-  border-color:color-mix(in srgb,var(--nav-rest-accent) 40%,transparent);
-  box-shadow:0 3px 0 #030a05,inset 0 1px #eaffd508;
+.header-enhanced :is(nav a,.about-nav,.world-link):focus-visible {
+  outline:2px solid var(--item-accent);outline-offset:4px;
 }
-.header-enhanced :is(nav a,.about-nav):is([aria-current],:focus-visible),
-.header-enhanced #scene-links a:is([aria-current],:focus-visible) {
-  color:var(--nav-rest-accent);border-color:var(--nav-rest-accent);
-  background:color-mix(in srgb,var(--nav-rest-accent) 11%,#0b160f);
-  box-shadow:0 3px 0 #030a05,inset 0 0 12px #b9f97b0c,0 0 14px color-mix(in srgb,var(--nav-rest-accent) 18%,transparent);
-  transform:none;
-}
-.header-enhanced .world-link {border-color:#dcff9d;color:#13210d;background:#c7f776;box-shadow:0 3px 0 #547b29,0 0 18px #c7f77624}
 .header-enhanced .brand img {box-shadow:0 0 16px #8bff632b}
 .header-enhanced .header-rail {
   position:absolute;left:0;bottom:7px;height:3px;width:0;z-index:2;pointer-events:none;
@@ -78,10 +68,10 @@
 .header-enhanced .header-ring {width:32px;height:32px;border:1px solid var(--spark-color);box-shadow:inset 0 0 6px var(--spark-color);border-radius:3px}
 @media(hover:hover) and (pointer:fine) {
   .header-enhanced :is(nav a,.about-nav,.world-link):hover,.header-enhanced #scene-links a:hover {
-    transform:translateY(-3px);border-color:var(--item-accent,#c7f776);
-    box-shadow:0 6px 0 #030a05,0 0 17px color-mix(in srgb,var(--item-accent,#c7f776) 26%,transparent),inset 0 0 12px #d9ffaf0c;
+    transform:translateY(-3px);border-color:var(--item-accent);
+    color:#13210d;background:var(--item-accent);
+    box-shadow:0 6px 0 #030a05,0 0 17px color-mix(in srgb,var(--item-accent) 26%,transparent),inset 0 0 12px #d9ffaf0c;
   }
-  .header-enhanced :is(nav a,.about-nav):hover,.header-enhanced #scene-links a:hover {color:var(--item-accent,#c7f776);background:color-mix(in srgb,var(--item-accent,#c7f776) 10%,#0b160f)}
   .header-enhanced :is(nav a,.about-nav,.world-link):hover::after {transform:translateX(150%);transition:transform .65s ease}
 }
 .header-enhanced :is(nav a,.about-nav,.world-link):active,.header-enhanced #scene-links a:active {transform:translateY(1px);box-shadow:0 1px 0 #030a05}
@@ -93,6 +83,6 @@
 @media(prefers-reduced-motion:reduce) {
   .header-enhanced::after {transition:none}
   .header-enhanced .header-aura,.header-enhanced .header-spark,.header-enhanced .header-ring{display:none}
-  .header-enhanced :is(nav a,.about-nav,.world-link),.header-enhanced .header-rail{transition:none;transform:none}
+  .header-enhanced :is(nav a,.about-nav,.world-link),.header-enhanced .header-rail{transition:none;transform:none!important}
   .header-enhanced :is(nav a,.about-nav,.world-link)::after{display:none}
 }

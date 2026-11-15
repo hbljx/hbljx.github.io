@@ -5,7 +5,7 @@ export function mountCraftDetails() {
   brand.dataset.craftMounted = 'true';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const fine = matchMedia('(hover: hover) and (pointer: fine)');
-  const portal = document.querySelector('.site-header .world-link');
+  const portals = [...document.querySelectorAll('.site-header :is(nav a,.about-nav,.world-link)')];
   const active = new Map();
   const decorations = document.createElement('span');
   decorations.className = 'brand-xp';
@@ -21,7 +21,7 @@ export function mountCraftDetails() {
       active.delete(node);
     }, duration) });
   }
-  for (const [node, name, duration] of [[brand, 'brand-awake', 1200], [portal, 'portal-awake', 1400]]) {
+  for (const [node, name, duration] of [[brand, 'brand-awake', 1200], ...portals.map(node => [node, 'portal-awake', 1400])]) {
     if (!node) continue;
     node.addEventListener('pointerenter', event => {
       if (fine.matches && event.pointerType !== 'touch') play(node, name, duration);

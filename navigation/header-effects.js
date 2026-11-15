@@ -56,8 +56,8 @@ export function mountHeaderEffects() {
     const rect = target?.getBoundingClientRect();
     if (rect) {
       const x = Math.round(rect.left - bounds.left + header.scrollLeft + 7), width = Math.max(8,Math.round(rect.width - 14));
-      // A selected or focused link keeps the shared home color after hover ends.
-      const accent = hovered ? sections.find(item => item.link === hovered)?.color || '#c7f776' : '#c7f776';
+      // Keep the rail and aura matched to the hovered, focused or current button.
+      const accent = sections.find(item => item.link === target)?.color || '#c7f776';
       if (lastAccent !== accent) {
         header.style.setProperty('--nav-accent',accent);
         lastAccent = accent;
