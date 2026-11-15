@@ -98,8 +98,8 @@ export function detectQuality() {
   const mobile = coarse || small;
   return {
     mobile,
-    pixelRatio: Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.5),
-    pixelBudget: mobile ? 1200000 : 3200000,
+    pixelRatio: Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2),
+    pixelBudget: mobile ? 1600000 : 4000000,
     shadowSize: mobile ? 1024 : 2048,
     maxLights: 2,
   };
@@ -176,8 +176,9 @@ const SKY_FRAGMENT = /* glsl */`
 `;
 
 export function createStage(container, quality) {
-  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', alpha: false });
-  const ratio = () => Math.min(quality.pixelRatio, Math.sqrt(quality.pixelBudget / (innerWidth * innerHeight)));
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', alpha: false });
+  // Bound high-DPI cost, but never stretch a sub-CSS-pixel render to full screen.
+  const ratio = () => Math.max(1, Math.min(quality.pixelRatio, Math.sqrt(quality.pixelBudget / (innerWidth * innerHeight))));
   renderer.setPixelRatio(ratio());
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;

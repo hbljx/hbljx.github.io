@@ -2,6 +2,7 @@ import { mountDirectoryEffects } from './directory-effects.js';
 import { zones } from './zones.js?v=20261101-directory-merge';
 import { createRoomFrame } from './room-scenes.js';
 import { sceneDecoration, paintSceneMotion } from './scene-effects.js';
+import { categoryIcon } from './category-icons.js';
 
 const details = {
   about: ['#b8e675', '92 140 65', '把常用网址放在手边', '从随手收藏到每日打开的网站，常用入口都放在这里。'],
@@ -57,7 +58,6 @@ export function mountScenes() {
           <p class="kicker"><span></span> ${zone.en}</p>
           <h2 id="${marker}-title">${zone.name}<span>.</span></h2>
           <p class="scene-lead">${heading}</p><p class="scene-description">${summary}</p>
-          <div class="scene-index"></div>
           <div class="scene-actions">
             <a class="scene-enter" href="#${marker}-links">查看本区全部网址 <span aria-hidden="true">↓</span></a>
             <a class="scene-next" href="#${next ? 'scene-' + next.id : 'zones'}">${next ? '下一站 · '+ next.name : '返回场景分类'} ↓</a>
@@ -71,7 +71,7 @@ export function mountScenes() {
       </div>`;
     const paint=createRoomFrame(section.querySelector('img'),zone.id);
     roomFrames.set(section,{paint,progress:-1, current:null, top:0, range:1});
-    roomStats.set(zone.id, {stats:section.querySelector('.scene-index'),list:section.querySelector('.room-groups'),strip:section.querySelector('.chapter-strip')});
+    roomStats.set(zone.id, {scene:section,list:section.querySelector('.room-groups'),strip:section.querySelector('.chapter-strip')});
     scenes.append(section);
   }
 
@@ -86,11 +86,10 @@ export function mountScenes() {
     matches.replaceChildren();
 
     for (const zone of rooms) {
-      const {stats,list,strip} = roomStats.get(zone.id);
+      const {scene,list,strip} = roomStats.get(zone.id);
       const categories = groups.filter(group => groupOwners.get(group.id) === zone.id);
       const total=categories.reduce((count,group)=>count+group.items.length,0);
-      stats.textContent = total + ' 个网址 · ' + categories.map(group=>group.title).join(' · ');
-      if (zone.id==='court') roomFrames.get(stats.closest('.scene')).total=total;
+      if (zone.id==='court') roomFrames.get(scene).total=total;
       strip.replaceChildren(...categories.map(group=>Object.assign(document.createElement('span'),{textContent:group.title})));
       scheduleScenes();
       list.replaceChildren();
@@ -102,6 +101,8 @@ export function mountScenes() {
         matchCount += entries.length;
         const category = document.createElement('section');
         category.className = 'room-category';
+        category.dataset.group = group.id;
+        const icon = categoryIcon(group.id);
         const title = Object.assign(document.createElement('h4'),{textContent:group.title});
         title.append(Object.assign(document.createElement('small'),{textContent:entries.length}));
         const grid = document.createElement('div');
@@ -117,7 +118,7 @@ export function mountScenes() {
             textContent:item.description || new URL(item.url).hostname,
           });
           const mark = Object.assign(document.createElement('span'), {className:'room-mark'});
-          mark.append(Object.assign(document.createElement('img'), {src:'assets/ui/'+zone.id+'.png',loading:'lazy',alt:''}));
+          mark.append(Object.assign(document.createElement('img'), {src:icon,loading:'lazy',alt:'',width:32,height:32}));
           const text = Object.assign(document.createElement('span'),{className:'room-card-text'});
           text.append(Object.assign(document.createElement('strong'),{textContent:item.name}),note);
           const exit = Object.assign(document.createElement('span'),{className:'room-card-exit',textContent:'↗'});

@@ -71,6 +71,8 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let bootFailed = false, bootRenderer = null, bootPhase = 'renderer';
 function plain(error = null) {
   hideLoading();
+  document.documentElement.classList.remove('world-booting');
+  document.documentElement.classList.add('world-failed');
   document.body.classList.add('plain');
   $('#loading')?.remove();
   const notice = $('#startupNotice');
@@ -118,15 +120,15 @@ else boot().catch(err => {
 
 async function boot() {
   const quality = detectQuality();
-  progress(0.12);
+  progress(0.12, t('正在初始化画面', 'Initializing graphics'));
   await nextFrame();
   const stage = createStage($('#world'), quality);
   bootRenderer = stage.renderer;
   bootPhase = 'world';
-  progress(0.3);
+  progress(0.3, t('正在搭建像素家园', 'Building the island'));
   await nextFrame();
   const world = createWorld(stage, quality);
-  progress(0.66);
+  progress(0.66, t('正在准备角色与互动', 'Preparing characters and activities'));
   await nextFrame();
   // The mailbox and the portal add their footprints before the walkable grid is built.
   const mailbox = createMailbox({ stage, world });
@@ -270,7 +272,7 @@ async function boot() {
   const rig = createRig(stage.camera, world);
   // The world's own moving parts (a sailboat, a Vertec, …): build.js setup(app).
   const extras = W.setup?.({ stage, world, nav, player, avatar, sound, rig, quality, config }) || {};
-  progress(0.85);
+  progress(0.85, t('正在准备探索路线', 'Preparing your journey'));
 
   // Clock and weather start in automatic mode on every visit. The corner
   // weather symbol opens the weather and time menu.
@@ -928,7 +930,7 @@ async function boot() {
   // ---------- Loop ----------
   // Compile all display materials and the initial shadow map while the loading
   // screen is still up. The first walk should not trigger cold shader work.
-  progress(0.92);
+  progress(0.92, t('正在准备光影与首帧画面', 'Preparing lighting and the first frame'));
   bootPhase = 'shader-warmup';
   // The same baked field lights furniture, printed artwork, the player and pets.
   // Bind it before warmup so night/day switches never compile another shader.
@@ -1013,11 +1015,8 @@ async function boot() {
   const debugEl = new URLSearchParams(location.search).has('debug') ? document.body.appendChild(Object.assign(document.createElement('pre'), { id: 'debugStats' })) : null;
   let debugClock = 0;
   const weatherFocus = new THREE.Vector3();
-  const governor = { t: 0, frames: 0, sum: 0, sq: 0 };
-  const minPixelRatio = quality.mobile ? 0.65 : 0.5;
   document.addEventListener('visibilitychange', () => {
     last = performance.now();
-    governor.t = governor.frames = governor.sum = governor.sq = 0;
   });
   let mapClock = 0, promptClock = 0, hoverClock = 0;
   let hudShown = false;
@@ -1115,20 +1114,8 @@ async function boot() {
       debugEl.innerHTML = `<b class="${over(st.calls, BUDGET.calls)}">${st.calls} calls</b> · <b class="${over(st.triangles, BUDGET.triangles)}">${Math.round(st.triangles / 1000)}k tris</b> · <b class="${over(st.frameMs, BUDGET.frameMs)}">${st.frameMs} ms</b> · ${st.programs} programs · DPR ${st.pixelRatio}`;
     }
 
-    // Re-check throughout the visit, including later camera angles. Use the
-    // uncapped frame interval, so long GPU stalls cannot hide behind physics dt.
-    const pixelRatio = stage.renderer.getPixelRatio();
-    if (!browsing && pixelRatio > minPixelRatio) {
-      governor.t += elapsed; governor.frames++; governor.sum += elapsed; governor.sq += elapsed * elapsed;
-      if (governor.t > 1.5 && governor.frames >= 4) {
-        const avg = governor.sum / governor.frames;
-        const jitter = Math.sqrt(Math.max(0, governor.sq / governor.frames - avg * avg));
-        if (avg > 1 / 25 || (avg > 1 / 50 && jitter > 0.004)) {
-          stage.setPixelRatio(Math.max(minPixelRatio, pixelRatio * 0.8));
-        }
-        governor.t = governor.frames = governor.sum = governor.sq = 0;
-      }
-    }
+    // Keep the chosen resolution stable. Frame spikes must not progressively
+    // downsample the world and leave the rest of the visit permanently blurry.
 
   }
   requestAnimationFrame(loop);

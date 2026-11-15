@@ -1,5 +1,3 @@
-import { zones } from './zones.js?v=20261101-directory-merge';
-
 export function mountAboutEffects() {
  const section=document.querySelector('#about-us');
  if(!section)return;
@@ -17,13 +15,6 @@ export function mountAboutEffects() {
  const decor=document.createElement('div');decor.className='about-atmosphere';decor.setAttribute('aria-hidden','true');
  decor.innerHTML='<div class="about-aurora"></div><div class="about-matrix"></div><div class="about-portal"><i></i><i></i><i></i><b>LI+</b></div><div class="about-scanner"></div>'+Array.from({length:20},(_,i)=>`<i class="about-star" style="--n:${i};left:${i*47%100}%;top:${i*31%100}%"></i>`).join('');
  section.prepend(decor);
- const nav=document.createElement('nav');nav.className='about-constellation';nav.setAttribute('aria-label','探索七个场景');
- zones.filter(z=>z.id!=='blog').forEach((zone,i)=>{
-  const link=document.createElement('a');link.href=`#scene-${zone.id}`;link.style.setProperty('--n',i);
-  const icon=document.createElement('img');icon.src=`assets/ui/${zone.id}.png`;icon.alt='';icon.width=24;icon.height=24;
-  link.append(icon,document.createTextNode(zone.name));nav.append(link);
- });
- section.querySelector('.solid-link').before(nav);
  const controls=document.createElement('div');controls.className='about-actions';
  const enter=section.querySelector('.solid-link');enter.before(controls);controls.append(enter);
  const replay=document.createElement('button');replay.type='button';replay.className='about-replay';replay.textContent='↻ 重播入场';controls.append(replay);

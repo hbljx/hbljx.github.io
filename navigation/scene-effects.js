@@ -14,7 +14,8 @@ export function sceneDecoration(id, index) {
     court: `<div class="observatory-grid">${svg('<g stroke-opacity=".16"><path d="M0 140H1000M0 280H1000M0 420H1000M0 560H1000M200 0V700M400 0V700M600 0V700M800 0V700"/></g><g class="orbital-lines"><ellipse cx="780" cy="340" rx="200" ry="200"/><ellipse cx="780" cy="340" rx="176" ry="176" stroke-dasharray="2 14"/><path d="M550 340H1000M780 110V570"/></g><path class="signal-path" pathLength="1" d="M540 470H580V420H650V440H705V340H770V355H820V260H910V220H1000"/>')}</div><div class="horizon-light"></div><div class="scene-counter"><strong>0</strong><span>个网址</span><i></i></div>`,
     pool: `<div class="garden-canopy">${repeated(6, i => `<i style="--i:${i}"></i>`)}</div><div class="garden-rays"></div><div class="garden-bloom"></div>`,
   };
-  return `<div class="scene-fx" aria-hidden="true">${effects[id]}<div class="scene-motes">${dust}</div><div class="scene-vignette"></div></div><div class="scene-folio" aria-hidden="true"><span>${String(index+1).padStart(2,'0')}</span><i></i><small>07</small></div>`;
+  const depth = `<div class="scene-depth-blocks">${repeated(6, i => `<i style="--depth-i:${i}"></i>`)}</div>`;
+  return `<div class="scene-fx" aria-hidden="true">${effects[id]}<div class="scene-motes">${dust}</div>${depth}<div class="scene-vignette"></div></div><div class="scene-folio" aria-hidden="true"><span>${String(index+1).padStart(2,'0')}</span><i></i><small>07</small></div>`;
 }
 
 const clamp = n => Math.max(0, Math.min(1, n));

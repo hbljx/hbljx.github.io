@@ -16,6 +16,7 @@
 .search-gem {width:26px;height:34px;object-fit:contain;image-rendering:pixelated;flex-shrink:0}
 .search-gem-bing {filter:hue-rotate(95deg)}
 .search-gem-google {filter:hue-rotate(165deg)}
+.search-gem-yuanbao {filter:hue-rotate(265deg)}
 .search-engines input:checked+span {border-color:#c7f776;background:#233a1e;box-shadow:inset 0 0 0 2px #689c32,0 0 9px #b2f54265;color:#fff}
 .search-engines label:hover>span {background:#2b4026}
 .search-engines input:focus-visible+span {outline:3px solid #f0ffca;outline-offset:3px}
@@ -38,11 +39,16 @@
 @media(max-width:700px) {
   .site-search {padding:8px;border-width:3px}
   .search-engines {gap:8px;margin-bottom:10px}
-  .search-engines label>span {gap:6px;padding:6px 4px;min-height:52px;font-size:16px}
+  .search-engines label>span {gap:4px;padding:6px 2px;min-height:52px;font-size:15px}
   .search-gem {width:20px;height:28px}
   .web-search-row {gap:8px}
   .site-search input[type=search] {padding:8px;min-height:52px}
   .site-search button {flex-basis:52px;min-height:52px}
+}
+@media(max-width:360px) {
+  .search-engines {gap:5px}
+  .search-engines label>span {gap:2px;font-size:14px}
+  .search-gem {width:16px;height:24px}
 }
 @media(prefers-reduced-motion:reduce) {.search-engines label>span {transition:none}.site-search button:active{transform:none}}
 

@@ -21,21 +21,10 @@
         },
         {
           "id": "site-xkoxeg",
-          "name": "飞机",
+          "name": "良心云",
           "url": "https://xn--9kqz23b19z.com/",
           "description": "",
           "icon": "assets/bookmark-icons/b1556b25e6449897.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "bookmarkFolder": "书签栏"
-        },
-        {
-          "id": "site-pzymh9",
-          "name": "宝可梦",
-          "url": "https://web1.52pokemon.cc/login",
-          "description": "",
-          "icon": "assets/bookmark-icons/8d0a5470ed019860.png",
           "collections": [
             "bookmarks"
           ],
@@ -302,17 +291,6 @@
           "bookmarkFolder": "中转站"
         },
         {
-          "id": "site-zrzyjk",
-          "name": "奇遇API",
-          "url": "https://www.superqiyu.org/wallet",
-          "description": "",
-          "icon": "assets/bookmark-icons/e4ed1942a2a1b1e0.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "bookmarkFolder": "中转站"
-        },
-        {
           "id": "site-1m9uubd",
           "name": "Xiaomi MiMo 开放平台",
           "url": "https://platform.xiaomimimo.com/token-plan",
@@ -329,17 +307,6 @@
           "url": "https://anyrouter.top/console",
           "description": "",
           "icon": "assets/bookmark-icons/2fb141105bc60313.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "bookmarkFolder": "中转站"
-        },
-        {
-          "id": "site-owbi72",
-          "name": "咕嘎咕嘎",
-          "url": "https://ai.xmiaom.com/profile",
-          "description": "",
-          "icon": "assets/bookmark-icons/14de84eafc989a68.png",
           "collections": [
             "bookmarks"
           ],
@@ -380,7 +347,7 @@
         },
         {
           "id": "site-xfeswc",
-          "name": "AI / LLM 模型图标库 · LobeHub",
+          "name": "AI图标库",
           "url": "https://lobehub.com/zh/icons",
           "description": "",
           "icon": "assets/bookmark-icons/53851d9bb0fa2a6b.png",
@@ -388,12 +355,22 @@
             "bookmarks"
           ],
           "bookmarkFolder": "中转站"
+        },
+        {
+          "id": "site-1dbs25h",
+          "name": "CC Switch",
+          "url": "https://ccswitch.io/zh",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "bookmarks"
+          ]
         }
       ]
     },
     {
       "id": "bookmarks-f6",
-      "title": "AI 生图 · Image 2",
+      "title": "AI 生图",
       "kind": "main",
       "origin": "bookmarks",
       "icon": "image",
@@ -432,210 +409,6 @@
             "bookmarks"
           ],
           "section": "收费4K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-szgufj",
-          "name": "97api",
-          "url": "https://www.97api.com/dashboard",
-          "description": "",
-          "icon": "assets/bookmark-icons/d3ec64bdffbfc7ff.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "收费4K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-7dmffz",
-          "name": "Draw Studio",
-          "url": "https://keydraw.97api.com/",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-1qc6gyg",
-          "name": "噜皮生图",
-          "url": "https://image.mlgb7.com/#/studio",
-          "description": "",
-          "icon": "assets/bookmark-icons/3e6bacfbc3fde1c3.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-2pst8j",
-          "name": "ImageGate 图片1K",
-          "url": "http://47.120.76.171:8888/imagegate/portal",
-          "description": "",
-          "icon": "assets/bookmark-icons/aba89b43a0eb134f.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-bsqmej",
-          "name": "哗啦哗啦 · AI 生图广场",
-          "url": "https://img.xmiaom.com/generate",
-          "description": "",
-          "icon": "assets/bookmark-icons/507c8fcbeebe024d.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-eeqey4",
-          "name": "IMGGEN ATELIER · 生图工作室",
-          "url": "https://uu.zauxpbp.cn/",
-          "description": "",
-          "icon": "assets/bookmark-icons/15c5c68d7676c7c6.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-1hs8xkl",
-          "name": "皮皮智绘 · PC 沉浸创作站",
-          "url": "https://img.pipiwangcom.com/",
-          "description": "",
-          "icon": "assets/bookmark-icons/ab966a98fb92a5af.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-35ixgx",
-          "name": "丸子生图",
-          "url": "https://wanzij.cc.cd/#/studio",
-          "description": "",
-          "icon": "assets/bookmark-icons/eb4fb4c0f639d205.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-l63t04",
-          "name": "瞎几把画",
-          "url": "https://xjbh.lol/#/studio",
-          "description": "",
-          "icon": "assets/bookmark-icons/e6fb7fbbfc1b0565.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-atuigt",
-          "name": "Image Playground",
-          "url": "https://image.oaichat.cc/",
-          "description": "",
-          "icon": "assets/bookmark-icons/add3b05d051efd33.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-1xdzcpw",
-          "name": "智画创 · WisArt",
-          "url": "https://wisart.kuaileshifu.com/#/",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-18s1hno",
-          "name": "QhatGPT",
-          "url": "https://tu.qq1000.com/login/",
-          "description": "",
-          "icon": "assets/bookmark-icons/d3d05ed09fe99c92.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-18a5vpo",
-          "name": "海报生成",
-          "url": "https://hbsc.930320.xyz/#/templates",
-          "description": "",
-          "icon": "assets/bookmark-icons/a3f2a9fa0acbf45f.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-hmmoq4",
-          "name": "SceneMint",
-          "url": "https://image.sunls.de/",
-          "description": "",
-          "icon": "assets/bookmark-icons/2308c4342303e003.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-1hf9zey",
-          "name": "kmage · AI 视觉工作台",
-          "url": "https://image.dddd.zone/",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "免费1K",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-5pr7hj",
-          "name": "无限画布",
-          "url": "https://canvas.695269.xyz/",
-          "description": "",
-          "icon": "assets/bookmark-icons/6119d1c75d48d9ba.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "官方工具",
-          "bookmarkFolder": "Image 2"
-        },
-        {
-          "id": "site-1lvgzt2",
-          "name": "Platform Home Page - OpenAI API",
-          "url": "https://platform.openai.com/home",
-          "description": "",
-          "icon": "assets/bookmark-icons/51b2216d4d0ee562.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "section": "官方工具",
           "bookmarkFolder": "Image 2"
         },
         {
@@ -934,17 +707,6 @@
           "url": "https://linux.do/t/topic/1782304",
           "description": "",
           "icon": "assets/bookmark-icons/1c9d363d6e17f08f.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "bookmarkFolder": "L 站"
-        },
-        {
-          "id": "site-y63mqa",
-          "name": "翻墙应用商店",
-          "url": "https://huarun.win/",
-          "description": "",
-          "icon": "assets/bookmark-icons/27b40cfe7cb1baaa.png",
           "collections": [
             "bookmarks"
           ],
@@ -1533,36 +1295,6 @@
       "kind": "more",
       "items": [
         {
-          "id": "site-qm12nr",
-          "name": "谷歌AI Studio",
-          "url": "https://aistudio.google.com/?hl=zh-cn",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "original"
-          ]
-        },
-        {
-          "id": "site-kh7uly",
-          "name": "阿里AI公益小蜜",
-          "url": "https://open.alibabafoundation.com/aigongyi",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "original"
-          ]
-        },
-        {
-          "id": "site-kmxy0z",
-          "name": "千问",
-          "url": "https://chat.qwenlm.ai/",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "original"
-          ]
-        },
-        {
           "id": "site-1pp22cj",
           "name": "通义听悟",
           "url": "https://tingwu.aliyun.com/home",
@@ -1612,16 +1344,6 @@
       "kind": "more",
       "items": [
         {
-          "id": "site-1hcoq7z",
-          "name": "Github",
-          "url": "https://github.com/",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "original"
-          ]
-        },
-        {
           "id": "site-14dbeo1",
           "name": "宝可梦星云",
           "url": "https://love.52pokemon.cc/",
@@ -1642,6 +1364,16 @@
           ]
         },
         {
+          "id": "site-mmuegi",
+          "name": "v2rayN",
+          "url": "https://github.com/2dust/v2rayN",
+          "description": "",
+          "icon": "",
+          "collections": [
+            "original"
+          ]
+        },
+        {
           "id": "site-1wauie6",
           "name": "clash-verge",
           "url": "https://github.com/clash-verge-rev/clash-verge-rev",
@@ -1650,6 +1382,17 @@
           "collections": [
             "original"
           ]
+        },
+        {
+          "id": "site-y63mqa",
+          "name": "翻墙应用商店",
+          "url": "https://huarun.win/",
+          "description": "",
+          "icon": "assets/bookmark-icons/27b40cfe7cb1baaa.png",
+          "collections": [
+            "bookmarks"
+          ],
+          "bookmarkFolder": "L 站"
         },
         {
           "id": "site-174xwet",
@@ -1665,26 +1408,6 @@
           "id": "site-mec340",
           "name": "天巡机票比价",
           "url": "https://www.tianxun.com/",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "original"
-          ]
-        },
-        {
-          "id": "site-1ilwzz0",
-          "name": "天若Ocr",
-          "url": "https://ocr.tianruo.net/",
-          "description": "",
-          "icon": "",
-          "collections": [
-            "original"
-          ]
-        },
-        {
-          "id": "site-rvmx5p",
-          "name": "Notion市集",
-          "url": "https://www.notion.com/zh-cn/templates/category",
           "description": "",
           "icon": "",
           "collections": [

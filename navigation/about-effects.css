@@ -18,12 +18,6 @@
 .about-playing .about-typed>span:after{content:'';position:absolute;right:-2px;top:.1em;height:1em;width:2px;background:#c7ff90;box-shadow:0 0 8px #baff8c;opacity:0;animation:about-caret 65ms calc(var(--char)*65ms + 350ms) both}
 .about-playing>p:not(.kicker){animation:about-rise .8s calc(var(--typing-time) + 200ms) backwards}
 .about-playing>p:not(.kicker)+p{animation-delay:calc(var(--typing-time) + 380ms)}
-.about-constellation{display:flex;flex-wrap:wrap;gap:10px;max-width:900px;margin-top:26px;padding-block:20px;border-top:1px solid #9ac67a33;border-bottom:1px solid #9ac67a33}
-.about-constellation a{display:flex;align-items:center;gap:8px;min-height:44px;padding:9px 12px;background:#142c25d9;border:1px solid #82c9a34a;color:#d9f0cd;font-size:13px;transition:transform .25s,border-color .25s,box-shadow .25s}
-.about-constellation img{image-rendering:pixelated;transition:transform .3s}
-.about-constellation a:hover,.about-constellation a:focus-visible{transform:translateY(-5px);border-color:#c7f776;box-shadow:0 5px 22px #88fca52a;color:#e6ffbd}
-.about-constellation a:hover img{transform:rotate(-12deg) scale(1.2)}
-.about-playing .about-constellation a{animation:about-rise .7s calc(var(--typing-time) + 400ms + var(--n)*85ms) backwards}
 .about-actions{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-top:24px}
 .about-enhanced .about-actions .solid-link{margin:0;position:relative;overflow:hidden;transition:box-shadow .25s,translate .25s}
 .about-enhanced .solid-link:after{content:'';position:absolute;inset:-100%;background:linear-gradient(110deg,transparent 42%,#fff8 50%,transparent 58%);animation:about-shine 6s ease-in-out infinite;pointer-events:none}
@@ -43,5 +37,5 @@
 @keyframes about-beacon{50%{opacity:.4;box-shadow:0 0 3px #b9ff90}}
 @keyframes about-shine{0%,65%{translate:-65% 0}100%{translate:65% 0}}
 @keyframes about-wave{to{transform:scale(15) rotate(40deg);opacity:0}}
-@media(max-width:700px){.about-us.about-enhanced{min-height:0;padding:32px 22px}.about-portal{width:230px;height:230px;right:-95px;opacity:.2}.about-star:nth-of-type(n+12){display:none}.about-constellation{gap:8px}.about-constellation a{flex:1 1 125px}.about-actions{gap:14px}.about-enhanced h2{font-size:29px}.about-aurora{filter:blur(18px)}}
+@media(max-width:700px){.about-us.about-enhanced{min-height:0;padding:32px 22px}.about-portal{width:230px;height:230px;right:-95px;opacity:.2}.about-star:nth-of-type(n+12){display:none}.about-actions{gap:14px}.about-enhanced h2{font-size:29px}.about-aurora{filter:blur(18px)}}
 @media(prefers-reduced-motion:reduce){.about-enhanced *,.about-enhanced *:before,.about-enhanced *:after{animation:none!important;transition:none!important}.about-scanner,.about-click-wave,.about-typed>span:after{display:none}.about-portal{translate:0 0}.about-replay{display:none}}

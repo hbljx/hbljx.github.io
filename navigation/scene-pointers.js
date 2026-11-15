@@ -55,7 +55,7 @@ export function mountScenePointers() {
  window.addEventListener('pointermove',e=>{
   if(e.pointerType==='touch')return;
   lastX=x;lastY=y;x=e.clientX;y=e.clientY;setMode(choose(e.target));if(!mode)return;
-  moved=performance.now();target=e.target.closest('.room-card,.solid-link,.about-constellation a,.scene-enter');
+  moved=performance.now();target=e.target.closest('.room-card,.solid-link,.scene-enter');
   trail.push({x,y,t:moved});if(trail.length>32)trail.shift();
   if(moved-spawn>24){spawn=moved;const speed=Math.min(60,Math.hypot(x-lastX,y-lastY));
    if(mode==='comet'||mode==='stardust')for(let i=0;i<3;i++)particles.push({x:x+(Math.random()-.5)*12,y:y+(Math.random()-.5)*12,t:moved,life:mode==='comet'?600:1100,vx:(lastX-x)*.7+(Math.random()-.5)*30,vy:(lastY-y)*.7+(Math.random()-.5)*30,size:mode==='comet'?4+speed*.08:3+Math.random()*4,color:colors[(names.indexOf(mode)+i)%8]});

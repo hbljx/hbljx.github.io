@@ -20,6 +20,14 @@
 <link rel="stylesheet" href="navigation/directory-effects.css">
 <link rel="stylesheet" href="navigation/directory-spectacle.css">
 <link rel="stylesheet" href="navigation/scene-effects.css">
+<link rel="stylesheet" href="navigation/header-effects.css">
+<link rel="stylesheet" href="navigation/search-energy.css">
+<link rel="stylesheet" href="engine/ui/loading.css">
+<style>
+  #startupNotice[hidden],#localServerNotice[hidden]{display:none!important}
+  html:not(.world-failed) #startupNotice{display:none!important}
+  #localServerNotice{max-width:676px;margin:28px auto;padding:24px;background:#e0ded5;color:#34322e;border:2px solid #373737;font:16px/1.7 system-ui}
+</style>
 <script type="importmap">{"imports":{
   "three":"./vendor/three/three.module.min.js",
   "@engine/":"./engine/",
@@ -82,7 +90,10 @@
   const params = new URLSearchParams(location.search);
   const door = new URLSearchParams(location.hash.slice(1)).get('homecraft') === '1' && params.has('from');
   if (params.get('view') === '3d' || door || params.has('debug') || params.has('plain')) {
-    document.documentElement.classList.add('world-mode');
+    document.documentElement.classList.add('world-mode','world-booting');
+    const background = document.createElement('link');
+    background.rel = 'preload'; background.as = 'image'; background.href = 'assets/scenes/hero.webp';
+    document.head.append(background);
     if (door && params.get('view') !== '3d') {
       const url = new URL(location.href);
       url.searchParams.set('view', '3d');
@@ -111,6 +122,7 @@
             <label><input type="radio" name="engine" value="baidu" checked><span><img class="search-gem search-gem-baidu" src="assets/ui/search-gem.png" width="26" height="34" alt="">百度</span></label>
             <label><input type="radio" name="engine" value="bing"><span><img class="search-gem search-gem-bing" src="assets/ui/search-gem.png" width="26" height="34" alt="">必应</span></label>
             <label><input type="radio" name="engine" value="google"><span><img class="search-gem search-gem-google" src="assets/ui/search-gem.png" width="26" height="34" alt="">谷歌</span></label>
+            <label><input type="radio" name="engine" value="yuanbao"><span><img class="search-gem search-gem-yuanbao" src="assets/ui/search-gem.png" width="26" height="34" alt="">元宝</span></label>
           </fieldset>
           <div class="web-search-row"><label class="visually-hidden" for="home-query">搜索互联网</label>
             <input type="search" name="wd" id="home-query" placeholder="用百度搜索网页" required autocomplete="off" maxlength="2000">
@@ -151,7 +163,7 @@
 </main>
 <template id="world-page">
 <main id="world" aria-label="Li+ 像素导航"></main>
-<div id="loading"><div class="bar"><i></i></div></div>
+<div id="loading"><div class="loading-content"><p class="loading-eyebrow">LI+ / EXPLORE THE ISLAND</p><h1 class="loading-title">即将抵达，像素家园</h1><div class="loading-meta"><p class="loading-label" role="status">正在准备世界</p><span class="loading-percent" aria-hidden="true">0%</span></div><div class="bar" role="progressbar" aria-label="加载世界" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><p class="loading-tip">用 WASD 或方向键移动，也可以点击地面走过去。</p></div></div>
 
 <section id="pages"><h1 class="plain-title">Li+ 像素导航</h1>
   <article class="page" data-station="blog" data-icon="blog" data-dock-only data-embed="directory.html?zone=blog"><h2>全部网址</h2><p>导航手册。<a href="directory.html?zone=blog">打开网址目录</a></p></article>
@@ -223,18 +235,21 @@
 <div id="li-brand" hidden><b>LI+</b><span>像素导航</span></div>
 </template>
 <noscript><style>.world-mode :is(.site-header,#flat-home){display:revert}</style></noscript>
-<!-- file:// cannot load the world modules. -->
+<!-- Mount the loading image before downloading any world modules. -->
 <script>
-if (location.protocol === 'file:' && document.documentElement.classList.contains('world-mode')) {
+if (document.documentElement.classList.contains('world-mode')) {
   document.body.append(document.querySelector('#world-page').content.cloneNode(true));
+}
+if (location.protocol === 'file:' && document.documentElement.classList.contains('world-mode')) {
   const zh = /^zh/i.test(navigator.language), note = document.createElement('aside');
-  note.id = 'startupNotice';
+  note.id = 'localServerNotice';
   note.innerHTML = zh
     ? '<h2>请用本地服务器打开</h2><p>直接双击打开时，浏览器不会加载 3D 世界。在这个文件夹里运行 <code>python3 tools/serve.py</code>（Windows 用 <code>python tools/serve.py</code>），它会找一个空闲端口并自动打开页面。地址也会打印在终端里。</p>'
     : '<h2>Open it through a local server</h2><p>Browsers don’t load the 3D world from a double-clicked file. In this folder, run <code>python3 tools/serve.py</code> (on Windows, <code>python tools/serve.py</code>). It picks a free port and opens the page. The address is also printed in the terminal.</p>';
   document.getElementById('pages').before(note);
   document.getElementById('loading')?.remove();
   document.body.classList.add('plain');
+  document.documentElement.classList.remove('world-booting');
   const css = document.createElement('link');
   css.rel = 'stylesheet'; css.href = 'engine/style.css'; document.head.append(css);
 }

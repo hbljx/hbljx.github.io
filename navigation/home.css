@@ -50,6 +50,16 @@ input,button {font:inherit}
 .hero-copy h1 {font-size:clamp(58px,7.7vw,124px);white-space:nowrap}
 .hero-copy h1 span,.home-footer strong span {color:var(--lime)}
 .intro {margin:20px 0 28px;font-size:clamp(16px,1.65vw,24px);color:#c6d3c1}
+.intro-typewriter {display:grid}
+.intro-typewriter-full,.intro-typewriter-text {grid-area:1 / 1}
+.intro-typewriter-full {opacity:0;pointer-events:none}
+.intro-typewriter-text {min-width:0}
+.intro-typewriter.is-typing .intro-typewriter-text::after {
+  content:"";display:inline-block;width:2px;height:1em;margin-left:2px;vertical-align:-.12em;
+  background:var(--lime);animation:intro-caret .65s steps(1) infinite;
+}
+@keyframes intro-caret {50% {opacity:0}}
+@media(prefers-reduced-motion:reduce) {.intro-typewriter-text::after {display:none!important}}
 .hero-bottom {position:absolute;bottom:calc(22px + env(safe-area-inset-bottom));left:var(--gutter);right:var(--gutter);color:#e3eade;display:flex;justify-content:space-between;align-items:center;opacity:var(--fade)}
 .hero-bottom[aria-hidden="true"] {visibility:hidden}
 .scroll-link {display:flex;gap:10px;align-items:center;min-height:44px;font-size:13px}

@@ -2,26 +2,54 @@ const worldMode = document.documentElement.classList.contains('world-mode');
 
 function stylesheet(href) {
   const link = Object.assign(document.createElement('link'), { href, rel: 'stylesheet' });
-  return new Promise(resolve => {
-    link.onload = link.onerror = resolve;
+  return new Promise((resolve, reject) => {
+    link.onload = resolve;
+    link.onerror = () => reject(new Error(`样式加载失败：${href}`));
     document.head.append(link);
   });
 }
 
 if (worldMode) {
-  document.documentElement.classList.add('world-booting');
-  const assets = [
-    'engine/style.css',
-    'navigation/world-ui.css?v=20261114-location-startup',
-    'navigation/activities.css?v=20261107-airplane-controls',
-  ];
-  await Promise.all(assets.map(stylesheet));
-  document.body.append(document.querySelector('#world-page').content.cloneNode(true));
-  await import('../engine/main.js?v=20261114-location-startup');
-  await import('./world-ui.js?v=20261114-stable-startup');
+  if (location.protocol !== 'file:') {
+    document.documentElement.classList.add('world-booting');
+    let hideLoading;
+    try {
+      const loading = await import('../engine/ui/loading.js');
+      hideLoading = loading.hideLoading;
+      loading.showLoading('正在加载世界资源', 0);
+      const assets = [
+        'engine/style.css',
+        'navigation/world-ui.css?v=20261114-location-startup',
+        'navigation/activities.css?v=20261107-airplane-controls',
+      ];
+      await Promise.all(assets.map(stylesheet));
+      await import('../engine/main.js?v=20261115-clear-loading');
+      await import('./world-ui.js?v=20261114-stable-startup');
+    } catch (error) {
+      hideLoading?.();
+      document.getElementById('loading')?.remove();
+      document.documentElement.classList.remove('world-booting');
+      document.documentElement.classList.add('world-failed');
+      document.body.classList.add('plain');
+      window.__homeStartupError = { phase: 'modules', message: error.message || String(error) };
+      let notice = document.getElementById('startupNotice');
+      if (!notice) {
+        notice = document.createElement('aside'); notice.id = 'startupNotice';
+        document.getElementById('pages').before(notice);
+      }
+      notice.replaceChildren();
+      const title = document.createElement('h2'), message = document.createElement('p'), retry = document.createElement('button');
+      title.textContent = '3D 资源加载失败';
+      message.textContent = '请检查网络后重试。' + window.__homeStartupError.message;
+      retry.textContent = '重新加载'; retry.type = 'button'; retry.addEventListener('click', () => location.reload());
+      notice.append(title, message, retry); notice.hidden = false;
+    }
+  }
 } else {
   const { mountWebSearch } = await import('./web-search.js');
   mountWebSearch();
+  const { mountIntroTypewriter } = await import('./intro-typewriter.js');
+  mountIntroTypewriter();
   const { mountScenes } = await import('./home-scenes.js');
   mountScenes();
   const { mountPixelImages } = await import('./pixel-images.js');
@@ -30,6 +58,8 @@ if (worldMode) {
   mountAboutEffects();
   const { mountScenePointers } = await import('./scene-pointers.js');
   mountScenePointers();
+  const { mountHeaderEffects } = await import('./header-effects.js');
+  mountHeaderEffects();
 
   const hero = document.querySelector('.hero');
   const stage = document.querySelector('.hero-stage');
