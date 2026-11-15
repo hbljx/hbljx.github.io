@@ -62,6 +62,8 @@ if (worldMode) {
   mountScenePointers();
   const { mountHeaderEffects } = await import('./header-effects.js');
   mountHeaderEffects();
+  const { mountCraftDetails } = await import('./craft-details.js');
+  mountCraftDetails();
 
   const hero = document.querySelector('.hero');
   const stage = document.querySelector('.hero-stage');

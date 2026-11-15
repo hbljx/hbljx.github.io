@@ -1,0 +1,95 @@
+/* Shared material language: crisp bevels, recessed slots, restrained enchantment. */
+.site-header .craft-brand {position:relative;min-height:48px;gap:10px;padding:5px 2px;isolation:isolate}
+.craft-brand .brand-item {position:relative;display:grid;place-items:center;flex:none}
+.craft-brand .brand-item::after {content:'';position:absolute;bottom:-4px;left:5px;right:5px;height:3px;background:#030a06;box-shadow:0 1px #a5d47425;z-index:-1;transition:transform .3s,opacity .3s}
+.header-enhanced .craft-brand img {display:block;border:1px solid #c2dfa247;border-radius:3px;box-shadow:inset 0 1px #fff3,0 2px 0 #030a06,0 0 12px #8bff6312;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;image-rendering:pixelated}
+.craft-brand b {position:relative;display:flex;align-items:baseline;letter-spacing:-.04em;text-shadow:1px 2px 0 #020902}
+.craft-brand b .brand-letters {position:relative;color:#f1f6e8}
+.brand-letters::after {content:attr(data-letters);position:absolute;inset:0;color:transparent;text-shadow:none;background:linear-gradient(115deg,transparent 32%,#bd9aff 44%,#eeedff 49%,#94e4ff 54%,transparent 66%) 150% 0/300% 100%;background-clip:text;-webkit-background-clip:text;opacity:0;pointer-events:none}
+.craft-brand b .brand-plus {display:inline-block;margin-left:1px;color:#c7f776}
+.brand-xp {position:absolute;right:7px;top:50%;pointer-events:none}
+.brand-xp i {position:absolute;width:3px;height:3px;background:#d6ff8c;box-shadow:0 0 0 1px #85c43c66,0 0 6px #bbff6270;opacity:0;--x:-26px;--y:-15px;--delay:0ms}
+.brand-xp i:nth-child(2){--x:15px;--y:-16px;--delay:90ms;width:2px;height:2px}
+.brand-xp i:nth-child(3){--x:-20px;--y:16px;--delay:170ms}
+.brand-xp i:nth-child(4){--x:17px;--y:12px;--delay:250ms;width:2px;height:2px}
+.brand-awake .brand-letters::after {animation:craft-enchant .85s .1s both}
+.brand-awake .brand-plus {animation:craft-plus 1.1s ease both}
+.brand-awake .brand-xp i {animation:craft-collect .7s calc(.18s + var(--delay)) cubic-bezier(.3,0,.2,1) both}
+.brand-arrive .brand-item {animation:craft-arrive .45s both}
+.brand-arrive .brand-letters {animation:craft-arrive .45s .1s both}
+.brand-arrive .brand-plus {animation:craft-arrive .45s .2s both}
+.craft-brand:focus-visible {outline:2px solid #c7f776;outline-offset:3px;border-radius:2px}
+.craft-brand:focus-visible img {transform:translateY(-3px) rotate(-4deg)}
+.craft-brand:active {translate:0 2px}
+.craft-brand:active img {transform:none!important;box-shadow:0 1px #030a06}
+@media(hover:hover) and (pointer:fine) {
+  .craft-brand:hover img {transform:translateY(-3px) rotate(-4deg);box-shadow:0 5px 0 #030a06,0 0 14px #a6ec5f25}
+  .craft-brand:hover .brand-item::after {transform:scaleX(.75);opacity:.65}
+}
+
+/* A miniature obsidian frame, with its energy contained inside the opening. */
+.site-header.header-enhanced .world-link {--item-accent:#c39aff;min-height:44px;gap:7px;color:#f0e5ff;background:linear-gradient(125deg,#372b47,#211a30 65%);border:2px solid;border-color:#7d6297 #261d36 #191321 #6b537f;border-radius:2px;box-shadow:inset 0 0 0 1px #a180bb25,0 3px 0 #08060d,0 0 14px #a75bff16;overflow:hidden}
+.site-header.header-enhanced .world-link::after {inset:3px;background:linear-gradient(115deg,transparent 20%,#bc83ff20 50%,transparent 80%);transform:none;opacity:0}
+.site-header.header-enhanced .world-link:is(:hover,:focus-visible) {background:linear-gradient(125deg,#4b3363,#2c1e42);border-color:#b08ad1 #634680 #3c2851 #b08ad1;color:#fff0ff;box-shadow:inset 0 0 0 1px #cca4ff28,0 4px 0 #08060d,0 0 20px #b367ff25;transform:translateY(-1px)}
+.site-header.header-enhanced .world-link:active {transform:translateY(2px);box-shadow:inset 0 2px 4px #05020d,0 1px #08060d}
+.world-link .cube-mark {width:17px;height:24px;flex:none;clip-path:none;background:#130e20;border:3px solid;border-color:#514361 #241c31 #201728 #68517c;box-shadow:0 0 0 1px #0b0712,1px 1px #c59ae638;overflow:visible}
+.world-link .cube-mark::after {inset:0;clip-path:none;background:repeating-linear-gradient(0deg,#7135a4 0 3px,#9d56d2 3px 5px,#542778 5px 8px);box-shadow:inset 2px 0 #c68bf344,inset -2px 0 #2c104b66,0 0 7px #b25cf749;opacity:.9}
+.world-link .cube-mark::before {content:'';position:absolute;width:2px;height:2px;left:3px;top:8px;z-index:1;background:#e1b7ff;box-shadow:5px -7px #bd80e8,-6px 5px #cb93ff;opacity:0}
+.portal-awake .cube-mark::after {animation:craft-portal 1.3s steps(8) both}
+.portal-awake .cube-mark::before {animation:craft-portal-motes 1.2s ease-out both}
+.site-header.header-enhanced .portal-awake::after {animation:craft-portal-glow 1.3s ease both}
+
+/* Dark inventory trays; imagery and titles retain their existing room colors. */
+.room-directory .room-card-grid {gap:12px;padding:10px;background:#08110e70;border:2px solid;border-color:#07100c #435344 #435344 #07100c;box-shadow:inset 2px 2px 0 #02080580,0 1px #0007;border-radius:2px}
+.room-directory .room-card {border:2px solid;border-color:#52644e #1b2a21 #0b170f #42563e;border-radius:2px;background:linear-gradient(145deg,#ffffff05,transparent 65%),#1a2a20;box-shadow:inset 1px 1px #b3d19a12,inset -1px -1px #040d08,0 2px #020904;transform:none;transition:border-color .2s,background-color .2s,box-shadow .2s}
+.room-directory .room-card:is(:hover,:focus-within) {border-color:var(--accent-room);box-shadow:inset 0 0 0 1px rgb(var(--glow-room)/.32),0 2px #020904,0 0 16px rgb(var(--glow-room)/.12);background-color:#26392a;transform:none}
+.room-directory .room-card::before {background:radial-gradient(180px circle at var(--mx) var(--my),rgb(var(--glow-room)/.17),transparent 80%)}
+.room-directory .room-card::after {display:none}
+.room-directory .room-card>a {position:relative;min-height:100px;padding:16px 13px;gap:12px}
+.room-directory .room-card strong {font-size:17px;line-height:1.45;color:#edf2e5;text-shadow:0 1px #0006}
+.room-directory .room-mark {width:46px;height:46px;border-radius:0;background:#0b160f;border:2px solid;border-color:#050d08 #5b7050 #5b7050 #050d08;box-shadow:inset 2px 2px #0005;transform:none!important}
+.room-directory .room-mark img {background:transparent;transition:translate .25s,filter .25s;filter:drop-shadow(1px 2px 0 #0006)}
+.room-directory .room-card:is(:hover,:focus-within) .room-mark {box-shadow:inset 2px 2px #0005}
+.room-directory .room-card:is(:hover,:focus-within) .room-mark img {translate:0 -3px;filter:drop-shadow(1px 4px 0 #0006)}
+.room-directory .room-mark::after {display:none}
+.room-directory .room-card-exit {font-size:15px;opacity:.7}
+.room-directory .room-card:active {box-shadow:inset 2px 2px #020805}
+.room-directory .room-card:active .room-mark img {translate:0 0}
+.room-directory .room-card>a:focus-visible {outline:2px solid #e5ffbe;outline-offset:-4px}
+.craft-tooltip {position:fixed;z-index:50;width:292px;max-width:calc(100vw - 24px);padding:14px 16px;background:#150d20fa;color:#d5c9df;border:2px solid;border-color:#8651bd #402454 #402454 #8651bd;border-radius:1px;box-shadow:inset 0 0 0 1px #bb81ed20,0 0 0 2px #08050ee6,4px 6px 0 #0004,0 12px 28px #0006;font:14px/1.65 Geist,'Microsoft YaHei',system-ui,sans-serif;overflow-wrap:anywhere}
+.craft-tooltip[hidden] {display:none}
+.craft-tooltip strong {display:block;color:#e4c5ff;font-size:17px;font-weight:700;text-shadow:1px 2px #080310}
+.craft-tooltip p {margin:6px 0 10px}
+.craft-tooltip-domain {display:block;padding-top:9px;border-top:1px solid #9565b933;color:#b7d98a;font:12px/1.7 Consolas,monospace}
+.craft-tooltip small {display:block;margin-top:4px;color:#a99bb8;font-size:12px}
+
+/* Experience gauge: the mask cuts both the fill and glint into fixed segments. */
+.about-countdown[data-effects-mounted] .countdown-card {background:linear-gradient(135deg,#243022,#101d17 75%);border:2px solid;border-color:#5c704d #243522 #0a140e #475b3c;box-shadow:inset 1px 1px #bfdb9620,0 4px #050d09;transform:none}
+.about-countdown .countdown-card::after {inset:6px;opacity:.35}
+.about-countdown .countdown-track {height:16px;padding:3px;background:#071109;border:1px solid;border-color:#020803 #4d643c #4d643c #020803;box-shadow:inset 1px 2px #0008;overflow:hidden}
+.about-countdown .countdown-track::before {height:8px;background:linear-gradient(#e6ffa1 0 2px,#a8da50 2px 4px,#76ad34 4px 6px,#477723 6px);mask-image:repeating-linear-gradient(90deg,#000 0 9px,transparent 9px 11px);mask-size:11px 100%;filter:none}
+.about-countdown .countdown-track::after {inset:3px auto 3px 3px;height:8px;mask-image:repeating-linear-gradient(90deg,#000 0 9px,transparent 9px 11px);animation:none;opacity:0}
+.about-countdown .countdown-charging .countdown-track::after {animation:craft-xp-glint 1s .15s ease-out both}
+.about-countdown .countdown-days strong {font-variant-numeric:tabular-nums;text-shadow:2px 3px #050d08,0 0 20px #c7f77613}
+.about-countdown .countdown-card:is(:focus-within,.countdown-tracking) {border-color:#9bbc73 #4f6b3b #2c4621 #8eaa68;box-shadow:inset 1px 1px #bfdb962b,0 4px #050d09,0 0 20px #a0d06412}
+
+@keyframes craft-arrive {from{opacity:0;translate:0 5px}to{opacity:1;translate:0 0}}
+@keyframes craft-enchant {0%{opacity:0;background-position:150% 0}20%{opacity:1}80%{opacity:1}100%{opacity:0;background-position:-50% 0}}
+@keyframes craft-collect {0%{opacity:0;transform:translate(var(--x),var(--y))}25%{opacity:1}85%{opacity:.9}100%{opacity:0;transform:translate(0,0) scale(.5)}}
+@keyframes craft-plus {0%,25%,100%{text-shadow:1px 2px #020902}65%{color:#edffbf;text-shadow:0 0 6px #c7ff75,0 0 15px #a5e85480}}
+@keyframes craft-portal {50%{background-position:0 16px;filter:brightness(1.4)}100%{background-position:0 24px;filter:brightness(1)}}
+@keyframes craft-portal-motes {0%{opacity:0;translate:0 3px}35%{opacity:.9}100%{opacity:0;translate:-4px -8px}}
+@keyframes craft-portal-glow {50%{opacity:1}100%{opacity:0}}
+@keyframes craft-xp-glint {0%{opacity:0;background-position:-90px 0}20%{opacity:.7}100%{opacity:0;background-position:calc(100% + 90px) 0}}
+@media(max-width:700px) {
+  .site-header .craft-brand {gap:7px}
+  .room-directory .room-card-grid {padding:7px;gap:9px}
+  .room-directory .room-card>a {min-height:94px;padding:14px 11px;gap:11px}
+  .room-directory .room-card-text small {-webkit-line-clamp:unset;display:block;overflow:visible}
+}
+@media(prefers-reduced-motion:reduce) {
+  .craft-brand,.craft-brand *,.craft-brand *::after,.craft-brand *::before,
+  .site-header.header-enhanced .world-link,.world-link::after,.world-link .cube-mark::before,.world-link .cube-mark::after,
+  .room-directory .room-card,.room-directory .room-mark img {animation:none!important;transition:none!important;transform:none!important;translate:none!important}
+  .brand-xp,.brand-letters::after,.world-link .cube-mark::before {display:none}
+}
