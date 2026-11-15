@@ -1,4 +1,14 @@
 /* Five coordinated effects; text is never blurred or scaled. */
+.site-header a[href="#home"] {--item-accent:#c7f776}
+.site-header a[href="#category-common-sites"] {--item-accent:#80caff}
+.site-header a[href="#category-software-news"] {--item-accent:#ffbd75}
+.site-header a[href="#about-us"] {--item-accent:#d6a2ff}
+.site-header :is(nav a,.about-nav) {
+  color:var(--item-accent);
+  background:color-mix(in srgb,var(--item-accent) 12%,#0b160f);
+  border:1px solid color-mix(in srgb,var(--item-accent) 40%,transparent);
+  border-radius:5px;
+}
 .site-header.header-enhanced {
   --nav-accent:#c7f776;
   isolation:isolate;background:#0b160ff7;backdrop-filter:none;
@@ -32,8 +42,10 @@
   background:linear-gradient(110deg,transparent 25%,#efffd528 50%,transparent 75%);
   transform:translateX(-150%);
 }
-.header-enhanced #scene-links a {
-  transform:none;color:#ced9c9;background:transparent;border-color:#b9d49b26;
+.site-header.header-enhanced :is(nav a,.about-nav) {
+  transform:none;color:var(--item-accent);
+  background:color-mix(in srgb,var(--item-accent) 12%,#0b160f);
+  border-color:color-mix(in srgb,var(--item-accent) 40%,transparent);
   box-shadow:0 3px 0 #030a05,inset 0 1px #eaffd508;
 }
 .header-enhanced :is(nav a,.about-nav):is([aria-current],:focus-visible),

@@ -173,14 +173,16 @@ html:not(.world-mode) :is(input[type=search],input[type=text],input[type=url],te
 @media(prefers-reduced-motion:reduce){.scroll-link>span{animation:none}.site-search,.scroll-link,#scene-links a,.site-search button{transition:none;transform:none!important}}
 /* Keep all primary destinations on one continuous row. */
 :root{--header:78px}
-.site-header{display:flex;flex-wrap:nowrap;gap:clamp(8px,1.2vw,20px);height:var(--header);padding-inline:20px;overflow-x:auto;scrollbar-width:thin}
+.site-header{--nav-gap:clamp(20px,2.5vw,40px);--nav-font-size:16px;display:flex;flex-wrap:nowrap;gap:var(--nav-gap);height:var(--header);padding-inline:20px;overflow-x:auto;scrollbar-width:thin}
 .site-header>*{flex-shrink:0}
-.site-header #scene-links{display:flex;width:auto;overflow:visible;gap:4px;padding:0;margin-inline:auto}
-.site-header #scene-links a{padding:9px 7px;font-size:13px;gap:5px}
+.site-header #scene-links{display:flex;width:auto;overflow:visible;gap:var(--nav-gap);padding:0;margin-inline:auto}
+.site-header :is(nav a,.about-nav){font-size:var(--nav-font-size);font-weight:600}
+.site-header #scene-links a{padding:9px 12px;font-size:var(--nav-font-size);gap:7px}
 .site-header #scene-links img{width:20px;height:20px}
-.site-header .about-nav{font-size:14px;white-space:nowrap;color:#c5cec1}
+.site-header .about-nav{white-space:nowrap;color:#c5cec1}
 .site-header .world-link{padding-inline:10px}
-@media(max-width:700px){:root{--header:70px}.site-header{display:flex;gap:14px;padding-inline:12px}.site-header #scene-links{justify-content:flex-start}.site-header #scene-links a{padding:8px}.site-header .brand b{font-size:21px}}
+@media(max-width:700px){:root{--header:70px}.site-header{--nav-gap:20px;--nav-font-size:13px;display:flex;padding-inline:12px}.site-header #scene-links{justify-content:flex-start}.site-header #scene-links a{padding:8px 10px}.site-header .brand b{font-size:21px}}
+@media(max-width:380px){.site-header{--nav-font-size:12px}}
 /* Center the navigation destinations as one evenly spaced group. */
 .site-header #scene-links{margin-inline:0}
 .site-header>.brand{margin-right:auto}

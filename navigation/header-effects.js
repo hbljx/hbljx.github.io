@@ -8,7 +8,7 @@ export function mountHeaderEffects() {
   const sections = links.map(link => {
     const href = link.getAttribute('href');
     const section = href.startsWith('#') ? document.getElementById(href.slice(1)) : null;
-    const color = section?.style.getPropertyValue('--accent-room') || (link.classList.contains('world-link') ? '#c39aff' : '#c7f776');
+    const color = getComputedStyle(link).getPropertyValue('--item-accent').trim() || section?.style.getPropertyValue('--accent-room') || (link.classList.contains('world-link') ? '#c39aff' : '#c7f776');
     link.style.setProperty('--item-accent',color);
     return {link,section,color,top:0};
   });
