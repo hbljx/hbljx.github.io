@@ -1,5 +1,6 @@
 import { mountAboutWorld } from './about-world.js';
 import { mountAboutCountdown } from './about-countdown.js';
+import { mountCardInteraction } from './card-interactions.js';
 
 export function mountAboutEffects() {
   const section=document.querySelector('#about-us');
@@ -10,6 +11,7 @@ export function mountAboutEffects() {
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const cards=section.querySelectorAll('.about-project-card');
   cards.forEach((card,i)=>{
+    mountCardInteraction(card, ['craft', 'redstone', 'journal'][i]);
     card.style.setProperty('--item-order',i);
     const note=document.createElement('span');note.className='inventory-tooltip';
     note.textContent=['工作台 / 把想法合成为作品','红石 / 让设备配合得更顺手','书与笔 / 把发现留在下一页'][i];
