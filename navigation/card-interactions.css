@@ -1,5 +1,7 @@
 /* Independent, finite vignettes; animation never crosses the copy or controls. */
 .about-us.about-enhanced{background:transparent;border:0;box-shadow:none}
+#about-us .kicker{font-size:16px}
+#about-us .about-homestead figcaption>span{font-size:18px}
 #about-us .about-journal{padding:4px 0 12px;background:none;border:0;box-shadow:none;clip-path:none;color:#dce3ce}
 #about-us .about-journal::before{content:none}
 #about-us .about-role{font-size:17px;line-height:1.85;color:#c8d3b9;margin-bottom:29px}
@@ -7,7 +9,7 @@
 #about-us .journal-heading small{font-size:13px;color:#aab899;letter-spacing:.1em}
 #about-us .about-notes>div{padding-top:23px}
 #about-us .about-notes dt{font-size:18px;line-height:1.5;color:#c8d6a5;gap:12px}
-#about-us .about-notes dt span{font-size:12px;color:#9caf84;border-color:#6c8154}
+#about-us .about-notes dt span{font-size:18px;color:#9caf84;border-color:#6c8154}
 #about-us .about-notes dd{margin-top:9px;font-size:17px;line-height:1.95;color:#c6cfbd}
 #about-us .journal-signature{font-size:15px;line-height:1.7;color:#b7c6a1;border-color:#78905d55;margin-top:25px;padding-top:16px}
 #about-us .journal-signature b{font-size:24px;color:#c2d196}
@@ -118,6 +120,9 @@
  .about-project-card .craft-inventory{grid-row:4}
 }
 @media(max-width:700px){
+ #about-us .kicker{font-size:14px}
+ #about-us .about-homestead figcaption>span{font-size:16px}
+ #about-us .about-notes dt span{font-size:16px}
  #about-us .about-role{font-size:15px;line-height:1.9}
  #about-us .journal-heading{font-size:19px}
  #about-us .journal-heading small{font-size:12px}
