@@ -29,7 +29,7 @@ export function mountIntroTypewriter() {
       timer = setTimeout(restart, 1800);
       return;
     }
-    timer = setTimeout(type, characters[index - 1] === '，' ? 300 : 110);
+    timer = setTimeout(type, characters[index - 1] === '，' ? 380 : 150);
   }
   function restart() {
     index = 0;
