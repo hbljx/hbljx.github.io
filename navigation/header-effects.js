@@ -28,6 +28,7 @@ export function mountHeaderEffects() {
   function render() {
     frame = 0;
     if (document.hidden) return;
+    header.classList.toggle('is-scrolled', scrollY > 40);
     const bounds = header.getBoundingClientRect();
     if (measure) {
       for (const item of sections) {
