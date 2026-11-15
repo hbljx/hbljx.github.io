@@ -52,7 +52,7 @@
 .room-directory .room-card strong {font-size:17px;line-height:1.45;color:#edf2e5;text-shadow:0 1px 3px #020a05}
 .room-directory .room-card-text small {color:#d0ddca;text-shadow:0 1px 3px #020a05}
 .room-directory .room-mark {width:46px;height:46px;border-radius:0;background:#0b160f;border:2px solid;border-color:#050d08 #5b7050 #5b7050 #050d08;box-shadow:inset 2px 2px #0005;transform:none!important}
-.room-directory .room-mark img {background:transparent;transition:translate .25s,filter .25s;filter:drop-shadow(1px 2px 0 #0006)}
+.room-directory .room-mark img {width:40px;height:40px;image-rendering:auto;background:transparent;transition:translate .25s,filter .25s;filter:drop-shadow(1px 2px 0 #0006)}
 .room-directory .room-card:is(:hover,:focus-within) .room-mark {box-shadow:inset 2px 2px #0005}
 .room-directory .room-card:is(:hover,:focus-within) .room-mark img {translate:0 -3px;filter:drop-shadow(1px 4px 0 #0006)}
 .room-directory .room-mark::after {display:none}
