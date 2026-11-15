@@ -61,7 +61,8 @@
   opacity: .9;
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 95%, transparent);
 }
-.about-us.about-enhanced { padding-top: clamp(88px, 7.5vw, 112px); }
+.about-us.about-enhanced { padding-top: 28px; }
+.about-enhanced > .kicker { margin-top: 0; }
 .about-enhanced h2 { max-width: min(850px, 65%); }
 .about-enhanced > p:not(.kicker) { max-width: min(730px, 59%); }
 .about-enhanced .about-aurora { opacity: .55; }
@@ -72,7 +73,7 @@
   .about-enhanced > p:not(.kicker) { max-width: 80%; }
 }
 @media (max-width: 700px) {
-  .about-us.about-enhanced { padding-top: 72px; }
+  .about-us.about-enhanced { padding-top: 22px; }
   .about-world { top: 56px; right: -176px; width: 430px; opacity: .23; mask-image: linear-gradient(90deg, transparent 5%, #000 50%); }
   .about-enhanced h2, .about-enhanced > p:not(.kicker) { max-width: 100%; }
 }

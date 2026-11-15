@@ -1,4 +1,5 @@
 #zones,#directory {scroll-margin-top:var(--header,74px)}
+.room-category {scroll-margin-top:calc(var(--header,74px) + 16px)}
 .scene {
   --shot:0;--copy:0;--track:0;
   background:#0d1710;color:#f5f7ed;scroll-margin-top:var(--header);
@@ -196,9 +197,6 @@
 #room-matches {display:grid;gap:6px}
 #room-matches a {min-height:44px;display:flex;align-items:center;padding:7px 11px;border:1px solid var(--line);border-radius:5px;font-size:15px}
 #room-matches a:hover {color:var(--green)}
-#room-tools footer {border:0;padding:0;margin:0}
-#room-tools footer>span,#room-tools footer small {display:none}
-#directory-content:empty {display:none}
 .room-directory {
   padding:clamp(42px,7vw,104px) var(--gutter);scroll-margin-top:var(--header);border-top:1px solid #395641;
   background:radial-gradient(ellipse at top left,rgb(var(--glow-room)/.25),transparent 650px),#111b15;

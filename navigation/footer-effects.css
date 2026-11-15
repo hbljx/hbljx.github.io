@@ -1,6 +1,7 @@
-/* Two quiet keepsakes under the voxel landscape: emerald nameplate and parchment record. */
+/* Pixel plaques: emerald branding, parchment record and a blue return arrow. */
 .home-footer .footer-brand-plaque,
-.home-footer .footer-icp {
+.home-footer .footer-icp,
+.home-footer .footer-top {
   position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:12px;
   width:max-content;max-width:100%;min-height:52px;box-sizing:border-box;
   border:2px solid;border-radius:2px;cursor:default;
@@ -23,6 +24,17 @@
 }
 .footer-record {flex:none;shape-rendering:crispEdges;filter:drop-shadow(1px 2px #080d09)}
 .footer-record-text {font-variant-numeric:tabular-nums;letter-spacing:.025em;line-height:1.5;text-shadow:0 1px #050a07}
+.home-footer .footer-top {
+  padding:11px 16px;gap:10px;cursor:pointer;color:#c8dafa;
+  border-color:#637c9e #2b405c #182a40 #4a6586;
+  background:linear-gradient(180deg,#cce1ff08,transparent 55%),#1a273a;
+  box-shadow:inset 1px 1px #d7e7ff1c,inset -1px -1px #0b1525,0 3px #060e1a;
+  text-shadow:0 1px #080f1d;
+}
+.footer-arrow {flex:none;shape-rendering:crispEdges;filter:drop-shadow(1px 2px #080f1d)}
+.home-footer .footer-top:hover {background-color:#24364f;border-color:#91b6e5 #425d80 #263d5b #7498c7;color:#edf5ff}
+.home-footer .footer-top:active {translate:0 2px;box-shadow:inset 1px 1px #d7e7ff1c,inset -1px -1px #0b1525,0 1px #060e1a}
+.home-footer .footer-top:focus-visible {outline:2px solid #a8caff;outline-offset:5px}
 .home-footer [data-footer-effect]::before {
   content:'';position:absolute;inset:5px;z-index:-1;pointer-events:none;opacity:.6;
   background:linear-gradient(#9dab74,#9dab74) left top/2px 2px no-repeat,
@@ -33,6 +45,8 @@
   background:linear-gradient(110deg,transparent 30%,#d8ffc312 43%,#f1ffce33 49%,transparent 61%) 150% 0/300% 100% no-repeat;
 }
 .home-footer .footer-icp::after {background-image:linear-gradient(110deg,transparent 30%,#e1cea012 43%,#fff1ca30 49%,transparent 61%)}
+.home-footer .footer-top::before {background-image:linear-gradient(#9dbbe0,#9dbbe0),linear-gradient(#9dbbe0,#9dbbe0)}
+.home-footer .footer-top::after {background-image:linear-gradient(110deg,transparent 30%,#adcfff12 43%,#e2efff33 49%,transparent 61%)}
 .footer-xp {position:absolute;left:25px;top:13px;pointer-events:none}
 .footer-xp i {position:absolute;width:3px;height:3px;opacity:0;background:#c7f776;box-shadow:0 0 5px #a6e65d66;--dx:-12px;--dy:-8px;--wait:0s}
 .footer-xp i:nth-child(2){--dx:9px;--dy:-13px;--wait:.12s;width:2px;height:2px}
@@ -55,8 +69,7 @@
   .home-footer {grid-template-columns:1fr 1fr;gap:16px 12px;padding-inline:20px}
   .home-footer .footer-brand-plaque {grid-column:1/-1;grid-row:1;justify-self:center;padding-inline:15px;min-height:52px}
   .home-footer .footer-icp {grid-column:1/-1;grid-row:2;justify-self:center;font-size:12px;min-height:44px;padding:9px 15px}
-  .home-footer #manage-links {grid-column:1;grid-row:3;justify-self:start}
-  .home-footer a[href="#home"] {grid-column:2;grid-row:3;justify-self:end}
+  .home-footer a.footer-top {grid-column:1/-1;grid-row:3;justify-self:center;min-height:44px;padding:9px 15px}
 }
 @media(prefers-reduced-motion:reduce) {
   .home-footer [data-footer-effect]::after,.footer-xp {display:none}

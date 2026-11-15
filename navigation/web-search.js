@@ -1,10 +1,10 @@
 import { mountSearchEnergy } from './search-energy.js';
 
 const providers = {
-  baidu: {label:'百度', action:'https://www.baidu.com/s', query:'wd'},
-  bing: {label:'必应', action:'https://www.bing.com/search', query:'q'},
-  google: {label:'谷歌', action:'https://www.google.com/search', query:'q'},
-  yuanbao: {label:'元宝', action:'https://so.qq.com/isearch', query:'query'},
+  baidu: {label:'百度', placeholder:'百度一下，你就知道', action:'https://www.baidu.com/s', query:'wd'},
+  bing: {label:'必应', placeholder:'快乐搜索，有问必应', action:'https://www.bing.com/search', query:'q'},
+  google: {label:'谷歌', placeholder:'Do the right thing', action:'https://www.google.com/search', query:'q'},
+  yuanbao: {label:'元宝', placeholder:'搜得准，答得懂，记得住', action:'https://so.qq.com/isearch', query:'query'},
 };
 export function mountWebSearch() {
   const form=document.querySelector('.site-search');
@@ -15,7 +15,7 @@ export function mountWebSearch() {
     const provider=providers[id] || providers.baidu;
     form.action=provider.action;
     query.name=provider.query;
-    query.placeholder=`用${provider.label}搜索网页`;
+    query.placeholder=provider.placeholder;
     form.querySelector('button[type="submit"]').setAttribute('aria-label',`使用${provider.label}搜索`);
     for(const choice of choices) choice.checked=choice.value===id;
   }

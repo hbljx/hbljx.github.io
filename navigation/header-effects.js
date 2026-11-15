@@ -12,7 +12,7 @@ export function mountHeaderEffects() {
     link.style.setProperty('--item-accent',color);
     return {link,section,color,top:0};
   });
-  const destinations = sections.filter(item => item.section);
+  let destinations = sections.filter(item => item.section);
   const aura = document.createElement('div'), rail = document.createElement('div');
   const auraClip = document.createElement('div'), sparkLayer = document.createElement('div');
   auraClip.className='header-aura-clip';sparkLayer.className='header-sparks';
@@ -30,6 +30,11 @@ export function mountHeaderEffects() {
     if (document.hidden) return;
     const bounds = header.getBoundingClientRect();
     if (measure) {
+      for (const item of sections) {
+        const href = item.link.getAttribute('href');
+        item.section = href.startsWith('#') ? document.getElementById(href.slice(1)) : null;
+      }
+      destinations = sections.filter(item => item.section);
       for (const item of destinations) item.top = item.section.getBoundingClientRect().top + scrollY;
       // Decorative overflow must never extend the horizontal navigation track.
       const end=links.at(-1).getBoundingClientRect().right-bounds.left+header.scrollLeft;

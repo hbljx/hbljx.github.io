@@ -53,7 +53,7 @@ export function mountCountdownEffects(section) {
     button.type = 'button';
     button.className = 'countdown-activate';
     button.setAttribute('aria-label', `重播${card.querySelector('h3').textContent}动效`);
-    button.innerHTML = '<span>点亮时间</span><span aria-hidden="true">↗</span>';
+    button.innerHTML = '<span aria-hidden="true">↗</span>';
     button.addEventListener('click', event => play(state, true, event));
     card.append(button);
     card.addEventListener('pointermove', event => {

@@ -12,7 +12,7 @@
 .countdown-card .countdown-track{position:relative;height:10px;border-block:1px solid #ffffff0a}
 .countdown-card .countdown-track:before{transform-origin:left;transition:width .8s ease}
 .countdown-card .countdown-track:after{content:'';position:absolute;inset:0 auto 0 0;width:var(--remaining,0%);pointer-events:none;background:linear-gradient(110deg,transparent 35%,#ffffffb3 50%,transparent 65%) -90px 0/90px 100% no-repeat;animation:countdown-flow 4.5s calc(var(--card-order)*.7s) linear infinite}
-.countdown-activate{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;margin:14px 0 -8px;padding:12px 0 4px;border:0;border-top:1px solid #ffffff0d;background:none;color:#a3b79b;font:inherit;font-size:11px;font-weight:500;line-height:1.4;cursor:pointer;text-align:left}
+.countdown-activate{display:flex;align-items:center;justify-content:flex-end;gap:12px;width:100%;min-height:44px;margin:14px 0 -8px;padding:12px 0 4px;border:0;border-top:1px solid #ffffff0d;background:none;color:#a3b79b;font:inherit;font-size:11px;font-weight:500;line-height:1.4;cursor:pointer;text-align:left}
 .countdown-activate:after{content:'';position:absolute;inset:0;z-index:2}
 .countdown-activate>span:last-child{font:18px/1 monospace;color:var(--countdown-accent);transition:translate .2s}
 .countdown-activate[hidden]{display:none}
