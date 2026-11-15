@@ -52,7 +52,7 @@
 /* Reserve a grid column for the artwork so later content cannot cover it. */
 .about-profile {display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:stretch;gap:28px}
 .about-profile-copy {min-width:0;display:flex;flex-direction:column}
-.about-profile-copy .about-actions {margin-top:auto;padding-top:16px}
+.about-profile-copy .about-actions {margin-top:0;padding-top:16px}
 /* The drawing occupies y=35..483 in its 640x560 canvas; omit transparent margins from layout. */
 .about-world-slot {position:relative;width:100%;max-width:560px;aspect-ratio:640/448;pointer-events:none;align-self:start;justify-self:end}
 .about-world {

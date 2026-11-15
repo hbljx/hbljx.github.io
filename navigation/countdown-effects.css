@@ -1,6 +1,7 @@
 /* Countdown interactions stay local to the three cards. */
-.countdown-header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px;color:#cee2bd;font:600 11px/1.6 Consolas,'Microsoft YaHei',monospace;letter-spacing:.13em}
-.countdown-header b{font-weight:400;color:#9eb897;letter-spacing:.04em}
+.countdown-header{flex-wrap:wrap}
+.countdown-header svg{flex-shrink:0;shape-rendering:crispEdges;filter:drop-shadow(2px 2px 0 #07150d)}
+.countdown-header small{font:600 11px/1.6 Consolas,monospace;letter-spacing:.1em;color:#a9bd91;text-shadow:1px 1px 0 #07150d}
 .countdown-live{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.06em;white-space:nowrap}
 .countdown-live i{width:5px;height:5px;background:#c7f776;box-shadow:0 0 9px #c7f77666}
 .about-countdown[data-effects-mounted] .countdown-card{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(145deg,#152c24ed,#091913f5);transform:perspective(800px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg));transition:transform .2s ease-out,border-color .25s,box-shadow .25s}
@@ -34,5 +35,5 @@
 @keyframes countdown-hourglass{to{rotate:180deg}}
 @keyframes countdown-flow{0%,45%{background-position:-90px 0}100%{background-position:calc(100% + 90px) 0}}
 @keyframes countdown-spark{from{opacity:1;transform:translate(-50%,-50%) rotate(var(--turn))}to{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--turn)) scale(.2)}}
-@media(max-width:700px){.countdown-header{align-items:flex-start;font-size:10px;letter-spacing:.06em}.countdown-header b{display:block;margin-top:3px}.countdown-code{margin-bottom:10px}.countdown-card .countdown-activate{margin-top:10px}}
+@media(max-width:700px){.countdown-header small{flex-basis:100%;margin-left:40px;margin-top:-6px;font-size:10px}.countdown-code{margin-bottom:10px}.countdown-card .countdown-activate{margin-top:10px}}
 @media(prefers-reduced-motion:reduce){.about-countdown *, .about-countdown *:before,.about-countdown *:after{animation:none!important;transition:none!important}.about-countdown .countdown-card{transform:none!important}.countdown-activate,.countdown-spark{display:none}.countdown-card .countdown-track:after{display:none}}

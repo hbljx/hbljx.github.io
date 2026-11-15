@@ -4,9 +4,9 @@ export function mountCountdownEffects(section) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const fine = matchMedia('(hover: hover) and (pointer: fine)');
   const states = [];
-  const header = document.createElement('div');
-  header.className = 'countdown-header';
-  header.innerHTML = '<span>TIME REMAINING <b>/ 时间刻度</b></span>';
+  const header = document.createElement('h3');
+  header.className = 'about-section-title countdown-header';
+  header.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="#765a32" d="M4 1h16v5h-2v4l-2 2 2 2v4h2v5H4v-5h2v-4l2-2-2-2V6H4z"/><path fill="#dfc389" d="M5 2h14v3H5zm0 17h14v3H5z"/><path fill="#89d8c8" d="M8 6h8v3l-4 4-4-4zm4 7 4 3v2H8v-2z"/><path fill="#f0db9d" d="M9 7h6l-3 3zm3 7 3 3H9z"/><path fill="#fff0c6" d="M6 2h12v1H6zm0 17h12v1H6z"/></svg><span>时间刻度</span><small lang="en">TIME REMAINING</small>';
   section.prepend(header);
 
   function resetPointer(state) {
