@@ -1,27 +1,44 @@
 /* Scoped to the footer game so the existing plaques keep their layout. */
-.home-footer.footer-landscape {padding-top:0;overflow:visible}
-.footer-runner {position:relative;grid-column:1/-1;grid-row:1;margin-inline:calc(-1 * var(--gutter));height:366px;isolation:isolate;background:#b7cabb;border-block:1px solid #809a6a;overflow:hidden;color:#243a2d;font-family:ui-monospace,"Microsoft YaHei",monospace}
+.home-footer.footer-landscape {padding-top:0;overflow:visible;background:#0c181b;box-shadow:none}
+.footer-runner {position:relative;grid-column:1/-1;grid-row:1;margin-inline:calc(-1 * var(--gutter));height:366px;isolation:isolate;background:transparent;border:0;overflow:hidden;color:#c4d3b5;font-family:ui-monospace,"Microsoft YaHei",monospace}
 .runner-canvas {display:block;width:100%;height:320px;image-rendering:pixelated;touch-action:none;outline:none;cursor:pointer}
-.runner-canvas:focus-visible {outline:3px solid #d4ee9c;outline-offset:-4px}
+.runner-canvas:focus-visible {outline:none}
+.runner-canvas:focus-visible~.runner-hud .runner-label {text-decoration:underline;text-decoration-color:#b4d482;text-underline-offset:6px}
 .runner-hud {position:absolute;inset:18px 26px auto;display:flex;align-items:center;justify-content:space-between;gap:16px;pointer-events:none;font-size:12px;line-height:1.5}
 .runner-label {display:flex;align-items:center;gap:9px;font-size:15px;font-weight:750;letter-spacing:.06em}
-.runner-label i {width:8px;height:8px;background:#537f42;box-shadow:3px 3px #90af69}
+.runner-label i {width:8px;height:8px;background:#a0c176;box-shadow:3px 3px #4c7146}
 .runner-label small {font-size:10px;font-weight:500;letter-spacing:.16em;opacity:.65;margin-left:8px}
 .runner-scores {display:flex;gap:22px;font-size:11px}
 .runner-scores span {display:flex;align-items:center;gap:8px}
 .runner-scores b {font-size:17px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.12em}
-.runner-overlay {position:absolute;left:50%;top:56px;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);display:flex;flex-direction:column;align-items:center;text-align:center;padding:13px 26px 12px;background:#e0e8d9ee;border:1px solid #6c865e;box-shadow:4px 4px #344d3933}
+.runner-overlay {position:absolute;left:50%;top:54px;transform:translateX(-50%);width:354px;max-width:calc(100% - 36px);display:flex;flex-direction:column;align-items:center;text-align:center;padding:15px 22px 13px;color:#c8d3bb;border:3px solid #0a1211;background:repeating-linear-gradient(0deg,#ffffff02 0 4px,transparent 4px 12px),repeating-linear-gradient(90deg,#0000000b 0 12px,transparent 12px 24px),#304039;box-shadow:inset 3px 3px #74816a,inset -3px -3px #182922,0 0 0 1px #758366,5px 6px 0 #040a08a6;text-shadow:1px 2px #101e19}
+.runner-overlay::before,.runner-overlay::after {content:'';position:absolute;top:9px;width:4px;height:4px;background:#b2bd95;box-shadow:1px 1px #17261e,0 0 0 1px #52634b;pointer-events:none}
+.runner-overlay::before {left:9px}
+.runner-overlay::after {right:9px}
 .runner-overlay[hidden] {display:none}
-.runner-eyebrow {font-size:10px;letter-spacing:.21em;color:#567044}
-.runner-overlay h2 {margin:7px 0 5px;font-size:25px;line-height:1.4;letter-spacing:.07em;color:#273f30}
-.runner-overlay p {font-size:12px;margin:0 0 13px;line-height:1.7}
+.runner-panel-heading {display:flex;align-items:center;gap:9px}
+.runner-dialog-icon {image-rendering:pixelated;shape-rendering:crispEdges;filter:drop-shadow(2px 2px #0b1711)}
+.runner-icon-paused,.runner-icon-over {display:none}
+.footer-runner[data-state="paused"] .runner-icon-ready,.footer-runner[data-state="over"] .runner-icon-ready {display:none}
+.footer-runner[data-state="paused"] .runner-icon-paused,.footer-runner[data-state="over"] .runner-icon-over {display:inline}
+.runner-eyebrow {font-size:10px;letter-spacing:.16em;color:#b4c594}
+.runner-overlay h2 {margin:7px 0 6px;font-size:24px;font-weight:900;line-height:1.4;letter-spacing:.07em;color:#edf0d7;text-shadow:2px 3px #11251b}
+.runner-overlay p {font-size:11px;margin:0 0 13px;line-height:1.7;color:#b7c6ac}
+.runner-results {display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;margin:0 0 13px}
+.runner-results[hidden] {display:none}
+.runner-results>span {display:flex;flex-direction:column;gap:3px;padding:6px 10px;background:#1a2822;border:2px solid;border-color:#111c17 #5b6a52 #5b6a52 #111c17;font-size:10px;color:#9aac93}
+.runner-results b {color:#e2dfb5;font-size:19px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.footer-runner[data-state="over"] .runner-overlay {top:42px}
+.footer-runner[data-state="over"] .runner-eyebrow {color:#d6aa8e}
+.footer-runner[data-state="paused"] .runner-eyebrow {color:#d5ca93}
 .home-footer .footer-runner button {border-radius:0;font:inherit;cursor:pointer;transition:background .15s;color:inherit;min-height:36px;box-shadow:none;translate:none}
 .home-footer .footer-runner button::before {content:none}
-.home-footer .footer-runner .runner-start {display:flex;align-items:center;justify-content:center;gap:30px;padding:9px 24px;min-height:40px;border:2px solid;border-color:#a3bf7e #355633 #2e472a #94ad71;background:#577c43;color:#f1f5dd;font-weight:700;font-size:13px;box-shadow:3px 3px #263d2a}
-.home-footer .footer-runner .runner-start:hover {background:#668d50}
-.home-footer .footer-runner button:focus-visible {outline:2px solid #436d3b;outline-offset:3px}
+.home-footer .footer-runner .runner-start {display:flex;align-items:center;justify-content:center;gap:26px;width:100%;padding:9px 20px;min-height:42px;border:2px solid #101c15;background:linear-gradient(90deg,#ffffff04 50%,transparent 50%) 0 0/8px 8px,#526c43;color:#f1f5dd;font-weight:700;font-size:13px;text-shadow:2px 2px #20321c;box-shadow:inset 2px 2px #9cb582,inset -2px -2px #2b4328,0 2px #0b150f}
+.home-footer .footer-runner .runner-start:hover {background-color:#68854f;box-shadow:inset 2px 2px #c0d69b,inset -2px -2px #3a542d,0 2px #0b150f;color:#fffbe2}
+.home-footer .footer-runner .runner-start:active {box-shadow:inset 2px 2px #2b4328,inset -2px -2px #9cb582;translate:0 1px}
+.home-footer .footer-runner button:focus-visible {outline:2px solid #b8d78a;outline-offset:3px}
 .runner-start-hint {font-size:10px;margin-top:10px;opacity:.7}
-.runner-toolbar {position:absolute;inset:auto 0 0;height:46px;padding-inline:26px;background:#101e1b;color:#adbea6;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.runner-toolbar {position:absolute;inset:auto 0 0;height:46px;padding-inline:26px;background:transparent;color:#adbea6;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .runner-toolbar p {font-size:11px;margin:0;letter-spacing:.035em}
 .runner-settings {display:flex;align-items:center;gap:12px;flex:none}
 .home-footer .footer-runner .runner-settings button {border:0;padding:0 5px;background:transparent;font-size:11px;color:#b6c5ad}
@@ -29,11 +46,8 @@
 .home-footer .footer-runner .runner-settings button:disabled {opacity:.35;cursor:default}
 .runner-touch-controls,.runner-touch-help {display:none}
 .runner-announcement {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.footer-runner[data-night="true"] {color:#d4e0bf;border-color:#3a5346}
+.footer-runner[data-night="true"] {color:#d4e0bf}
 .footer-runner[data-night="true"] .runner-label i {background:#b1d67c}
-.footer-runner[data-night="true"] .runner-overlay {background:#152b27ee;border-color:#71845a;color:#c5d6b6;box-shadow:4px 4px #06120d55}
-.footer-runner[data-night="true"] .runner-overlay h2 {color:#e0eccc}
-.footer-runner[data-night="true"] .runner-eyebrow {color:#a1be83}
 @media (max-width:700px) {
   .home-footer.footer-landscape {padding-top:0}
   .footer-runner {margin-inline:-20px;height:380px}
@@ -48,9 +62,13 @@
   .runner-scores {gap:12px;font-size:9px}
   .runner-scores span {flex-direction:column;gap:0;align-items:flex-end}
   .runner-scores b {font-size:14px}
-  .runner-overlay {top:67px;padding:12px 17px}
+  .runner-overlay {top:60px;padding:13px 16px 11px}
+  .footer-runner[data-state="over"] .runner-overlay {top:51px;padding-block:10px}
   .runner-overlay h2 {font-size:20px}
   .runner-overlay p {font-size:10px;margin-bottom:10px}
+  .runner-results {margin-bottom:10px}
+  .runner-results>span {padding:4px 8px}
+  .runner-results b {font-size:17px}
   .runner-toolbar {height:80px;padding:9px 16px;align-items:flex-start;box-sizing:border-box}
   .runner-toolbar p {font-size:10px;line-height:23px}
   .runner-settings {gap:7px}
@@ -59,6 +77,8 @@
   .runner-touch-help {display:inline}
   .runner-start-hint {font-size:0}
   .runner-start-hint::after {content:'点击开始 · 长按画面跳得更高';font-size:10px}
+  .footer-runner[data-state="paused"] .runner-start-hint::after {content:'点击按钮，继续冒险'}
+  .footer-runner[data-state="over"] .runner-start-hint::after {content:'点击重新奔跑，再试一次'}
 }
 @media (pointer:coarse), (max-width:700px) {
   .runner-touch-controls {position:absolute;inset:auto 16px 7px;display:flex;justify-content:space-between;pointer-events:none}

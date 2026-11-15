@@ -11,7 +11,16 @@ export function mountFooterLandscape() {
   game.innerHTML = `
     <canvas class="runner-canvas" tabindex="0" aria-label="跑酷游戏。空格或上箭头跳跃，长按跳得更高，下箭头下蹲或快速落地，Escape 暂停。" aria-describedby="runner-help"></canvas>
     <header class="runner-hud"><span class="runner-label"><i aria-hidden="true"></i> 方块小恐龙 <small>BLOCK RUNNER</small></span><span class="runner-scores"><span>最高 <b data-best>00000</b></span><span>距离 <b data-score>00000</b></span></span></header>
-    <aside class="runner-overlay"><span class="runner-eyebrow">再往前跑一点。</span><h2>方块世界，无限冒险</h2><p>越过仙人掌，躲开翼龙。你能跑多远？</p><button type="button" class="runner-start">开始奔跑 <span aria-hidden="true">→</span></button><span class="runner-start-hint">空格 / ↑ / Enter 开始</span></aside>
+    <aside class="runner-overlay" aria-labelledby="runner-dialog-title">
+      <span class="runner-panel-heading"><svg class="runner-dialog-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+        <g class="runner-icon-ready"><path fill="#416b3e" d="M2 6h20v16H2z"/><path fill="#8fae62" d="M2 2h20v6H2z"/><path fill="#b9d780" d="M2 2h20v2H2z"/><path fill="#64543c" d="M2 11h20v11H2z"/><path fill="#8c7550" d="M4 13h5v4H4zm9 5h5v3h-5z"/><path fill="#2c4630" d="M18 8h4v14h-4z"/></g>
+        <g class="runner-icon-paused"><path fill="#645f43" d="M3 3h7v20H3zm12 0h7v20h-7z"/><path fill="#d7c68b" d="M3 2h6v18H3zm12 0h6v18h-6z"/><path fill="#fff0b4" d="M3 2h6v3H3zm12 0h6v3h-6z"/></g>
+        <g class="runner-icon-over"><path fill="#5d6257" d="M4 4h16v3h3v12h-5v4H7v-4H2V7h2z"/><path fill="#c5c8aa" d="M4 2h15v3h3v12h-6v4H7v-4H1V5h3z"/><path fill="#f0eacb" d="M4 2h15v3H4z"/><path fill="#293b34" d="M4 7h5v5H4zm10 0h5v5h-5zm-4 6h4v3h-4zm-1 5h2v3H9zm4 0h2v3h-2z"/></g>
+      </svg><span class="runner-eyebrow" hidden></span></span>
+      <h2 id="runner-dialog-title">方块世界，无限冒险</h2><p hidden></p>
+      <span class="runner-results" hidden><span>本次距离<b data-result-score>00000</b></span><span>最高纪录<b data-result-best>00000</b></span></span>
+      <button type="button" class="runner-start">开始奔跑 <span aria-hidden="true">→</span></button><span class="runner-start-hint">空格 / ↑ / Enter 开始</span>
+    </aside>
     <nav class="runner-toolbar" aria-label="跑酷操作"><p id="runner-help"><span class="runner-desktop-help">空格 / ↑ 跳跃 · 长按大跳 · ↓ 蹲下 / 快速落地</span><span class="runner-touch-help">点画面跳跃 · 长按大跳 · 按住 ↓ 蹲下</span></p><span class="runner-settings"><button type="button" data-pause disabled aria-label="暂停游戏">暂停</button><button type="button" data-sound aria-pressed="false" aria-label="开启游戏音效">音效：关</button></span></nav>
     <span class="runner-touch-controls"><button type="button" data-duck aria-label="按住下蹲，空中按住快速落地">↓ 蹲下</button><button type="button" data-jump aria-label="跳跃，长按跳得更高">↑ 跳跃</button></span>
     <p class="runner-announcement" role="status" aria-live="polite"></p>`;
@@ -28,6 +37,7 @@ export function mountFooterLandscape() {
   const scoreNode = game.querySelector('[data-score]'), bestNode = game.querySelector('[data-best]');
   const pauseButton = game.querySelector('[data-pause]'), soundButton = game.querySelector('[data-sound]');
   const announcement = game.querySelector('.runner-announcement');
+  const results = game.querySelector('.runner-results');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const draw = createRunnerRenderer(ctx, runner, reduced);
   const jumpKeys = new Set(['Space', 'ArrowUp']);
@@ -64,21 +74,25 @@ export function mountFooterLandscape() {
   function showState() {
     game.dataset.state = runner.state;
     overlay.hidden = runner.state === 'running';
+    eyebrow.hidden = runner.state === 'ready';
+    message.hidden = runner.state !== 'over';
+    results.hidden = runner.state !== 'over';
     pauseButton.disabled = runner.state !== 'running' && runner.state !== 'paused';
     pauseButton.textContent = runner.state === 'paused' ? '继续' : '暂停';
     pauseButton.setAttribute('aria-label', runner.state === 'paused' ? '继续游戏' : '暂停游戏');
     if (runner.state === 'over') {
       eyebrow.textContent = 'GAME OVER';
-      title.textContent = '再来一次，跑得更远';
-      message.textContent = `本次距离 ${runner.score} · 最高纪录 ${best}`;
+      title.textContent = '冒险结束';
+      message.textContent = '这次到这里。下一次，再往前一点。';
+      game.querySelector('[data-result-score]').textContent = String(runner.score).padStart(5, '0');
+      game.querySelector('[data-result-best]').textContent = String(best).padStart(5, '0');
       start.innerHTML = '重新奔跑 <span aria-hidden="true">↻</span>';
       hint.textContent = '空格 / ↑ / Enter 或点击重开';
       announcement.textContent = `游戏结束，本次 ${runner.score} 分，最高 ${best} 分。`;
     } else if (runner.state === 'paused') {
-      eyebrow.textContent = 'TAKE A BREATH';
-      title.textContent = '休息一下，冒险还在';
-      message.textContent = '准备好后继续，从刚才的地方出发。';
-      start.textContent = '继续奔跑 →';
+      eyebrow.textContent = 'GAME PAUSED';
+      title.textContent = '游戏已暂停';
+      start.textContent = '返回冒险 →';
       hint.textContent = '空格 / ↑ / Enter 或点击继续';
       announcement.textContent = '游戏已暂停。';
     }
