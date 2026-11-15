@@ -12,7 +12,7 @@ export function mountScenePointers() {
  function clear(){cancelAnimationFrame(frame);frame=0;mode='';canvas.dataset.mode='';trail=[];particles=[];ctx.clearRect(0,0,innerWidth,innerHeight);}
  function choose(el){
   if(!fine.matches||reduced.matches||document.hidden||!el||el.closest('dialog,.site-header'))return '';
-  const scene=el.closest('.scene');return scene?modes[scene.dataset.room]||'':el.closest('#about-us')?'magnet':'';
+  const scene=el.closest('.scene');return scene?modes[scene.dataset.room]||'':'';
  }
  function setMode(next){if(next===mode)return;clear();mode=next;canvas.dataset.mode=mode;blocks.forEach((b,i)=>{b.x=x+Math.cos(i)*30;b.y=y+Math.sin(i)*30;});}
  function wake(){if(mode&&!frame){lastTime=performance.now();frame=requestAnimationFrame(draw);}}

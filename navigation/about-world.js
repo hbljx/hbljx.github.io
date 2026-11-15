@@ -1,255 +1,121 @@
-// A procedural miniature world inside a machined portal. No image assets or WebGL.
-// Geometry is built once; one shared frame draws only when the artwork is visible.
-const TAU=Math.PI*2;
-const MINT='139,245,209',GOLD='225,244,159',BLUE='137,202,255';
-const rgba=(color,alpha)=>`rgba(${color},${alpha})`;
-const DESTINATIONS=[
-  {label:'日常',color:'255,211,140',x:145,y:104,icon:'home'},
-  {label:'AI',color:'139,245,209',x:326,y:60,icon:'chip'},
-  {label:'灵感',color:'218,186,255',x:502,y:113,icon:'book'},
-  {label:'音乐',color:'255,180,145',x:551,y:277,icon:'music'},
-  {label:'工具',color:'137,202,255',x:469,y:438,icon:'tool'},
-  {label:'行情',color:'145,228,255',x:187,y:449,icon:'chart'},
-  {label:'社区',color:'244,179,226',x:88,y:285,icon:'leaf'},
-];
-
+// A small oak homestead. Static geometry is cached; only smoke, water and fireflies move.
 export function mountAboutWorld(section) {
-  const slot=section.querySelector('.about-world-slot');if(!slot)return;
+  const slot=section.querySelector('.about-world-slot');
+  const figure=section.querySelector('.about-homestead');
+  if(!slot || !figure)return;
   const canvas=document.createElement('canvas');canvas.className='about-world';
-  canvas.setAttribute('aria-hidden','true');slot.append(canvas);
-  const c=canvas.getContext('2d');if(!c)return;
+  canvas.width=600;canvas.height=490;canvas.setAttribute('role','img');
+  canvas.setAttribute('aria-label','草方块浮岛上的橡木小屋，红瓦屋顶、树木、池塘和暖色灯笼');slot.append(canvas);
+  const ctx=canvas.getContext('2d');if(!ctx)return;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  const fine=matchMedia('(hover: hover) and (pointer: fine)');
-  const point=new Float32Array(3),boxes=[];
-  let visible=false,raf=0,last=0,time=0,arrival=0,pulse=0,scale=1,needsResize=true;
-  let targetX=0,targetY=0,lookX=0,lookY=0,cy=1,sy=0,cp=1,sp=0;
-  let aura,glass,core,metal;
-  const box=(x,y,z,w,h,d,top,front,side)=>boxes.push({x,y,z,w,h,d,top,front,side});
-  // A terraced landmass with exposed mineral strata and a planted top surface.
-  for(let x=-4;x<=4;x++)for(let z=-3;z<=3;z++) {
-    if(x*x/22+z*z/13>1)continue;
-    const h=10+((x*17+z*13+100)%4)*4;
-    box(x*18,-59,z*18,18,h,18,(x+z)%3?'#427e65':'#5f9770','#1e4246','#285754');
-    if(Math.abs(x)+Math.abs(z)<5)box(x*17,-76,z*17,17,15,17,'#2e5656','#192e3d','#25434c');
-    if(Math.abs(x)+Math.abs(z)<3)box(x*14,-93,z*14,14,16,14,'#283c4a','#172632','#213745');
-  }
-  // Fine, stepped architecture sits on the island; warm windows are separate faces.
-  box(-18,-36,-13,52,6,38,'#7aa88b','#416557','#355d56');
-  box(-18,-30,-13,37,34,28,'#427b77','#294d52','#356965');
-  box(-18,4,-13,43,5,34,'#b2c7ab','#5b8273','#7b9c85');
-  box(-19,-19,2,27,11,1,'#ffe9ae','#edcb86','#cda970');
-  box(2,-20,-15,1,12,18,'#fce7aa','#edd195','#d9be7f');
-  box(-18,9,-15,23,17,20,'#5c9c90','#325c61','#447f79');
-  box(-18,26,-15,28,4,25,'#b5d5b4','#628b78','#759b84');
-  box(-18,30,-15,4,22,4,'#f4f7c4','#95dfc5','#6bbcad');
-  box(30,-35,-20,20,24,22,'#9cb493','#315c59','#467c69');
-  box(30,-11,-20,24,4,26,'#c4d2ab','#6f9b7d','#7caa88');
-  box(30,-27,-8,12,8,1,'#fff0b5','#e7c47d','#ceab75');
-  // Small geometric trees with tiered canopies.
-  for(const [x,z,h] of [[-57,-20,24],[-45,29,20],[50,23,26],[15,-43,18]]) {
-    box(x,-35,z,4,h,4,'#a39a77','#635f51','#77715a');
-    for(let k=0;k<3;k++)box(x,-25+h*.45+k*8,z,18-k*4,9,18-k*4,k%2?'#87b87a':'#6f9e72','#325f58','#4b7c60');
-  }
-  // Painter order remains stable under the deliberately small camera movement.
-  boxes.sort((a,b)=>(a.z+a.x*.3)-(b.z+b.x*.3)||a.y-b.y);
-
-  function project(x,y,z) {
-    const xx=x*cy+z*sy,zz=-x*sy+z*cy,yy=y*cp-zz*sp,depth=-y*sp-zz*cp;
-    const f=760/(760+depth);
-    point[0]=320+xx*f;point[1]=265-yy*f;point[2]=depth;return point;
-  }
-  function vertex(x,y,z,first=false) {const p=project(x,y,z);if(first)c.moveTo(p[0],p[1]);else c.lineTo(p[0],p[1]);}
-  function line(color=MINT,alpha=.5,width=1) {c.strokeStyle=rgba(color,alpha);c.lineWidth=width;c.stroke();}
-  function dot(x,y,r,color=MINT,alpha=1) {c.beginPath();c.arc(x,y,r,0,TAU);c.fillStyle=rgba(color,alpha);c.fill();}
-  function circle(radius,z,start=0,length=TAU,color=MINT,alpha=.4,width=1) {
-    c.beginPath();for(let i=0;i<=120;i++){const a=start+length*i/120;vertex(Math.cos(a)*radius,Math.sin(a)*radius,z,i===0);}line(color,alpha,width);
-  }
-  function floorRing(radius,y,start=0,length=TAU,color=MINT,alpha=.4,width=1) {
-    c.beginPath();for(let i=0;i<=100;i++){const a=start+length*i/100;vertex(Math.cos(a)*radius,y,Math.sin(a)*radius,i===0);}line(color,alpha,width);
-  }
-  function face(b,side) {
-    const x=b.x-b.w/2,z=b.z-b.d/2;
-    c.beginPath();
-    if(side===0){vertex(x,b.y+b.h,z,true);vertex(x+b.w,b.y+b.h,z);vertex(x+b.w,b.y+b.h,z+b.d);vertex(x,b.y+b.h,z+b.d);}
-    else if(side===1){vertex(x,b.y,z+b.d,true);vertex(x+b.w,b.y,z+b.d);vertex(x+b.w,b.y+b.h,z+b.d);vertex(x,b.y+b.h,z+b.d);}
-    else{vertex(x+b.w,b.y,z,true);vertex(x+b.w,b.y,z+b.d);vertex(x+b.w,b.y+b.h,z+b.d);vertex(x+b.w,b.y+b.h,z);}
-    c.closePath();c.fillStyle=side===0?b.top:side===1?b.front:b.side;c.fill();
-    c.strokeStyle='rgba(172,226,200,.09)';c.lineWidth=.45;c.stroke();
-  }
-
-  function icon(kind,x,y,tint) {
-    c.save();c.translate(x,y);c.lineJoin='round';c.lineCap='round';c.beginPath();
-    if(kind==='home') {c.moveTo(-8,0);c.lineTo(0,-7);c.lineTo(8,0);c.moveTo(-6,-1);c.lineTo(-6,7);c.lineTo(6,7);c.lineTo(6,-1);c.moveTo(-2,7);c.lineTo(-2,2);c.lineTo(2,2);c.lineTo(2,7);}
-    if(kind==='chip') {c.rect(-5,-5,10,10);c.rect(-2,-2,4,4);for(let i=-3;i<=3;i+=3){c.moveTo(i,-8);c.lineTo(i,-5);c.moveTo(i,5);c.lineTo(i,8);c.moveTo(-8,i);c.lineTo(-5,i);c.moveTo(5,i);c.lineTo(8,i);}}
-    if(kind==='book') {c.moveTo(0,7);c.lineTo(0,-5);c.quadraticCurveTo(-4,-8,-9,-5);c.lineTo(-9,6);c.quadraticCurveTo(-4,3,0,7);c.quadraticCurveTo(4,3,9,6);c.lineTo(9,-5);c.quadraticCurveTo(4,-8,0,-5);}
-    if(kind==='music') {c.moveTo(-3,5);c.lineTo(-3,-6);c.lineTo(7,-8);c.lineTo(7,3);c.moveTo(-3,-2);c.lineTo(7,-4);c.moveTo(-3,5);c.ellipse(-6,5,3,2,-.3,0,TAU);c.moveTo(7,3);c.ellipse(4,3,3,2,-.3,0,TAU);}
-    if(kind==='tool') {c.moveTo(-7,7);c.lineTo(2,-2);c.bezierCurveTo(-1,-7,3,-9,7,-7);c.lineTo(4,-4);c.lineTo(6,-2);c.lineTo(9,-5);c.bezierCurveTo(10,0,5,2,3,0);c.lineTo(-5,9);c.closePath();}
-    if(kind==='chart') {c.moveTo(-8,-7);c.lineTo(-8,8);c.lineTo(9,8);c.moveTo(-5,4);c.lineTo(-1,-1);c.lineTo(3,1);c.lineTo(8,-6);c.moveTo(3,-6);c.lineTo(8,-6);c.lineTo(8,-1);}
-    if(kind==='leaf') {c.moveTo(-7,8);c.quadraticCurveTo(-9,-6,8,-8);c.quadraticCurveTo(9,7,-7,8);c.lineTo(5,-5);c.moveTo(-2,3);c.lineTo(3,3);}
-    line(tint,.95,1.15);c.restore();
-  }
-
-  function satellites() {
-    const a=Math.min(1,arrival/2);
-    for(let i=0;i<7;i++) {
-      const node=DESTINATIONS[i],x=node.x+Math.sin(time*.4+i)*3,y=node.y+Math.cos(time*.35+i)*4;
-      const dx=x-320,dy=y-265,len=Math.hypot(dx,dy),tx=320+dx/len*174,ty=265+dy/len*174;
-      const reveal=reduced.matches?1:Math.min(1,Math.max(0,(arrival-.6-i*.13)*2));
-      if(!reveal)continue;
-      c.globalAlpha=reveal;
-      const mx=(x+tx)*.5-dy*.09,my=(y+ty)*.5+dx*.09;
-      c.beginPath();c.moveTo(tx,ty);c.quadraticCurveTo(mx,my,x,y);line(node.color,.34,.8);
-      for(let j=0;j<2;j++) {
-        const u=(time*.24+i*.12+j*.5)%1,v=1-u;
-        const px=v*v*tx+2*v*u*mx+u*u*x,py=v*v*ty+2*v*u*my+u*u*y;
-        dot(px,py,1.65,node.color,.8);dot(px,py,4,node.color,.08);
-      }
-      c.beginPath();c.moveTo(x-32,y-21);c.lineTo(x+21,y-21);c.lineTo(x+32,y-10);c.lineTo(x+32,y+21);c.lineTo(x-32,y+21);c.closePath();
-      c.fillStyle='rgba(8,27,31,.88)';c.fill();line(node.color,.55,.8);
-      icon(node.icon,x,y-4,node.color);
-      c.font='9px "Microsoft YaHei",system-ui,sans-serif';c.textAlign='center';c.fillStyle=rgba(node.color,.9);c.fillText(node.label,x,y+14);
-      c.beginPath();c.moveTo(x-36,y-12);c.lineTo(x-36,y-25);c.lineTo(x-20,y-25);line(node.color,.26,.65);
+  const button=figure.querySelector('.homestead-toggle');
+  const caption=figure.querySelector('.homestead-time');
+  const layers=new Map();
+  let night=false,visible=false,frame=0,last=0,painted=0,time=0;
+  const project=(x,y,z)=>[300+(x-z)*1.08,244+(x+z)*.54-y];
+  const dirt=['#7e6650','#66513c','#4a4030'];
+  const oak=['#b29964','#8f7245','#6c5537'];
+  const stone=['#8c947e','#697462','#4e5c4d'];
+  const leaves=['#8eaa61','#65834c','#44623d'];
+  const roof=['#b0774b','#885738','#69432e'];
+  function build(dark) {
+    const layer=document.createElement('canvas');layer.width=600;layer.height=490;
+    const c=layer.getContext('2d');
+    let seed=25;
+    const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    function polygon(points,color,texture=false) {
+      c.beginPath();points.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fillStyle=color;c.fill();
+      if(texture){c.save();c.clip();const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);const x=Math.min(...xs),y=Math.min(...ys),w=Math.max(...xs)-x,h=Math.max(...ys)-y;
+        for(let i=0;i<w*h/210;i++){c.fillStyle=i%2?'#e4d4a113':'#17241122';c.fillRect(Math.round(x+random()*w),Math.round(y+random()*h),2+Math.floor(random()*4),2+Math.floor(random()*3));}c.restore();}
     }
-    c.globalAlpha=a;
+    function box(x,y,z,w,h,d,colors,texture=true) {
+      const a=x-w/2,b=z-d/2;
+      polygon([project(a,y,b+d),project(a+w,y,b+d),project(a+w,y+h,b+d),project(a,y+h,b+d)],colors[1],texture);
+      polygon([project(a+w,y,b),project(a+w,y,b+d),project(a+w,y+h,b+d),project(a+w,y+h,b)],colors[2],texture);
+      polygon([project(a,y+h,b),project(a+w,y+h,b),project(a+w,y+h,b+d),project(a,y+h,b+d)],colors[0],texture);
+    }
+    // Soft sky light stays behind crisp square clouds and a stepped silhouette.
+    const sky=c.createRadialGradient(310,165,20,310,190,290);sky.addColorStop(0,dark?'#66829119':'#c5c89220');sky.addColorStop(1,'#a4be8a00');c.fillStyle=sky;c.fillRect(0,0,600,490);
+    c.fillStyle=dark?'#e7e2bd':'#eddca3';c.fillRect(455,62,28,28);c.fillStyle=dark?'#c0c6ad':'#fff0bb';c.fillRect(459,65,8,8);if(dark){c.fillStyle='#263d36';c.fillRect(466,58,19,21);}
+    if(dark){for(let i=0;i<25;i++){c.fillStyle=i%3?'#c7d8be70':'#f2e5b4';c.fillRect(70+Math.floor(random()*450),30+Math.floor(random()*180),i%4?2:3,2);}}
+    else{c.fillStyle='#b5c5a61b';for(const [x,y] of [[92,95],[380,123],[170,53]]){c.fillRect(x,y,62,10);c.fillRect(x+13,y-8,32,9);}}
+    polygon([[120,393],[300,462],[490,391],[305,337]],'#071b1255');
+    const tiles=[];
+    for(let x=-4;x<=4;x++)for(let z=-4;z<=4;z++)if(x*x+z*z<23)tiles.push({x,z});
+    tiles.sort((a,b)=>a.x+a.z-b.x-b.z);
+    for(const {x,z} of tiles){const h=35+Math.floor(random()*3)*7;box(x*25,-h,z*25,25,h-6,25,dirt);box(x*25,-6,z*25,25,6,25,[(x+z)%3?'#7f9c56':'#92aa62','#5a783d','#426238']);
+      if(x+z>4 && (x+z)%2===0)box(x*25,-h+8,z*25+.1,25,5,25,['#7b8070','#696d5b','#4f5748']);}
+    // Pond tiles and the stone path are laid on the grass before trees and buildings.
+    for(const [x,z] of [[50,50],[75,50],[50,75],[75,75]]){box(x,1,z,24,2,24,['#5d9391','#416c6d','#386062'],false);}
+    for(const [x,z] of [[-25,50],[-25,75],[0,75],[25,75]])box(x,1,z,22,3,21,stone);
+    const models=[];
+    function tree(x,z,size){models.push({depth:x+z,draw(){box(x,0,z,9,49*size,9,oak);for(let i=0;i<3;i++){box(x+(i%2?4:-2),36*size+i*15,z,44*size-i*8,20,40*size-i*7,leaves);}box(x-10,44*size,z+16,16,16,18,['#a1b770','#728f51','#4b6c40']);}});}
+    tree(-89,-24,.9);tree(48,-73,1.13);tree(91,-7,.85);
+    models.push({depth:-23,draw(){
+      box(-25,0,-8,87,9,73,stone);
+      for(let i=0;i<7;i++)box(-25,9+i*8,-8,79,7.7,65,oak);
+      for(const x of [-61,11])for(const z of [-37,21])box(x,8,z,8,60,8,['#9c8453','#695132','#4d3f2b']);
+      // Recessed door and cross-barred window, on the two visible walls.
+      box(-39,9,25.5,18,35,1.8,['#ab8852','#4f432d','#50472f']);box(-39,30,27,12,10,1,['#d7c994',dark?'#ffdb8c':'#b4be8c','#aa9c66'],false);
+      box(-33,23,28,2,3,2,['#d6bc71','#c7ad65','#8a7349'],false);
+      box(-8,28,26,24,22,2,['#e0ce9a',dark?'#f9d48b':'#b7c49b','#8d7c51'],false);
+      box(-8,27,28,3,25,3,oak,false);box(-8,37,28,27,3,3,oak,false);box(-8,25,28,29,3,5,oak,false);
+      box(16,29,-9,2,21,23,['#e9cf90','#e9cb89',dark?'#edbd70':'#a9b795'],false);
+      box(18,28,-9,3,24,3,oak,false);box(18,38,-9,3,3,26,oak,false);
+      // Staggered roof courses have individual seams and weathered tile highlights.
+      for(let i=0;i<5;i++){const w=94-i*15;box(-25,65+i*8,-8,w,8,83,roof);for(let z=-43;z<31;z+=12)box(-25,72+i*8,z,w,1.5,1.2,['#c18e5d','#99623e','#825434'],false);}
+      box(0,93,-29,14,30,14,stone);box(0,121,-29,18,5,18,stone);box(0,126,-29,10,.5,10,['#26362c','#26362c','#26362c'],false);
+      box(-39,3,35,26,5,13,stone);
+      // Planter beneath the window: soil, small stems and individual flowers.
+      box(-8,16,33,27,7,9,['#7b5838','#705133','#4c402a']);for(let x=-17;x<3;x+=7){box(x,23,33,2,8,2,leaves,false);box(x,29,33,5,3,5,['#dfb877','#c48e5d','#9d6d4c'],false);}
+    }});
+    // Low oak railings and a lantern along the edge of the path.
+    models.push({depth:83,draw(){for(const x of [-76,-51,-26])box(x,0,91,5,24,5,oak);box(-51,10,91,56,4,4,oak);box(-51,20,91,56,4,4,oak);}});
+    models.push({depth:55,draw(){box(8,0,47,5,40,5,oak);box(13,39,47,15,4,5,oak);box(19,27,47,11,12,11,['#a18d60',dark?'#f3c573':'#cfb575',dark?'#ca9547':'#9e8851'],false);box(19,39,47,13,3,13,stone,false);box(19,25,47,13,3,13,stone,false);}});
+    models.sort((a,b)=>a.depth-b.depth).forEach(m=>m.draw());
+    // Small grass tufts and mushrooms complete the open foreground.
+    for(const [x,z] of [[-85,46],[-63,66],[-5,100],[94,27],[28,95]]){box(x,1,z,2,9,2,leaves,false);box(x+4,1,z+1,2,5,2,leaves,false);}
+    for(const [x,z] of [[-65,48],[21,100]]){box(x,1,z,3,6,3,['#d9c8a3','#c1ad8c','#a49473'],false);box(x,6,z,9,4,9,['#b97558','#945743','#704535']);}
+    // The natural palette remains readable at night, with localized warm pools of light.
+    if(dark){c.globalCompositeOperation='source-atop';c.fillStyle='#102b3a48';c.fillRect(0,105,600,330);c.globalCompositeOperation='source-over';
+      for(const [x,y,z,r] of [[-8,38,28,44],[19,32,47,42],[18,38,-9,29]]){const p=project(x,y,z),g=c.createRadialGradient(p[0],p[1],2,p[0],p[1],r);g.addColorStop(0,'#ffda8d55');g.addColorStop(1,'#ffca7000');c.fillStyle=g;c.fillRect(p[0]-r,p[1]-r,r*2,r*2);}}
+    // A little field label anchors the floating island without a sci-fi ring.
+    c.fillStyle='#102019';c.fillRect(234,441,132,23);c.strokeStyle='#77815b';c.strokeRect(234.5,441.5,132,23);c.fillStyle='#bdc69d';c.font='9px Consolas,monospace';c.textAlign='center';c.fillText('LI+ / HOME SWEET HOME',300,456);
+    return layer;
   }
-
-  function portal(back=false) {
-    const spin=time*.065;
-    if(back) {
-      circle(163,20,0,TAU,BLUE,.2,1.2);circle(149,20,0,TAU,MINT,.19,.8);
-      for(let i=0;i<36;i++) {
-        const a=i/36*TAU;
-        c.beginPath();vertex(Math.cos(a)*163,Math.sin(a)*163,20,true);vertex(Math.cos(a)*163,Math.sin(a)*163,-10);line(BLUE,.15,.7);
-      }
-      return;
+  const chimney=project(0,130,-29),water=project(64,5,66);
+  function draw(){
+    if(!layers.has(night))layers.set(night,build(night));
+    ctx.clearRect(0,0,600,490);ctx.drawImage(layers.get(night),0,0);
+    for(let i=0;i<5;i++){
+      const age=(time*.15+i/5)%1,size=4+age*8;
+      ctx.globalAlpha=(1-age)*.25;ctx.fillStyle=night?'#d5cbb1':'#c9d1b9';ctx.fillRect(Math.round(chimney[0]+Math.sin(age*5)*9),Math.round(chimney[1]-age*65),size,size);
     }
-    // Machined annular segments expose the portal's thickness and bevel.
-    for(let i=0;i<48;i++) {
-      const a=i/48*TAU+spin,b=a+TAU/48*.79;
-      c.beginPath();vertex(Math.cos(a)*157,Math.sin(a)*157,-10,true);
-      for(let j=1;j<=5;j++){const v=a+(b-a)*j/5;vertex(Math.cos(v)*157,Math.sin(v)*157,-10);}
-      for(let j=5;j>=0;j--){const v=a+(b-a)*j/5;vertex(Math.cos(v)*145,Math.sin(v)*145,-10);}
-      c.closePath();c.fillStyle=metal;c.fill();line(MINT,i%6===0?.7:.32,.6);
+    for(let i=0;i<4;i++){
+      ctx.globalAlpha=.3+Math.sin(time*1.4+i)*.14;ctx.fillStyle=night?'#9dbbbb':'#c9dfc3';ctx.fillRect(Math.round(water[0]-20+i*11),Math.round(water[1]+i%2*5),8,1);
     }
-    circle(161,-10,0,TAU,MINT,.48,.8);circle(142,-12,0,TAU,MINT,.6,.85);
-    for(let i=0;i<3;i++) {
-      circle(138,-13,-time*.2+i*TAU/3,1.1,i===1?GOLD:MINT,.85,2);
-      circle(169,-8,time*.13+i*TAU/3,.55,BLUE,.5,.9);
+    if(night)for(let i=0;i<7;i++){
+      ctx.globalAlpha=Math.max(0,Math.sin(time*.8+i*1.7))*.8;ctx.fillStyle='#e7d99a';ctx.fillRect(Math.round(155+i*43+Math.sin(time*.3+i)*8),Math.round(245+(i*37)%100+Math.cos(time*.6+i)*9),2,2);
     }
-    for(let i=0;i<120;i++) {
-      const a=i/120*TAU,r=i%5===0?177:180;
-      c.beginPath();vertex(Math.cos(a)*r,Math.sin(a)*r,0,true);vertex(Math.cos(a)*184,Math.sin(a)*184,0);line(i%5===0?GOLD:MINT,i%5===0?.5:.17,.6);
-    }
-    // Three gimbal braces catch light as the camera shifts.
-    for(let i=0;i<3;i++) {
-      const a=i*TAU/3-.5;
-      circle(159,-16,a,.18,GOLD,.9,3);
-      const p=project(Math.cos(a+.09)*164,Math.sin(a+.09)*164,-16);dot(p[0],p[1],2,GOLD,.9);
-    }
+    ctx.globalAlpha=1;
   }
-
-  function island() {
-    const bob=Math.sin(time*.7)*3;
-    c.save();c.translate(0,bob);
-    c.beginPath();c.ellipse(320,293,115,74,0,0,TAU);c.fillStyle=glass;c.fill();
-    for(const b of boxes){face(b,2);face(b,1);face(b,0);}
-    // Luminous footpaths connect the miniature buildings.
-    c.beginPath();vertex(-57,-33,10,true);vertex(30,-33,10);vertex(30,-33,32);vertex(53,-33,32);line(GOLD,.8,1.5);
-    for(let i=0;i<6;i++) {
-      const u=(time*.13+i/6)%1,p=project(-57+u*110,-32,10);
-      dot(p[0],p[1],1.6,GOLD,.9);
-    }
-    // Pixel waterfalls become falling data particles below the suspended island.
-    c.globalCompositeOperation='lighter';
-    for(let stream=0;stream<3;stream++)for(let i=0;i<18;i++) {
-      const age=(time*.38+i/18+stream*.29)%1,x=stream===0?-51:stream===1?57:18,z=stream===0?28:stream===1?-10:47;
-      const y=-42-age*104;
-      c.beginPath();vertex(x+Math.sin(i*5)*2,y,z,true);vertex(x+Math.sin(i*5)*2,y-3-age*3,z);line(stream===2?GOLD:BLUE,(1-age)*.58,.7);
-    }
-    const p=project(-18,55,-15),x=p[0],y=p[1];
-    dot(x,y,10,MINT,.045);dot(x,y,4,MINT,.2);dot(x,y,1.6,'242,255,221',1);
-    c.globalCompositeOperation='source-over';c.restore();
-    // Curved holographic meridians form a protective canopy over the small world.
-    for(let j=0;j<5;j++) {
-      c.beginPath();
-      for(let i=0;i<=75;i++) {
-        const a=i/75*Math.PI,lon=j*Math.PI/5+time*.06;
-        vertex(Math.cos(a)*Math.cos(lon)*111,-30+Math.sin(a)*126,Math.cos(a)*Math.sin(lon)*111,i===0);
-      }
-      line(MINT,.17,.7);
-    }
-    floorRing(109,-31,0,TAU,MINT,.3,.8);
-    // Brand plate is deliberately distinct from the seven destination nodes.
-    const badge=project(0,107,-25);
-    c.fillStyle='rgba(9,30,34,.9)';c.fillRect(badge[0]-33,badge[1]-13,66,28);
-    c.strokeStyle=rgba(MINT,.35);c.lineWidth=.7;c.strokeRect(badge[0]-33,badge[1]-13,66,28);
-    c.fillStyle='#e4ffd2';c.font='700 20px Consolas,monospace';c.textAlign='center';c.fillText('Li+',badge[0],badge[1]+8);
+  function stop(){cancelAnimationFrame(frame);frame=0;last=0;painted=0;}
+  function tick(now){
+    frame=0;if(!visible||document.hidden||reduced.matches)return;
+    if(last)time+=Math.min((now-last)/1000,.08);last=now;
+    if(now-painted>=33){draw();painted=now;}
+    frame=requestAnimationFrame(tick);
   }
-
-  function draw() {
-    if(!canvas.width)return;
-    c.setTransform(scale,0,0,scale,0,0);c.clearRect(0,0,640,560);
-    const reveal=reduced.matches?1:Math.min(1,arrival/1.3);
-    c.globalAlpha=reveal;
-    const yaw=-.23+Math.sin(time*.19)*.055+lookX*.075,pitch=.37+lookY*.055;
-    cy=Math.cos(yaw);sy=Math.sin(yaw);cp=Math.cos(pitch);sp=Math.sin(pitch);
-    c.fillStyle=aura;c.fillRect(0,0,640,560);
-    for(let i=0;i<60;i++)dot(55+(i*79.7)%535,40+(i*43.17)%470+Math.sin(time*.25+i)*3,i%9?.6:1.2,MINT,.11+(i%3)*.045);
-    satellites();c.globalAlpha=reveal;
-    portal(true);
-    // Subtle volumetric beam from the levitation platform into the island.
-    c.beginPath();vertex(-67,-163,0,true);vertex(-35,-77,0);vertex(35,-77,0);vertex(67,-163,0);c.closePath();c.fillStyle=core;c.fill();
-    for(let k=0;k<3;k++) {
-      floorRing(92+k*17,-157-k*5,0,TAU,k%2?BLUE:MINT,.18+k*.05,.8);
-      floorRing(92+k*17,-157-k*5,time*.19+k*2,.85,MINT,.7,1.2);
-    }
-    island();portal();
-    // Activation wave races out from the portal; replay also rebuilds the reveal.
-    if(pulse>.005)for(let i=0;i<2;i++)circle(147+(1-pulse)*(65+i*30),-12,0,TAU,i?BLUE:GOLD,pulse*.4,1.2);
-    if(!reduced.matches&&arrival<2.4) {
-      const y=140-arrival*115;
-      c.beginPath();vertex(-124,y,-25,true);vertex(124,y,-25);line(MINT,Math.sin(Math.min(1,arrival/2.4)*Math.PI)*.7,1);
-    }
-    c.globalAlpha=1;
-  }
-
-  function resize() {
-    needsResize=true;
-    if(!visible||document.hidden)return;
-    needsResize=false;
-    // CSS entrance transforms must not resize the backing buffer every frame.
-    const dpr=Math.min(devicePixelRatio||1,2);
-    canvas.width=Math.round(canvas.clientWidth*dpr);canvas.height=Math.round(canvas.clientHeight*dpr);scale=canvas.width/640;
-    aura=c.createRadialGradient(320,265,30,320,265,252);aura.addColorStop(0,'#82edc317');aura.addColorStop(.65,'#65bddb09');aura.addColorStop(1,'#65bddb00');
-    glass=c.createRadialGradient(290,250,12,320,290,122);glass.addColorStop(0,'#173e4533');glass.addColorStop(.75,'#63dbd00a');glass.addColorStop(.97,'#8dedda24');glass.addColorStop(1,'#8dedda00');
-    core=c.createLinearGradient(320,340,320,452);core.addColorStop(0,'#85dfd002');core.addColorStop(1,'#85dfd01f');
-    metal=c.createLinearGradient(160,100,470,405);metal.addColorStop(0,'#698d8b');metal.addColorStop(.23,'#16383f');metal.addColorStop(.48,'#92c4b0');metal.addColorStop(.51,'#28474c');metal.addColorStop(.8,'#456778');metal.addColorStop(1,'#142c36');
-    draw();
-  }
-  function stop(){cancelAnimationFrame(raf);raf=0;last=0;}
-  function frame(now) {
-    raf=0;if(!visible||document.hidden||reduced.matches){last=0;return;}
-    const dt=last?Math.min((now-last)/1000,.05):0;last=now;time+=dt;arrival+=dt;pulse=Math.max(0,pulse-dt*.65);
-    const easing=1-Math.exp(-dt*5);lookX+=(targetX-lookX)*easing;lookY+=(targetY-lookY)*easing;
-    draw();raf=requestAnimationFrame(frame);
-  }
-  function start(){if(!visible||document.hidden)return;if(needsResize)resize();if(reduced.matches){draw();return;}if(!raf)raf=requestAnimationFrame(frame);}
-  const sizeObserver=new ResizeObserver(resize);
-  sizeObserver.observe(canvas);
-  resize();
-  new IntersectionObserver(entries=>{
-    // Rapid layout changes can queue both entry and exit in one delivery.
-    visible=entries[entries.length-1].isIntersecting;
-    if(visible)start();else stop();
-  }).observe(canvas);
-  section.addEventListener('about:replay',()=>{arrival=0;pulse=1;start();});
-  section.addEventListener('pointermove',event=>{
-    if(!fine.matches||reduced.matches||!visible||document.hidden)return;
-    const r=section.getBoundingClientRect();targetX=Math.max(-1,Math.min(1,(event.clientX-r.left)/r.width*2-1));targetY=Math.max(-1,Math.min(1,(event.clientY-r.top)/Math.min(r.height,600)*2-1));
-  },{passive:true});
-  section.addEventListener('pointerleave',()=>{targetX=targetY=0;});
-  section.addEventListener('pointerdown',()=>{if(!visible||reduced.matches)return;pulse=1;start();});
-  reduced.addEventListener('change',()=>{stop();lookX=lookY=targetX=targetY=0;start();});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else start();});
+  function start(){if(!visible||document.hidden)return;draw();if(!reduced.matches&&!frame)frame=requestAnimationFrame(tick);}
+  button.addEventListener('click',()=>{
+    night=!night;figure.dataset.time=night?'night':'day';button.setAttribute('aria-pressed',String(night));
+    button.setAttribute('aria-label',night?'切换微缩家园的日景':'切换微缩家园的夜景');
+    button.querySelector('.homestead-toggle-label').textContent=night?'迎接日光':'点亮夜晚';
+    caption.textContent=night?'灯亮了，小岛还醒着。':'日光下，慢慢建造。';draw();
+  });
+  new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;if(visible)start();else stop();}).observe(canvas);
+  reduced.addEventListener('change',()=>{stop();time=0;start();});
+  document.addEventListener('visibilitychange',()=>document.hidden?stop():start());
   window.addEventListener('pagehide',stop);window.addEventListener('pageshow',start);
+  draw();
 }

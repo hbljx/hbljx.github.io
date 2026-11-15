@@ -28,6 +28,7 @@
 <link rel="stylesheet" href="navigation/footer-effects.css">
 <link rel="stylesheet" href="navigation/about-scene.css?v=20261115-08">
 <link rel="stylesheet" href="navigation/footer-runner.css">
+<link rel="stylesheet" href="navigation/island-craft.css?v=20261115-map-journal">
 <link rel="stylesheet" href="engine/ui/loading.css">
 <style>
   #startupNotice[hidden],#localServerNotice[hidden]{display:none!important}
@@ -143,7 +144,8 @@
         <p class="kicker"><span></span> EXPLORE THE ISLAND</p>
         <h2>每个场景，<br>一组常用网址<span>.</span></h2>
         <p>从 AI 工作台到音乐咖啡吧，按场景找到想去的地方。</p>
-        <a class="solid-link" href="#zones">查看场景 <span aria-hidden="true">↓</span></a>
+        <a class="solid-link craft-button" href="#zones"><img src="assets/bookmark-icons/compass.webp" width="24" height="24" alt="">查看场景 <span aria-hidden="true">↓</span></a>
+        <div class="explore-footnote"><span aria-hidden="true">01 — 07</span><span>七个场景 · 一张探索地图</span></div>
       </div>
     </div>
   </section>
@@ -159,33 +161,49 @@
     <p id="room-result-count" role="status"></p>
     <nav id="room-matches" aria-label="搜索结果所在场景"></nav>
   </dialog>
-  <section id="about-us" class="about-us">
+  <section id="about-us" class="about-us" aria-labelledby="about-profile-title">
     <div class="about-profile">
       <div class="about-profile-copy">
-        <p class="kicker">ABOUT LI+ / 关于我们</p>
-        <h2>电脑软硬件爱好者 · 效率工具折腾者</h2>
-        <p class="about-intro">我喜欢折腾电脑软硬件和各类效率工具，习惯用工具解决问题、把想法做成能用的东西。不是科班程序员，但长期关注软件工具链、AI 应用、网站搭建与内容制作，也喜欢研究电脑相关硬件外设和日常维护。</p>
-        <a class="solid-link" href="?view=3d">进入我们的像素家园</a>
+        <p class="kicker"><img src="assets/bookmark-icons/book.webp" width="24" height="24" alt=""> ABOUT LI+ / 关于我们</p>
+        <h2 id="about-profile-title">把热爱，<br>搭成一座小岛<span>。</span></h2>
+        <p class="about-role">电脑软硬件爱好者 · 效率工具折腾者</p>
+        <div class="about-journal">
+          <div class="journal-heading"><span>岛主手记</span><small>FIELD NOTES / 01</small></div>
+          <dl class="about-notes">
+            <div><dt><span aria-hidden="true">01</span> 我是谁</dt><dd>不是科班程序员，喜欢折腾电脑软硬件和各类效率工具，用工具解决问题，把想法做成能用的东西。</dd></div>
+            <div><dt><span aria-hidden="true">02</span> 喜欢折腾什么</dt><dd>软件工具链、AI 应用、网站搭建与内容制作，也研究硬件外设和电脑的日常维护。</dd></div>
+            <div><dt><span aria-hidden="true">03</span> 这座小岛</dt><dd>把常用网址按场景收好，让工具、灵感和音乐都有自己的位置，也把折腾过程里的发现分享出来。</dd></div>
+          </dl>
+          <div class="journal-signature"><span>保持好奇，继续建造。</span><b>Li+</b></div>
+        </div>
+        <a class="solid-link craft-button" href="?view=3d"><img src="assets/bookmark-icons/portal.webp" width="24" height="24" alt="">进入我们的像素家园 <span aria-hidden="true">→</span></a>
       </div>
-      <div class="about-world-slot" aria-hidden="true"></div>
+      <figure class="about-homestead" data-time="day">
+        <figcaption><span><i aria-hidden="true"></i> 岛上的一隅</span><small>HOME, BLOCK BY BLOCK</small></figcaption>
+        <div class="about-world-slot"></div>
+        <div class="homestead-controls"><p><span class="homestead-time">日光下，慢慢建造。</span><small>草方块 · 橡木 · 一盏灯</small></p><button class="homestead-toggle" type="button" aria-pressed="false" aria-label="切换微缩家园的夜景"><span class="homestead-symbol" aria-hidden="true"></span><span class="homestead-toggle-label">点亮夜晚</span></button></div>
+      </figure>
     </div>
     <section class="about-projects" aria-labelledby="about-projects-title">
       <h3 class="about-section-title" id="about-projects-title"><img src="assets/bookmark-icons/pickaxe.webp" width="28" height="28" alt="" loading="lazy">在折腾什么</h3>
       <div class="about-project-grid">
         <article class="about-project-card">
-          <span class="about-item-slot" aria-hidden="true"><img src="assets/bookmark-icons/command.webp" width="32" height="32" alt="" loading="lazy"></span>
+          <span class="about-item-slot" aria-hidden="true"><svg viewBox="0 0 32 32" width="36" height="36"><path fill="#382b20" d="M2 7 16 1l14 6v20l-14 5L2 26z"/><path fill="#bd945f" d="m4 8 12-5 12 5-12 5z"/><path fill="#80603a" d="m4 10 11 5v14L4 25z"/><path fill="#5c422e" d="m17 15 11-5v15l-11 4z"/><path fill="none" stroke="#68492d" stroke-width="1.5" d="m8 6 12 5m-7-7 12 5M9 10l12-5m-7 7 12-5"/><path fill="#ceb17b" d="M7 15h3v7H7zm13 2h5v2h-5z"/><path fill="#2d3028" d="M7 21h3v5H7zm15-2h2v7h-2z"/></svg></span>
           <h4>软件与效率工具</h4>
           <p>常用 Photoshop 做海报、Premiere 剪视频、InDesign 排手册；用 WordPress 搭网站；用 AI 工具辅助内容生产；运营公众号践行，习惯把折腾过程整理成可复用的教程或分享。</p>
+          <details class="craft-inventory"><summary>打开工具箱 <span aria-hidden="true">＋</span></summary><div><span>Photoshop</span><span>Premiere</span><span>InDesign</span><span>WordPress</span><span>AI 工具</span></div></details>
         </article>
         <article class="about-project-card">
           <span class="about-item-slot" aria-hidden="true"><img src="assets/bookmark-icons/repeater.webp" width="32" height="32" alt="" loading="lazy"></span>
           <h4>硬件与外设</h4>
           <p>关注电脑日常维护、外设搭配与拍摄直播设备，喜欢研究怎么用有限预算把设备组合到顺手。</p>
+          <details class="craft-inventory"><summary>查看装备 <span aria-hidden="true">＋</span></summary><div><span>电脑维护</span><span>外设搭配</span><span>拍摄设备</span><span>直播设备</span></div></details>
         </article>
         <article class="about-project-card">
           <span class="about-item-slot" aria-hidden="true"><img src="assets/bookmark-icons/book.webp" width="32" height="32" alt="" loading="lazy"></span>
           <h4>内容与记录</h4>
           <p>相机拍摄、活动直播，喜欢把过程和结果记录下来，做成图文或视频分享。</p>
+          <details class="craft-inventory"><summary>翻开记录 <span aria-hidden="true">＋</span></summary><div><span>图文教程</span><span>视频剪辑</span><span>活动直播</span><span>公众号践行</span></div></details>
         </article>
       </div>
     </section>

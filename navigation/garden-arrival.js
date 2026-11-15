@@ -1,6 +1,6 @@
 import { mountFooterLandscape } from './footer-landscape.js';
 
-// The final chapter shares the garden's terrain; scrolling uncovers the about card.
+// The final chapter shares the garden terrain; the journal is always readable.
 export function mountGardenArrival() {
   const section = document.querySelector('#about-us');
   if (!section) return;
@@ -15,16 +15,6 @@ export function mountGardenArrival() {
   ridge.innerHTML = '<span></span><span></span>' + Array.from({length:16}, (_,i) =>
     `<i style="--i:${i};--x:${(i*43+7)%100}%;--lift:${22+i%4*14}px;--size:${5+i%3*4}px"></i>`).join('');
   journey.prepend(ridge);
-  const veil = document.createElement('div');
-  veil.className = 'arrival-veil';
-  veil.setAttribute('aria-hidden', 'true');
-  const panels = Array.from({length:12}, (_,i) => {
-    const panel = document.createElement('i');
-    panel.style.setProperty('--i', i);
-    veil.append(panel);
-    return panel;
-  });
-  section.append(veil);
   let raf = 0, visible = false, last = -1;
   const smooth = n => { const t = Math.max(0, Math.min(1,n)); return t*t*(3-2*t); };
   function draw() {
@@ -36,11 +26,6 @@ export function mountGardenArrival() {
     if (Math.abs(p-last)<.0001) return;
     last = p;
     journey.style.setProperty('--arrival', p.toFixed(4));
-    panels.forEach((panel,i) => {
-      const stagger = Math.abs(i-5.5)*.035;
-      panel.style.transform = `translateY(${-105*smooth((p-stagger)/.65)}%)`;
-    });
-    veil.hidden = p >= .999 || reduced.matches;
   }
   function schedule() {
     if (!raf && visible && !document.hidden) raf = requestAnimationFrame(draw);
@@ -54,11 +39,6 @@ export function mountGardenArrival() {
   new ResizeObserver(schedule).observe(journey);
   reduced.addEventListener('change', () => {last=-1;schedule();});
   document.addEventListener('visibilitychange', schedule);
-  // Keyboard focus must never land behind a decorative transition.
-  section.addEventListener('focusin', () => {journey.classList.add('arrival-focused');});
-  section.addEventListener('focusout', event => {
-    if (!section.contains(event.relatedTarget)) journey.classList.remove('arrival-focused');
-  });
   // The directory is populated asynchronously above this section. Restore a direct
   // about link after that layout change, unless the visitor has started navigating.
   if (location.hash === '#about-us') {
@@ -66,7 +46,6 @@ export function mountGardenArrival() {
     const restore = () => {
       if (initial.signal.aborted || location.hash !== '#about-us') return;
       journey.style.setProperty('--arrival', '1');
-      veil.hidden = true;
       last = 1;
       section.scrollIntoView({behavior:'instant',block:'start'});
       schedule();

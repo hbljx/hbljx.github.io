@@ -68,6 +68,8 @@ if (worldMode) {
   mountCraftDetails();
   const { mountFooterEffects } = await import('./footer-effects.js');
   mountFooterEffects();
+  const { mountIslandMap } = await import('./island-map.js');
+  mountIslandMap();
 
   const hero = document.querySelector('.hero');
   const stage = document.querySelector('.hero-stage');
@@ -87,16 +89,19 @@ if (worldMode) {
     stage.style.setProperty('--shrink',shrink);
     stage.style.setProperty('--fade',fade);
     stage.style.setProperty('--reveal',reveal);
-    opening.inert = bottom.inert = fade < .05;
+    opening.inert = bottom.inert = !reduced.matches && fade < .05;
     opening.setAttribute('aria-hidden',String(opening.inert));
     bottom.setAttribute('aria-hidden',String(bottom.inert));
     closing.inert = reveal < .1;
     closing.toggleAttribute('data-visible',!closing.inert);
+    const map = stage.querySelector('.island-map');
+    if (map) map.inert = reveal < .85;
+    stage.classList.toggle('explore-ready', reveal >= .85);
   }
   function render() {
     frame = 0;
     if (!visible || document.hidden) return;
-    const next = reduced.matches ? 0 : clamp(scrollY / scrollRange);
+    const next = reduced.matches ? 1 : clamp(scrollY / scrollRange);
     if (next !== progress) {
       progress = next;
       updateScene();
@@ -108,6 +113,7 @@ if (worldMode) {
   }
   const resize = () => {
     scrollRange = Math.max(1,hero.offsetHeight - stage.offsetHeight);
+    progress = -1;
     start();
   };
   new ResizeObserver(resize).observe(stage);
