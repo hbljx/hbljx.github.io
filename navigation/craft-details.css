@@ -2,7 +2,7 @@
 .site-header .craft-brand {position:relative;min-height:48px;gap:10px;padding:5px 2px;isolation:isolate}
 .craft-brand .brand-item {position:relative;display:grid;place-items:center;flex:none}
 .craft-brand .brand-item::after {content:'';position:absolute;bottom:-4px;left:5px;right:5px;height:3px;background:#030a06;box-shadow:0 1px #a5d47425;z-index:-1;transition:transform .3s,opacity .3s}
-.header-enhanced .craft-brand img {display:block;border:1px solid #c2dfa247;border-radius:3px;box-shadow:inset 0 1px #fff3,0 2px 0 #030a06,0 0 12px #8bff6312;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;image-rendering:pixelated}
+.site-header .craft-brand img {display:block;border:1px solid #c2dfa247;border-radius:3px;box-shadow:inset 0 1px #fff3,0 2px 0 #030a06,0 0 12px #8bff6312;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;image-rendering:pixelated}
 .craft-brand b {position:relative;display:flex;align-items:baseline;letter-spacing:-.04em;text-shadow:1px 2px 0 #020902}
 .craft-brand b .brand-letters {position:relative;color:#f1f6e8}
 .brand-letters::after {content:attr(data-letters);position:absolute;inset:0;color:transparent;text-shadow:none;background:linear-gradient(115deg,transparent 32%,#bd9aff 44%,#eeedff 49%,#94e4ff 54%,transparent 66%) 150% 0/300% 100%;background-clip:text;-webkit-background-clip:text;opacity:0;pointer-events:none}
@@ -48,17 +48,17 @@
   --portal-hover-inset:color-mix(in srgb,var(--item-accent) 16%,transparent);
   --portal-hover-glow:color-mix(in srgb,var(--item-accent) 15%,transparent);
 }
-.site-header.header-enhanced :is(nav a,.about-nav,.world-link,#scene-links a) {min-height:44px;gap:7px;color:var(--portal-text,#f0e5ff);background:linear-gradient(125deg,var(--portal-bg,#372b47),var(--portal-bg-end,#211a30) 65%);border:2px solid;border-color:var(--portal-edge,#7d6297) var(--portal-edge-right,#261d36) var(--portal-edge-bottom,#191321) var(--portal-edge-left,#6b537f);border-radius:2px;box-shadow:inset 0 0 0 1px var(--portal-inset,#a180bb25),0 3px 0 #08060d,0 0 14px var(--portal-glow,#a75bff16);overflow:hidden}
-.site-header.header-enhanced :is(nav a,.about-nav,.world-link,#scene-links a) {transition:transform .18s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,color .18s ease}
-.site-header.header-enhanced :is(nav a,.about-nav,.world-link,#scene-links a)::after {inset:3px;background:linear-gradient(115deg,transparent 20%,var(--portal-sheen,#bc83ff20) 50%,transparent 80%);transform:none;opacity:0;transition:none}
-.site-header.header-enhanced :is(nav a,.about-nav,.world-link,#scene-links a):is(:hover,:focus-visible) {background:linear-gradient(125deg,var(--portal-hover-bg,#4b3363),var(--portal-hover-end,#2c1e42));border-color:var(--portal-hover-edge,#b08ad1) var(--portal-hover-right,#634680) var(--portal-hover-bottom,#3c2851) var(--portal-hover-edge,#b08ad1);color:var(--portal-hover-text,#fff0ff);box-shadow:inset 0 0 0 1px var(--portal-hover-inset,#cca4ff28),0 4px 0 #08060d,0 0 20px var(--portal-hover-glow,#b367ff25);transform:translateY(-1px)}
-.site-header.header-enhanced :is(nav a,.about-nav,.world-link,#scene-links a):active {transform:translateY(2px);box-shadow:inset 0 2px 4px #05020d,0 1px #08060d}
+.site-header :is(nav a,.about-nav,.world-link,#scene-links a) {min-height:44px;gap:7px;color:var(--portal-text,#f0e5ff);background:linear-gradient(125deg,var(--portal-bg,#372b47),var(--portal-bg-end,#211a30) 65%);border:2px solid;border-color:var(--portal-edge,#7d6297) var(--portal-edge-right,#261d36) var(--portal-edge-bottom,#191321) var(--portal-edge-left,#6b537f);border-radius:2px;box-shadow:inset 0 0 0 1px var(--portal-inset,#a180bb25),0 3px 0 #08060d,0 0 14px var(--portal-glow,#a75bff16);overflow:hidden}
+.site-header :is(nav a,.about-nav,.world-link,#scene-links a) {transition:transform .18s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,color .18s ease}
+.site-header :is(nav a,.about-nav,.world-link,#scene-links a)::after {inset:3px;background:linear-gradient(115deg,transparent 20%,var(--portal-sheen,#bc83ff20) 50%,transparent 80%);transform:none;opacity:0;transition:none}
+.site-header :is(nav a,.about-nav,.world-link,#scene-links a):is(:hover,:focus-visible) {background:linear-gradient(125deg,var(--portal-hover-bg,#4b3363),var(--portal-hover-end,#2c1e42));border-color:var(--portal-hover-edge,#b08ad1) var(--portal-hover-right,#634680) var(--portal-hover-bottom,#3c2851) var(--portal-hover-edge,#b08ad1);color:var(--portal-hover-text,#fff0ff);box-shadow:inset 0 0 0 1px var(--portal-hover-inset,#cca4ff28),0 4px 0 #08060d,0 0 20px var(--portal-hover-glow,#b367ff25);transform:translateY(-1px)}
+.site-header :is(nav a,.about-nav,.world-link,#scene-links a):active {transform:translateY(2px);box-shadow:inset 0 2px 4px #05020d,0 1px #08060d}
 .world-link .cube-mark {width:17px;height:24px;flex:none;clip-path:none;background:#130e20;border:3px solid;border-color:#514361 #241c31 #201728 #68517c;box-shadow:0 0 0 1px #0b0712,1px 1px #c59ae638;overflow:visible}
 .world-link .cube-mark::after {inset:0;clip-path:none;background:repeating-linear-gradient(0deg,#7135a4 0 3px,#9d56d2 3px 5px,#542778 5px 8px);box-shadow:inset 2px 0 #c68bf344,inset -2px 0 #2c104b66,0 0 7px #b25cf749;opacity:.9}
 .world-link .cube-mark::before {content:'';position:absolute;width:2px;height:2px;left:3px;top:8px;z-index:1;background:#e1b7ff;box-shadow:5px -7px #bd80e8,-6px 5px #cb93ff;opacity:0}
 .portal-awake .cube-mark::after {animation:craft-portal 1.3s steps(8) both}
 .portal-awake .cube-mark::before {animation:craft-portal-motes 1.2s ease-out both}
-.site-header.header-enhanced .portal-awake::after {animation:craft-portal-glow 1.3s ease both}
+.site-header .portal-awake::after {animation:craft-portal-glow 1.3s ease both}
 
 /* Translucent slots leave the animated room installations visible behind the text. */
 .room-directory {border-top:0}
@@ -164,7 +164,7 @@
 }
 @media(prefers-reduced-motion:reduce) {
   .craft-brand,.craft-brand *,.craft-brand *::after,.craft-brand *::before,
-  .site-header.header-enhanced :is(nav a,.about-nav,.world-link,#scene-links a),.site-header.header-enhanced :is(nav a,.about-nav,.world-link,#scene-links a)::after,.world-link .cube-mark::before,.world-link .cube-mark::after,
+  .site-header :is(nav a,.about-nav,.world-link,#scene-links a),.site-header :is(nav a,.about-nav,.world-link,#scene-links a)::after,.world-link .cube-mark::before,.world-link .cube-mark::after,
   .room-directory .room-card,.room-directory .room-mark img {animation:none!important;transition:none!important;transform:none!important;translate:none!important}
   .brand-xp,.brand-letters::after,.world-link .cube-mark::before {display:none}
 }
