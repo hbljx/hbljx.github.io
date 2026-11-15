@@ -841,16 +841,6 @@
           ]
         },
         {
-          "id": "site-ehvyby",
-          "name": "腾讯视频",
-          "url": "https://v.qq.com/channel/cartoon",
-          "description": "腾讯视频致力于打造中国领先的在线视频媒体平台。",
-          "icon": "uploads/tx.png",
-          "collections": [
-            "original"
-          ]
-        },
-        {
           "id": "site-1j585c8",
           "name": "我要自学网",
           "url": "https://www.51zxw.net/",
