@@ -36,8 +36,8 @@ export function mountSearchObservatory(environment) {
   let wake=.18,impulse=0,switchPulse=0,launchPulse=0,packetCursor=0,scale=1,minStroke=1;
   let palette=[];
 
-  // Stronger etched contours; even the fine network stays at least one CSS pixel.
-  function line(alpha=1,width=1,tint=rgb) {c.strokeStyle=color(tint,alpha);c.lineWidth=Math.max(width*1.65,minStroke);c.stroke();}
+  // Bold etched contours; even the fine network stays at least 1.5 CSS pixels.
+  function line(alpha=1,width=1,tint=rgb) {c.strokeStyle=color(tint,alpha);c.lineWidth=Math.max(width*2.5,minStroke);c.stroke();}
   function dot(x,y,r,alpha=1,tint=rgb) {c.beginPath();c.arc(x,y,r,0,TAU);c.fillStyle=color(tint,alpha);c.fill();}
   function arc(r,start,end,alpha,width=1) {c.beginPath();c.arc(320,254,r,start,end);line(alpha,width);}
   function path(x,y,tx,ty,bend) {c.beginPath();c.moveTo(x,y);c.quadraticCurveTo((x+tx)*.5+bend,(y+ty)*.5-bend,tx,ty);}
@@ -46,7 +46,7 @@ export function mountSearchObservatory(environment) {
     screen[offset]=v*v*x+2*v*u*((x+tx)*.5+bend)+u*u*tx;
     screen[offset+1]=v*v*y+2*v*u*((y+ty)*.5-bend)+u*u*ty;
   }
-  function font(size=9) {c.font=`${size}px ui-monospace, Consolas, "Microsoft YaHei", monospace`;}
+  function font(size=9) {c.font=`700 ${size}px ui-monospace, Consolas, "Microsoft YaHei", monospace`;}
 
   function gradients() {
     palette=ENGINES.map(engine=>{
@@ -254,7 +254,7 @@ export function mountSearchObservatory(environment) {
   function resize() {
     const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
     canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);scale=canvas.width/640;
-    minStroke=640/Math.max(rect.width,1);
+    minStroke=1.5*640/Math.max(rect.width,1);
     gradients();draw();
   }
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(canvas);resize();
