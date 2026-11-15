@@ -16,6 +16,7 @@ const DESTINATIONS=[
 export function mountAboutWorld(section,decor) {
   const canvas=document.createElement('canvas');canvas.className='about-world';
   canvas.setAttribute('aria-hidden','true');decor.append(canvas);
+  const kicker=section.querySelector('.kicker');
   const c=canvas.getContext('2d');if(!c)return;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const fine=matchMedia('(hover: hover) and (pointer: fine)');
@@ -214,6 +215,12 @@ export function mountAboutWorld(section,decor) {
 
   function resize() {
     needsResize=true;
+    if(kicker) {
+      // Align the top AI node's bracket, excluding the canvas's transparent margin.
+      const artworkTop=(DESTINATIONS[1].y-25)*canvas.clientWidth/640;
+      const top=kicker.getBoundingClientRect().bottom-decor.getBoundingClientRect().top-artworkTop;
+      canvas.style.setProperty('--about-world-top',`${top}px`);
+    }
     if(!visible||document.hidden)return;
     needsResize=false;
     // CSS entrance transforms must not resize the backing buffer every frame.
@@ -233,7 +240,10 @@ export function mountAboutWorld(section,decor) {
     draw();raf=requestAnimationFrame(frame);
   }
   function start(){if(!visible||document.hidden)return;if(needsResize)resize();if(reduced.matches){draw();return;}if(!raf)raf=requestAnimationFrame(frame);}
-  new ResizeObserver(resize).observe(canvas);resize();
+  const sizeObserver=new ResizeObserver(resize);
+  sizeObserver.observe(canvas);
+  if(kicker)sizeObserver.observe(kicker);
+  resize();
   new IntersectionObserver(entries=>{
     // Rapid layout changes can queue both entry and exit in one delivery.
     visible=entries[entries.length-1].isIntersecting;
