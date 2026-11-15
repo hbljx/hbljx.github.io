@@ -21,7 +21,7 @@ export function mountHeaderEffects() {
   aura.setAttribute('aria-hidden','true'); rail.setAttribute('aria-hidden','true');
   auraClip.append(aura); header.append(auraClip,rail,sparkLayer); header.classList.add('header-enhanced');
   let frame = 0, measure = true, hovered = null, focused = null, selected = null;
-  let pointer = null, lastBurst = -Infinity, lastTarget = null, lastRailX = -1, lastRailWidth = -1;
+  let pointer = null, lastBurst = -Infinity, lastAccent = null, lastRailX = -1, lastRailWidth = -1;
   const bursts = new Map();
   const targetLink = node => node instanceof Element ? node.closest('nav a,.about-nav,.world-link') : null;
 
@@ -55,9 +55,11 @@ export function mountHeaderEffects() {
     const rect = target?.getBoundingClientRect();
     if (rect) {
       const x = Math.round(rect.left - bounds.left + header.scrollLeft + 7), width = Math.max(8,Math.round(rect.width - 14));
-      if (lastTarget !== target) {
-        header.style.setProperty('--nav-accent',sections.find(item => item.link === target)?.color || '#c7f776');
-        lastTarget = target;
+      // A selected or focused link keeps the shared home color after hover ends.
+      const accent = hovered ? sections.find(item => item.link === hovered)?.color || '#c7f776' : '#c7f776';
+      if (lastAccent !== accent) {
+        header.style.setProperty('--nav-accent',accent);
+        lastAccent = accent;
       }
       if (x !== lastRailX) {rail.style.transform = `translateX(${x}px)`; lastRailX = x;}
       if (width !== lastRailWidth) {rail.style.width = `${width}px`; lastRailWidth = width;}

@@ -1,12 +1,13 @@
 /* Five coordinated effects; text is never blurred or scaled. */
+.site-header {--nav-rest-accent:#c7f776}
 .site-header a[href="#home"] {--item-accent:#c7f776}
 .site-header a[href="#category-common-sites"] {--item-accent:#80caff}
 .site-header a[href="#category-software-news"] {--item-accent:#ffbd75}
 .site-header a[href="#about-us"] {--item-accent:#d6a2ff}
 .site-header :is(nav a,.about-nav) {
-  color:var(--item-accent);
-  background:color-mix(in srgb,var(--item-accent) 12%,#0b160f);
-  border:1px solid color-mix(in srgb,var(--item-accent) 40%,transparent);
+  color:var(--nav-rest-accent);
+  background:color-mix(in srgb,var(--nav-rest-accent) 12%,#0b160f);
+  border:1px solid color-mix(in srgb,var(--nav-rest-accent) 40%,transparent);
   border-radius:5px;
 }
 .site-header.header-enhanced {
@@ -43,16 +44,16 @@
   transform:translateX(-150%);
 }
 .site-header.header-enhanced :is(nav a,.about-nav) {
-  transform:none;color:var(--item-accent);
-  background:color-mix(in srgb,var(--item-accent) 12%,#0b160f);
-  border-color:color-mix(in srgb,var(--item-accent) 40%,transparent);
+  transform:none;color:var(--nav-rest-accent);
+  background:color-mix(in srgb,var(--nav-rest-accent) 12%,#0b160f);
+  border-color:color-mix(in srgb,var(--nav-rest-accent) 40%,transparent);
   box-shadow:0 3px 0 #030a05,inset 0 1px #eaffd508;
 }
 .header-enhanced :is(nav a,.about-nav):is([aria-current],:focus-visible),
 .header-enhanced #scene-links a:is([aria-current],:focus-visible) {
-  color:var(--item-accent,#c7f776);border-color:var(--item-accent,#c7f776);
-  background:color-mix(in srgb,var(--item-accent,#c7f776) 11%,#0b160f);
-  box-shadow:0 3px 0 #030a05,inset 0 0 12px #b9f97b0c,0 0 14px color-mix(in srgb,var(--item-accent,#c7f776) 18%,transparent);
+  color:var(--nav-rest-accent);border-color:var(--nav-rest-accent);
+  background:color-mix(in srgb,var(--nav-rest-accent) 11%,#0b160f);
+  box-shadow:0 3px 0 #030a05,inset 0 0 12px #b9f97b0c,0 0 14px color-mix(in srgb,var(--nav-rest-accent) 18%,transparent);
   transform:none;
 }
 .header-enhanced .world-link {border-color:#dcff9d;color:#13210d;background:#c7f776;box-shadow:0 3px 0 #547b29,0 0 18px #c7f77624}
