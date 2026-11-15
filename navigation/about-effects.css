@@ -50,35 +50,43 @@
 @media(prefers-reduced-motion:reduce){.about-enhanced *,.about-enhanced *:before,.about-enhanced *:after{animation:none!important;transition:none!important}.about-scanner,.about-click-wave,.about-char:after{display:none}.about-replay{display:none}}
 
 /* Reserve a grid column for the artwork so later content cannot cover it. */
-.about-profile {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:start;gap:32px}
-.about-profile-copy {min-width:0}
-.about-world-slot {position:relative;width:100%;aspect-ratio:8/7;pointer-events:none}
+.about-profile {display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:stretch;gap:28px}
+.about-profile-copy {min-width:0;display:flex;flex-direction:column}
+.about-profile-copy .about-actions {margin-top:auto;padding-top:16px}
+/* The drawing occupies y=35..483 in its 640x560 canvas; omit transparent margins from layout. */
+.about-world-slot {position:relative;width:100%;max-width:560px;aspect-ratio:640/448;pointer-events:none;align-self:start;justify-self:end}
 .about-world {
   position: absolute;
   inset:0;
   width:100%;
-  height:100%;
+  height:auto;
+  aspect-ratio:8/7;
+  transform:translateY(-6.25%);
   display: block;
   pointer-events: none;
   opacity: .9;
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 95%, transparent);
 }
 .about-us.about-enhanced { padding-top: 28px; }
-.about-profile .kicker { margin-top: 0; }
+.about-profile .kicker { margin:0 0 16px;align-self:flex-start; }
 .about-profile h2 { max-width:100%; }
 .about-enhanced .about-aurora { opacity: .55; }
 .about-enhanced .about-matrix { opacity: .5; }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .about-profile {grid-template-columns:1fr;gap:16px}
-  .about-world-slot {max-width:440px;justify-self:center}
+  .about-profile-copy {display:contents}
+  .about-profile .kicker {margin-bottom:0}
+  .about-profile .about-intro {margin-top:0}
+  .about-profile-copy .about-actions {margin-top:0;padding-top:0;grid-row:5}
+  .about-world-slot {max-width:440px;justify-self:center;grid-row:4}
 }
 @media (max-width: 700px) {
   .about-us.about-enhanced { padding-top: 22px; }
 }
 
 /* Personal profile: block panels and inset inventory slots. */
-#flat-home .about-us h2 {font-size:clamp(26px,2.7vw,38px);line-height:1.55;letter-spacing:.02em;text-wrap:balance;text-shadow:3px 3px 0 #07150d}
-.about-us .about-intro {margin:22px 0 0;font-size:16px;line-height:1.95;color:#c3d1b8}
+#flat-home .about-us h2 {font-size:clamp(26px,2.3vw,34px);line-height:1.4;letter-spacing:.02em;text-wrap:balance;text-shadow:3px 3px 0 #07150d}
+.about-us .about-intro {margin:16px 0 0;font-size:16px;line-height:1.85;color:#c3d1b8}
 .about-projects {margin-top:24px}
 .about-us .about-section-title {display:flex;align-items:center;gap:12px;margin:0 0 18px;color:#e3efcc;font-size:21px;letter-spacing:.08em;text-shadow:2px 2px 0 #07150d}
 .about-section-title img,.about-item-slot img {object-fit:contain;image-rendering:pixelated;flex-shrink:0}
