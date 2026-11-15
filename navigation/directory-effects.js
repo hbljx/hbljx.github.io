@@ -61,6 +61,10 @@ export function mountDirectoryEffects(root) {
   document.addEventListener('visibilitychange',()=>root.classList.toggle('fx-paused',document.hidden));
   return {
     beforeRender() {
+      root.querySelectorAll('.energy-wires').forEach(svg=>{
+        svg.getAnimations({subtree:true}).forEach(animation=>animation.cancel());
+        svg.replaceChildren();
+      });
       return new Map([...root.querySelectorAll('.room-card')].map(card=>[card.dataset.site,{rect:card.getBoundingClientRect(),node:card}]));
     },
     afterRender(previous) {

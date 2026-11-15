@@ -61,6 +61,62 @@
 .room-directory .room-card:active .room-mark img {translate:0 0}
 .room-directory .room-card>a:focus-visible {outline:2px solid #e5ffbe;outline-offset:-4px}
 
+/* Garage slots: machined corner marks, a brief glint, and a recessed launch key. */
+[data-room=lab] .room-directory .room-card {
+  border-color:#8bdfff38 #53869730 #31505b70 #7db5c238;
+  transition:border-color .28s,background-color .28s,box-shadow .28s;
+}
+[data-room=lab] .room-directory .room-card::before {
+  background:radial-gradient(150px circle at var(--mx) var(--my),#8bdfff1c,transparent 75%);
+}
+[data-room=lab] .room-directory .room-card::after {
+  content:'';display:block;position:absolute;inset:5px;pointer-events:none;
+  background:linear-gradient(#b4edff,#b4edff) left top/9px 1px no-repeat,
+    linear-gradient(#b4edff,#b4edff) left top/1px 9px no-repeat,
+    linear-gradient(#8bdfff,#8bdfff) right bottom/9px 1px no-repeat,
+    linear-gradient(#8bdfff,#8bdfff) right bottom/1px 9px no-repeat;
+  opacity:0;transition:opacity .28s;
+}
+[data-room=lab] .room-directory .room-card>a {overflow:hidden;isolation:isolate}
+[data-room=lab] .room-directory .room-card>a::before {
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(110deg,transparent 30%,#b5eaff0d 45%,#d9f5ff16 50%,transparent 65%);
+  transform:translateX(-110%);opacity:0;
+}
+[data-room=lab] .room-directory .room-mark {
+  border-color:#071216 #43616a #43616a #071216;background:#0c191c;
+  transition:border-color .28s,box-shadow .28s;
+}
+[data-room=lab] .room-directory .room-card-exit {
+  display:grid;place-items:center;flex:none;width:24px;height:24px;
+  border:1px solid #8bdfff26;border-radius:2px;background:#09191c66;color:#a5c8d1;
+  transition:color .25s,border-color .25s,background-color .25s,transform .25s,opacity .25s;
+}
+[data-room=lab] .room-directory .room-card:is(:hover,:focus-within) {
+  border-color:#a5e6fba6 #6cadc080 #49758680 #89d2e6a6;background-color:rgb(18 37 39 / .66);
+  box-shadow:inset 0 1px #cef4ff12,inset 0 -1px #020a0c55,0 2px #02090440,0 0 14px #74d7ff0d;
+}
+[data-room=lab] .room-directory .room-card:is(:hover,:focus-within)::after {opacity:.8}
+[data-room=lab] .room-directory .room-card:is(:hover,:focus-within)>a::before {animation:garage-glint .75s ease-out both}
+[data-room=lab] .room-directory .room-card:is(:hover,:focus-within) .room-mark {
+  border-color:#14272c #6c9daa #6c9daa #14272c;box-shadow:inset 2px 2px #0005,0 0 8px #8bdfff12;
+}
+[data-room=lab] .room-directory .room-card:is(:hover,:focus-within) .room-mark img {translate:0 -2px;filter:drop-shadow(0 3px 2px #0007)}
+[data-room=lab] .room-directory .room-card:is(:hover,:focus-within) .room-card-exit {
+  color:#d8f5ff;border-color:#8bdfff73;background:#8bdfff12;opacity:1;transform:translate(1px,-1px);box-shadow:none;
+}
+[data-room=lab] .room-directory .room-card:active {box-shadow:inset 0 2px 5px #020a0c99}
+[data-room=lab] .room-directory .room-card:active .room-mark img,
+[data-room=lab] .room-directory .room-card:active .room-card-exit {translate:0 0;transform:none}
+@keyframes garage-glint {
+  0% {transform:translateX(-110%);opacity:0}
+  20% {opacity:1}
+  100% {transform:translateX(110%);opacity:0}
+}
+@media(hover:none) {
+  [data-room=lab] .room-directory .room-card>a::before {display:none}
+}
+
 /* Experience gauge: the mask cuts both the fill and glint into fixed segments. */
 .about-countdown[data-effects-mounted] .countdown-card {background:linear-gradient(135deg,#243022,#101d17 75%);border:2px solid;border-color:#5c704d #243522 #0a140e #475b3c;box-shadow:inset 1px 1px #bfdb9620,0 4px #050d09;transform:none}
 .about-countdown .countdown-card::after {inset:6px;opacity:.35}

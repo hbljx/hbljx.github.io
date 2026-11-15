@@ -13,7 +13,7 @@ export function mountSpectacle(root) {
  rooms.forEach(room=>{
   const stage=document.createElement('div');stage.className='spectacle-stage';stage.setAttribute('aria-hidden','true');
   room.prepend(stage);observer.observe(room);
-  // Keep the wires above the cards, separate from the background artwork.
+  // Wires sit between the background artwork and the link cards.
   const wires=document.createElementNS('http://www.w3.org/2000/svg','svg');
   wires.classList.add('energy-wires');wires.setAttribute('aria-hidden','true');
   wires.setAttribute('width','100%');wires.setAttribute('height','100%');
@@ -21,13 +21,33 @@ export function mountSpectacle(root) {
  });
  mountInstallations(root);
  let lastCard=null,lastWave=0;
+ function clearWires(svg){
+  svg.querySelectorAll('path').forEach(path=>path.getAnimations().forEach(animation=>animation.cancel()));
+  svg.replaceChildren();
+ }
  function chain(card){
   if(!card||reduce.matches||document.hidden)return;
   const room=card.closest('.room-directory'),svg=room.querySelector('.energy-wires'),base=svg.getBoundingClientRect(),r=card.getBoundingClientRect();
-  svg.querySelectorAll('path').forEach(path=>path.getAnimations().forEach(animation=>animation.cancel()));
-  svg.replaceChildren();
+  clearWires(svg);
+  const cards=[...room.querySelectorAll('.room-card')].map(c=>({c,r:c.getBoundingClientRect()}));
+  // Cut out the entire card surface, so wires cannot show through its glass.
+  // Rebuild from current geometry after filtering or responsive layout changes.
+  const ns='http://www.w3.org/2000/svg',defs=document.createElementNS(ns,'defs'),mask=document.createElementNS(ns,'mask');
+  const maskId=`wire-mask-${rooms.indexOf(room)}`;
+  mask.id=maskId;mask.setAttribute('maskUnits','userSpaceOnUse');
+  mask.setAttribute('x','0');mask.setAttribute('y','0');
+  mask.setAttribute('width',base.width);mask.setAttribute('height',base.height);
+  const surface=document.createElementNS(ns,'rect');
+  surface.setAttribute('width',base.width);surface.setAttribute('height',base.height);surface.setAttribute('fill','white');mask.append(surface);
+  for(const {r:t} of cards){
+   const cutout=document.createElementNS(ns,'rect');
+   cutout.setAttribute('x',t.left-base.left-2);cutout.setAttribute('y',t.top-base.top-2);
+   cutout.setAttribute('width',t.width+4);cutout.setAttribute('height',t.height+4);cutout.setAttribute('fill','black');mask.append(cutout);
+  }
+  defs.append(mask);
+  const lines=document.createElementNS(ns,'g');lines.setAttribute('mask',`url(#${maskId})`);svg.append(defs,lines);
   const x=r.left+r.width/2-base.left,y=r.top+r.height/2-base.top;
-  const nearby=[...room.querySelectorAll('.room-card')].filter(c=>c!==card).map(c=>({c,r:c.getBoundingClientRect()}))
+  const nearby=cards.filter(({c})=>c!==card)
    .filter(({r:t})=>t.width&&t.height&&t.bottom>0&&t.top<innerHeight&&t.right>0&&t.left<innerWidth)
    .sort((a,b)=>Math.hypot(a.r.left-r.left,a.r.top-r.top)-Math.hypot(b.r.left-r.left,b.r.top-r.top)).slice(0,8);
   // Choose fresh connections from the nearest visible neighbours on each hover.
@@ -37,9 +57,9 @@ export function mountSpectacle(root) {
    const tx=t.left+t.width/2-base.left,ty=t.top+t.height/2-base.top;
    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
    path.setAttribute('d',`M ${x} ${y} V ${(y+ty)/2} H ${tx} V ${ty}`);path.setAttribute('pathLength','1');
-   path.style.color=colors[i];svg.append(path);
-   animate(path,[{strokeDashoffset:1,opacity:0},{opacity:.9,offset:.2},{strokeDashoffset:0,opacity:.85,offset:.65},{strokeDashoffset:0,opacity:0}],{duration:1100,delay:i*65,fill:'both'})?.finished.then(()=>path.remove(),()=>path.remove());
-   animate(c,[{borderColor:'var(--accent-room)',boxShadow:'0 0 26px rgb(var(--glow-room)/.65)'},{borderColor:'#6b87635e',boxShadow:'0 0 0 transparent'}],{duration:800,delay:150+i*65});
+   path.style.color=colors[i];lines.append(path);
+   animate(path,[{strokeDashoffset:1,opacity:0},{opacity:.65,offset:.2},{strokeDashoffset:0,opacity:.55,offset:.65},{strokeDashoffset:0,opacity:0}],{duration:1100,delay:i*65,fill:'both'})?.finished.then(()=>path.remove(),()=>path.remove());
+   animate(c,[{borderColor:'rgb(var(--glow-room)/.65)'},{}],{duration:650,delay:150+i*65,easing:'ease-out'});
   });
  }
  root.addEventListener('pointerover',e=>{
@@ -49,11 +69,13 @@ export function mountSpectacle(root) {
  root.addEventListener('pointerleave',()=>{lastCard=null;});
  root.addEventListener('pointerdown',e=>{if(!fine.matches)chain(e.target.closest('.room-card'));});
  window.addEventListener('scroll',()=>{
+  rooms.forEach(room=>clearWires(room.querySelector('.energy-wires')));
   if(reduce.matches||document.hidden||performance.now()-lastWave<850)return;lastWave=performance.now();
   active.forEach(room=>{
    room.querySelectorAll('.room-card.fx-visible').forEach((card,i)=>animate(card,[{translate:'0 0'},{translate:'0 -5px',offset:.45},{translate:'0 0'}],{duration:500,delay:Math.min(i*25,250)}));
   });
  },{passive:true});
+ window.addEventListener('resize',()=>rooms.forEach(room=>clearWires(room.querySelector('.energy-wires'))));
  let searchTimer;
  document.querySelector('#room-query')?.addEventListener('input',()=>{
   clearTimeout(searchTimer);searchTimer=setTimeout(()=>{

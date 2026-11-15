@@ -35,11 +35,24 @@ export function mountScenePointers() {
   }else if(mode==='ribbon'){
    ['#e3b7ff','#7ceeff','#ff9fcf'].forEach((c,j)=>{ctx.strokeStyle=c;ctx.lineWidth=3-j*.65;ctx.beginPath();trail.forEach((p,i)=>{const offset=Math.sin(i*.45-now*.003+j)*5;const px=p.x+offset*j,py=p.y+offset*j;if(!i)ctx.moveTo(px,py);else ctx.lineTo(px,py);});ctx.stroke();});
   }else if(mode==='scanner'){
-   let sx=x,sy=y,w=54,h=54;
-   if(target?.isConnected){const r=target.getBoundingClientRect();sx=r.left+r.width/2;sy=r.top+r.height/2;w=r.width+8;h=r.height+8;}
-   const l=sx-w/2,t=sy-h/2;ctx.lineWidth=2;ctx.beginPath();[[l,t,1,1],[l+w,t,-1,1],[l,t+h,1,-1],[l+w,t+h,-1,-1]].forEach(([a,b,u,v])=>{ctx.moveTo(a+u*12,b);ctx.lineTo(a,b);ctx.lineTo(a,b+v*12);});ctx.stroke();
-   ctx.globalAlpha=fade*.45;const scan=t+(now%1400)/1400*h;ctx.beginPath();ctx.moveTo(l,scan);ctx.lineTo(l+w,scan);ctx.stroke();
-   ctx.beginPath();ctx.arc(x,y,14,now*.002,now*.002+4.5);ctx.stroke();
+   ctx.lineWidth=1;ctx.shadowBlur=2;
+   if(target?.isConnected){
+    // Two small signals travel outside the slot; no scan beam crosses its label.
+    const r=target.getBoundingClientRect(),progress=(now%1800)/1800;
+    const lead=r.left+10+progress*Math.max(0,r.width-20);
+    const tail=r.right-10-progress*Math.max(0,r.width-20);
+    ctx.globalAlpha=fade*.22;ctx.beginPath();
+    ctx.moveTo(lead-9,r.top-3);ctx.lineTo(lead,r.top-3);
+    ctx.moveTo(tail+9,r.bottom+3);ctx.lineTo(tail,r.bottom+3);ctx.stroke();
+    ctx.globalAlpha=fade*.7;ctx.fillRect(lead-1,r.top-4,2,2);ctx.fillRect(tail-1,r.bottom+2,2,2);
+   }else{
+    ctx.globalAlpha=fade*.5;
+    for(let i=0;i<4;i++){
+     const angle=now*.0006+i*Math.PI/2;
+     ctx.beginPath();ctx.arc(x,y,10,angle,angle+.55);ctx.stroke();
+    }
+    ctx.globalAlpha=fade*.25;ctx.fillRect(x-1,y-1,2,2);
+   }
   }else if(mode==='water'){
    particles.forEach(p=>{const t=(now-p.t)/p.life;ctx.globalAlpha=(1-t)*.6;ctx.beginPath();ctx.ellipse(p.x,p.y,5+t*p.size,(5+t*p.size)*.65,0,0,Math.PI*2);ctx.stroke();});
   }else if(mode==='fairy'){
