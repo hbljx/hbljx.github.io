@@ -1,0 +1,38 @@
+/* Countdown interactions stay local to the three cards. */
+.countdown-header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px;color:#cee2bd;font:600 11px/1.6 Consolas,'Microsoft YaHei',monospace;letter-spacing:.13em}
+.countdown-header b{font-weight:400;color:#9eb897;letter-spacing:.04em}
+.countdown-live{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.06em;white-space:nowrap}
+.countdown-live i{width:5px;height:5px;background:#c7f776;box-shadow:0 0 9px #c7f77666}
+.about-countdown[data-effects-mounted] .countdown-card{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(145deg,#152c24ed,#091913f5);transform:perspective(800px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg));transition:transform .2s ease-out,border-color .25s,box-shadow .25s}
+.countdown-card:before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(200px circle at var(--spot-x,75%) var(--spot-y,10%),color-mix(in srgb,var(--countdown-accent) 15%,transparent),transparent 80%),repeating-linear-gradient(0deg,transparent 0,transparent 7px,#ffffff02 7px,#ffffff02 8px);opacity:.55;transition:opacity .25s}
+.countdown-card:after{content:'';position:absolute;inset:8px;z-index:-1;pointer-events:none;background:linear-gradient(var(--countdown-accent),var(--countdown-accent)) top right/12px 2px no-repeat,linear-gradient(var(--countdown-accent),var(--countdown-accent)) top right/2px 12px no-repeat,linear-gradient(var(--countdown-accent),var(--countdown-accent)) bottom left/12px 2px no-repeat;opacity:.3;transition:opacity .25s}
+.countdown-code{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;color:var(--countdown-accent);font:600 10px/1.2 Consolas,monospace;letter-spacing:.14em}
+.countdown-code svg{width:21px;height:21px;fill:currentColor;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--countdown-accent) 35%,transparent))}
+.countdown-card .countdown-days strong{display:inline-block;text-shadow:0 0 22px color-mix(in srgb,var(--countdown-accent) 16%,transparent)}
+.countdown-card .countdown-track{position:relative;height:10px;border-block:1px solid #ffffff0a}
+.countdown-card .countdown-track:before{transform-origin:left;transition:width .8s ease}
+.countdown-card .countdown-track:after{content:'';position:absolute;inset:0 auto 0 0;width:var(--remaining,0%);pointer-events:none;background:linear-gradient(110deg,transparent 35%,#ffffffb3 50%,transparent 65%) -90px 0/90px 100% no-repeat;animation:countdown-flow 4.5s calc(var(--card-order)*.7s) linear infinite}
+.countdown-activate{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;margin:14px 0 -8px;padding:12px 0 4px;border:0;border-top:1px solid #ffffff0d;background:none;color:#a3b79b;font:inherit;font-size:11px;font-weight:500;line-height:1.4;cursor:pointer;text-align:left}
+.countdown-activate:after{content:'';position:absolute;inset:0;z-index:2}
+.countdown-activate>span:last-child{font:18px/1 monospace;color:var(--countdown-accent);transition:translate .2s}
+.countdown-activate[hidden]{display:none}
+.about-enhanced .countdown-activate:focus-visible{outline:none}
+.countdown-card:focus-within{outline:2px solid var(--countdown-accent);outline-offset:3px}
+.countdown-card:focus-within,.countdown-card.countdown-tracking{border-color:var(--countdown-accent);box-shadow:inset 3px 0 var(--countdown-accent),0 8px 24px #0004,0 0 20px color-mix(in srgb,var(--countdown-accent) 12%,transparent)}
+.countdown-card:focus-within:before,.countdown-card.countdown-tracking:before,.countdown-charging:after{opacity:1}
+.countdown-card:focus-within .countdown-activate,.countdown-card.countdown-tracking .countdown-activate{color:var(--countdown-accent)}
+.countdown-card.countdown-tracking .countdown-activate>span:last-child{translate:2px -2px}
+.countdown-arriving{animation:countdown-arrive .65s calc(var(--card-order)*.1s) both}
+.countdown-charging .countdown-track:before{animation:countdown-charge 1s cubic-bezier(.16,1,.3,1) both}
+.countdown-charging .countdown-days strong{animation:countdown-number .85s ease-out}
+.countdown-charging .countdown-code svg{animation:countdown-hourglass .8s cubic-bezier(.2,.8,.2,1)}
+.countdown-spark{position:absolute;z-index:3;width:5px;height:5px;background:var(--countdown-accent);box-shadow:0 0 10px var(--countdown-accent);pointer-events:none;animation:countdown-spark .8s ease-out both}
+.countdown-card:not(.countdown-in-view) *,.countdown-card:not(.countdown-in-view) *:after,.countdown-paused *,.countdown-paused *:after{animation-play-state:paused!important}
+@keyframes countdown-arrive{from{opacity:0;translate:0 16px}to{opacity:1;translate:0 0}}
+@keyframes countdown-charge{from{transform:scaleX(0);filter:brightness(1.8)}to{transform:scaleX(1);filter:brightness(1)}}
+@keyframes countdown-number{35%{transform:translateY(-3px) scale(1.06);text-shadow:0 0 25px var(--countdown-accent)}to{transform:none}}
+@keyframes countdown-hourglass{to{rotate:180deg}}
+@keyframes countdown-flow{0%,45%{background-position:-90px 0}100%{background-position:calc(100% + 90px) 0}}
+@keyframes countdown-spark{from{opacity:1;transform:translate(-50%,-50%) rotate(var(--turn))}to{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--turn)) scale(.2)}}
+@media(max-width:700px){.countdown-header{align-items:flex-start;font-size:10px;letter-spacing:.06em}.countdown-header b{display:block;margin-top:3px}.countdown-code{margin-bottom:10px}.countdown-card .countdown-activate{margin-top:10px}}
+@media(prefers-reduced-motion:reduce){.about-countdown *, .about-countdown *:before,.about-countdown *:after{animation:none!important;transition:none!important}.about-countdown .countdown-card{transform:none!important}.countdown-activate,.countdown-spark{display:none}.countdown-card .countdown-track:after{display:none}}

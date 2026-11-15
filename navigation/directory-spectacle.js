@@ -1,4 +1,6 @@
-// Event-driven spectacle layer. No permanent JavaScript animation loop.
+import { mountInstallations } from './directory-installations.js';
+
+// Event-driven card effects, with visibility-gated procedural installations.
 export function mountSpectacle(root) {
  const reduce=matchMedia('(prefers-reduced-motion: reduce)'), fine=matchMedia('(pointer:fine)');
  const rooms=[...root.querySelectorAll('.room-directory')];
@@ -11,10 +13,11 @@ export function mountSpectacle(root) {
  rooms.forEach(room=>{
   const type=room.closest('.scene').dataset.room;
   const stage=document.createElement('div');stage.className='spectacle-stage';stage.setAttribute('aria-hidden','true');
-  stage.innerHTML=`<div class="hyper-rays">${Array.from({length:24},(_,i)=>`<i style="--angle:${i*15}deg;--n:${i}"></i>`).join('')}</div><div class="theme-device device-${type}"><div class="device-halo"></div><div class="device-ring ring-a"></div><div class="device-ring ring-b"></div><div class="device-ring ring-c"></div><div class="device-heart"></div>${Array.from({length:8},(_,i)=>`<b style="--n:${i}"></b>`).join('')}</div><div class="boot-door door-left"></div><div class="boot-door door-right"></div><div class="shock-front"></div><div class="search-beam"></div><svg class="energy-wires" width="100%" height="100%"></svg>`;
+  stage.innerHTML=`<div class="hyper-rays">${Array.from({length:24},(_,i)=>`<i style="--angle:${i*15}deg;--n:${i}"></i>`).join('')}</div>${['about','works','writing','court'].includes(type) ? '' : `<div class="theme-device device-${type}"><div class="device-halo"></div><div class="device-ring ring-a"></div><div class="device-ring ring-b"></div><div class="device-ring ring-c"></div><div class="device-heart"></div>${Array.from({length:8},(_,i)=>`<b style="--n:${i}"></b>`).join('')}</div>`} <div class="boot-door door-left"></div><div class="boot-door door-right"></div><div class="shock-front"></div><div class="search-beam"></div><svg class="energy-wires" width="100%" height="100%"></svg>`;
   room.prepend(stage);observer.observe(room);
  });
- let lastCard=null, tick=0,lastWave=0;
+ mountInstallations(root);
+ let lastCard=null,lastWave=0;
  function chain(card){
   if(!card||reduce.matches)return;
   const room=card.closest('.room-directory'),svg=room.querySelector('.energy-wires'),base=room.getBoundingClientRect(),r=card.getBoundingClientRect();

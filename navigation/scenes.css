@@ -32,7 +32,7 @@
 .scene-info .kicker span {background:currentColor}
 .scene-lead {font-size:clamp(19px,2vw,29px);font-weight:750;margin:20px 0 7px}
 .scene-description {color:#d2ded0;max-width:34ch;line-height:1.7;margin:0}
-.scene-actions {display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.scene-actions {display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:24px}
 .scene-enter,.scene-next {display:inline-flex;align-items:center;min-height:44px;gap:7px;font-size:14px;font-weight:750}
 .scene-enter {padding:0 13px;color:#112015;background:var(--accent-room);box-shadow:inset 0 -3px #101f193f;border-radius:3px}
 .scene-next:hover {color:var(--accent-room)}

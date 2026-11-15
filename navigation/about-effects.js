@@ -26,6 +26,7 @@ export function mountAboutEffects() {
  function play(){
   section.classList.remove('about-playing');void section.offsetWidth;
   section.classList.add('about-playing');started=true;
+  section.dispatchEvent(new Event('about:replay'));
  }
  new IntersectionObserver(([entry])=>{
   section.classList.toggle('about-visible',entry.isIntersecting);

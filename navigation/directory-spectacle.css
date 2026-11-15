@@ -9,19 +9,10 @@
 .ring-c{inset:29%;transform:rotateX(-40deg);animation-duration:9s}
 .device-heart{position:absolute;inset:40%;border:2px solid currentColor;background:rgb(var(--glow-room)/.3);box-shadow:0 0 45px rgb(var(--glow-room)/.7);animation:heart-breathe 4s ease-in-out infinite alternate}
 .theme-device>b{position:absolute;left:49%;top:49%;width:7px;height:7px;background:currentColor;transform:rotate(calc(var(--n)*45deg)) translateX(180px);animation:satellite 18s linear infinite}
-.device-about .device-heart{border-radius:15%;transform:rotate(45deg)}
-.device-about .device-ring{border-radius:20%;border-style:dotted}
-.device-works .device-heart{clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);inset:34%;background:repeating-linear-gradient(0deg,transparent 0 8px,currentColor 9px 10px)}
-.device-writing .device-ring{border-radius:4px 35px 8px 4px;inset:20% 25%;transform-origin:left;animation:device-pages 8s ease-in-out infinite}
-.device-writing .ring-b{animation-delay:-2s}.device-writing .ring-c{animation-delay:-4s}
-.device-writing .device-heart{inset:28% 47%;border:0;box-shadow:0 0 22px currentColor}
 .device-coffee .device-halo{inset:8%;background:repeating-radial-gradient(circle,#101f1c 0 9px,#bc8d5733 10px 12px);border:2px solid currentColor;animation:device-spin 14s linear infinite}
 .device-coffee .device-ring{transform:none;border-style:dashed}.device-coffee .device-heart{border-radius:50%;inset:42%;background:currentColor}
 .device-lab .device-ring{border-radius:12%;border-width:7px;border-style:dashed;transform:none}
 .device-lab .device-heart{inset:37%;background:repeating-linear-gradient(45deg,transparent 0 8px,currentColor 9px 11px)}
-.device-court{transform:rotateX(25deg)}
-.device-court .device-halo{background:conic-gradient(transparent 60%,rgb(var(--glow-room)/.7));animation:device-spin 6s linear infinite}
-.device-court .device-ring{transform:none;animation:none}
 .device-pool .device-ring{border-radius:70% 20% 70% 20%;border-color:#8be2ab;animation:vine-grow 7s ease-in-out infinite alternate}
 .device-pool .device-heart{border-radius:60% 0;transform:rotate(45deg);background:#f7bee6}
 .device-pool>b{width:15px;height:10px;border-radius:80% 0;background:#f5c0ed;animation:butterfly 9s calc(var(--n)*-.8s) ease-in-out infinite alternate}
@@ -33,9 +24,7 @@
 [data-room=lab] .boot-door{display:block;opacity:0}
 [data-room=lab] .spectacle-boot .door-left{left:0;animation:door-open 1.3s both}
 [data-room=lab] .spectacle-boot .door-right{right:0;animation:door-open-right 1.3s both}
-[data-room=writing] .spectacle-boot .theme-device{animation:book-open 1.5s both}
 [data-room=pool] .spectacle-boot .theme-device{animation:garden-grow 2s both}
-[data-room=works] .spectacle-boot .theme-device{animation:core-boot 1.6s both}
 .shock-front,.search-beam{position:absolute;left:0;right:0;height:70px;opacity:0;background:linear-gradient(transparent,rgb(var(--glow-room)/.22));border-bottom:2px solid currentColor;box-shadow:0 12px 30px rgb(var(--glow-room)/.2)}
 .search-beam{top:0;height:140px;border-bottom-style:dashed}
 .energy-wires{position:absolute;inset:0;overflow:visible}
@@ -51,15 +40,59 @@
 @keyframes device-spin{to{rotate:360deg}}
 @keyframes heart-breathe{to{scale:1.16;opacity:.5}}
 @keyframes satellite{to{transform:rotate(calc(var(--n)*45deg + 360deg)) translateX(180px)}}
-@keyframes device-pages{50%{transform:rotateY(-55deg) rotateZ(-10deg)}}
 @keyframes vine-grow{to{rotate:25deg;scale:1.12}}
 @keyframes butterfly{to{translate:-80px 100px;rotate:65deg;scale:.6}}
 @keyframes hyper-fade{0%{opacity:0}20%{opacity:.75}100%{opacity:0}}
 @keyframes hyper-jump{to{transform:rotate(var(--angle)) scaleX(1.7)}}
 @keyframes door-open{0%{opacity:1;translate:0}100%{opacity:0;translate:-100%}}
 @keyframes door-open-right{0%{opacity:1;translate:0}100%{opacity:0;translate:100%}}
-@keyframes book-open{from{transform:perspective(600px) rotateY(-80deg);opacity:0}to{transform:perspective(600px) rotateY(0);opacity:.5}}
 @keyframes garden-grow{from{clip-path:inset(100% 0 0)}to{clip-path:inset(0)}}
-@keyframes core-boot{from{scale:.1;rotate:-90deg;opacity:0}to{scale:1;rotate:0deg;opacity:.5}}
 @media(max-width:700px){.theme-device{width:290px;height:290px;right:-95px;opacity:.32}.theme-device>b:nth-last-child(-n+4){display:none}.energy-field,.energy-trail{display:none}.hyper-rays i:nth-child(2n){display:none}}
 @media(prefers-reduced-motion:reduce){.hyper-rays,.boot-door,.energy-field,.energy-trail,.shock-front,.search-beam{display:none}.spectacle-stage *{animation:none!important;transition:none!important}}
+
+/* Drawn installations have a dedicated exhibition area above the links. */
+.has-installation > .room-heading {
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 28px 52% 40px 0;
+  isolation: isolate;
+}
+.has-installation > .room-heading h3 { font-size: clamp(38px, 4.6vw, 64px); }
+.has-installation > .room-heading > span { font-size: 18px; letter-spacing: .12em; }
+.directory-installation {
+  position: absolute;
+  right: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: block;
+  width: min(560px, 55%);
+  aspect-ratio: 7 / 5;
+  pointer-events: none;
+  z-index: -1;
+}
+.has-installation .fx-orbit, .has-installation .fx-mote { display: none; }
+.has-installation .fx-grid { opacity: .24; mask-image: linear-gradient(#0003, transparent 600px); }
+@media (min-width: 1600px) {
+  .has-installation > .room-heading { min-height: 420px; }
+}
+@media (max-width: 700px) {
+  .has-installation > .room-heading {
+    min-height: 372px;
+    justify-content: flex-start;
+    padding: 0 0 260px;
+    gap: 10px;
+  }
+  .has-installation > .room-heading h3 { font-size: 36px; }
+  .has-installation > .room-heading > span { font-size: 15px; }
+  .directory-installation {
+    top: auto;
+    bottom: 0;
+    right: 50%;
+    transform: translateX(50%);
+    width: min(390px, 112%);
+  }
+}

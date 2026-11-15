@@ -1,3 +1,5 @@
+import { mountCountdownEffects } from './countdown-effects.js';
+
 const DAY = 86400000;
 const calendarDay = date => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY;
 
@@ -20,6 +22,7 @@ export function mountAboutCountdown() {
   const section = document.querySelector('.about-countdown');
   if (!section) return;
   const cards = [...section.querySelectorAll('[data-countdown]')];
+  mountCountdownEffects(section);
   let timer;
   function refresh() {
     clearTimeout(timer);
@@ -29,12 +32,15 @@ export function mountAboutCountdown() {
       const { days, percent } = periods[card.dataset.countdown];
       // Avoid showing 100% after the start or 0% before the period ends.
       const display = percent === 100 ? '100' : Math.min(99.9, Math.max(0.1, percent)).toFixed(1);
-      card.querySelector('[data-days]').textContent = days;
+      const daysElement = card.querySelector('[data-days]');
+      const changed = daysElement.textContent !== '—' && daysElement.textContent !== String(days);
+      daysElement.textContent = days;
       card.querySelector('[data-percent]').textContent = `${display}%`;
       const progress = card.querySelector('[role="progressbar"]');
       progress.setAttribute('aria-valuenow', display);
       progress.setAttribute('aria-valuetext', `剩余 ${days} 天，${display}%`);
       progress.style.setProperty('--remaining', `${percent}%`);
+      if (changed) card.dispatchEvent(new Event('countdown:update'));
     }
     // Refresh on the minute, including midnight; resume immediately after a hidden tab.
     timer = setTimeout(refresh, 60000 - now.getTime() % 60000);
