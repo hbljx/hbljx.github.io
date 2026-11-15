@@ -209,7 +209,6 @@ export function mountAboutWorld(section,decor) {
       const y=140-arrival*115;
       c.beginPath();vertex(-124,y,-25,true);vertex(124,y,-25);line(MINT,Math.sin(Math.min(1,arrival/2.4)*Math.PI)*.7,1);
     }
-    c.textAlign='center';c.font='9px Consolas,monospace';c.letterSpacing='2px';c.fillStyle=rgba(MINT,.65);c.fillText('ONE SMALL WORLD / ENDLESS CONNECTIONS',320,525);c.letterSpacing='0px';
     c.globalAlpha=1;
   }
 

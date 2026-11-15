@@ -88,7 +88,7 @@ export function mountScenes() {
     for (const zone of rooms) {
       const {scene,list,strip} = roomStats.get(zone.id);
       const categories = groups.filter(group => groupOwners.get(group.id) === zone.id);
-      strip.replaceChildren(...(zone.id==='writing' ? [] : categories.map(group=>Object.assign(document.createElement('span'),{textContent:group.title}))));
+      strip.replaceChildren(...(['writing','lab'].includes(zone.id) ? [] : categories.map(group=>Object.assign(document.createElement('span'),{textContent:group.title}))));
       scheduleScenes();
       list.replaceChildren();
       let matchCount = 0;

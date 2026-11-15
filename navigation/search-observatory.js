@@ -33,10 +33,11 @@ export function mountSearchObservatory(environment) {
   }
   for(let i=0;i<40;i++)packets[i*4]=-1;
   let selected=0,count=0,focused=false,visible=true,raf=0,last=0,time=0;
-  let wake=.18,impulse=0,switchPulse=0,launchPulse=0,packetCursor=0,scale=1;
+  let wake=.18,impulse=0,switchPulse=0,launchPulse=0,packetCursor=0,scale=1,minStroke=1;
   let palette=[];
 
-  function line(alpha=1,width=1,tint=rgb) {c.strokeStyle=color(tint,alpha);c.lineWidth=width;c.stroke();}
+  // Stronger etched contours; even the fine network stays at least one CSS pixel.
+  function line(alpha=1,width=1,tint=rgb) {c.strokeStyle=color(tint,alpha);c.lineWidth=Math.max(width*1.65,minStroke);c.stroke();}
   function dot(x,y,r,alpha=1,tint=rgb) {c.beginPath();c.arc(x,y,r,0,TAU);c.fillStyle=color(tint,alpha);c.fill();}
   function arc(r,start,end,alpha,width=1) {c.beginPath();c.arc(320,254,r,start,end);line(alpha,width);}
   function path(x,y,tx,ty,bend) {c.beginPath();c.moveTo(x,y);c.quadraticCurveTo((x+tx)*.5+bend,(y+ty)*.5-bend,tx,ty);}
@@ -65,7 +66,7 @@ export function mountSearchObservatory(environment) {
     for(let i=0;i<ENGINES.length;i++) {
       const e=ENGINES[i],active=i===selected,dx=e.x-320,dy=e.y-254,d=Math.hypot(dx,dy);
       const tx=320+dx/d*143,ty=254+dy/d*143,bend=i%2?26:-26;
-      path(e.x,e.y,tx,ty,bend);line(active?.58:.13,active?1.15:.7);
+      path(e.x,e.y,tx,ty,bend);line(active?.66:.2,active?1.15:.7);
       if(active&&focused)for(let j=0;j<3;j++) {
         curvePoint(e.x,e.y,tx,ty,bend,(time*.25+j/3)%1,0);
         dot(screen[0],screen[1],2.1,.8);dot(screen[0],screen[1],5,.1);
@@ -94,12 +95,12 @@ export function mountSearchObservatory(environment) {
       c.save();c.translate(tile.x,tile.y+dy);c.rotate(tile.angle+Math.sin(time*.3+tile.phase)*.02);
       // Thin folded document leaves, cover edges, text rows, and scanning band.
       c.fillStyle='rgba(7,23,30,.8)';c.fillRect(-26,-32,53,65);
-      c.beginPath();c.moveTo(-26,-32);c.lineTo(13,-32);c.lineTo(27,-18);c.lineTo(27,33);c.lineTo(-26,33);c.closePath();line(.35,.8);
+      c.beginPath();c.moveTo(-26,-32);c.lineTo(13,-32);c.lineTo(27,-18);c.lineTo(27,33);c.lineTo(-26,33);c.closePath();line(.46,.8);
       c.beginPath();c.moveTo(13,-32);c.lineTo(13,-18);c.lineTo(27,-18);line(.55,.8);
       c.beginPath();c.moveTo(-18,-18);c.lineTo(3,-18);line(.8,2);
       for(let row=0;row<5;row++) {
         const end=row%3===0?8:18;
-        c.beginPath();c.moveTo(-18,-7+row*6);c.lineTo(end,-7+row*6);line(.23,.7);
+        c.beginPath();c.moveTo(-18,-7+row*6);c.lineTo(end,-7+row*6);line(.32,.7);
       }
       c.beginPath();c.moveTo(-17,26);c.lineTo(-3,26);line(active?.75:.24,1.4);
       if(active) {
@@ -122,7 +123,7 @@ export function mountSearchObservatory(environment) {
     c.save();c.beginPath();c.arc(320,254,98,0,TAU);c.clip();
     for(let k=0;k<edges.length;k+=2) {
       const u=edges[k]*3,v=edges[k+1]*3,front=screen[u+2]+screen[v+2]<0;
-      c.beginPath();c.moveTo(screen[u],screen[u+1]);c.lineTo(screen[v],screen[v+1]);line(front?.18+wake*.12:.065,.65);
+      c.beginPath();c.moveTo(screen[u],screen[u+1]);c.lineTo(screen[v],screen[v+1]);line(front?.24+wake*.16:.105,.65);
     }
     const scanY=178+((time*(count?32:18))%152);
     for(let i=0;i<126;i++) {
@@ -253,6 +254,7 @@ export function mountSearchObservatory(environment) {
   function resize() {
     const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
     canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);scale=canvas.width/640;
+    minStroke=640/Math.max(rect.width,1);
     gradients();draw();
   }
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(canvas);resize();
