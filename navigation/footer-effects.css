@@ -1,0 +1,64 @@
+/* Two quiet keepsakes under the voxel landscape: emerald nameplate and parchment record. */
+.home-footer .footer-brand-plaque,
+.home-footer .footer-icp {
+  position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:12px;
+  width:max-content;max-width:100%;min-height:52px;box-sizing:border-box;
+  border:2px solid;border-radius:2px;cursor:default;
+}
+.home-footer .footer-brand-plaque {
+  padding:11px 18px 11px 13px;letter-spacing:.025em;
+  border-color:#61724e #273c2b #122218 #4f6542;
+  background:linear-gradient(180deg,#ffffff06,transparent 45%),#1b2a20;
+  box-shadow:inset 1px 1px #d5ed9a15,inset -1px -1px #07140e,0 3px #040d09;
+}
+.home-footer .footer-brand-copy {color:#f1f4df;font-size:18px;line-height:1.4;white-space:nowrap;text-shadow:1px 2px #08100b}
+.home-footer .footer-brand-name {color:#d6e4bd;font-size:15px;font-weight:650;letter-spacing:.07em}
+.home-footer .footer-plus {color:#bde97a}
+.footer-gem {flex:none;image-rendering:pixelated;filter:drop-shadow(0 2px 0 #020b08);shape-rendering:crispEdges}
+.home-footer .footer-icp {
+  justify-self:center;padding:11px 16px;gap:9px;
+  border-color:#5a5846 #292d25 #1a201b #4b503e;
+  background:linear-gradient(135deg,#d3c18108,transparent 65%),#171f1b;
+  color:#c9c8b0;box-shadow:inset 1px 1px #f2deb411,inset -1px -1px #080f0c,0 3px #040d09;
+}
+.footer-record {flex:none;shape-rendering:crispEdges;filter:drop-shadow(1px 2px #080d09)}
+.footer-record-text {font-variant-numeric:tabular-nums;letter-spacing:.025em;line-height:1.5;text-shadow:0 1px #050a07}
+.home-footer [data-footer-effect]::before {
+  content:'';position:absolute;inset:5px;z-index:-1;pointer-events:none;opacity:.6;
+  background:linear-gradient(#9dab74,#9dab74) left top/2px 2px no-repeat,
+    linear-gradient(#9dab74,#9dab74) right bottom/2px 2px no-repeat;
+}
+.home-footer [data-footer-effect]::after {
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(110deg,transparent 30%,#d8ffc312 43%,#f1ffce33 49%,transparent 61%) 150% 0/300% 100% no-repeat;
+}
+.home-footer .footer-icp::after {background-image:linear-gradient(110deg,transparent 30%,#e1cea012 43%,#fff1ca30 49%,transparent 61%)}
+.footer-xp {position:absolute;left:25px;top:13px;pointer-events:none}
+.footer-xp i {position:absolute;width:3px;height:3px;opacity:0;background:#c7f776;box-shadow:0 0 5px #a6e65d66;--dx:-12px;--dy:-8px;--wait:0s}
+.footer-xp i:nth-child(2){--dx:9px;--dy:-13px;--wait:.12s;width:2px;height:2px}
+.footer-xp i:nth-child(3){--dx:17px;--dy:-5px;--wait:.24s;width:2px;height:2px}
+.footer-awake .footer-gem {animation:footer-gem-lift 1.4s ease both}
+.footer-awake .footer-xp i {animation:footer-xp-rise 1s calc(.15s + var(--wait)) ease-out both}
+.home-footer .footer-awake::after {animation:footer-plaque-glint 1.4s .1s ease both}
+.home-footer .footer-icp.footer-awake::after {animation-delay:.3s}
+.footer-awake .footer-brand-copy {animation:footer-name-glow 1.4s ease both}
+@keyframes footer-plaque-glint {0%{opacity:0;background-position:150% 0}25%,65%{opacity:1}100%{opacity:0;background-position:-50% 0}}
+@keyframes footer-gem-lift {0%,100%{translate:0 0}40%,65%{translate:0 -3px}}
+@keyframes footer-xp-rise {0%{opacity:0;translate:0 4px}25%{opacity:.9}100%{opacity:0;translate:var(--dx) var(--dy)}}
+@keyframes footer-name-glow {0%,100%{text-shadow:1px 2px #08100b}50%{text-shadow:1px 2px #08100b,0 0 12px #b5ed784d}}
+@media(min-width:701px) and (max-width:1100px) {
+  .home-footer {grid-template-columns:minmax(0,1fr) auto;gap:20px}
+  .home-footer .footer-icp {justify-self:end}
+  .home-footer>div {grid-column:1/-1}
+}
+@media(max-width:700px) {
+  .home-footer {grid-template-columns:1fr 1fr;gap:16px 12px;padding-inline:20px}
+  .home-footer .footer-brand-plaque {grid-column:1/-1;grid-row:1;justify-self:center;padding-inline:15px;min-height:52px}
+  .home-footer .footer-icp {grid-column:1/-1;grid-row:2;justify-self:center;font-size:12px;min-height:44px;padding:9px 15px}
+  .home-footer #manage-links {grid-column:1;grid-row:3;justify-self:start}
+  .home-footer a[href="#home"] {grid-column:2;grid-row:3;justify-self:end}
+}
+@media(prefers-reduced-motion:reduce) {
+  .home-footer [data-footer-effect]::after,.footer-xp {display:none}
+  .home-footer [data-footer-effect],.home-footer [data-footer-effect] * {animation:none!important;transition:none!important}
+}

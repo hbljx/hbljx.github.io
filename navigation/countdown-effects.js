@@ -6,7 +6,7 @@ export function mountCountdownEffects(section) {
   const states = [];
   const header = document.createElement('div');
   header.className = 'countdown-header';
-  header.innerHTML = '<span>TIME REMAINING <b>/ 时间刻度</b></span><span class="countdown-live"><i aria-hidden="true"></i>实时更新</span>';
+  header.innerHTML = '<span>TIME REMAINING <b>/ 时间刻度</b></span>';
   section.prepend(header);
 
   function resetPointer(state) {

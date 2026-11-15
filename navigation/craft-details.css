@@ -39,14 +39,18 @@
 .portal-awake .cube-mark::before {animation:craft-portal-motes 1.2s ease-out both}
 .site-header.header-enhanced .portal-awake::after {animation:craft-portal-glow 1.3s ease both}
 
-/* Dark inventory trays; imagery and titles retain their existing room colors. */
-.room-directory .room-card-grid {gap:12px;padding:10px;background:#08110e70;border:2px solid;border-color:#07100c #435344 #435344 #07100c;box-shadow:inset 2px 2px 0 #02080580,0 1px #0007;border-radius:2px}
-.room-directory .room-card {border:2px solid;border-color:#52644e #1b2a21 #0b170f #42563e;border-radius:2px;background:linear-gradient(145deg,#ffffff05,transparent 65%),#1a2a20;box-shadow:inset 1px 1px #b3d19a12,inset -1px -1px #040d08,0 2px #020904;transform:none;transition:border-color .2s,background-color .2s,box-shadow .2s}
-.room-directory .room-card:is(:hover,:focus-within) {border-color:var(--accent-room);box-shadow:inset 0 0 0 1px rgb(var(--glow-room)/.32),0 2px #020904,0 0 16px rgb(var(--glow-room)/.12);background-color:#26392a;transform:none}
+/* Translucent slots leave the animated room installations visible behind the text. */
+.room-directory {border-top:0}
+.room-directory .room-heading {border-bottom:0}
+.room-directory .fx-grid,.room-directory .room-heading::after {display:none}
+.room-directory .room-card-grid {gap:12px;padding:10px;background:transparent;border:0;box-shadow:none;border-radius:0}
+.room-directory .room-card {border:2px solid;border-color:#a7c39440 #65877230 #44645040 #92b78c38;border-radius:2px;background:linear-gradient(145deg,#ffffff03,transparent 65%),rgb(14 27 21 / .42);box-shadow:inset 1px 1px #b3d19a0c,inset -1px -1px #040d0826,0 2px #02090440;transform:none;transition:border-color .2s,background-color .2s,box-shadow .2s}
+.room-directory .room-card:is(:hover,:focus-within) {border-color:var(--accent-room);box-shadow:inset 0 0 0 1px rgb(var(--glow-room)/.22),0 2px #02090440,0 0 16px rgb(var(--glow-room)/.12);background-color:rgb(22 40 29 / .52);transform:none}
 .room-directory .room-card::before {background:radial-gradient(180px circle at var(--mx) var(--my),rgb(var(--glow-room)/.17),transparent 80%)}
 .room-directory .room-card::after {display:none}
 .room-directory .room-card>a {position:relative;min-height:100px;padding:16px 13px;gap:12px}
-.room-directory .room-card strong {font-size:17px;line-height:1.45;color:#edf2e5;text-shadow:0 1px #0006}
+.room-directory .room-card strong {font-size:17px;line-height:1.45;color:#edf2e5;text-shadow:0 1px 3px #020a05}
+.room-directory .room-card-text small {color:#d0ddca;text-shadow:0 1px 3px #020a05}
 .room-directory .room-mark {width:46px;height:46px;border-radius:0;background:#0b160f;border:2px solid;border-color:#050d08 #5b7050 #5b7050 #050d08;box-shadow:inset 2px 2px #0005;transform:none!important}
 .room-directory .room-mark img {background:transparent;transition:translate .25s,filter .25s;filter:drop-shadow(1px 2px 0 #0006)}
 .room-directory .room-card:is(:hover,:focus-within) .room-mark {box-shadow:inset 2px 2px #0005}
@@ -56,12 +60,6 @@
 .room-directory .room-card:active {box-shadow:inset 2px 2px #020805}
 .room-directory .room-card:active .room-mark img {translate:0 0}
 .room-directory .room-card>a:focus-visible {outline:2px solid #e5ffbe;outline-offset:-4px}
-.craft-tooltip {position:fixed;z-index:50;width:292px;max-width:calc(100vw - 24px);padding:14px 16px;background:#150d20fa;color:#d5c9df;border:2px solid;border-color:#8651bd #402454 #402454 #8651bd;border-radius:1px;box-shadow:inset 0 0 0 1px #bb81ed20,0 0 0 2px #08050ee6,4px 6px 0 #0004,0 12px 28px #0006;font:14px/1.65 Geist,'Microsoft YaHei',system-ui,sans-serif;overflow-wrap:anywhere}
-.craft-tooltip[hidden] {display:none}
-.craft-tooltip strong {display:block;color:#e4c5ff;font-size:17px;font-weight:700;text-shadow:1px 2px #080310}
-.craft-tooltip p {margin:6px 0 10px}
-.craft-tooltip-domain {display:block;padding-top:9px;border-top:1px solid #9565b933;color:#b7d98a;font:12px/1.7 Consolas,monospace}
-.craft-tooltip small {display:block;margin-top:4px;color:#a99bb8;font-size:12px}
 
 /* Experience gauge: the mask cuts both the fill and glint into fixed segments. */
 .about-countdown[data-effects-mounted] .countdown-card {background:linear-gradient(135deg,#243022,#101d17 75%);border:2px solid;border-color:#5c704d #243522 #0a140e #475b3c;box-shadow:inset 1px 1px #bfdb9620,0 4px #050d09;transform:none}

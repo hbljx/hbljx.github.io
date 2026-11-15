@@ -12,20 +12,14 @@ export function mountSpectacle(root) {
  }),{threshold:0});
  rooms.forEach(room=>{
   const stage=document.createElement('div');stage.className='spectacle-stage';stage.setAttribute('aria-hidden','true');
-  stage.innerHTML='<div class="shock-front"></div><div class="search-beam"></div><svg class="energy-wires" width="100%" height="100%"></svg>';
   room.prepend(stage);observer.observe(room);
  });
  mountInstallations(root);
  let lastCard=null,lastWave=0;
  function chain(card){
   if(!card||reduce.matches)return;
-  const room=card.closest('.room-directory'),svg=room.querySelector('.energy-wires'),base=room.getBoundingClientRect(),r=card.getBoundingClientRect();
-  svg.replaceChildren();
-  const x=r.left+r.width/2-base.left,y=r.top+r.height/2-base.top;
-  [...room.querySelectorAll('.room-card.fx-visible')].filter(c=>c!==card).map(c=>({c,r:c.getBoundingClientRect()})).sort((a,b)=>Math.hypot(a.r.left-r.left,a.r.top-r.top)-Math.hypot(b.r.left-r.left,b.r.top-r.top)).slice(0,4).forEach(({c,r:t},i)=>{
-   const tx=t.left+t.width/2-base.left,ty=t.top+t.height/2-base.top;
-   const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',`M ${x} ${y} V ${(y+ty)/2} H ${tx} V ${ty}`);path.setAttribute('pathLength','1');svg.append(path);
-   animate(path,[{strokeDashoffset:1,opacity:0},{opacity:1,offset:.3},{strokeDashoffset:0,opacity:0}],{duration:950,delay:i*65})?.finished.then(()=>path.remove(),()=>path.remove());
+  const room=card.closest('.room-directory'),r=card.getBoundingClientRect();
+  [...room.querySelectorAll('.room-card.fx-visible')].filter(c=>c!==card).map(c=>({c,r:c.getBoundingClientRect()})).sort((a,b)=>Math.hypot(a.r.left-r.left,a.r.top-r.top)-Math.hypot(b.r.left-r.left,b.r.top-r.top)).slice(0,4).forEach(({c},i)=>{
    animate(c,[{borderColor:'var(--accent-room)',boxShadow:'0 0 26px rgb(var(--glow-room)/.65)'},{borderColor:'#6b87635e',boxShadow:'0 0 0 transparent'}],{duration:800,delay:150+i*65});
   });
  }
@@ -37,9 +31,6 @@ export function mountSpectacle(root) {
  window.addEventListener('scroll',()=>{
   if(reduce.matches||document.hidden||performance.now()-lastWave<850)return;lastWave=performance.now();
   active.forEach(room=>{
-   const r=room.getBoundingClientRect(),y=Math.max(0,-r.top)+innerHeight*.15;
-   const wave=room.querySelector('.shock-front');wave.style.top=`${y}px`;
-   animate(wave,[{opacity:0,transform:'translateY(0)'},{opacity:.65,offset:.15},{opacity:0,transform:`translateY(${innerHeight*.7}px)`}],{duration:850});
    room.querySelectorAll('.room-card.fx-visible').forEach((card,i)=>animate(card,[{translate:'0 0'},{translate:'0 -5px',offset:.45},{translate:'0 0'}],{duration:500,delay:Math.min(i*25,250)}));
   });
  },{passive:true});
@@ -49,8 +40,6 @@ export function mountSpectacle(root) {
    if(reduce.matches)return;
    rooms.forEach(room=>{
     room.classList.toggle('target-lock',Boolean(document.querySelector('#room-query').value.trim()));
-    const beam=room.querySelector('.search-beam');
-    if(active.has(room))animate(beam,[{opacity:0,transform:'translateY(0)'},{opacity:.6,offset:.2},{opacity:0,transform:`translateY(${Math.min(room.clientHeight,innerHeight)}px)`}],{duration:950});
    });
   },100);
  });

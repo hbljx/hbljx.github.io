@@ -1,10 +1,6 @@
 /* Large-scale choreography and seven distinct background installations. */
 .spectacle-stage{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;color:var(--accent-room)}
 .directory-fx>.room-heading,.directory-fx>.room-groups{position:relative;z-index:1}
-.shock-front,.search-beam{position:absolute;left:0;right:0;height:70px;opacity:0;background:linear-gradient(transparent,rgb(var(--glow-room)/.22));border-bottom:2px solid currentColor;box-shadow:0 12px 30px rgb(var(--glow-room)/.2)}
-.search-beam{top:0;height:140px;border-bottom-style:dashed}
-.energy-wires{position:absolute;inset:0;overflow:visible}
-.energy-wires path{fill:none;stroke:var(--accent-room);stroke-width:2;stroke-dasharray:1;filter:drop-shadow(0 0 5px currentColor)}
 .energy-field{position:absolute;left:0;top:0;width:180px;height:180px;margin:-90px;opacity:0;border-radius:50%;background:radial-gradient(circle,rgb(var(--glow-room)/.35),transparent 65%);transition:opacity .3s}
 .energy-field.energized{opacity:1}
 .energy-field i{position:absolute;inset:25%;border:1px dashed currentColor;border-radius:50%;animation:device-spin 5s linear infinite}

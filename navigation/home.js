@@ -64,6 +64,8 @@ if (worldMode) {
   mountHeaderEffects();
   const { mountCraftDetails } = await import('./craft-details.js');
   mountCraftDetails();
+  const { mountFooterEffects } = await import('./footer-effects.js');
+  mountFooterEffects();
 
   const hero = document.querySelector('.hero');
   const stage = document.querySelector('.hero-stage');
