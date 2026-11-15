@@ -1,6 +1,6 @@
 /* Scoped to the footer game so the existing plaques keep their layout. */
 .home-footer.footer-landscape {padding-top:0;overflow:visible;background:#0c181b;box-shadow:none}
-.footer-runner {position:relative;grid-column:1/-1;grid-row:1;margin-inline:calc(-1 * var(--gutter));height:366px;isolation:isolate;background:transparent;border:0;overflow:hidden;color:#c4d3b5;font-family:ui-monospace,"Microsoft YaHei",monospace}
+.footer-runner {position:relative;grid-column:1/-1;grid-row:1;margin-inline:calc(-1 * var(--gutter));height:390px;isolation:isolate;background:transparent;border:0;overflow:hidden;color:#c4d3b5;font-family:ui-monospace,"Microsoft YaHei",monospace}
 .runner-canvas {display:block;width:100%;height:320px;image-rendering:pixelated;touch-action:none;outline:none;cursor:pointer}
 .runner-canvas:focus-visible {outline:none}
 .runner-canvas:focus-visible~.runner-hud .runner-label {text-decoration:underline;text-decoration-color:#b4d482;text-underline-offset:6px}
@@ -11,7 +11,7 @@
 .runner-scores {display:flex;gap:22px;font-size:11px}
 .runner-scores span {display:flex;align-items:center;gap:8px}
 .runner-scores b {font-size:17px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:.12em}
-.runner-overlay {position:absolute;left:50%;top:54px;transform:translateX(-50%);width:354px;max-width:calc(100% - 36px);display:flex;flex-direction:column;align-items:center;text-align:center;padding:15px 22px 13px;color:#c8d3bb;border:3px solid #0a1211;background:repeating-linear-gradient(0deg,#ffffff02 0 4px,transparent 4px 12px),repeating-linear-gradient(90deg,#0000000b 0 12px,transparent 12px 24px),#304039;box-shadow:inset 3px 3px #74816a,inset -3px -3px #182922,0 0 0 1px #758366,5px 6px 0 #040a08a6;text-shadow:1px 2px #101e19}
+.runner-overlay {position:absolute;left:50%;top:54px;transform:translateX(-50%);width:354px;max-width:calc(100% - 36px);display:flex;flex-direction:column;align-items:center;row-gap:20px;text-align:center;padding:16px 22px;color:#c8d3bb;border:3px solid #0a1211;background:repeating-linear-gradient(0deg,#ffffff02 0 4px,transparent 4px 12px),repeating-linear-gradient(90deg,#0000000b 0 12px,transparent 12px 24px),#304039;box-shadow:inset 3px 3px #74816a,inset -3px -3px #182922,0 0 0 1px #758366,5px 6px 0 #040a08a6;text-shadow:1px 2px #101e19}
 .runner-overlay::before,.runner-overlay::after {content:'';position:absolute;top:9px;width:4px;height:4px;background:#b2bd95;box-shadow:1px 1px #17261e,0 0 0 1px #52634b;pointer-events:none}
 .runner-overlay::before {left:9px}
 .runner-overlay::after {right:9px}
@@ -23,8 +23,9 @@
 .footer-runner[data-state="paused"] .runner-icon-paused,.footer-runner[data-state="over"] .runner-icon-over {display:inline}
 .runner-eyebrow {font-size:10px;letter-spacing:.16em;color:#b4c594}
 .runner-overlay h2 {margin:7px 0 6px;font-size:24px;font-weight:900;line-height:1.4;letter-spacing:.07em;color:#edf0d7;text-shadow:2px 3px #11251b}
-.footer-runner[data-state="ready"] .runner-overlay h2 {margin-bottom:20px}
-.runner-results {display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;margin:0 0 13px}
+/* One vertical rhythm for all three panels, above the homepage heading reset. */
+#flat-home .footer-runner .runner-overlay h2 {margin:0;line-height:1.4}
+.runner-results {display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;margin:0}
 .runner-results[hidden] {display:none}
 .runner-results>span {display:flex;flex-direction:column;gap:3px;padding:6px 10px;background:#1a2822;border:2px solid;border-color:#111c17 #5b6a52 #5b6a52 #111c17;font-size:10px;color:#9aac93}
 .runner-results b {color:#e2dfb5;font-size:19px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
@@ -37,7 +38,7 @@
 .home-footer .footer-runner .runner-start:hover {background-color:#68854f;box-shadow:inset 2px 2px #c0d69b,inset -2px -2px #3a542d,0 2px #0b150f;color:#fffbe2}
 .home-footer .footer-runner .runner-start:active {box-shadow:inset 2px 2px #2b4328,inset -2px -2px #9cb582;translate:0 1px}
 .home-footer .footer-runner button:focus-visible {outline:2px solid #b8d78a;outline-offset:3px}
-.runner-start-hint {font-size:10px;margin-top:10px;opacity:.7}
+.runner-start-hint {font-size:10px;margin-top:-10px;line-height:1.4;opacity:.7}
 .runner-toolbar {position:absolute;inset:auto 0 0;height:46px;padding-inline:26px;background:transparent;color:#adbea6;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .runner-toolbar p {font-size:11px;margin:0;letter-spacing:.035em}
 .runner-settings {display:flex;align-items:center;gap:12px;flex:none}
@@ -50,7 +51,7 @@
 .footer-runner[data-night="true"] .runner-label i {background:#b1d67c}
 @media (max-width:700px) {
   .home-footer.footer-landscape {padding-top:0}
-  .footer-runner {margin-inline:-20px;height:380px}
+  .footer-runner {margin-inline:-20px;height:404px}
   .home-footer.footer-landscape>.footer-brand-plaque {grid-row:2}
   .home-footer.footer-landscape>.footer-icp {grid-row:3}
   .home-footer.footer-landscape>div {grid-row:4;grid-column:1/-1}
@@ -62,10 +63,10 @@
   .runner-scores {gap:12px;font-size:9px}
   .runner-scores span {flex-direction:column;gap:0;align-items:flex-end}
   .runner-scores b {font-size:14px}
-  .runner-overlay {top:60px;padding:13px 16px 11px}
-  .footer-runner[data-state="over"] .runner-overlay {top:51px;padding-block:10px}
+  .runner-overlay {top:60px;padding:12px 16px}
+  .footer-runner[data-state="over"] .runner-overlay {top:51px}
   .runner-overlay h2 {font-size:20px}
-  .runner-results {margin-bottom:10px}
+
   .runner-results>span {padding:4px 8px}
   .runner-results b {font-size:17px}
   .runner-toolbar {height:80px;padding:9px 16px;align-items:flex-start;box-sizing:border-box}
@@ -85,7 +86,7 @@
   .home-footer .footer-runner .runner-touch-controls button:active {background:#42633b}
 }
 @media (pointer:coarse) and (min-width:701px) {
-  .footer-runner {height:414px}
+  .footer-runner {height:438px}
   .runner-toolbar {height:94px;align-items:flex-start;padding-top:6px;box-sizing:border-box}
   .runner-desktop-help {display:none}
   .runner-touch-help {display:inline}

@@ -198,11 +198,10 @@ html:not(.world-mode) :is(input[type=search],input[type=text],input[type=url],te
 .site-header>.brand{margin-right:auto}
 .site-header>.world-link{margin-left:auto}
 @media(max-width:1100px){.site-header>.brand{margin-right:0}.site-header>.world-link{margin-left:0}}
-/* About: a double-framed pixel workbench. */
+/* About: an open panel without decorative outer frames. */
 .about-us {
   margin:32px var(--gutter);padding:48px clamp(20px,4vw,64px);background:#14291d;color:#f0f6e6;
-  border:3px solid #92ac69;border-radius:0;outline:1px solid #445d39;outline-offset:6px;
-  box-shadow:inset 0 0 0 5px #0a1911,inset 0 0 0 6px #536b42,6px 8px 0 #09160e;
+  border:0;border-radius:0;outline:0;box-shadow:none;
 }
 .about-us .kicker {display:inline-flex;padding:9px 13px;background:#263d25;border:1px solid #7c9658;color:#c7f776;letter-spacing:.08em}
 .about-us h2 {max-width:850px;font-size:clamp(27px,3.5vw,46px);line-height:1.35}

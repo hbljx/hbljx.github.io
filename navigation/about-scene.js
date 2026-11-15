@@ -10,7 +10,7 @@ export function mountAboutScene() {
   section.innerHTML = `
     <div class="scene-cinema"><div class="scene-screen">
       <div class="scene-art"><img width="1536" height="1024" decoding="async" alt="夕阳中的像素工作室，木石书桌、电脑与窗外的方块山谷"><div class="about-build" aria-hidden="true"></div></div>
-      <div class="scene-opening" aria-hidden="true"><span>关于我们</span><small>08 · 每一块热爱，都有来处 / 滚动探索 ↓</small></div>
+      <div class="scene-opening" aria-hidden="true"><span>关于我们</span><small>滚动探索 ↓</small></div>
       <div class="scene-folio" aria-hidden="true"><span>08</span><i></i><small>08</small></div>
       <div class="scene-info">
         <p class="kicker"><span></span> About us</p>
@@ -19,7 +19,6 @@ export function mountAboutScene() {
         <div class="scene-actions"><a class="scene-enter" href="#about-us"><span>了解我们的故事</span><span class="scene-action-arrow" aria-hidden="true">↓</span></a><a class="scene-next" href="#about-projects-title"><span>看看我们在折腾什么</span><span class="scene-action-arrow" aria-hidden="true">↘</span></a></div>
       </div>
       <div class="about-scene-exit" aria-hidden="true"></div>
-      <p class="about-scene-caption">热爱 · 探索 · 分享 <span>下一屏 · 我们的故事 ↓</span></p>
       <div class="scene-meter" aria-hidden="true"><i></i></div>
     </div></div>`;
   host.append(section);
