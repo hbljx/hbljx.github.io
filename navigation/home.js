@@ -56,6 +56,8 @@ if (worldMode) {
   mountPixelImages();
   const { mountAboutEffects } = await import('./about-effects.js');
   mountAboutEffects();
+  const { mountGardenArrival } = await import('./garden-arrival.js');
+  mountGardenArrival();
   const { mountScenePointers } = await import('./scene-pointers.js');
   mountScenePointers();
   const { mountHeaderEffects } = await import('./header-effects.js');

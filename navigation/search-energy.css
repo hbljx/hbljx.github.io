@@ -29,21 +29,6 @@
 .search-burst i {position:absolute;left:calc(50% - 100px);top:calc(50% - 100px);width:200px;height:200px;border:2px solid var(--search-energy);opacity:0;box-shadow:0 0 12px color-mix(in srgb,var(--search-energy) 35%,transparent)}
 .search-burst i:last-child {border-style:dashed}
 .search-environment {position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;color:var(--search-energy);opacity:var(--fade);contain:layout paint}
-.search-orbits {position:absolute;left:70%;top:44%;width:clamp(220px,32vw,520px);aspect-ratio:1;translate:-50% -50%;transform:scale(.78) rotate(-15deg);opacity:.14;transition:transform .65s,opacity .4s}
-.search-orbits i {position:absolute;inset:0;border:2px dashed currentColor;clip-path:polygon(20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%,0 20%);background:linear-gradient(90deg,transparent 49.8%,currentColor 50%,transparent 50.2%);box-shadow:inset 0 0 35px color-mix(in srgb,var(--search-energy) 14%,transparent)}
-.search-orbits i:nth-child(2) {inset:16%;rotate:45deg;border-style:solid;background:none}
-.search-orbits i:nth-child(3) {inset:30%;rotate:-45deg;background:none}
-.search-focused .search-orbits {transform:scale(1) rotate(12deg);opacity:.5}
-.search-crystal-anchor {position:absolute;left:66%;top:31%;transform:translateY(calc(var(--progress)*-110px));transition:opacity .3s}
-.search-crystal-anchor:nth-of-type(4) {left:83%;top:40%;transform:translateY(calc(var(--progress)*-180px))}
-.search-crystal-anchor:nth-of-type(5) {left:58%;top:62%;transform:translateY(calc(var(--progress)*-95px))}
-.search-crystal-anchor:nth-of-type(6) {left:89%;top:68%;transform:translateY(calc(var(--progress)*-220px))}
-.search-crystal-anchor:nth-of-type(7) {left:51%;top:23%;transform:translateY(calc(var(--progress)*-65px))}
-.search-crystal-anchor:nth-of-type(8) {left:75%;top:79%;transform:translateY(calc(var(--progress)*-150px))}
-.search-crystal {display:block;width:22px;height:38px;opacity:.3;rotate:22deg;background:linear-gradient(90deg,color-mix(in srgb,var(--search-energy) 60%,white) 0 25%,var(--search-energy) 25% 65%,color-mix(in srgb,var(--search-energy) 35%,#102317) 65%);clip-path:polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%);transform:translateY(0);transition:opacity .35s,transform .5s}
-.search-crystal-anchor:nth-of-type(even) .search-crystal {width:14px;height:24px;rotate:-20deg}
-.search-focused .search-crystal {opacity:.9;transform:translateY(-8px)}
-.search-world-pulse {position:absolute;left:calc(70% - 250px);top:calc(44% - 250px);width:500px;height:500px;opacity:0;border:2px solid currentColor;border-radius:50%;background:radial-gradient(transparent 48%,color-mix(in srgb,var(--search-energy) 15%,transparent) 65%,transparent 72%)}
 /* Extend existing card tilt/reveal and the scene's scroll-driven depth, without another loop. */
 .directory-fx .room-card {translate:0 0;transition:transform .18s,translate .2s,border-color .2s,box-shadow .2s}
 @media(hover:hover) and (pointer:fine) {.directory-fx .room-card:hover {translate:0 -3px}}
@@ -58,12 +43,6 @@
   .site-search[data-energy-mounted] .search-gem {width:18px;height:26px}
   .search-energy-status {font-size:11px;margin-top:5px}
   .search-charge {margin-top:10px;gap:3px;height:4px}
-  .search-orbits {left:74%;top:26%;width:230px}
-  .search-world-pulse {left:calc(74% - 160px);top:calc(26% - 160px);width:320px;height:320px}
-  .search-crystal-anchor {top:20%}
-  .search-crystal-anchor:nth-of-type(4) {top:28%}
-  .search-crystal-anchor:nth-of-type(5) {top:13%}
-  .search-crystal-anchor:nth-of-type(n+6) {display:none}
 }
 @media(max-height:600px) {
   .hero-copy h1 {font-size:32px}
@@ -74,8 +53,47 @@
   .site-search[data-energy-mounted],.site-search[data-energy-mounted] *,.search-environment * {transition:none!important;animation:none!important}
   .search-particles,.search-burst,.search-scan,.search-world-pulse,.search-edge-light {display:none}
   .site-search[data-energy-mounted] button[type=submit],.search-trigger-face {transform:none!important;translate:none!important}
-  .search-crystal-anchor,.search-crystal,.search-orbits {transform:none!important}
   .directory-fx .room-card {translate:none!important}
   .directory-fx .room-card>a::after {animation:none!important}
   .scene-depth-blocks {display:none}
+}
+
+/* Full-resolution procedural search optics, behind the native form. */
+.search-observatory {
+  position: absolute;
+  left: 74%;
+  top: 51%;
+  width: min(54vw, 760px);
+  aspect-ratio: 32 / 27;
+  transform: translate(-50%, -50%);
+  display: block;
+  pointer-events: none;
+  opacity: .24;
+  transition: opacity .65s ease;
+}
+.search-environment::before {
+  content: '';
+  position: absolute;
+  left: 74%;
+  top: 51%;
+  width: min(62vw, 870px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, #031217d9 0%, #04161dc7 27%, #05161b75 49%, transparent 69%);
+  opacity: .28;
+  transition: opacity .65s ease;
+}
+.search-focused .search-observatory { opacity: 1; }
+.search-focused .search-environment::before { opacity: 1; }
+@media (max-width: 700px) {
+  .search-observatory { left: 69%; top: 26%; width: min(108vw, 460px); }
+  .search-environment::before { left: 69%; top: 26%; width: 510px; }
+  .search-focused .search-observatory { opacity: .75; }
+}
+@media (max-height: 600px) and (max-width: 700px) {
+  .search-observatory { left: 85%; top: 25%; width: 340px; }
+  .search-focused .search-observatory { opacity: .32; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-environment::before { transition: none; }
 }

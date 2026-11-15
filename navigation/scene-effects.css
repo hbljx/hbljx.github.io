@@ -124,9 +124,8 @@
   .scene-folio {top:calc(var(--header) + 20px)}
   .scene-folio i {width:25px}
   .scene-info h2 {font-size:clamp(32px,9vw,56px)}
-  .scene-description {font-size:14px;line-height:1.6}
+  .scene-description {font-size:15px;line-height:1.8}
   .scene-lead {font-size:19px}
-  .scene-actions {gap:8px 16px}
   .chapter-strip {bottom:33px;font-size:10px;gap:13px;mask-image:linear-gradient(90deg,#000 85%,transparent)}
   .scene-meter {bottom:19px}
   .scene-counter {bottom:auto;top:28%;right:var(--gutter)}
@@ -147,3 +146,13 @@
 .scene[data-static] .scene-art::after {opacity:1}
 .scene[data-static] :is(.scene-fx,.scene-folio,.chapter-strip,.scene-opening,.scene-meter) {display:none}
 .scene[data-static] .scene-info>* {transform:none;opacity:1}
+@media(max-height:640px) and (min-width:701px) {
+  .scene .scene-screen {grid-template-columns:1fr;padding-block:calc(var(--header) + 24px) 28px}
+  .scene .scene-info,.scene:nth-child(even) .scene-info {grid-column:1;justify-self:center;max-width:620px;padding:0}
+  .scene-info h2 {font-size:32px}
+  .scene-info .kicker {margin-bottom:12px}
+  .scene-description {min-height:0;margin-top:16px;line-height:1.7}
+  .scene-actions {grid-template-columns:repeat(2,minmax(0,1fr));margin-top:24px}
+  .scene-enter,.scene-next {min-height:48px}
+  .scene[data-room] .scene-art::after {background:#07100eb8}
+}

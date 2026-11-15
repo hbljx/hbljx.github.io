@@ -1,3 +1,4 @@
+import { mountAboutWorld } from './about-world.js';
 import { mountAboutCountdown } from './about-countdown.js';
 
 export function mountAboutEffects() {
@@ -16,8 +17,9 @@ export function mountAboutEffects() {
  heading.replaceChildren(typed);
  section.style.setProperty('--typing-time',`${Array.from(copy).length*65}ms`);
  const decor=document.createElement('div');decor.className='about-atmosphere';decor.setAttribute('aria-hidden','true');
- decor.innerHTML='<div class="about-aurora"></div><div class="about-matrix"></div><div class="about-portal"><i></i><i></i><i></i><b>LI+</b></div><div class="about-scanner"></div>'+Array.from({length:20},(_,i)=>`<i class="about-star" style="--n:${i};left:${i*47%100}%;top:${i*31%100}%"></i>`).join('');
+ decor.innerHTML='<div class="about-aurora"></div><div class="about-matrix"></div><div class="about-scanner"></div>'+Array.from({length:20},(_,i)=>`<i class="about-star" style="--n:${i};left:${i*47%100}%;top:${i*31%100}%"></i>`).join('');
  section.prepend(decor);
+ mountAboutWorld(section,decor);
  const controls=document.createElement('div');controls.className='about-actions';
  const enter=section.querySelector('.solid-link');enter.before(controls);controls.append(enter);
  const replay=document.createElement('button');replay.type='button';replay.className='about-replay';replay.textContent='↻ 重播入场';controls.append(replay);

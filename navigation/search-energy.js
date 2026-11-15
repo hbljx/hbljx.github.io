@@ -1,3 +1,5 @@
+import { mountSearchObservatory } from './search-observatory.js';
+
 // Event-driven decoration around a native GET form. Search never waits for animation.
 export function mountSearchEnergy(form, query) {
   if (form.dataset.energyMounted) return;
@@ -26,8 +28,7 @@ export function mountSearchEnergy(form, query) {
   const burst = create('search-burst', form);
   burst.innerHTML = '<i></i><i></i>';
   const environment = create('search-environment', stage);
-  environment.innerHTML = '<div class="search-orbits"><i></i><i></i><i></i></div><div class="search-world-pulse"></div>' +
-    Array.from({length:6}, (_, i) => `<div class="search-crystal-anchor" style="--crystal:${i}"><i class="search-crystal"></i></div>`).join('');
+  const observatory = mountSearchObservatory(environment);
   const status = document.createElement('div');
   status.className = 'search-energy-status';
   status.innerHTML = '<span>搜索能量台 · 就绪</span><kbd>Enter ↵</kbd>';
@@ -94,19 +95,22 @@ export function mountSearchEnergy(form, query) {
         {transform:'rotateY(180deg) translateY(-5px)',offset:.5}, {transform:'rotateY(360deg) translateY(0)'}], 520);
       sweep();
     }
+    observatory.engine(next, flash && next !== engine);
+    observatory.input(query.value, false);
     engine = next;
     charge();
   }
   query.addEventListener('compositionstart', () => { composing = true; });
-  query.addEventListener('compositionend', () => { composing = false; charge(); sparks('gather', 3); });
+  query.addEventListener('compositionend', () => { composing = false; charge(); observatory.input(query.value); sparks('gather', 3); });
   query.addEventListener('input', () => {
     charge();
+    observatory.input(query.value, !composing);
     if (composing) return;
     if (query.value && performance.now() - lastInput > 100) { sparks('gather', 2); lastInput = performance.now(); }
   });
   query.addEventListener('focus', sweep);
-  form.addEventListener('focusin', () => { stage.classList.add('search-focused'); });
-  form.addEventListener('focusout', event => { if (!form.contains(event.relatedTarget)) stage.classList.remove('search-focused'); });
+  form.addEventListener('focusin', () => { stage.classList.add('search-focused'); observatory.focus(true); });
+  form.addEventListener('focusout', event => { if (!form.contains(event.relatedTarget)) { stage.classList.remove('search-focused'); observatory.focus(false); } });
   form.addEventListener('change', event => { if (event.target.name === 'engine') selectEngine(); });
   form.addEventListener('submit', event => {
     if (composing) { event.preventDefault(); return; }
@@ -121,16 +125,13 @@ export function mountSearchEnergy(form, query) {
       {boxShadow:'inset 0 3px #213b2466,0 0 #0b160e',offset:.25}, {boxShadow:'inset 0 -4px #213b2444,0 3px #0b160e'}], 230);
     [...burst.children].forEach((ring,i) => animate(ring, [{transform:'scale(.2) rotate(0deg)',opacity:0},
       {opacity:.8,offset:.15}, {transform:'scale(1.9) rotate(45deg)',opacity:0}], 620, i * 60));
-    animate(environment.querySelector('.search-world-pulse'), [{transform:'scale(.2)',opacity:0},
-      {opacity:.6,offset:.2}, {transform:'scale(1.5)',opacity:0}], 720);
-    environment.querySelectorAll('.search-crystal').forEach((crystal,i) => animate(crystal,
-      [{translate:'0 0'}, {translate:`${i % 2 ? 9 : -9}px -12px`,offset:.3}, {translate:'0 0'}], 620, i * 25));
+    observatory.launch();
     message.textContent = '传送已启动 · 探索世界'; live.textContent = '正在新标签页中搜索';
     clearTimeout(resetTimer); resetTimer = setTimeout(charge, 1000);
   });
   form.addEventListener('formdata', () => {
     // The native handler clears the input once the request has captured its value.
-    queueMicrotask(() => { meter.querySelectorAll('.charged').forEach(cell => cell.classList.remove('charged')); form.style.setProperty('--search-charge','0'); });
+    queueMicrotask(() => { observatory.input(query.value, false); meter.querySelectorAll('.charged').forEach(cell => cell.classList.remove('charged')); form.style.setProperty('--search-charge','0'); });
   });
   function movePointer() {
     pointerFrame = 0;
@@ -158,8 +159,17 @@ export function mountSearchEnergy(form, query) {
     for (const animation of animations) animation.cancel();
     animations.clear(); particleAnimations.clear(); particles.replaceChildren();
   }
+  const opening = form.closest('.hero-copy');
+  function syncObservatory() {
+    const shown = visible && opening?.getAttribute('aria-hidden') !== 'true';
+    observatory.visibility(shown);
+    observatory.focus(shown && form.contains(document.activeElement));
+  }
+  const heroObserver = new MutationObserver(syncObservatory);
+  if (opening) heroObserver.observe(opening, {attributes:true, attributeFilter:['aria-hidden']});
   const observer = new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
+    syncObservatory();
     if (!visible) { stop(); stage.classList.remove('search-focused'); }
     else stage.classList.toggle('search-focused', form.contains(document.activeElement));
   });

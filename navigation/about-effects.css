@@ -3,11 +3,6 @@
 .about-atmosphere{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;background:radial-gradient(380px circle at var(--light-x) var(--light-y),#89ffc416,transparent 80%)}
 .about-aurora{position:absolute;inset:-40%;background:conic-gradient(from 80deg,transparent,#69f4c522,transparent 35%,#b6a0ff20,transparent 70%);filter:blur(35px);animation:about-orbit 35s linear infinite}
 .about-matrix{position:absolute;inset:0;background-image:linear-gradient(#a0ffc00c 1px,transparent 1px),linear-gradient(90deg,#a0ffc00c 1px,transparent 1px);background-size:40px 40px;transform:perspective(600px) rotateX(30deg) scale(1.2);mask-image:linear-gradient(transparent,#000);animation:about-grid 12s linear infinite}
-.about-portal{position:absolute;width:360px;height:360px;right:-90px;top:20px;opacity:.32;translate:var(--parallax-x,0px) var(--parallax-y,0px);transition:translate .25s}
-.about-portal i{position:absolute;inset:0;border:2px dashed #a8f3bb;border-radius:50%;animation:about-orbit 28s linear infinite;box-shadow:0 0 35px #85f4ba20,inset 0 0 35px #85f4ba20}
-.about-portal i:nth-child(2){inset:15%;border-style:solid;transform:rotateX(55deg);animation-direction:reverse}
-.about-portal i:nth-child(3){inset:28%;border-radius:20%;animation-duration:16s}
-.about-portal b{position:absolute;inset:0;display:grid;place-items:center;font:800 60px/1 monospace;color:#ceff9c;text-shadow:0 0 30px #a3ffb6}
 .about-star{position:absolute;width:4px;height:4px;background:#ccffab;box-shadow:0 0 12px #a4ffa8;animation:about-drift calc(5s + var(--n)*.3s) calc(var(--n)*-.5s) ease-in-out infinite alternate}
 .about-scanner{position:absolute;inset:0;background:linear-gradient(transparent 45%,#b4ffbd18 49%,#caffc55a 50%,transparent 51%);opacity:0;transform:translateY(-100%)}
 .about-playing .about-scanner{animation:about-scan 1.8s ease-out both}
@@ -51,5 +46,31 @@
 @keyframes about-beacon{50%{opacity:.4;box-shadow:0 0 3px #b9ff90}}
 @keyframes about-shine{0%,65%{translate:-65% 0}100%{translate:65% 0}}
 @keyframes about-wave{to{transform:scale(15) rotate(40deg);opacity:0}}
-@media(max-width:700px){.about-us.about-enhanced{min-height:0;padding:32px 22px}.about-portal{width:230px;height:230px;right:-95px;opacity:.2}.about-star:nth-of-type(n+12){display:none}.about-actions{gap:14px}.about-enhanced h2{font-size:29px}.about-aurora{filter:blur(18px)}}
-@media(prefers-reduced-motion:reduce){.about-enhanced *,.about-enhanced *:before,.about-enhanced *:after{animation:none!important;transition:none!important}.about-scanner,.about-click-wave,.about-typed>span:after{display:none}.about-portal{translate:0 0}.about-replay{display:none}}
+@media(max-width:700px){.about-us.about-enhanced{min-height:0;padding:32px 22px}.about-star:nth-of-type(n+12){display:none}.about-actions{gap:14px}.about-enhanced h2{font-size:29px}.about-aurora{filter:blur(18px)}}
+@media(prefers-reduced-motion:reduce){.about-enhanced *,.about-enhanced *:before,.about-enhanced *:after{animation:none!important;transition:none!important}.about-scanner,.about-click-wave,.about-typed>span:after{display:none}.about-replay{display:none}}
+
+/* The miniature world is a non-interactive illustration in the right background. */
+.about-world {
+  position: absolute;
+  top: -20px;
+  right: -15px;
+  width: clamp(430px, 40vw, 600px);
+  aspect-ratio: 8 / 7;
+  display: block;
+  pointer-events: none;
+  opacity: .9;
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 95%, transparent);
+}
+.about-enhanced h2 { max-width: min(850px, 65%); }
+.about-enhanced > p:not(.kicker) { max-width: min(730px, 59%); }
+.about-enhanced .about-aurora { opacity: .55; }
+.about-enhanced .about-matrix { opacity: .5; }
+@media (max-width: 1000px) {
+  .about-world { right: -135px; width: 500px; opacity: .42; }
+  .about-enhanced h2 { max-width: 88%; }
+  .about-enhanced > p:not(.kicker) { max-width: 80%; }
+}
+@media (max-width: 700px) {
+  .about-world { top: 0; right: -176px; width: 430px; opacity: .23; mask-image: linear-gradient(90deg, transparent 5%, #000 50%); }
+  .about-enhanced h2, .about-enhanced > p:not(.kicker) { max-width: 100%; }
+}

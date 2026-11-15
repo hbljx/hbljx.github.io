@@ -59,8 +59,8 @@ export function mountScenes() {
           <h2 id="${marker}-title">${zone.name}<span>.</span></h2>
           <p class="scene-description">${summary}</p>
           <div class="scene-actions">
-            <a class="scene-enter" href="#${marker}-links">查看本区全部网址 <span aria-hidden="true">↓</span></a>
-            <a class="scene-next" href="#${next ? 'scene-' + next.id : 'zones'}">${next ? '下一站 · '+ next.name : '返回场景分类'} ↓</a>
+            <a class="scene-enter" href="#${marker}-links"><span>查看本区全部网址</span><span class="scene-action-arrow" aria-hidden="true">↓</span></a>
+            <a class="scene-next" href="#${next ? 'scene-' + next.id : 'about-us'}"><span>${next ? '下一站 · '+ next.name : '下一站 · 关于我们'}</span><span class="scene-action-arrow" aria-hidden="true">↓</span></a>
           </div>
         </div>
         ${sceneDecoration(zone.id,index)}
@@ -88,9 +88,7 @@ export function mountScenes() {
     for (const zone of rooms) {
       const {scene,list,strip} = roomStats.get(zone.id);
       const categories = groups.filter(group => groupOwners.get(group.id) === zone.id);
-      const total=categories.reduce((count,group)=>count+group.items.length,0);
-      if (zone.id==='court') roomFrames.get(scene).total=total;
-      strip.replaceChildren(...categories.map(group=>Object.assign(document.createElement('span'),{textContent:group.title})));
+      strip.replaceChildren(...(zone.id==='writing' ? [] : categories.map(group=>Object.assign(document.createElement('span'),{textContent:group.title}))));
       scheduleScenes();
       list.replaceChildren();
       let matchCount = 0;
@@ -104,7 +102,6 @@ export function mountScenes() {
         category.dataset.group = group.id;
         const icon = categoryIcon(group.id);
         const title = Object.assign(document.createElement('h4'),{textContent:group.title});
-        title.append(Object.assign(document.createElement('small'),{textContent:entries.length}));
         const grid = document.createElement('div');
         grid.className = 'room-card-grid';
         for (const item of entries) {
@@ -247,11 +244,6 @@ export function mountScenes() {
       }
       scene.style.setProperty('--track',progress);
       scene.style.setProperty('--opening',staticView ? 0 : 1 - easing(clamp((progress-.06)/.20)));
-      if (room.total !== undefined) {
-        const counter=scene.querySelector('.scene-counter strong');
-        const value=String(Math.round(room.total*sweep));
-        if (counter.textContent!==value) counter.textContent=value;
-      }
       const shot = progress;
       if (shot !== room.progress) {
         room.progress = shot;
