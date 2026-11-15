@@ -23,7 +23,7 @@
   color:#c9c8b0;box-shadow:inset 1px 1px #f2deb411,inset -1px -1px #080f0c,0 3px #040d09;
 }
 .footer-record {flex:none;shape-rendering:crispEdges;filter:drop-shadow(1px 2px #080d09)}
-.footer-record-text {font-variant-numeric:tabular-nums;letter-spacing:.025em;line-height:1.5;text-shadow:0 1px #050a07}
+.footer-record-text {font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.025em;line-height:1.5;text-shadow:0 1px #050a07}
 .home-footer .footer-top {
   padding:11px 16px;gap:10px;cursor:pointer;color:#c8dafa;
   border-color:#637c9e #2b405c #182a40 #4a6586;
