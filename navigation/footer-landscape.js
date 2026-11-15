@@ -1,126 +1,227 @@
-// A small, cached pixel world. Only particles, water and portal light redraw at 30 fps.
+import { Runner } from './runner-core.js';
+import { createRunnerRenderer } from './runner-renderer.js';
+
+// The footer itself is the game: no assets, dependencies or background timers.
 export function mountFooterLandscape() {
   const footer = document.querySelector('.home-footer');
-  if (!footer) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'footer-world';
-  canvas.setAttribute('aria-hidden', 'true');
-  footer.prepend(canvas);
-  const ctx = canvas.getContext('2d', {alpha:false});
-  if (!ctx) {canvas.remove();return;}
+  if (!footer || footer.querySelector('.footer-runner')) return;
+  const game = document.createElement('section');
+  game.className = 'footer-runner';
+  game.setAttribute('aria-label', '方块小恐龙无限跑酷');
+  game.innerHTML = `
+    <canvas class="runner-canvas" tabindex="0" aria-label="跑酷游戏。空格或上箭头跳跃，长按跳得更高，下箭头下蹲或快速落地，Escape 暂停。" aria-describedby="runner-help"></canvas>
+    <header class="runner-hud"><span class="runner-label"><i aria-hidden="true"></i> 方块小恐龙 <small>BLOCK RUNNER</small></span><span class="runner-scores"><span>最高 <b data-best>00000</b></span><span>距离 <b data-score>00000</b></span></span></header>
+    <aside class="runner-overlay"><span class="runner-eyebrow">再往前跑一点。</span><h2>方块世界，无限冒险</h2><p>越过仙人掌，躲开翼龙。你能跑多远？</p><button type="button" class="runner-start">开始奔跑 <span aria-hidden="true">→</span></button><span class="runner-start-hint">空格 / ↑ / Enter 开始</span></aside>
+    <nav class="runner-toolbar" aria-label="跑酷操作"><p id="runner-help"><span class="runner-desktop-help">空格 / ↑ 跳跃 · 长按大跳 · ↓ 蹲下 / 快速落地</span><span class="runner-touch-help">点画面跳跃 · 长按大跳 · 按住 ↓ 蹲下</span></p><span class="runner-settings"><button type="button" data-pause disabled aria-label="暂停游戏">暂停</button><button type="button" data-sound aria-pressed="false" aria-label="开启游戏音效">音效：关</button></span></nav>
+    <span class="runner-touch-controls"><button type="button" data-duck aria-label="按住下蹲，空中按住快速落地">↓ 蹲下</button><button type="button" data-jump aria-label="跳跃，长按跳得更高">↑ 跳跃</button></span>
+    <p class="runner-announcement" role="status" aria-live="polite"></p>`;
+  const canvas = game.querySelector('canvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  if (!ctx) return;
   footer.classList.add('footer-landscape');
-  const terrain = document.createElement('canvas');
-  const g = terrain.getContext('2d');
-  if (!g) return;
+  footer.prepend(game);
+  const runner = new Runner();
+  const overlay = game.querySelector('.runner-overlay');
+  const title = overlay.querySelector('h2'), message = overlay.querySelector('p');
+  const eyebrow = overlay.querySelector('.runner-eyebrow');
+  const start = game.querySelector('.runner-start'), hint = game.querySelector('.runner-start-hint');
+  const scoreNode = game.querySelector('[data-score]'), bestNode = game.querySelector('[data-best]');
+  const pauseButton = game.querySelector('[data-pause]'), soundButton = game.querySelector('[data-sound]');
+  const announcement = game.querySelector('.runner-announcement');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  let width = 640, height = 144, portalX = 0, visible = false, raf = 0, last = 0, time = 0;
-  const stars = Array.from({length:38}, (_,i) => ({x:(i*73+19)%997/997,y:8+(i*23)%62,phase:i*1.7}));
-  const motes = Array.from({length:24}, (_,i) => ({x:(i*47+11)%101/101,y:(i*29)%71,phase:i*.73}));
-  function rect(c,color,x,y,w,h) {c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),w,h);}
-  function tree(x,y,size) {
-    rect(g,'#594737',x-2,y-22*size,5,25*size);
-    rect(g,'#2c533e',x-15*size,y-38*size,30*size,20*size);
-    rect(g,'#3e6b47',x-11*size,y-47*size,23*size,14*size);
-    rect(g,'#537b4d',x-7*size,y-51*size,16*size,8*size);
-    rect(g,'#456d46',x-15*size,y-38*size,7*size,15*size);
-    rect(g,'#739153',x-10*size,y-47*size,7*size,3*size);
+  const draw = createRunnerRenderer(ctx, runner, reduced);
+  const jumpKeys = new Set(['Space', 'ArrowUp']);
+  const heldKeys = new Set(), jumpPointers = new Set(), duckPointers = new Set();
+  let width = 960, height = 240, visible = false, raf = 0, last = 0, accumulator = 0;
+  let best = 0, shownScore = -1, milestone = 0, audio = null, sound = false;
+  try { best = Math.max(0, Math.min(99999999, Number(localStorage.getItem('li-block-runner-best')) || 0)); } catch { /* Storage may be disabled. */ }
+  bestNode.textContent = String(best).padStart(5, '0');
+
+  function tone(frequency, duration, end = frequency) {
+    if (!sound) return;
+    try {
+      audio ||= new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume().catch(() => {});
+      const oscillator = audio.createOscillator(), gain = audio.createGain();
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(frequency, audio.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(end, audio.currentTime + duration);
+      gain.gain.setValueAtTime(.035, audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + duration);
+      oscillator.connect(gain).connect(audio.destination);
+      oscillator.start(); oscillator.stop(audio.currentTime + duration);
+      oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+    } catch { /* Sound is optional. */ }
   }
-  function build() {
-    width = Math.min(960,Math.max(320,Math.round(footer.clientWidth/2)));
-    canvas.width=terrain.width=width;canvas.height=terrain.height=height;
-    portalX=Math.round(width*.66/4)*4;
-    const sky=g.createLinearGradient(0,0,0,height);
-    sky.addColorStop(0,'#0c181b');sky.addColorStop(.65,'#172c36');sky.addColorStop(1,'#263b37');
-    g.fillStyle=sky;g.fillRect(0,0,width,height);
-    rect(g,'#a9c2ac',width*.83,19,13,13);rect(g,'#d1dfb4',width*.83,19,10,10);
-    rect(g,'#94b4a0',width*.83+3,26,4,3);
-    // Distant stepped hills, followed by a calm river.
-    for(let x=0;x<width;x+=16) {
-      const y=67+Math.round((Math.sin(x*.023)+Math.sin(x*.043))*7/4)*4;
-      rect(g,'#203f42',x,y,16,height-y);
-      const near=86+Math.round(Math.sin(x*.032+2)*9/4)*4;
-      rect(g,'#294c44',x,near,16,height-near);
+  function clearInput() {
+    heldKeys.clear(); jumpPointers.clear(); duckPointers.clear();
+    runner.jumpHeld = runner.duck = false;
+  }
+  function syncInput() {
+    runner.jumpHeld = heldKeys.has('Space') || heldKeys.has('ArrowUp') || jumpPointers.size > 0;
+    runner.duck = heldKeys.has('ArrowDown') || duckPointers.size > 0;
+  }
+  function showState() {
+    game.dataset.state = runner.state;
+    overlay.hidden = runner.state === 'running';
+    pauseButton.disabled = runner.state !== 'running' && runner.state !== 'paused';
+    pauseButton.textContent = runner.state === 'paused' ? '继续' : '暂停';
+    pauseButton.setAttribute('aria-label', runner.state === 'paused' ? '继续游戏' : '暂停游戏');
+    if (runner.state === 'over') {
+      eyebrow.textContent = 'GAME OVER';
+      title.textContent = '再来一次，跑得更远';
+      message.textContent = `本次距离 ${runner.score} · 最高纪录 ${best}`;
+      start.innerHTML = '重新奔跑 <span aria-hidden="true">↻</span>';
+      hint.textContent = '空格 / ↑ / Enter 或点击重开';
+      announcement.textContent = `游戏结束，本次 ${runner.score} 分，最高 ${best} 分。`;
+    } else if (runner.state === 'paused') {
+      eyebrow.textContent = 'TAKE A BREATH';
+      title.textContent = '休息一下，冒险还在';
+      message.textContent = '准备好后继续，从刚才的地方出发。';
+      start.textContent = '继续奔跑 →';
+      hint.textContent = '空格 / ↑ / Enter 或点击继续';
+      announcement.textContent = '游戏已暂停。';
     }
-    rect(g,'#213f4c',0,108,width,36);
-    // Exposed grass / dirt blocks on the two river banks.
-    for(let x=0;x<width;x+=8) {
-      if(x>width*.34&&x<width*.55)continue;
-      const y=115+((Math.floor(x/24)%3)-1)*4;
-      rect(g,'#3c4035',x,y,8,height-y);
-      rect(g,'#587849',x,y,8,4);rect(g,'#7c9653',x,y,8,1);
-      rect(g,'#4d4938',x+1,y+6,3,3);rect(g,'#292f2c',x+4,y+13,3,3);
-    }
-    tree(width*.12,115,1);tree(width*.23,119,.72);tree(width*.91,115,1.05);
-    // Obsidian portal, with individually shaded block joints.
-    rect(g,'#111b27',portalX-16,67,32,52);
-    for(let y=67;y<119;y+=8)for(const x of [portalX-16,portalX+8]) {
-      rect(g,'#363149',x,y,8,8);rect(g,'#53445d',x,y,8,2);rect(g,'#242439',x+5,y+2,3,6);
-    }
-    for(let x=portalX-16;x<portalX+16;x+=8) {
-      rect(g,'#49405a',x,67,8,7);rect(g,'#756080',x,67,8,2);
-      rect(g,'#373647',x,114,8,6);
-    }
-    for(const x of [portalX-27,portalX+27]) {
-      rect(g,'#67503a',x,105,3,14);rect(g,'#b08a50',x,105,1,14);
-    }
-    // Small flowers and tufts keep the banks from feeling like a flat border.
-    for(let i=0;i<12;i++) {
-      const x=Math.round((i*61+21)%width);
-      if(x>width*.30&&x<width*.75)continue;
-      rect(g,'#65874c',x,109,1,7);rect(g,i%2?'#dfb67c':'#c491b1',x-1,107,3,3);
-    }
-    paint();
   }
   function paint() {
-    ctx.drawImage(terrain,0,0);
-    for(const star of stars) {
-      ctx.globalAlpha=.28+.45*(.5+.5*Math.sin(time*.7+star.phase));
-      rect(ctx,'#d8e5be',star.x*width,star.y,1,1);
+    const night = String(runner.night);
+    if (game.dataset.night !== night) game.dataset.night = night;
+    draw(width, height);
+    if (shownScore !== runner.score) {
+      shownScore = runner.score;
+      scoreNode.textContent = String(runner.score).padStart(5, '0');
     }
-    ctx.globalAlpha=1;
-    // Portal light is a pixel texture, never a full-screen filter.
-    rect(ctx,'#734f9b',portalX-8,74,16,40);
-    for(let y=0;y<10;y++)for(let x=0;x<4;x++) {
-      ctx.globalAlpha=.18+.42*(.5+.5*Math.sin(y*.8+x*1.6-time*1.8));
-      rect(ctx,'#e0abff',portalX-8+x*4,74+y*4,4,4);
-    }
-    ctx.globalAlpha=.35;
-    rect(ctx,'#b383d0',portalX-5,122,10,2);rect(ctx,'#9c78b6',portalX-8,128,16,1);
-    for(let i=0;i<15;i++) {
-      const x=width*.35+((i*29+time*(i%2?2:-2))%(width*.19)+width*.19)%(width*.19);
-      rect(ctx,i%3?'#659295':'#a0b7a1',x,111+(i*7)%30,3+i%5,1);
-    }
-    ctx.globalAlpha=1;
-    for(let side=-1;side<=1;side+=2) {
-      const x=portalX+side*27, flicker=Math.sin(time*7+x)>0?1:0;
-      rect(ctx,'#ad723d',x-3,99,9,9);
-      rect(ctx,'#efb35e',x-1,99-flicker,5,7+flicker);
-      rect(ctx,'#ffeb9a',x,100-flicker,2,4);
-    }
-    for(const mote of motes) {
-      const life=(time*.13+mote.phase)%1;
-      const near=mote.phase%2<1;
-      const x=near?portalX+(mote.x-.5)*62:width*mote.x;
-      ctx.globalAlpha=Math.sin(life*Math.PI)*.7;
-      rect(ctx,near?'#d5a1ef':'#d3e796',x+Math.sin(time+mote.phase)*4,112-life*(near?58:28),near?2:1,near?2:1);
-    }
-    ctx.globalAlpha=1;
   }
+  function schedule() {
+    if (!raf && visible && !document.hidden && runner.state === 'running') raf = requestAnimationFrame(tick);
+  }
+  function activate() {
+    if (!visible || document.hidden) return false;
+    if (runner.state === 'paused') runner.state = 'running';
+    else if (runner.state !== 'running') {
+      if (!runner.start(performance.now())) return false;
+      milestone = 0; shownScore = -1;
+    }
+    clearInput(); last = performance.now(); accumulator = 0;
+    showState(); paint(); schedule();
+    announcement.textContent = '开始奔跑。';
+    return true;
+  }
+  function pause() {
+    clearInput();
+    if (runner.state !== 'running') return;
+    runner.state = 'paused';
+    cancelAnimationFrame(raf); raf = 0;
+    showState(); paint();
+  }
+  function jump() { if (runner.jump()) tone(310, .09, 650); }
+  start.addEventListener('click', () => { if (activate()) canvas.focus({ preventScroll: true }); });
+  pauseButton.addEventListener('click', () => {
+    if (runner.state === 'running') pause();
+    else if (activate()) canvas.focus({ preventScroll: true });
+  });
+  soundButton.addEventListener('click', () => {
+    sound = !sound;
+    soundButton.textContent = sound ? '音效：开' : '音效：关';
+    soundButton.setAttribute('aria-pressed', String(sound));
+    soundButton.setAttribute('aria-label', sound ? '关闭游戏音效' : '开启游戏音效');
+    tone(520, .06);
+  });
+  window.addEventListener('keydown', event => {
+    // Buttons keep native Enter/Space activation; game keys belong to the canvas.
+    const pageFocused = event.target === document.body || event.target === document.documentElement;
+    if (event.target !== canvas && !(visible && pageFocused)) return;
+    if (!['Space', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(event.code)) return;
+    event.preventDefault(); event.stopPropagation();
+    if (event.repeat) return;
+    if (event.code === 'Escape') { pause(); return; }
+    if (runner.state !== 'running') {
+      if ((jumpKeys.has(event.code) || event.code === 'Enter') && activate()) {
+        canvas.focus({ preventScroll: true });
+        heldKeys.add(event.code); syncInput();
+      }
+      return;
+    }
+    heldKeys.add(event.code);
+    if (jumpKeys.has(event.code)) jump();
+    syncInput();
+  });
+  window.addEventListener('keyup', event => { heldKeys.delete(event.code); syncInput(); });
+  function bindPointer(target, action) {
+    target.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      event.preventDefault(); canvas.focus({ preventScroll: true });
+      target.setPointerCapture(event.pointerId);
+      if (runner.state !== 'running') { activate(); return; }
+      (action === 'duck' ? duckPointers : jumpPointers).add(event.pointerId);
+      if (action === 'jump') jump();
+      syncInput();
+    });
+    const release = event => {
+      jumpPointers.delete(event.pointerId); duckPointers.delete(event.pointerId); syncInput();
+    };
+    target.addEventListener('pointerup', release);
+    target.addEventListener('pointercancel', release);
+    target.addEventListener('lostpointercapture', release);
+  }
+  bindPointer(canvas, 'jump');
+  bindPointer(game.querySelector('[data-jump]'), 'jump');
+  bindPointer(game.querySelector('[data-duck]'), 'duck');
+  for (const action of ['jump', 'duck']) {
+    const button = game.querySelector(`[data-${action}]`);
+    button.addEventListener('keydown', event => {
+      if (!['Space', 'Enter'].includes(event.code)) return;
+      event.preventDefault();
+      if (event.repeat) return;
+      if (runner.state !== 'running' && !activate()) return;
+      heldKeys.add(action === 'jump' ? 'Space' : 'ArrowDown');
+      if (action === 'jump') jump();
+      syncInput();
+    });
+    button.addEventListener('keyup', () => {
+      heldKeys.delete(action === 'jump' ? 'Space' : 'ArrowDown'); syncInput();
+    });
+  }
+  window.addEventListener('blur', pause);
+  game.addEventListener('focusout', event => { if (!game.contains(event.relatedTarget)) pause(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+
   function tick(now) {
-    raf=0;
-    if(!visible||document.hidden||reduced.matches)return;
-    if(now-last>=33) {time+=Math.min((now-last)/1000,.05);last=now;paint();}
-    raf=requestAnimationFrame(tick);
+    raf = 0;
+    if (!visible || document.hidden || runner.state !== 'running') return;
+    // Fixed steps keep jump height and collision stable across refresh rates.
+    accumulator += Math.min((now - last) / 1000, .08); last = now;
+    while (accumulator >= 1 / 120) {
+      runner.update(1 / 120, now); accumulator -= 1 / 120;
+    }
+    if (runner.state === 'over') {
+      clearInput();
+      if (runner.score > best) {
+        best = runner.score;
+        bestNode.textContent = String(best).padStart(5, '0');
+        try { localStorage.setItem('li-block-runner-best', String(best)); } catch { /* Optional persistence. */ }
+      }
+      tone(180, .23, 45); showState();
+    } else if (Math.floor(runner.score / 100) > milestone) {
+      milestone = Math.floor(runner.score / 100); tone(660, .1, 880);
+    }
+    paint(); schedule();
   }
-  function sync() {
-    if(raf)cancelAnimationFrame(raf);
-    raf=0;last=performance.now();
-    if(reduced.matches) {time=0;paint();}
-    else if(visible&&!document.hidden)raf=requestAnimationFrame(tick);
+  function resize() {
+    const bounds = canvas.getBoundingClientRect();
+    if (!bounds.width) return;
+    const nextWidth = Math.max(480, Math.round(bounds.width / 1.5));
+    if (runner.state === 'running' && nextWidth !== width) pause();
+    width = nextWidth; height = Math.round(bounds.height * width / bounds.width);
+    canvas.width = width; canvas.height = height;
+    ctx.imageSmoothingEnabled = false;
+    runner.resize(width, height - 34); paint();
   }
-  new ResizeObserver(build).observe(footer);
-  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;sync();}).observe(footer);
-  document.addEventListener('visibilitychange',sync);
-  reduced.addEventListener('change',sync);
-  build();
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(([entry]) => {
+    visible = entry.isIntersecting && entry.intersectionRatio >= .55;
+    if (!visible) pause();
+  }, { threshold: [0, .55] }).observe(canvas);
+  reduced.addEventListener('change', paint);
+  showState(); resize();
 }

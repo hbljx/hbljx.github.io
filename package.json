@@ -18,6 +18,7 @@
   "scripts": {
     "serve": "node tools/serve.mjs",
     "check:site": "node tools/check-site.mjs",
+    "check:runner": "node tools/check-runner.mjs && node tools/check-runner-browser.mjs",
     "check": "node tools/check-site.mjs && node tools/check.mjs",
     "check:carrier": "node tools/check-carrier.mjs",
     "check:submarine": "node tools/check-submarine.mjs",
