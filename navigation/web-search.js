@@ -4,7 +4,7 @@ const providers = {
   baidu: {label:'百度', action:'https://www.baidu.com/s', query:'wd'},
   bing: {label:'必应', action:'https://www.bing.com/search', query:'q'},
   google: {label:'谷歌', action:'https://www.google.com/search', query:'q'},
-  yuanbao: {label:'元宝', action:'https://so.qq.com/search', query:'query'},
+  yuanbao: {label:'元宝', action:'https://so.qq.com/isearch', query:'query'},
 };
 export function mountWebSearch() {
   const form=document.querySelector('.site-search');

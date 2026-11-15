@@ -28,15 +28,6 @@
 .search-burst {position:absolute;inset:-60px -30px;pointer-events:none;z-index:-1;overflow:hidden}
 .search-burst i {position:absolute;left:calc(50% - 100px);top:calc(50% - 100px);width:200px;height:200px;border:2px solid var(--search-energy);opacity:0;box-shadow:0 0 12px color-mix(in srgb,var(--search-energy) 35%,transparent)}
 .search-burst i:last-child {border-style:dashed}
-.search-inventory-popup[hidden] {display:none!important}
-.search-inventory-popup {position:absolute;z-index:9;top:calc(100% + 12px);left:-4px;right:-4px;padding:10px;background:#17271c;border:2px solid #7d9561;box-shadow:inset 0 0 0 3px #0c1a11,5px 5px #07120c;color:#edf5e3}
-.search-inventory-popup.opens-above {top:auto;bottom:calc(100% + 12px)}
-.search-inventory-caption {padding:1px 2px 9px;color:#bdcfac;font:11px/1.5 Consolas,'Microsoft YaHei',monospace}
-.search-inventory-popup [role=listbox] {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.search-inventory-slot {display:flex;align-items:center;gap:8px;min-height:44px;padding:7px 9px;background:#0e1d13;border:2px solid;border-color:#09130d #33482d #536942 #09130d;cursor:pointer;font-size:13px;overflow:hidden;transition:border-color .12s,background .12s}
-.search-slot-number {flex:none;font:11px/1 Consolas,monospace;color:var(--search-energy);padding:5px;background:#273a24;box-shadow:inset 1px 1px #627649,inset -1px -1px #071009}
-.search-slot-name {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.search-inventory-slot:is(:hover,[aria-selected=true]) {border-color:var(--search-energy);background:#2c4026;box-shadow:inset 0 0 0 1px #071009,0 0 10px color-mix(in srgb,var(--search-energy) 22%,transparent)}
 .search-environment {position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;color:var(--search-energy);opacity:var(--fade);contain:layout paint}
 .search-orbits {position:absolute;left:70%;top:44%;width:clamp(220px,32vw,520px);aspect-ratio:1;translate:-50% -50%;transform:scale(.78) rotate(-15deg);opacity:.14;transition:transform .65s,opacity .4s}
 .search-orbits i {position:absolute;inset:0;border:2px dashed currentColor;clip-path:polygon(20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%,0 20%);background:linear-gradient(90deg,transparent 49.8%,currentColor 50%,transparent 50.2%);box-shadow:inset 0 0 35px color-mix(in srgb,var(--search-energy) 14%,transparent)}
@@ -73,12 +64,8 @@
   .search-crystal-anchor:nth-of-type(4) {top:28%}
   .search-crystal-anchor:nth-of-type(5) {top:13%}
   .search-crystal-anchor:nth-of-type(n+6) {display:none}
-  .search-inventory-popup {padding:8px}
-  .search-inventory-slot {padding:6px;gap:6px;font-size:12px}
-  .search-slot-number {padding:4px}
 }
 @media(max-height:600px) {
-  .search-inventory-popup.opens-above {bottom:calc(100% + 8px)}
   .hero-copy h1 {font-size:32px}
   .hero-copy .intro {font-size:14px;margin:8px 0 12px}
 }

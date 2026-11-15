@@ -107,6 +107,9 @@ const NavigationStore = (() => {
           const parsed = JSON.parse(saved);
           if (!isRecord(parsed) || parsed.version !== 1) fail("不支持的备份版本。");
           data = normalizeData(parsed.data);
+          const keep = item => !(item.id === 'site-1sm065g' && new URL(item.url).hostname === 'real-cugan.webgpu.me');
+          data.quickLinks = data.quickLinks.filter(keep);
+          for (const group of data.groups) group.items = group.items.filter(keep);
         }
       } catch {
         notice = "无法读取本地收藏，已显示网站默认内容。原有本地数据未覆盖。";

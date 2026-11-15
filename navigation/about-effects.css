@@ -24,6 +24,20 @@
 .about-enhanced .solid-link:hover{box-shadow:4px 4px 0 #627d36,0 0 32px #b4ff7855;translate:0 -3px}
 .about-replay{border:1px solid #81ab7855;background:#10251bbb;color:#c5e7b4;min-height:44px;padding:10px 14px;cursor:pointer;font:inherit;font-size:13px}
 .about-replay:hover{border-color:#c7f776;color:#e5ffcf}
+.about-countdown{margin-top:32px;padding-top:24px;border-top:1px solid #81ab7840}
+.about-countdown-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.countdown-card{--countdown-accent:#c7f776;min-width:0;padding:20px 22px;background:#0b1b17de;border:1px solid #698a5966;box-shadow:inset 3px 0 var(--countdown-accent)}
+.countdown-card:nth-child(2){--countdown-accent:#8fe0c2}
+.countdown-card:nth-child(3){--countdown-accent:#e5d69b}
+.countdown-card h3{margin:0 0 16px;color:#dce8d2;font-size:14px;font-weight:500;letter-spacing:.08em}
+.countdown-days{display:flex;align-items:baseline;gap:9px;color:#b9cbb2;font-size:13px}
+.countdown-days strong{color:var(--countdown-accent);font:700 clamp(32px,3.5vw,46px)/1 Consolas,monospace;font-variant-numeric:tabular-nums}
+.countdown-percent{display:flex;justify-content:space-between;gap:12px;margin:20px 0 8px;color:#acbea6;font-size:12px}
+.countdown-percent strong{color:var(--countdown-accent);font:600 14px/1.4 Consolas,monospace;font-variant-numeric:tabular-nums}
+.countdown-track{height:8px;background:#ffffff0c;overflow:hidden}
+.countdown-track:before{content:'';display:block;width:var(--remaining,0%);height:100%;background:repeating-linear-gradient(90deg,var(--countdown-accent) 0,var(--countdown-accent) 8px,transparent 8px,transparent 11px)}
+.about-countdown-note{margin:14px 0 0;color:#9eaf99;font-size:11px;line-height:1.8}
+@media(max-width:700px){.about-countdown{margin-top:28px;padding-top:20px}.about-countdown-grid{grid-template-columns:1fr;gap:12px}.countdown-card{padding:18px 20px}.countdown-card h3{margin-bottom:12px}.countdown-percent{margin-top:14px}}
 .about-enhanced :is(a,button):focus-visible{outline:2px solid #dcffa1;outline-offset:4px}
 .about-click-wave{position:absolute;width:24px;height:24px;margin:-12px;border:2px solid #c7f776;border-radius:25%;animation:about-wave .9s ease-out forwards}
 .about-enhanced:not(.about-visible) *,.about-paused *{animation-play-state:paused!important}

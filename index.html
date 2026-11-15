@@ -159,7 +159,31 @@
     <div id="room-tools"></div>
   </dialog>
   <div id="directory-content" class="pixel-directory"></div>
-  <section id="about-us" class="about-us"><p class="kicker">ABOUT LI+ / 关于我们</p><h2>把好用的网站，收藏进一个小世界。</h2><p>Li+ 像素导航是一座 Minecraft 风格的网址小岛。我们把日常、AI、灵感、音乐、工具、行情与社区整理成七个场景，让每一次寻找都有清晰的方向。</p><p>你可以直接搜索互联网，按场景发现常用网站，收藏喜欢的入口，也可以进入 3D 家园，在方块搭建的世界里漫步探索。希望这里既是你的日常起点，也是忙碌间隙可以停留的小天地。</p><a class="solid-link" href="?view=3d">进入我们的像素家园</a></section><footer class="home-footer"><strong>LI<span>+</span> 像素导航</strong><div><button type="button" id="manage-links">管理网址</button><a href="#home">回到顶部</a></div></footer>
+  <section id="about-us" class="about-us"><p class="kicker">ABOUT LI+ / 关于我们</p><h2>把好用的网站，收藏进一个小世界。</h2><p>Li+ 像素导航是一座 Minecraft 风格的网址小岛。我们把日常、AI、灵感、音乐、工具、行情与社区整理成七个场景，让每一次寻找都有清晰的方向。</p><p>你可以直接搜索互联网，按场景发现常用网站，收藏喜欢的入口，也可以进入 3D 家园，在方块搭建的世界里漫步探索。希望这里既是你的日常起点，也是忙碌间隙可以停留的小天地。</p><a class="solid-link" href="?view=3d">进入我们的像素家园</a>
+    <div class="about-countdown" role="group" aria-label="时间倒计时">
+      <div class="about-countdown-grid">
+      <article class="countdown-card" data-countdown="week">
+        <h3 id="countdown-week">本周倒计时</h3>
+        <div class="countdown-days"><span>还剩</span><strong data-days>—</strong><span>天</span></div>
+        <div class="countdown-percent"><span>剩余时间</span><strong data-percent>—</strong></div>
+        <div class="countdown-track" role="progressbar" aria-labelledby="countdown-week" aria-valuemin="0" aria-valuemax="100"></div>
+      </article>
+      <article class="countdown-card" data-countdown="month">
+        <h3 id="countdown-month">本月倒计时</h3>
+        <div class="countdown-days"><span>还剩</span><strong data-days>—</strong><span>天</span></div>
+        <div class="countdown-percent"><span>剩余时间</span><strong data-percent>—</strong></div>
+        <div class="countdown-track" role="progressbar" aria-labelledby="countdown-month" aria-valuemin="0" aria-valuemax="100"></div>
+      </article>
+      <article class="countdown-card" data-countdown="year">
+        <h3 id="countdown-year">今年倒计时</h3>
+        <div class="countdown-days"><span>还剩</span><strong data-days>—</strong><span>天</span></div>
+        <div class="countdown-percent"><span>剩余时间</span><strong data-percent>—</strong></div>
+        <div class="countdown-track" role="progressbar" aria-labelledby="countdown-year" aria-valuemin="0" aria-valuemax="100"></div>
+      </article>
+      </div>
+      <p class="about-countdown-note">按本地时间计算 · 每周从周一开始 · 剩余天数含今天</p>
+    </div>
+  </section><footer class="home-footer"><strong>LI<span>+</span> 像素导航</strong><div><button type="button" id="manage-links">管理网址</button><a href="#home">回到顶部</a></div></footer>
 </main>
 <template id="world-page">
 <main id="world" aria-label="Li+ 像素导航"></main>

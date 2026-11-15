@@ -37,28 +37,11 @@ export function mountSearchEnergy(form, query) {
   live.className = 'visually-hidden';
   live.setAttribute('role', 'status');
   form.append(live);
-  const inventory = document.createElement('div');
-  inventory.className = 'search-inventory-popup';
-  inventory.hidden = true;
-  const caption = document.createElement('div');
-  caption.className = 'search-inventory-caption';
-  caption.textContent = '搜索灵感 · ↑ ↓ 选择 · Enter 搜索';
-  const list = document.createElement('div');
-  list.id = 'home-search-suggestions';
-  list.setAttribute('role', 'listbox');
-  list.setAttribute('aria-label', '搜索建议');
-  inventory.append(caption, list);
-  form.append(inventory);
-  query.setAttribute('role', 'combobox');
-  query.setAttribute('aria-autocomplete', 'list');
-  query.setAttribute('aria-controls', list.id);
-  query.setAttribute('aria-expanded', 'false');
 
   const animations = new Set();
   const particleAnimations = new Map();
-  let composing = false, active = -1, suggestions = [], pointerFrame = 0, lastInput = 0, lastSubmit = 0;
+  let composing = false, pointerFrame = 0, lastInput = 0, lastSubmit = 0;
   let pointerX = 0, pointerY = 0, engine = '', resetTimer = 0, visible = true;
-  let candidates = ['AI 工具', '像素壁纸', '在线音乐', '开发工具'].map(name => ({name, keywords:name}));
   const canAnimate = () => visible && !reduced.matches && !document.hidden;
   function animate(node, frames, duration = 450, delay = 0) {
     if (!canAnimate()) return;
@@ -114,91 +97,20 @@ export function mountSearchEnergy(form, query) {
     engine = next;
     charge();
   }
-  function closeSuggestions() {
-    inventory.hidden = true; active = -1;
-    query.setAttribute('aria-expanded', 'false'); query.removeAttribute('aria-activedescendant');
-  }
-  function positionInventory() {
-    if (inventory.hidden) return;
-    const rect = form.getBoundingClientRect();
-    const viewportBottom = window.visualViewport ? visualViewport.height + visualViewport.offsetTop : innerHeight;
-    inventory.classList.toggle('opens-above', viewportBottom - rect.bottom < inventory.offsetHeight + 18);
-  }
-  function showSuggestions() {
-    if (composing || document.activeElement !== query) return;
-    const term = query.value.trim().toLocaleLowerCase();
-    const limit = (window.visualViewport?.height || innerHeight) < 600 ? 2 : 4;
-    suggestions = candidates.filter(item => !term || item.keywords.includes(term)).slice(0,limit);
-    if (!suggestions.length) { closeSuggestions(); return; }
-    const wasClosed = inventory.hidden;
-    list.replaceChildren(); active = -1;
-    query.removeAttribute('aria-activedescendant');
-    suggestions.forEach((item, i) => {
-      const option = document.createElement('div');
-      option.id = `home-search-option-${i}`; option.className = 'search-inventory-slot';
-      option.setAttribute('role', 'option'); option.setAttribute('aria-selected', 'false');
-      option.dataset.index = String(i);
-      const number = document.createElement('span'), name = document.createElement('span');
-      number.className = 'search-slot-number'; number.textContent = String(i + 1).padStart(2,'0');
-      name.className = 'search-slot-name'; name.textContent = item.name;
-      option.append(number, name); list.append(option);
-      if (wasClosed) animate(option, [{transform:'translateY(9px)',opacity:0}, {transform:'translateY(0)',opacity:1}], 200, i * 35);
-    });
-    inventory.hidden = false; query.setAttribute('aria-expanded', 'true'); positionInventory();
-  }
-  function highlight(index) {
-    active = index;
-    [...list.children].forEach((option, i) => option.setAttribute('aria-selected', String(i === active)));
-    query.setAttribute('aria-activedescendant', list.children[active].id);
-  }
-  function accept(index) {
-    if (!suggestions[index]) return;
-    query.value = suggestions[index].name;
-    closeSuggestions(); charge(); sparks('gather', 3);
-  }
-  document.addEventListener('li-directory-update', ({detail}) => {
-    const unique = new Map();
-    for (const group of detail.groups || []) for (const item of group.items) {
-      if (!unique.has(item.name)) unique.set(item.name, {name:item.name,
-        keywords:[item.name, item.description, group.title, ...(item.aliases || [])].join(' ').toLocaleLowerCase()});
-    }
-    if (unique.size) candidates = [...unique.values()];
-    showSuggestions();
-  });
-  list.addEventListener('pointerdown', event => { if (event.target.closest('[role=option]')) event.preventDefault(); });
-  list.addEventListener('click', event => {
-    const option = event.target.closest('[role=option]');
-    if (!option) return;
-    accept(Number(option.dataset.index)); query.focus({preventScroll:true}); form.requestSubmit(submit);
-  });
-  query.addEventListener('keydown', event => {
-    if (event.isComposing || composing || event.keyCode === 229) return;
-    if (event.key === 'Escape') { closeSuggestions(); event.preventDefault(); }
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      if (inventory.hidden) showSuggestions();
-      if (!suggestions.length || inventory.hidden) return;
-      event.preventDefault();
-      highlight((active + (event.key === 'ArrowDown' ? 1 : (active < 0 ? 0 : -1)) + suggestions.length) % suggestions.length);
-    }
-    if (event.key === 'Enter' && !inventory.hidden && active >= 0) accept(active);
-  });
-  query.addEventListener('compositionstart', () => { composing = true; closeSuggestions(); });
-  query.addEventListener('compositionend', () => { composing = false; charge(); showSuggestions(); sparks('gather', 3); });
+  query.addEventListener('compositionstart', () => { composing = true; });
+  query.addEventListener('compositionend', () => { composing = false; charge(); sparks('gather', 3); });
   query.addEventListener('input', () => {
     charge();
     if (composing) return;
-    showSuggestions();
     if (query.value && performance.now() - lastInput > 100) { sparks('gather', 2); lastInput = performance.now(); }
   });
-  query.addEventListener('focus', () => { sweep(); showSuggestions(); });
-  query.addEventListener('blur', closeSuggestions);
+  query.addEventListener('focus', sweep);
   form.addEventListener('focusin', () => { stage.classList.add('search-focused'); });
   form.addEventListener('focusout', event => { if (!form.contains(event.relatedTarget)) stage.classList.remove('search-focused'); });
   form.addEventListener('change', event => { if (event.target.name === 'engine') selectEngine(); });
   form.addEventListener('submit', event => {
     if (composing) { event.preventDefault(); return; }
     if (event.defaultPrevented || !query.value.trim()) return;
-    closeSuggestions();
     const now = performance.now();
     if (now - lastSubmit < 160) return; // Throttle decoration only; preserve every native submission.
     lastSubmit = now;
@@ -248,15 +160,12 @@ export function mountSearchEnergy(form, query) {
   }
   const observer = new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
-    if (!visible) { stop(); closeSuggestions(); stage.classList.remove('search-focused'); }
+    if (!visible) { stop(); stage.classList.remove('search-focused'); }
     else stage.classList.toggle('search-focused', form.contains(document.activeElement));
   });
   observer.observe(form);
   reduced.addEventListener('change', stop); fine.addEventListener('change', resetPointer);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
   window.addEventListener('pagehide', () => { stop(); clearTimeout(resetTimer); });
-  const resizeInventory = () => { if (!inventory.hidden) showSuggestions(); };
-  window.addEventListener('resize', resizeInventory, {passive:true});
-  window.visualViewport?.addEventListener('resize', resizeInventory, {passive:true});
   selectEngine(false);
 }

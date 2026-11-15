@@ -610,17 +610,6 @@
           "section": "官方工具"
         },
         {
-          "name": "Real-CUGAN WebGPU 超分工具",
-          "url": "https://real-cugan.webgpu.me/",
-          "description": "",
-          "icon": "assets/bookmark-icons/e1587d04ee998213.png",
-          "collections": [
-            "bookmarks"
-          ],
-          "bookmarkFolder": "Image 2",
-          "section": "官方工具"
-        },
-        {
           "name": "Color Hunt 配色",
           "url": "https://colorhunt.co/",
           "description": "",

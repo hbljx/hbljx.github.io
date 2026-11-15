@@ -1,6 +1,9 @@
+import { mountAboutCountdown } from './about-countdown.js';
+
 export function mountAboutEffects() {
  const section=document.querySelector('#about-us');
  if(!section)return;
+ mountAboutCountdown();
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const fine=matchMedia('(hover: hover) and (pointer: fine)');
  const heading=section.querySelector('h2'),copy=heading.textContent;
