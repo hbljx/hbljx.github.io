@@ -11,15 +11,20 @@ export function mountAboutEffects() {
  // Keep a single complete accessible heading; character spans reserve the final layout.
  heading.setAttribute('aria-label',copy);
  const typed=document.createElement('span');typed.className='about-typed';typed.setAttribute('aria-hidden','true');
- for(const [i,char] of Array.from(copy).entries()){
-  const span=document.createElement('span');span.textContent=char;span.style.setProperty('--char',i);typed.append(span);
+ let charIndex=0;
+ for(const phrase of copy.split(/(?= · )/)){
+  const group=document.createElement('span');group.className='about-title-phrase';
+  for(const char of phrase){
+   const span=document.createElement('span');span.className='about-char';span.textContent=char;span.style.setProperty('--char',charIndex++);group.append(span);
+  }
+  typed.append(group);
  }
  heading.replaceChildren(typed);
  section.style.setProperty('--typing-time',`${Array.from(copy).length*65}ms`);
  const decor=document.createElement('div');decor.className='about-atmosphere';decor.setAttribute('aria-hidden','true');
  decor.innerHTML='<div class="about-aurora"></div><div class="about-matrix"></div><div class="about-scanner"></div>'+Array.from({length:20},(_,i)=>`<i class="about-star" style="--n:${i};left:${i*47%100}%;top:${i*31%100}%"></i>`).join('');
  section.prepend(decor);
- mountAboutWorld(section,decor);
+ mountAboutWorld(section);
  const controls=document.createElement('div');controls.className='about-actions';
  const enter=section.querySelector('.solid-link');enter.before(controls);controls.append(enter);
  const replay=document.createElement('button');replay.type='button';replay.className='about-replay';replay.textContent='↻ 重播入场';controls.append(replay);

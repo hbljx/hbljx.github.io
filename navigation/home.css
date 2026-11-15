@@ -185,11 +185,14 @@ html:not(.world-mode) :is(input[type=search],input[type=text],input[type=url],te
 .site-header #scene-links{display:flex;width:auto;overflow:visible;gap:var(--nav-gap);padding:0;margin-inline:auto}
 .site-header :is(nav a,.about-nav){font-size:var(--nav-font-size);font-weight:600}
 .site-header #scene-links a{padding:9px 12px;font-size:var(--nav-font-size);gap:7px}
+/* Match four characters plus the 20px icon and 7px gap using side spacing. */
+.site-header nav a[href="#home"]{padding-inline:calc(1em + 25.5px)}
 .site-header #scene-links img,.site-header .about-nav img{width:20px;height:20px;object-fit:contain;image-rendering:pixelated;flex-shrink:0}
 .site-header .about-nav{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;color:#c5cec1}
 .site-header .world-link{padding-inline:10px}
 @media(max-width:700px){:root{--header:70px}.site-header{--nav-gap:20px;--nav-font-size:13px;display:flex;padding-inline:12px}.site-header #scene-links{justify-content:flex-start}.site-header #scene-links a{padding:8px 10px}.site-header .brand b{font-size:21px}}
 @media(max-width:380px){.site-header{--nav-font-size:12px}}
+@media(max-width:700px){.site-header nav a[href="#home"]{padding-inline:calc(1em + 23.5px)}}
 /* Center the navigation destinations as one evenly spaced group. */
 .site-header #scene-links{margin-inline:0}
 .site-header>.brand{margin-right:auto}
