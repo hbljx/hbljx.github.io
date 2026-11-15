@@ -10,6 +10,7 @@ export function mountAboutScene() {
   section.innerHTML = `
     <div class="scene-cinema"><div class="scene-screen">
       <div class="scene-art"><img width="1536" height="1024" decoding="async" alt="夕阳中的像素工作室，木石书桌、电脑与窗外的方块山谷"><div class="about-build" aria-hidden="true"></div></div>
+      <div class="about-portal" aria-hidden="true"><svg viewBox="-3 -3 6 6" fill="none"><path d="M-1-3H1V-2H2V-1H3V1H2V2H1V3H-1V2H-2V1H-3V-1H-2V-2H-1Z" vector-effect="non-scaling-stroke"/></svg></div>
       <div class="scene-opening" aria-hidden="true"><span>关于我们</span><small>滚动探索 ↓</small></div>
       <div class="scene-folio" aria-hidden="true"><span>08</span><i></i><small>08</small></div>
       <div class="scene-info">
@@ -52,6 +53,12 @@ export function mountAboutScene() {
   const compact = matchMedia('(max-height: 640px)');
   const cinema = section.firstElementChild;
   const screen = cinema.firstElementChild;
+  const art = section.querySelector('.scene-art');
+  // A stepped diamond expands from the garden into the new room. The geometry
+  // follows scroll in both directions; it adds no scroll lock or duplicate screen.
+  const gatePoints = [[-1,-3],[1,-3],[1,-2],[2,-2],[2,-1],[3,-1],[3,1],[2,1],[2,2],[1,2],[1,3],[-1,3],[-1,2],[-2,2],[-2,1],[-3,1],[-3,-1],[-2,-1],[-2,-2],[-1,-2]];
+  art.style.setProperty('--portal-mask', 'polygon(' + gatePoints.map(([x,y]) =>
+    `calc(50% + var(--gate-step) * ${x}) calc(50% + var(--gate-step) * ${y})`).join(',') + ')');
   let raf = 0, visible = false;
   const clamp = n => Math.max(0, Math.min(1, n));
   const ease = n => {const t = clamp(n); return t*t*(3-2*t);};
@@ -59,7 +66,13 @@ export function mountAboutScene() {
     raf = 0;
     if (!visible || document.hidden) return;
     const staticView = reduced.matches || compact.matches;
-    const p = staticView ? .65 : clamp(-cinema.getBoundingClientRect().top / Math.max(1, cinema.offsetHeight-screen.offsetHeight));
+    const top = cinema.getBoundingClientRect().top;
+    const portalRange = innerHeight * .45;
+    const portal = staticView ? 1 : ease((innerHeight*.65-top)/(innerHeight*.65+portalRange));
+    const p = staticView ? .65 : clamp((-top-portalRange) / Math.max(1, cinema.offsetHeight-screen.offsetHeight-portalRange));
+    section.style.setProperty('--gate-step', `${Math.max(innerWidth,screen.offsetHeight)*(.025+portal*.51)}px`);
+    section.style.setProperty('--portal-glow', 1-ease((portal-.8)/.2));
+    section.classList.toggle('about-portal-complete', portal>=.999);
     const title = staticView ? 1 : ease((p-.15)/.25);
     const body = staticView ? 1 : ease((p-.23)/.24);
     const actions = staticView ? 1 : ease((p-.31)/.23);

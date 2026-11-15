@@ -1,6 +1,6 @@
 /* 08 · A home built block by block. Shared scene typography and controls stay intact. */
 .about-scene {--accent-room:#f0cf91;--glow-room:154 118 65}
-.about-scene .scene-cinema {min-height:235svh}
+.about-scene .scene-cinema {min-height:280svh}
 .about-scene .scene-art img {object-position:57% 50%;transform:scale(calc(1.09 - var(--enter)*.06 + var(--exit)*.08))}
 .about-build {position:absolute;inset:-1px;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(8,1fr);pointer-events:none}
 .about-build i {background:#16251e;box-shadow:inset 1px 1px #ddbd7920;transform-origin:50% 100%}
@@ -12,5 +12,17 @@
 .about-image-error .about-build {display:none}
 .about-image-error .scene-art {background:linear-gradient(135deg,#344335,#16261e 60%,#695333)}
 .about-scene .scene-opening small {letter-spacing:.08em}
-@media(max-width:700px){.about-scene .scene-cinema{min-height:205svh}.about-scene .scene-info{padding-bottom:68px}.about-scene-caption{bottom:33px;font-size:10px;letter-spacing:0}.about-scene .scene-opening small{max-width:280px;line-height:1.8}.about-scene .scene-art img{object-position:60% 50%}}
+@media(max-width:700px){.about-scene .scene-cinema{min-height:250svh}.about-scene .scene-info{padding-bottom:68px}.about-scene-caption{bottom:33px;font-size:10px;letter-spacing:0}.about-scene .scene-opening small{max-width:280px;line-height:1.8}.about-scene .scene-art img{object-position:60% 50%}}
+/* Garden directory → about: a single, expanding pixel portal. */
+.about-scene {--gate-step:0px;--portal-glow:1}
+.about-scene .scene-screen {background:radial-gradient(ellipse at center,#41543a55,transparent 65%),repeating-linear-gradient(0deg,#cbe0a507 0 1px,transparent 1px 48px),repeating-linear-gradient(90deg,#cbe0a507 0 1px,transparent 1px 48px),#111d16}
+#scene-about-us .scene-art {clip-path:var(--portal-mask)}
+#scene-about-us.about-portal-complete .scene-art {clip-path:none}
+.about-portal {position:absolute;left:50%;top:50%;width:calc(var(--gate-step)*6);height:calc(var(--gate-step)*6);transform:translate(-50%,-50%);z-index:1;pointer-events:none;opacity:var(--portal-glow)}
+.about-portal svg {display:block;width:100%;height:100%;overflow:visible;stroke:#e6d5a3;stroke-width:2px;filter:drop-shadow(0 0 7px #b5dd80)}
+/* The portal itself reveals the loaded image, avoiding two competing entrances. */
+#scene-about-us.about-image-ready .about-build {visibility:hidden}
+#scene-about-us:focus-within .scene-art {clip-path:none}
+.about-scene:focus-within .about-portal {display:none}
+@media(prefers-reduced-motion:reduce),(max-height:640px){.about-portal{display:none}#scene-about-us .scene-art{clip-path:none}}
 @media(prefers-reduced-motion:reduce),(max-height:640px){.about-scene .scene-cinema{min-height:100svh}.about-build,.about-scene-exit{display:none}.about-scene .scene-art img{transform:none}.about-scene .scene-info{opacity:1}}
