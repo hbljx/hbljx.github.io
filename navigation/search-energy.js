@@ -7,7 +7,7 @@ export function mountSearchEnergy(form, query) {
   const stage = form.closest('.hero-stage');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const fine = matchMedia('(hover: hover) and (pointer: fine)');
-  const colors = { baidu: '#c7f776', bing: '#80e4ff', google: '#e4a1ff', yuanbao: '#ffd087' };
+  const colors = { baidu: '#8dd7c1', bing: '#93cbe1', google: '#c5b5e0', yuanbao: '#eab58a' };
   const submit = form.querySelector('button[type=submit]');
   const face = document.createElement('span');
   face.className = 'search-trigger-face'; face.setAttribute('aria-hidden', 'true');
@@ -41,7 +41,7 @@ export function mountSearchEnergy(form, query) {
 
   const animations = new Set();
   const particleAnimations = new Map();
-  let composing = false, pointerFrame = 0, lastInput = 0, lastSubmit = 0;
+  let composing = false, pointerFrame = 0, lastInput = 0, lastSubmit = 0, lastHover = -1000;
   let pointerX = 0, pointerY = 0, engine = '', resetTimer = 0, visible = true;
   const canAnimate = () => visible && !reduced.matches && !document.hidden;
   function animate(node, frames, duration = 450, delay = 0) {
@@ -65,14 +65,18 @@ export function mountSearchEnergy(form, query) {
     }
     for (let i = 0; i < count; i++) {
       const node = create('search-spark', particles, 'i');
+      node.classList.add(i % 4 === 0 ? 'search-spark-glint' : i % 3 === 0 ? 'search-spark-chip' : 'search-spark-grain');
       const angle = i / count * Math.PI * 2, distance = 34 + Math.random() * (fine.matches ? 92 : 45);
       const x = mode === 'gather' ? q.left - r.left + q.width * (.35 + Math.random() * .55) : bx;
-      const y = mode === 'gather' ? by + (Math.random() - .5) * 34 : by;
+      // Input particles skim the field edge so they do not cross typed characters.
+      const y = mode === 'gather' ? by + (i % 2 ? -1 : 1) * (q.height / 2 - 3) : by;
       node.style.left = `${x}px`; node.style.top = `${y}px`;
       const dx = mode === 'gather' ? bx - x : Math.cos(angle) * distance;
       const dy = mode === 'gather' ? by - y : Math.sin(angle) * distance;
-      const a = animate(node, [{transform:'translate(0,0) scale(.6)',opacity:0}, {opacity:1,offset:.2},
-        {transform:`translate(${dx}px,${dy}px) rotate(90deg) scale(.2)`,opacity:0}], mode === 'gather' ? 380 : 650);
+      const curl = (i % 2 ? -1 : 1) * (mode === 'gather' ? 8 : 16);
+      const a = animate(node, [{transform:'translate(0,0) rotate(0deg) scale(.45)',opacity:0},
+        {transform:`translate(${dx*.38}px,${dy*.38+curl}px) rotate(35deg) scale(1)`,opacity:.85,offset:.4},
+        {transform:`translate(${dx}px,${dy}px) rotate(100deg) scale(.15)`,opacity:0}], mode === 'gather' ? 520 : 820, i % 4 * 16);
       if (!a) { node.remove(); continue; }
       particleAnimations.set(node, a);
       const remove = () => { node.remove(); particleAnimations.delete(node); };
@@ -109,6 +113,11 @@ export function mountSearchEnergy(form, query) {
     if (query.value && performance.now() - lastInput > 100) { sparks('gather', 2); lastInput = performance.now(); }
   });
   query.addEventListener('focus', sweep);
+  submit.addEventListener('pointerenter', event => {
+    const now = performance.now();
+    if (event.pointerType === 'touch' || !fine.matches || now - lastHover < 900) return;
+    lastHover = now; sparks('burst', 6);
+  }, {passive:true});
   form.addEventListener('focusin', () => { stage.classList.add('search-focused'); observatory.focus(true); });
   form.addEventListener('focusout', event => { if (!form.contains(event.relatedTarget)) { stage.classList.remove('search-focused'); observatory.focus(false); } });
   form.addEventListener('change', event => { if (event.target.name === 'engine') selectEngine(); });
@@ -121,8 +130,8 @@ export function mountSearchEnergy(form, query) {
     sweep(); sparks('burst', fine.matches ? 20 : 10);
     // Keep the native hit area still while its face moves, including rapid repeated searches.
     animate(face, [{translate:'0 0'}, {translate:'0 3px',offset:.25}, {translate:'0 0'}], 230);
-    animate(face, [{boxShadow:'inset 0 -4px #213b2444,0 3px #0b160e'},
-      {boxShadow:'inset 0 3px #213b2466,0 0 #0b160e',offset:.25}, {boxShadow:'inset 0 -4px #213b2444,0 3px #0b160e'}], 230);
+    animate(face, [{boxShadow:'inset 0 -4px #234a5044,0 3px #18343e'},
+      {boxShadow:'inset 0 3px #234a5066,0 0 #18343e',offset:.25}, {boxShadow:'inset 0 -4px #234a5044,0 3px #18343e'}], 230);
     [...burst.children].forEach((ring,i) => animate(ring, [{transform:'scale(.2) rotate(0deg)',opacity:0},
       {opacity:.8,offset:.15}, {transform:'scale(1.9) rotate(45deg)',opacity:0}], 620, i * 60));
     observatory.launch();

@@ -1,12 +1,13 @@
 // Procedural search instrument. It depicts local interaction, never remote results.
 // A single canvas, cached geometry/gradients, and an on-demand animation loop.
 const TAU = Math.PI * 2;
-const WHITE = [235,255,244];
+const WHITE = [238,248,244];
+const WARM = [234,181,138];
 const ENGINES = [
-  {id:'baidu', label:'百度', color:[199,247,118], x:138, y:104},
-  {id:'bing', label:'必应', color:[128,228,255], x:506, y:122},
-  {id:'google', label:'谷歌', color:[228,161,255], x:125, y:391},
-  {id:'yuanbao', label:'元宝', color:[255,208,135], x:514, y:392},
+  {id:'baidu', label:'百度', color:[141,215,193], x:138, y:104},
+  {id:'bing', label:'必应', color:[147,203,225], x:506, y:122},
+  {id:'google', label:'谷歌', color:[197,181,224], x:125, y:391},
+  {id:'yuanbao', label:'元宝', color:WARM, x:514, y:392},
 ];
 const TILES = [
   {x:116,y:222,angle:-.14,phase:.2}, {x:490,y:251,angle:.13,phase:1.4},
@@ -24,6 +25,15 @@ export function mountSearchObservatory(environment) {
   const rgb=new Float32Array(ENGINES[0].color);
   const nodes=new Float32Array(126*3),screen=new Float32Array(126*3),edges=[];
   const packets=new Float32Array(40*4);
+  // Stable seeds and bounded pools: typing never creates another animation loop.
+  const motes=new Float32Array(84*4),fragments=new Float32Array(32*4);
+  for(let i=0;i<84;i++) {
+    const offset=i*4;
+    motes[offset]=i*2.399963;
+    motes[offset+1]=176+(i*29)%85;
+    motes[offset+2]=.18+(i%7)*.035;
+    motes[offset+3]=i%9===0?1.8:.65+(i%3)*.25;
+  }
   for(let i=0;i<126;i++) {
     const y=1-2*(i+.5)/126,r=Math.sqrt(1-y*y),a=i*2.399963;
     nodes.set([Math.cos(a)*r*91,y*91,Math.sin(a)*r*91],i*3);
@@ -32,13 +42,18 @@ export function mountSearchObservatory(environment) {
     if(Math.hypot(nodes[i*3]-nodes[j*3],nodes[i*3+1]-nodes[j*3+1],nodes[i*3+2]-nodes[j*3+2])<31)edges.push(i,j);
   }
   for(let i=0;i<40;i++)packets[i*4]=-1;
+  for(let i=0;i<32;i++)fragments[i*4]=-1;
   let selected=0,count=0,focused=false,visible=true,raf=0,last=0,time=0;
-  let wake=.18,impulse=0,switchPulse=0,launchPulse=0,packetCursor=0,scale=1,minStroke=1;
+  let wake=.18,impulse=0,switchPulse=0,launchPulse=0,packetCursor=0,scale=1,minStroke=1,compact=false;
   let palette=[];
 
   // Bold etched contours; even the fine network stays at least 1.5 CSS pixels.
   function line(alpha=1,width=1,tint=rgb) {c.strokeStyle=color(tint,alpha);c.lineWidth=Math.max(width*2.5,minStroke);c.stroke();}
   function dot(x,y,r,alpha=1,tint=rgb) {c.beginPath();c.arc(x,y,r,0,TAU);c.fillStyle=color(tint,alpha);c.fill();}
+  function glint(x,y,size,alpha,tint=WHITE) {
+    c.beginPath();c.moveTo(x-size,y);c.lineTo(x+size,y);c.moveTo(x,y-size);c.lineTo(x,y+size);
+    line(alpha,.32,tint);dot(x,y,.85,alpha,tint);
+  }
   function arc(r,start,end,alpha,width=1) {c.beginPath();c.arc(320,254,r,start,end);line(alpha,width);}
   function path(x,y,tx,ty,bend) {c.beginPath();c.moveTo(x,y);c.quadraticCurveTo((x+tx)*.5+bend,(y+ty)*.5-bend,tx,ty);}
   function curvePoint(x,y,tx,ty,bend,u,offset) {
@@ -53,13 +68,36 @@ export function mountSearchObservatory(environment) {
       const aura=c.createRadialGradient(320,254,20,320,254,245);
       aura.addColorStop(0,color(engine.color,.15));aura.addColorStop(.55,color(engine.color,.055));aura.addColorStop(1,color(engine.color,0));
       const glass=c.createRadialGradient(290,222,5,320,254,102);
-      glass.addColorStop(0,'rgba(16,35,41,.9)');glass.addColorStop(.8,'rgba(5,22,29,.94)');glass.addColorStop(.95,color(engine.color,.12));glass.addColorStop(1,'rgba(16,40,43,.95)');
+      glass.addColorStop(0,'rgba(38,68,77,.9)');glass.addColorStop(.8,'rgba(21,44,56,.94)');glass.addColorStop(.95,color(engine.color,.18));glass.addColorStop(1,'rgba(37,69,76,.95)');
       const glow=c.createRadialGradient(320,254,0,320,254,46);
       glow.addColorStop(0,'rgba(244,255,249,.9)');glow.addColorStop(.08,color(engine.color,.85));glow.addColorStop(.28,color(engine.color,.18));glow.addColorStop(1,color(engine.color,0));
       const metal=c.createLinearGradient(210,140,420,375);
-      metal.addColorStop(0,'#536a6c');metal.addColorStop(.2,'#132c33');metal.addColorStop(.44,color(engine.color,.45));metal.addColorStop(.49,'#d8e9dd');metal.addColorStop(.52,'#1a343c');metal.addColorStop(.8,'#314c50');metal.addColorStop(1,'#071c24');
-      return {aura,glass,glow,metal};
+      metal.addColorStop(0,'#77989a');metal.addColorStop(.2,'#284650');metal.addColorStop(.44,color(engine.color,.5));metal.addColorStop(.49,'#d8e9e3');metal.addColorStop(.52,'#294b57');metal.addColorStop(.8,'#496e74');metal.addColorStop(1,'#203b47');
+      const reflection=c.createLinearGradient(248,169,391,340);
+      reflection.addColorStop(0,'rgba(238,248,244,0)');reflection.addColorStop(.3,'rgba(238,248,244,.07)');reflection.addColorStop(.34,'rgba(238,248,244,.2)');reflection.addColorStop(.38,'rgba(238,248,244,0)');reflection.addColorStop(1,'rgba(238,248,244,0)');
+      return {aura,glass,glow,metal,reflection};
     });
+  }
+
+  function orbitalDust(front) {
+    c.save();c.globalCompositeOperation='lighter';
+    const total=compact?48:84;
+    for(let i=0;i<total;i++) {
+      const offset=i*4,a=motes[offset]+time*motes[offset+2]*(.2+wake*.35);
+      const depth=Math.sin(a),radius=motes[offset+1];
+      if((depth>0)!==front)continue;
+      const x=320+Math.cos(a)*radius,y=266+depth*radius*.39-Math.cos(a)*34;
+      const shimmer=.66+Math.sin(time*1.3+i*2.1)*.22;
+      const alpha=(front?.25:.12)*(.65+wake)*shimmer,tint=i%11===0?WARM:rgb;
+      dot(x,y,motes[offset+3],alpha,tint);
+      if(i%7===0) {
+        const tail=.025+wake*.055;
+        c.beginPath();c.moveTo(320+Math.cos(a-tail)*radius,266+Math.sin(a-tail)*radius*.39-Math.cos(a-tail)*34);c.lineTo(x,y);
+        line(alpha*.65,.35,tint);dot(x,y,4.5,alpha*.1,tint);
+      }
+      if(i%21===0)glint(x,y,3+impulse*2,alpha*.7,tint);
+    }
+    c.restore();
   }
 
   function engineNodes() {
@@ -77,7 +115,7 @@ export function mountSearchObservatory(environment) {
       }
       c.save();c.translate(e.x,e.y);
       c.beginPath();c.moveTo(-39,-16);c.lineTo(24,-16);c.lineTo(39,-1);c.lineTo(39,16);c.lineTo(-39,16);c.closePath();
-      c.fillStyle=active?'rgba(12,34,37,.94)':'rgba(8,24,30,.76)';c.fill();line(active?.8:.22,.8);
+      c.fillStyle=active?'rgba(32,62,70,.94)':'rgba(27,48,61,.82)';c.fill();line(active?.8:.22,.8);
       c.fillStyle=color(active?rgb:e.color,active?.95:.5);font(11);c.textAlign='center';c.fillText(e.label,0,4);
       dot(-29,0,active?2.2:1.2,active?.95:.4);
       c.restore();
@@ -94,7 +132,7 @@ export function mountSearchObservatory(environment) {
       const active=count>0;
       c.save();c.translate(tile.x,tile.y+dy);c.rotate(tile.angle+Math.sin(time*.3+tile.phase)*.02);
       // Thin folded document leaves, cover edges, text rows, and scanning band.
-      c.fillStyle='rgba(7,23,30,.8)';c.fillRect(-26,-32,53,65);
+      c.fillStyle='rgba(30,52,64,.86)';c.fillRect(-26,-32,53,65);
       c.beginPath();c.moveTo(-26,-32);c.lineTo(13,-32);c.lineTo(27,-18);c.lineTo(27,33);c.lineTo(-26,33);c.closePath();line(.46,.8);
       c.beginPath();c.moveTo(13,-32);c.lineTo(13,-18);c.lineTo(27,-18);line(.55,.8);
       c.beginPath();c.moveTo(-18,-18);c.lineTo(3,-18);line(.8,2);
@@ -154,9 +192,15 @@ export function mountSearchObservatory(environment) {
     for(let i=0;i<4;i++){c.beginPath();c.moveTo(-10,141+i*8);c.lineTo(10,141+i*8);line(.23,.8);}
     c.restore();
     c.beginPath();c.arc(320,254,114,0,TAU);c.fillStyle=p.metal;c.fill();line(.6,.8);
-    c.beginPath();c.arc(320,254,105,0,TAU);c.fillStyle='#09202a';c.fill();line(.65,1);
+    c.beginPath();c.arc(320,254,105,0,TAU);c.fillStyle='#1c3a48';c.fill();line(.65,1);
     c.beginPath();c.arc(320,254,98,0,TAU);c.fillStyle=p.glass;c.fill();
     network();
+    c.save();c.beginPath();c.arc(320,254,97,0,TAU);c.clip();
+    c.fillStyle=p.reflection;c.fillRect(220,154,200,200);
+    // Two etched facets give the glass depth without covering the network.
+    c.beginPath();c.moveTo(247,216);c.lineTo(267,186);c.lineTo(327,167);line(.16,.35,WHITE);
+    c.beginPath();c.moveTo(371,322);c.lineTo(390,294);c.lineTo(399,260);line(.11,.35,WARM);
+    c.restore();
     arc(99,0,TAU,.65,.7);
     arc(110,-2.9,-1.5,.85,1.8);arc(110,.3,1.4,.35,1);
     // A narrow glass reflection follows the upper edge, without hiding the globe.
@@ -166,6 +210,8 @@ export function mountSearchObservatory(environment) {
       const x=320+Math.cos(angle)*109,y=254+Math.sin(angle)*109;
       dot(x,y,1.7,.7);dot(x,y,.6,1,WHITE);
     }
+    const glintAngle=-2.5+Math.sin(time*.3)*.25;
+    glint(320+Math.cos(glintAngle)*109,254+Math.sin(glintAngle)*109,4.5+impulse*2,.45+wake*.2);
   }
 
   function instrument() {
@@ -173,6 +219,15 @@ export function mountSearchObservatory(environment) {
     // An oblique orbital grid anchors the lens in a larger spatial instrument.
     c.beginPath();c.ellipse(320,271,205,72,-.28,0,TAU);line(.15,.75);
     c.beginPath();c.ellipse(320,271,205,72,-.28,-time*.25,-time*.25+.8);line(.5,1.2);
+    c.beginPath();c.ellipse(320,254,178,189,.48,0,TAU);line(.09,.4);
+    for(let i=0;i<3;i++) {
+      const a=turn*(i%2?-1.8:1.4)+i*TAU/3,r=169;
+      const x=320+Math.cos(a)*r,y=254+Math.sin(a)*r;
+      c.save();c.translate(x,y);c.rotate(a+Math.PI/4);
+      c.fillStyle=color(i===1?WARM:rgb,.13+wake*.1);c.fillRect(-3,-3,6,6);
+      c.strokeStyle=color(i===1?WARM:rgb,.5);c.lineWidth=Math.max(.8,minStroke*.6);c.strokeRect(-3,-3,6,6);
+      c.restore();
+    }
     for(let i=0;i<120;i++) {
       const a=i/120*TAU+turn,outer=157,inner=i%5===0?149:154;
       c.beginPath();c.moveTo(320+Math.cos(a)*inner,254+Math.sin(a)*inner);c.lineTo(320+Math.cos(a)*outer,254+Math.sin(a)*outer);line(i%5===0?.43:.17,.65);
@@ -194,6 +249,21 @@ export function mountSearchObservatory(environment) {
     }
   }
 
+  function launchFragments() {
+    c.save();c.globalCompositeOperation='lighter';
+    for(let i=0;i<32;i++) {
+      const offset=i*4,p=fragments[offset];if(p<0||p>1)continue;
+      const angle=fragments[offset+1],distance=105+(1-Math.pow(1-p,2))*fragments[offset+2];
+      const x=320+Math.cos(angle)*distance,y=254+Math.sin(angle)*distance*.8;
+      const alpha=Math.sin(Math.min(1,p*3)*Math.PI*.5)*(1-p),tint=i%5===0?WARM:rgb;
+      const tail=7+(1-p)*15;
+      c.beginPath();c.moveTo(x-Math.cos(angle)*tail,y-Math.sin(angle)*tail*.8);c.lineTo(x,y);line(alpha*.45,.5,tint);
+      dot(x,y,fragments[offset+3],alpha*.8,tint);
+      if(i%4===0)glint(x,y,3,alpha*.7,tint);
+    }
+    c.restore();
+  }
+
   function draw() {
     if(!canvas.width)return;
     c.setTransform(scale,0,0,scale,0,0);c.clearRect(0,0,640,540);
@@ -204,7 +274,7 @@ export function mountSearchObservatory(environment) {
       dot(x,y+Math.sin(time*.3+i)*3,i%7?.6:1,.1+wake*.12);
     }
     c.beginPath();c.moveTo(320,67);c.lineTo(320,87);c.moveTo(320,423);c.lineTo(320,442);c.moveTo(131,254);c.lineTo(144,254);c.moveTo(496,254);c.lineTo(510,254);line(.32,.7);
-    engineNodes();documents();instrument();lens();
+    orbitalDust(false);engineNodes();documents();instrument();lens();orbitalDust(true);
     // Input-triggered packets travel from the search field side into the lens.
     c.globalCompositeOperation='lighter';
     for(let i=0;i<40;i++) {
@@ -212,11 +282,17 @@ export function mountSearchObservatory(environment) {
       const startY=packets[i*4+1],bend=packets[i*4+2],endY=254+packets[i*4+3];
       curvePoint(25,startY,320,endY,bend,progress,0);
       const x=screen[0],y=screen[1];
-      curvePoint(25,startY,320,endY,bend,Math.max(0,progress-.035),3);
-      c.beginPath();c.moveTo(screen[3],screen[4]);c.lineTo(x,y);line(Math.sin(progress*Math.PI)*.7,1.2);
+      // Several fading segments follow the curve, rather than a single straight dash.
+      for(let trail=3;trail>0;trail--) {
+        curvePoint(25,startY,320,endY,bend,Math.max(0,progress-trail*.028),3);
+        curvePoint(25,startY,320,endY,bend,Math.max(0,progress-(trail-1)*.028),6);
+        c.beginPath();c.moveTo(screen[3],screen[4]);c.lineTo(screen[6],screen[7]);line(Math.sin(progress*Math.PI)*(.38-trail*.08),.5);
+      }
       dot(x,y,1.8,Math.sin(progress*Math.PI));dot(x,y,5,Math.sin(progress*Math.PI)*.1);
+      if(i%5===0)glint(x,y,2.8,Math.sin(progress*Math.PI)*.55);
     }
     c.globalCompositeOperation='source-over';
+    launchFragments();
     c.textAlign='center';font(9);c.letterSpacing='3px';c.fillStyle=color(rgb,.75);c.fillText('SEARCH / OBSERVATORY',320,479);c.letterSpacing='0px';
     font(11);c.fillStyle='rgba(221,240,232,.8)';
     c.fillText(launchPulse>.1?'搜索已提交':switchPulse>.15?`${ENGINES[selected].label} · 引擎已切换`:count?`输入联动 · ${count} 字符`:focused?'检索透镜已唤醒':'点击搜索框 · 唤醒检索透镜',320,502);
@@ -234,6 +310,7 @@ export function mountSearchObservatory(environment) {
     for(let i=0;i<3;i++)rgb[i]+=(ENGINES[selected].color[i]-rgb[i])*ease;
     let flying=false;
     for(let i=0;i<40;i++)if(packets[i*4]>=0){packets[i*4]+=dt*.75;if(packets[i*4]>1)packets[i*4]=-1;else flying=true;}
+    for(let i=0;i<32;i++)if(fragments[i*4]>=0){fragments[i*4]+=dt*.8;if(fragments[i*4]>1)fragments[i*4]=-1;else flying=true;}
     draw();
     if(hasMotion()||flying)raf=requestAnimationFrame(frame);
     else last=0;
@@ -253,12 +330,13 @@ export function mountSearchObservatory(environment) {
   }
   function resize() {
     const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
+    compact=matchMedia('(max-width: 700px)').matches;
     canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);scale=canvas.width/640;
     minStroke=1.5*640/Math.max(rect.width,1);
     gradients();draw();
   }
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(canvas);resize();
-  reduced.addEventListener('change',()=>{stop();impulse=switchPulse=launchPulse=0;packets.fill(-1);start();});
+  reduced.addEventListener('change',()=>{stop();impulse=switchPulse=launchPulse=0;packets.fill(-1);fragments.fill(-1);start();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else if(hasMotion())start();});
   // BFCache restores the same canvas and listeners; do not duplicate the instrument.
   window.addEventListener('pagehide',stop);
@@ -267,7 +345,15 @@ export function mountSearchObservatory(environment) {
     focus(value){focused=value;start();},
     input(value,burst=true){count=Array.from(value.trim()).length;if(burst){impulse=1;emit(5);}start();},
     engine(id,animate=true){const index=ENGINES.findIndex(e=>e.id===id);if(index<0)return;selected=index;canvas.dataset.engine=id;if(animate){switchPulse=1;emit(9);start();}else{rgb.set(ENGINES[selected].color);draw();}},
-    launch(){launchPulse=1;emit(16);start();},
+    launch(){
+      launchPulse=1;emit(compact?10:16);
+      if(!reduced.matches&&visible&&!document.hidden)for(let i=0;i<(compact?18:32);i++) {
+        const offset=i*4;
+        fragments[offset]=0;fragments[offset+1]=i*2.399963;
+        fragments[offset+2]=65+(i*19)%105;fragments[offset+3]=.8+(i%3)*.4;
+      }
+      start();
+    },
     visibility(value){visible=value;if(!visible)stop();else if(hasMotion())start();},
     stop,
   };

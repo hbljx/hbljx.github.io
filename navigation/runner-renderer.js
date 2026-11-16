@@ -1,5 +1,6 @@
 // Original procedural pixel art. All scenery stays behind the collision plane.
 export function createRunnerRenderer(ctx, runner, reduced) {
+  const pageGround = getComputedStyle(ctx.canvas.closest('.home-footer') || document.documentElement).backgroundColor;
   let sky, soilFade, paintedHeight = 0, paintedNight = null;
   function rect(color, x, y, w, h) {
     ctx.fillStyle = color; ctx.fillRect(Math.round(x), Math.round(y), Math.ceil(w), Math.ceil(h));
@@ -110,11 +111,11 @@ export function createRunnerRenderer(ctx, runner, reduced) {
     if (height !== paintedHeight || night !== paintedNight) {
       paintedHeight = height; paintedNight = night;
       sky = ctx.createLinearGradient(0, 0, 0, height);
-      sky.addColorStop(0, '#0c181b');
-      sky.addColorStop(.35, night ? '#101b28' : '#12282b');
-      sky.addColorStop(1, night ? '#1c3038' : '#243c37');
+      sky.addColorStop(0, pageGround);
+      sky.addColorStop(.35, night ? '#263e52' : '#355c67');
+      sky.addColorStop(1, night ? '#304d59' : '#486e68');
       soilFade = ctx.createLinearGradient(0, height - 22, 0, height);
-      soilFade.addColorStop(0, '#0c181b00'); soilFade.addColorStop(1, '#0c181b');
+      soilFade.addColorStop(0, 'transparent'); soilFade.addColorStop(1, pageGround);
     }
     ctx.fillStyle = sky; ctx.fillRect(0, 0, width, height);
     if (night) {
