@@ -643,6 +643,20 @@ async function boot() {
       marker.show(x, targetY ?? nav.heightAt(x, z), z, accepted ? 0x85c9ff : 0xeab66a);
       return accepted;
     }
+    // A dry submerged room uses its staircase in both directions.
+    const basement = world.basement;
+    const fromBasement = player.island === 'basement' || player.island === 'basement-stairs';
+    const toBasement = basement && targetY !== null && targetY < -.05 &&
+      x > basement.room.x0 && x < basement.room.x1 && z > basement.room.z0 && z < basement.room.z1;
+    if (basement && !player.flying && !player.swimming && (fromBasement || toBasement) &&
+        (toBasement || targetY === null || Math.abs(targetY) < .05)) {
+      const y = toBasement ? targetY : 0;
+      const points = basement.route(player.pos.x, player.y, player.pos.z, x, y, z);
+      const accepted = points.length > 0 && player.follow(points, fromBasement ? null : basement.foot,
+        toBasement ? null : () => player.goTo(x, z));
+      marker.show(x, y, z, accepted ? 0x85c9ff : 0xeab66a);
+      return accepted;
+    }
     const landscape=world.travelLandscape?.(player,world,nav,x,z,targetY,()=>navigate(x,z,targetY));
     if(landscape!==null&&landscape!==undefined){
       marker.show(x,targetY??world.ground.topAt(x,z,Infinity)?.y??0,z,landscape?0x85c9ff:0xeab66a);

@@ -73,7 +73,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, sea = nu
   let seaStroke = 0;
 
   function seaAt(x, z) {
-    if (!sea || inPool(x, z)) return false;
+    if (!sea || inPool(x, z) || ground?.isDry?.(x, y, z)) return false;
     const bx = Math.floor(x), bz = Math.floor(z), surface = Math.floor(sea.water);
     return !solidAt(bx, surface, bz) && !solidAt(bx, surface + 1, bz);
   }

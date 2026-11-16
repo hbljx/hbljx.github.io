@@ -1,6 +1,8 @@
 // A detailed, walkable music stage beside the kitchen glazing.
 import * as THREE from 'three';
 
+export const MUSIC_FLOOR = 0.052;
+
 const UP = new THREE.Vector3(0, 1, 0);
 
 export function buildMusicHall(B, foot, bake) {
@@ -20,6 +22,14 @@ export function buildMusicHall(B, foot, bake) {
   const hall = new THREE.Group();
   hall.name = 'music-hall-instruments';
   hall.add(grandPiano, drumKit);
+  batchInstrument(grandPiano);
+  batchInstrument(drumKit);
+  // Slanted support rods extend below their endpoints by their radius.
+  // Ground the actual geometry, not just the centres of the rubber feet.
+  for (const instrument of [grandPiano, drumKit]) {
+    const bottom = new THREE.Box3().setFromObject(instrument).min.y;
+    instrument.position.y += Math.max(0, MUSIC_FLOOR - bottom);
+  }
 
   // Keep a real clearance around the cases and seats in the house navigation
   // grid. The performer uses a separate route that passes through the east aisle.
@@ -40,6 +50,40 @@ export function buildMusicHall(B, foot, bake) {
 
 function mat(color, { shininess = 28, specular = 0x252525 } = {}) {
   return new THREE.MeshPhongMaterial({ color, shininess, specular });
+}
+
+// Static fittings share one draw per finish, including their shadow pass.
+function batchInstrument(root) {
+  root.updateWorldMatrix(true, true);
+  const inverse = root.matrixWorld.clone().invert(), groups = new Map();
+  root.traverse(mesh => {
+    if (!mesh.isMesh || mesh.isInstancedMesh) return;
+    const geometry = mesh.geometry.clone();
+    geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, mesh.matrixWorld));
+    const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+    if (flat !== geometry) geometry.dispose();
+    if (!groups.has(mesh.material)) groups.set(mesh.material, []);
+    groups.get(mesh.material).push({ mesh, geometry: flat });
+  });
+  for (const [material, entries] of groups) {
+    const geometry = new THREE.BufferGeometry();
+    for (const name of ['position', 'normal', 'uv']) {
+      const size = name === 'uv' ? 2 : 3;
+      const count = entries.reduce((n, e) => n + e.geometry.attributes[name].array.length, 0);
+      const array = new Float32Array(count);
+      let offset = 0;
+      for (const entry of entries) {
+        const source = entry.geometry.attributes[name].array;
+        array.set(source, offset); offset += source.length;
+      }
+      geometry.setAttribute(name, new THREE.BufferAttribute(array, size));
+    }
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = 'instrument-finish'; mesh.castShadow = mesh.receiveShadow = true;
+    root.add(mesh);
+    for (const entry of entries) { entry.mesh.removeFromParent(); entry.geometry.dispose(); }
+    for (const original of new Set(entries.map(e => e.mesh.geometry))) original.dispose();
+  }
 }
 
 function addMesh(group, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0) {
@@ -71,7 +115,7 @@ function pianoOutline() {
 function createGrandPiano() {
   const root = new THREE.Group();
   root.name = 'concert-grand-piano';
-  root.position.set(25.1, 0, 6.05);
+  root.position.set(25.1, MUSIC_FLOOR, 6.05);
   const lacquer = mat(0x15181d, { shininess: 96, specular: 0xd9d1ca });
   const edgeLacquer = mat(0x303139, { shininess: 84, specular: 0xb0a8a1 });
   const soundboard = mat(0x59343a, { shininess: 54, specular: 0x8b6d58 });
@@ -195,7 +239,7 @@ function rod(group, start, end, radius, material) {
 function createDrumKit() {
   const root = new THREE.Group();
   root.name = 'detailed-drum-kit';
-  root.position.set(25.1, 0, 10.3);
+  root.position.set(25.1, MUSIC_FLOOR, 10.3);
   const shell = mat(0x552a38, { shininess: 78, specular: 0xb58d85 });
   const shellHighlight = mat(0x8c5362, { shininess: 78, specular: 0xd4b9a0 });
   const head = mat(0xf0eadc, { shininess: 42, specular: 0x827b70 });
@@ -222,29 +266,41 @@ function createDrumKit() {
 
   // Bass drum shell, two heads, hoops, tension bolts and a brass monogram badge.
   const bassShell = new THREE.Mesh(new THREE.CylinderGeometry(0.57, 0.57, 0.62, 36), shell);
-  bassShell.rotation.x = Math.PI / 2; bassShell.position.set(0, 0.55, 0.1); bassShell.castShadow = true; root.add(bassShell);
-  addMesh(root, new THREE.CylinderGeometry(0.578, 0.578, 0.085, 36), shellHighlight, 0, 0.55, 0.1, Math.PI / 2);
+  bassShell.rotation.x = Math.PI / 2; bassShell.position.set(0, 0.61, 0.1); bassShell.castShadow = true; root.add(bassShell);
+  addMesh(root, new THREE.CylinderGeometry(0.578, 0.578, 0.085, 36), shellHighlight, 0, 0.61, 0.1, Math.PI / 2);
   for (const side of [-1, 1]) {
     const z = 0.1 + side * 0.315;
-    const skin = addMesh(root, new THREE.CylinderGeometry(0.55, 0.55, 0.025, 36), head, 0, 0.55, z, Math.PI / 2);
+    const skin = addMesh(root, new THREE.CylinderGeometry(0.55, 0.55, 0.025, 36), head, 0, 0.61, z, Math.PI / 2);
     skin.rotation.z = 0.01;
-    addMesh(root, new THREE.TorusGeometry(0.555, 0.028, 8, 36), brass, 0, 0.55, z + side * 0.018);
+    addMesh(root, new THREE.TorusGeometry(0.555, 0.028, 8, 36), brass, 0, 0.61, z + side * 0.018);
     for (let i = 0; i < 10; i++) {
-      const a = i / 10 * Math.PI * 2, x = Math.cos(a) * 0.58, y = 0.55 + Math.sin(a) * 0.58;
+      const a = i / 10 * Math.PI * 2, x = Math.cos(a) * 0.58, y = 0.61 + Math.sin(a) * 0.58;
       addMesh(root, new THREE.CylinderGeometry(0.018, 0.018, 0.08, 8), metal, x, y, z - side * 0.025, Math.PI / 2);
     }
   }
-  addMesh(root, new THREE.TorusGeometry(0.1, 0.012, 6, 20), brass, 0, 0.55, 0.438);
-  addMesh(root, new THREE.CircleGeometry(0.072, 20), black, 0, 0.55, 0.441);
+  addMesh(root, new THREE.TorusGeometry(0.1, 0.012, 6, 20), brass, 0, 0.61, 0.438);
+  addMesh(root, new THREE.CircleGeometry(0.072, 20), black, 0, 0.61, 0.441);
   for (const x of [-0.36, 0.36]) {
     rod(root, [x, 0.14, 0.22], [x * 0.86, 0.52, 0.22], 0.024, metal);
-    addMesh(root, new THREE.CylinderGeometry(0.045, 0.055, 0.055, 10), brass, x, 0.025, 0.2);
+    addMesh(root, new THREE.CylinderGeometry(0.045, 0.055, 0.055, 10), brass, x, 0.028, 0.2);
   }
 
   addVerticalDrum(-0.48, 0.83, 0.2, 0.25, 0.2); // snare
   addVerticalDrum(-0.27, 1.12, -0.26, 0.22, 0.22); // high tom
   addVerticalDrum(0.24, 1.12, -0.26, 0.24, 0.23); // mid tom
   addVerticalDrum(0.7, 0.48, 0.35, 0.31, 0.54, 10); // floor tom
+  // Floor tom and snare have independent supports down to the rug.
+  for (let i = 0; i < 3; i++) {
+    const a = i * Math.PI * 2 / 3;
+    const x = .7 + Math.cos(a) * .29, z = .35 + Math.sin(a) * .29;
+    rod(root, [x, .42, z], [x + Math.cos(a) * .08, .035, z + Math.sin(a) * .08], .018, metal);
+    addMesh(root, new THREE.SphereGeometry(.035, 8, 6), black, x + Math.cos(a) * .08, .035, z + Math.sin(a) * .08);
+  }
+  rod(root, [-.48, .04, .2], [-.48, .73, .2], .025, metal);
+  for (let i = 0; i < 3; i++) {
+    const a = i * Math.PI * 2 / 3;
+    rod(root, [-.48, .16, .2], [-.48 + Math.cos(a) * .28, .025, .2 + Math.sin(a) * .28], .02, metal);
+  }
   // Chrome rack arms suspend the mounted toms above the bass drum.
   for (const x of [-0.27, 0.24]) {
     rod(root, [x, 0.78, -0.1], [x, 1.04, -0.26], 0.023, metal);
@@ -256,13 +312,18 @@ function createDrumKit() {
     new THREE.Vector2(0.18, 0.055), new THREE.Vector2(0.38, 0.018),
     new THREE.Vector2(0.48, 0), new THREE.Vector2(0.5, -0.018),
   ];
-  const cymbalGeometry = new THREE.LatheGeometry(cymbalProfile, 32);
+  // Close the underside and wind the upper surface outward. A single open
+  // lathed sheet used to disappear when viewed from above.
+  const cymbalGeometry = new THREE.LatheGeometry([
+    new THREE.Vector2(0, -.02), new THREE.Vector2(.5, -.035),
+    ...cymbalProfile.slice().reverse(), new THREE.Vector2(0, -.02),
+  ], 32);
   function cymbalStand(x, z, height, radius, double = false) {
     const footY = 0.045;
     for (let i = 0; i < 3; i++) {
       const a = i / 3 * Math.PI * 2 + 0.25;
-      rod(root, [x, footY + 0.08, z], [x + Math.cos(a) * 0.34, 0.025, z + Math.sin(a) * 0.34], 0.023, metal);
-      addMesh(root, new THREE.SphereGeometry(0.035, 8, 6), black, x + Math.cos(a) * 0.34, 0.025, z + Math.sin(a) * 0.34);
+      rod(root, [x, footY + 0.08, z], [x + Math.cos(a) * 0.34, 0.035, z + Math.sin(a) * 0.34], 0.023, metal);
+      addMesh(root, new THREE.SphereGeometry(0.035, 8, 6), black, x + Math.cos(a) * 0.34, 0.035, z + Math.sin(a) * 0.34);
     }
     rod(root, [x, footY, z], [x, height + 0.08, z], 0.026, metal);
     addMesh(root, new THREE.CylinderGeometry(0.047, 0.047, 0.12, 10), black, x, height * 0.58, z);

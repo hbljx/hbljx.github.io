@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { softBoxGeometry } from './soft-box.js';
 import { registerActor } from '@engine/world/actor-collision.js';
 
 const FLOOR = 11;
@@ -96,6 +97,8 @@ function makePerson(scene, nav, woman) {
     add(side * .205, 1.54, .005, .075, woman ? .39 : .27, .32, colors.hair, 'head');
     add(side * .105, 1.625, .209, .105, .05, .025, 0xf3e8dc, 'head');
     add(side * .105, 1.625, .233, .045, .042, .016, colors.eyes, 'head');
+    add(side * .09, 1.635, .246, .014, .014, .008, 0xfff8ea, 'head');
+    add(side * .145, 1.535, .198, .048, .018, .012, woman ? 0xd69987 : 0xc08d74, 'head');
     add(side * .105, 1.688, .208, .12, .022, .024, colors.brow, 'head');
     add(side * .22, 1.55, .207, .065, .095, .035, colors.skinShade, 'head');
   }
@@ -113,11 +116,11 @@ function makePerson(scene, nav, woman) {
   } else {
     add(-.11, 1.735, .17, .17, .12, .075, colors.hairHi, 'head', [0, 0, -.12]);
     add(.13, 1.75, .165, .17, .10, .08, colors.hair, 'head', [0, 0, .13]);
-    add(0, 1.445, .222, .16, .055, .025, colors.hair, 'head');
+    add(0, 1.445, .222, .12, .018, .012, colors.hair, 'head');
   }
 
   const arms = [addArm(-1), addArm(1)], legs = [addLeg(-1), addLeg(1)];
-  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(), parts.length);
+  const mesh = new THREE.InstancedMesh(softBoxGeometry(), new THREE.MeshPhongMaterial({ shininess: 18, specular: 0x34302d }), parts.length);
   mesh.name = woman ? 'tea-couple-woman' : 'tea-couple-man';
   mesh.castShadow = false; mesh.receiveShadow = false;
   // Articulated instances move after construction; keep their whole pose inside
@@ -195,6 +198,7 @@ function applyPerson(person, clock, gesture) {
       dummy.rotation.set(p.rotation[0], p.rotation[1], p.rotation[2]);
       dummy.scale.set(p.w, p.h * (p.group === 'staticLeg' ? 1 - seated : 1), p.d);
     }
+    if (p.group === 'staticLeg' && seated === 1) dummy.scale.set(0, 0, 0);
     dummy.updateMatrix(); matrix.copy(dummy.matrix).premultiply(p.group === 'head' || p.group === 'mouth' ? headMatrix : bodyMatrix);
     mesh.setMatrixAt(i, matrix);
   }

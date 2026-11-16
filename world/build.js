@@ -23,6 +23,7 @@ import { createHousehold } from './household.js';
 import { flattenGlazing, flattenBatchGlazing } from './glazing.js';
 import { buildSeaTransit } from './sea-transit.js';
 import { seabedAt } from './deep-sea.js';
+import { buildBasement, excavateBasement } from './basement.js';
 import { createTeaCouple } from './tea-couple.js';
 
 export function build({ grid, layer, materials, stage }) {
@@ -34,6 +35,7 @@ export function build({ grid, layer, materials, stage }) {
   materials.boxMetal = createStainless(stage);
   defineHouseBlocks(grid);
   buildIsland(grid, ISLAND, { surfaceAt });
+  excavateBasement(grid);
   buildPool(grid);
   buildShell(grid);
   // The garage approach shares the surrounding grass-and-dirt shore. These
@@ -47,6 +49,7 @@ export function build({ grid, layer, materials, stage }) {
   // Clear the three trees inside the new outside stair's footprint.
   const forest = buildForest(grid, layer, [...FOREST,[-29,-35],[-22,-36],[-15,-35],[-8,-36],[15,-35],[23,-36],[31,-35]].filter(([x,z])=>!(x>=19&&x<=38&&z>=10&&z<=33)&&!(x>=-43&&x<=-12&&z>=20&&z<=35)&&!(x>HOUSE.x0-3&&x<HOUSE.x1+3&&z>HOUSE.z0-3&&z<HOUSE.z1+3)&&!(x>=-36&&x<=-26&&z>=-16&&z<=-2)));
   const furn = furnish({ layer, additionalDoors: third.source.doors });
+  const basement = buildBasement({ grid, B: furn.batches.static, planes: furn.planes, obstacles: furn.obstacles, lighting: furn.lighting });
   for (const door of furn.animated.doors.roots) stage.scene.add(door);
   furn.planes.push(third.skylights);
   const mergeBatch = (into, from) => {
@@ -81,7 +84,7 @@ export function build({ grid, layer, materials, stage }) {
   stage.scene.add(offshore.group);
   const deepBatch=new BoxBatch(layer),oceanLife=createOceanLife(deepBatch,transit.tunnel.path);
   for(const mesh of deepBatch.build(materials)){mesh.castShadow=false;oceanLife.deepGroup.add(mesh);}
-  stage.scene.add(...oceanLife.creatures, oceanLife.deepGroup, oceanLife.tunnelGroup, oceanLife.effectsGroup, oceanLife.terrain);
+  stage.scene.add(...oceanLife.creatures, oceanLife.basementGroup, oceanLife.deepGroup, oceanLife.tunnelGroup, oceanLife.effectsGroup, oceanLife.terrain);
   const aircraftFleet=createAircraftFleet(carrier,[furn.animated.roadster,submarine.mesh],stage);furn.animated.airplane=aircraftFleet.planes[0];furn.planes.push(...aircraftFleet.draws);
   const planeObstacle=aircraftFleet.obstructed;
   third.source.setPlaneObstacle(planeObstacle); mountain.setPlaneObstacle(planeObstacle);carrier.setPlaneObstacle(planeObstacle);
@@ -91,8 +94,8 @@ export function build({ grid, layer, materials, stage }) {
   return {
     batches: furn.batches, planes: atlasPlanes(furn.planes), obstacles: furn.obstacles, lights: furn.lights, bakes: furn.lighting,
     hotspots: furn.hotspots, animated: furn.animated, surfaces: furn.surfaces, forest,
-    sites: [outer, mountain, furn.stairs, third.source, carrier, submarine, furn.partitions, seaBridge,transit.platform,transit.approach,transit.tunnel], sitesAfter: [roofAccess],
-    named: { seaSwimming: { bedAt: seabedAt }, seaBridge, transit, seaTunnel:transit.tunnel, drawTransitMap:transit.drawMap, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
+    sites: [basement, outer, mountain, furn.stairs, third.source, carrier, submarine, furn.partitions, seaBridge,transit.platform,transit.approach,transit.tunnel], sitesAfter: [roofAccess],
+    named: { basement, seaSwimming: { bedAt: seabedAt }, seaBridge, transit, seaTunnel:transit.tunnel, drawTransitMap:transit.drawMap, travelLandscape, outer, mountain, roofAccess, carrier, submarine, offshore, aircraftFleet, oceanLife, thirdFloor: third.source, drawMap },
   };
 }
 
@@ -121,6 +124,7 @@ export function setup(app) {
   world.carrier.crew.connectActors(app.nav);
   world.submarine.crew.connectActors(app.nav);
   const activities = createActivities(app);
+  world.basement.installView(stage, app.player, world.coast);
   const teaCouple = createTeaCouple(world.groups.roof, app.nav);
   const household = createHousehold(app,activities);
   world.animated.dinoRunner.start();

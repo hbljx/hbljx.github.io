@@ -1,6 +1,8 @@
 // A voxel-style performer whose pose, garment colors and skirt shape animate
 // through a piano-and-drums concert loop in one instanced draw.
 import * as THREE from 'three';
+import { softBoxGeometry } from './soft-box.js';
+import { MUSIC_FLOOR } from './music-hall.js';
 
 const COLORS = {
   skin: 0xffd7bf, skinShade: 0xe7ad91, blush: 0xe88d91,
@@ -196,7 +198,7 @@ export function createMusicPerformer() {
   }
 
   const mesh = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(1, 1, 1),
+    softBoxGeometry(),
     // Per-part colors come from InstancedMesh.instanceColor below. This box
     // geometry has no vertex color attribute, so vertexColors would multiply
     // those instance colors by an empty attribute and render the performer black.
@@ -396,8 +398,15 @@ export function createMusicPerformer() {
       default:
         outfit = 0; root.position.x = pianoX; root.position.z = homeZ; yaw = PIANIST.yaw; break;
     }
-    root.position.y = 0.16 * walkBlend + (walking ? 0.025 * (1 - Math.cos(phase * 14.6)) : 0);
+    const atDrums = ['sitDrums', 'changeToDress', 'drums', 'standDrums'].includes(state);
+    const seatLift = (atDrums ? .083 : 0) * (1 - walkBlend);
+    root.position.y = MUSIC_FLOOR + .048 + seatLift + 0.16 * walkBlend + (walking ? 0.025 * (1 - Math.cos(phase * 14.6)) : 0);
     root.rotation.y = yaw;
+    // Keep the hem folded until the performer clears either seat on departure,
+    // and gather it before approaching a seat on the return route.
+    const seatDistance = Math.min(Math.hypot(root.position.x - pianoX, root.position.z - homeZ),
+      Math.hypot(root.position.x - drumX, root.position.z - drumZ));
+    const clothSeated = Math.max(1 - walkBlend, 1 - smooth((seatDistance - .9) / .3));
     pivotMatrix(joints[1], pivots[1], (walking ? 0.045 : 0.018) * Math.sin(phase * 1.15));
     pivotMatrix(joints[2], pivots[2], 0.11 + 0.025 * Math.sin(phase * 1.7), 0.025 * Math.sin(phase * 0.8));
     for (let side = -1; side <= 1; side += 2) {
@@ -466,12 +475,33 @@ export function createMusicPerformer() {
       const p = parts[i];
       const dress = p.dress, blend = p.costume ? outfit : 0;
       dummy.position.set(mix(p.x, dress?.x ?? p.x, blend), mix(p.y, dress?.y ?? p.y, blend), mix(p.z, dress?.z ?? p.z, blend));
+      // Seated cloth rests on the lap; the long hem folds forward over
+      // the knees instead of extending vertically through the cushion.
+      if (i >= skirtStart && i < skirtEnd) {
+        const seated = clothSeated;
+        if (i === skirtBody) {
+          dummy.position.y = mix(dummy.position.y, .56, seated);
+          dummy.position.z = mix(dummy.position.z, .16, seated);
+        } else if (i !== skirtWaist && i !== beltLine) {
+          dummy.position.y = mix(dummy.position.y, .54 + (p.y - .49) * .65, seated);
+          dummy.position.z = mix(dummy.position.z, .48 + (p.z - .174) * .12, seated);
+        }
+      }
       if (walking && (p.limb === 21 || p.limb === 22)) {
         const footPhase = phase * 7.3 + (p.limb === 22 ? Math.PI : 0);
         dummy.position.y += Math.max(0, Math.sin(footPhase)) * 0.065;
       }
       if (drumMode && p.grip) dummy.position.y += 0.035;
       dummy.scale.set(mix(p.w, dress?.w ?? p.w, blend), mix(p.h, dress?.h ?? p.h, blend), mix(p.d, dress?.d ?? p.d, blend));
+      if (i >= skirtStart && i < skirtEnd) {
+        const seated = clothSeated;
+        if (i === skirtBody) {
+          dummy.scale.y = mix(dummy.scale.y, .18, seated);
+          dummy.scale.z = mix(dummy.scale.z, .58, seated);
+        } else if (i !== skirtWaist && i !== beltLine) {
+          dummy.scale.y = mix(dummy.scale.y, Math.min(p.h, .14), seated);
+        }
+      }
       if (p.drumstick && !drumMode) dummy.scale.set(0, 0, 0);
       if (drumMode && p.finger) dummy.scale.set(0, 0, 0);
       dummy.rotation.set(p.rx, p.ry, p.rz);
@@ -519,6 +549,29 @@ export function createMusicPerformer() {
         continue;
       }
       mesh.setMatrixAt(i, matrix);
+    }
+    // Ground the complete pose from the transformed soles, including gait
+    // and pedal rotation. Bounds include the rug rather than world y=0.
+    let soleBottom = Infinity;
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i].color !== COLORS.sole) continue;
+      mesh.getMatrixAt(i, matrix);
+      const e = matrix.elements;
+      soleBottom = Math.min(soleBottom, e[13] - .5 * (Math.abs(e[1]) + Math.abs(e[5]) + Math.abs(e[9])));
+    }
+    if (walkBlend > 0) root.position.y = Math.max(root.position.y, MUSIC_FLOOR - soleBottom);
+    // While seated, lift both shoe assemblies together without moving the hip.
+    for (const tag of [21, 22]) {
+      let bottom = Infinity;
+      for (let i = 0; i < parts.length; i++) if (parts[i].limb === tag && parts[i].color === COLORS.sole) {
+        mesh.getMatrixAt(i, matrix); const e = matrix.elements;
+        bottom = e[13] - .5 * (Math.abs(e[1]) + Math.abs(e[5]) + Math.abs(e[9]));
+      }
+      const contact = MUSIC_FLOOR + (drumMode ? .025 : 0);
+      const lift = walkBlend > 0 ? Math.max(0, contact - root.position.y - bottom) : contact - root.position.y - bottom;
+      if (lift) for (let i = 0; i < parts.length; i++) if (parts[i].limb === tag) {
+        mesh.getMatrixAt(i, matrix); matrix.elements[13] += lift; mesh.setMatrixAt(i, matrix);
+      }
     }
     mesh.instanceMatrix.needsUpdate = true;
   }

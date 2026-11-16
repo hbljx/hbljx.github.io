@@ -41,6 +41,19 @@ export function createOceanLife(deepBatch,tunnelPath=null){
     corals.userData.kind = 'reef';
     creatures.push(corals);
   }
+  const basementGroup=new THREE.Group();basementGroup.name='basement-ocean-gardens';basementGroup.visible=false;
+  const basementStart=creatures.length,basementSchool=createOceanModel('fish-school',{fishCount:8});
+  // The observatory opens onto the same sea as the island. Each window has
+  // a reef garden and a small school; paths remain outside the glass envelope.
+  for (const [i,[x,z]] of [[-32,-9],[36,-10],[2,-34],[5,23]].entries()) {
+    const reef=animal('reef',x,seabedAt(x,z)-.2,z,0,0,0);
+    reef.scale.set(1.25,2.1,1.25);
+    const school=animal('fish-school',x,-5.1,z,i<2?1.1:6,i<2?6:1.1,.19,i*1.4);
+    school.geometry=basementSchool;school.scale.setScalar(.6);
+  }
+  animal('turtle',-32,-5.7,5,1.2,3,.09,1);
+  animal('turtle',17,-5.2,-34,3,1,.07,2);
+  const basementCreatures=creatures.splice(basementStart);basementGroup.add(...basementCreatures);
   // Keep nearshore whales close to the waterline so their backs and breaches
   // read clearly from the house and beach.
   animal('whale',-24,-1.8,64,16,8,.055);animal('whale',-75,-2,12,8,18,.045,2);
@@ -95,10 +108,11 @@ export function createOceanLife(deepBatch,tunnelPath=null){
     shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','diffuseColor.a*=1.-smoothstep(.15,.5,length(gl_PointCoord-vec2(.5)));\n#include <opaque_fragment>');
   };
   deepGroup.add(new THREE.Points(moteGeometry,moteMaterial));
-  const allCreatures=[...creatures,...deepCreatures,...tunnelCreatures];
+  const allCreatures=[...creatures,...deepCreatures,...tunnelCreatures,...basementCreatures];
   const tunnelView={};
   function update(dt,carrier,camera){
     if(camera){
+      basementGroup.visible=camera.position.y<-.5&&Math.abs(camera.position.x)<70&&Math.abs(camera.position.z)<65;
       const height=camera.position.y-seaLevel;
       terrain.visible=height<0||height>6;
       camera.getWorldDirection(viewDirection);
@@ -113,7 +127,7 @@ export function createOceanLife(deepBatch,tunnelPath=null){
       tunnelGroup.visible = tunnelView.distance < 6;
     } else tunnelGroup.visible = false;
     time.value+=Math.min(dt,.1);
-    for(const mesh of allCreatures){const a=mesh.userData;if(a.kind==='reef')continue;const t=time.value*a.speed+a.phase;
+    for(const mesh of allCreatures){const a=mesh.userData;if(a.kind==='reef'||mesh.parent===basementGroup&&!basementGroup.visible)continue;const t=time.value*a.speed+a.phase;
       let x=a.x+Math.cos(t)*a.rx,z=a.z+Math.sin(t)*a.rz,y=a.y;
       if(a.kind==='dolphin')y+=Math.pow(Math.max(0,Math.sin(time.value*.65+a.phase)),8)*2.3;
       else if(a.kind==='whale')y+=Math.sin(time.value*.22+a.phase)*.55;
@@ -146,5 +160,5 @@ export function createOceanLife(deepBatch,tunnelPath=null){
     };
     material.needsUpdate=true;
   }
-  update(0);return{creatures,deepGroup,tunnelGroup,effectsGroup,terrain,time,update,configureSea,species:[...cache.keys()].filter(kind=>kind!=='reef')};
+  update(0);return{creatures,basementGroup,deepGroup,tunnelGroup,effectsGroup,terrain,time,update,configureSea,species:[...cache.keys()].filter(kind=>kind!=='reef')};
 }

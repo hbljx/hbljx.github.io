@@ -97,6 +97,7 @@ export function createGround(sources) {
     return best;
   }
   function ladderAt(x, y, z) { for (const s of sources) { const ladder = s.ladderAt?.(x, y, z); if (ladder) return ladder; } return null; }
+  const isDry = (x, y, z) => sources.some(s => s.dryContains?.(x, y, z));
   const spots = () => sources.flatMap(s => s.spots?.() ?? []);
-  return { surfaceAt, topAt, canStand, ladderAt, move, nearestStand, collides, pick, spots, setNav(value) { nav = value; } };
+  return { isDry, surfaceAt, topAt, canStand, ladderAt, move, nearestStand, collides, pick, spots, setNav(value) { nav = value; } };
 }
