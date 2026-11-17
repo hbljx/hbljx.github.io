@@ -205,6 +205,20 @@ export function createIslandDoors(obstacles, additionalDoors = []) {
 
   return {
     roots: instanceMeshes,
+    // Plan through doors that will open on approach, while keeping their
+    // physical collision closed until the animated leaf has cleared the path.
+    walkPath(player, x, z, nav) {
+      const closed = doors.filter(door => door.blocking && Math.abs(player.floorY - door.interactY) < .85);
+      if (!closed.length) return null;
+      try {
+        for (const door of closed) setBlocking(door, false);
+        nav.rebuild();
+        return nav.findPath(player.pos, { x, z });
+      } finally {
+        for (const door of closed) setBlocking(door, true);
+        nav.rebuild();
+      }
+    },
     interact(player, nav) {
       if (player.mode !== 'ground') return false;
       const y = player.floorY;

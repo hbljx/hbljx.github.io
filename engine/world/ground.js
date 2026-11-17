@@ -91,9 +91,9 @@ export function createGround(sources) {
     return null;
   }
   const collides = (x, feet, z, flying = false) => sources.some(s => s.collides?.(x, feet, z, flying));
-  function pick(ray) {
+  function pick(ray, accepts = null) {
     let best = null;
-    for (const s of sources) { const hit = s.pick?.(ray); if (hit && (!best || hit.t < best.t)) best = hit; }
+    for (const s of sources) { const hit = s.pick?.(ray); if (hit && (!accepts || accepts(hit)) && (!best || hit.t < best.t)) best = hit; }
     return best;
   }
   function ladderAt(x, y, z) { for (const s of sources) { const ladder = s.ladderAt?.(x, y, z); if (ladder) return ladder; } return null; }

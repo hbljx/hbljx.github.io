@@ -4,14 +4,14 @@ const TAU = Math.PI * 2;
 const WHITE = [241,255,253];
 const WARM = [255,180,81];
 const ENGINES = [
-  {id:'baidu', label:'百度', color:[57,245,188], x:138, y:104},
-  {id:'bing', label:'必应', color:[57,207,255], x:506, y:122},
-  {id:'google', label:'谷歌', color:[210,138,255], x:125, y:391},
-  {id:'yuanbao', label:'元宝', color:WARM, x:514, y:392},
+  {id:'baidu', label:'百度', color:[57,245,188], x:98, y:92},
+  {id:'bing', label:'必应', color:[57,207,255], x:542, y:92},
+  {id:'google', label:'谷歌', color:[210,138,255], x:90, y:410},
+  {id:'yuanbao', label:'元宝', color:WARM, x:550, y:410},
 ];
 const TILES = [
-  {x:116,y:222,angle:-.14,phase:.2}, {x:490,y:251,angle:.13,phase:1.4},
-  {x:223,y:72,angle:-.06,phase:2.7}, {x:390,y:430,angle:.08,phase:4},
+  {x:62,y:245,angle:-.14,phase:.2}, {x:578,y:245,angle:.13,phase:1.4},
+  {x:263,y:46,angle:-.06,phase:2.7}, {x:377,y:46,angle:.08,phase:4},
 ];
 const color = (rgb, alpha) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
 
@@ -210,9 +210,9 @@ export function mountSearchObservatory(environment) {
     const p=palette[selected];
     // A solid, beveled magnifying-glass handle underneath the optical assembly.
     c.save();c.translate(320,254);c.rotate(-Math.PI/4);
-    c.beginPath();c.roundRect(-13,88,26,101,8);c.fillStyle=p.metal;c.fill();neonStroke(.95,1.2);
-    c.beginPath();c.moveTo(-6,122);c.lineTo(-6,171);line(.95,1,WHITE);
-    for(let i=0;i<4;i++){c.beginPath();c.moveTo(-10,141+i*8);c.lineTo(10,141+i*8);line(.55,.8);}
+    c.beginPath();c.roundRect(-13,88,26,153,8);c.fillStyle=p.metal;c.fill();neonStroke(.95,1.2);
+    c.beginPath();c.moveTo(-6,122);c.lineTo(-6,225);line(.95,1,WHITE);
+    for(let i=0;i<7;i++){c.beginPath();c.moveTo(-10,155+i*10);c.lineTo(10,155+i*10);line(.55,.8);}
     c.restore();
     c.beginPath();c.arc(320,254,114,0,TAU);c.fillStyle=p.metal;c.fill();neonStroke(1,1.6);
     c.beginPath();c.arc(320,254,105,0,TAU);c.fillStyle='#082234';c.fill();line(.9,1.3);
@@ -299,24 +299,24 @@ export function mountSearchObservatory(environment) {
       dot(x,y+Math.sin(time*.3+i)*3,i%7?.9:1.8,.22+wake*.2);
     }
     c.beginPath();c.moveTo(320,67);c.lineTo(320,87);c.moveTo(320,423);c.lineTo(320,442);c.moveTo(131,254);c.lineTo(144,254);c.moveTo(496,254);c.lineTo(510,254);line(.65,.85);
-    orbitalDust(false);
     if(!miniature){engineNodes();documents();}
     c.save();
     // Short phone viewports keep a larger core and one legible label, instead
     // of shrinking four peripheral labels below readable CSS pixel sizes.
     if(miniature){c.translate(320,254);c.scale(1.32,1.32);c.translate(-320,-254);}
-    instrument();lens();c.restore();orbitalDust(true);
+    else {c.translate(320,254);c.scale(.82,.82);c.translate(-320,-254);}
+    orbitalDust(false);instrument();lens();orbitalDust(true);c.restore();
     // Input-triggered packets travel from the search field side into the lens.
     c.globalCompositeOperation='lighter';
     for(let i=0;i<40;i++) {
       const progress=packets[i*4];if(progress<0||progress>1)continue;
       const startY=packets[i*4+1],bend=packets[i*4+2],endY=254+packets[i*4+3];
-      curvePoint(25,startY,320,endY,bend,progress,0);
+      curvePoint(145,startY,320,endY,bend,progress,0);
       const x=screen[0],y=screen[1];
       // Several fading segments follow the curve, rather than a single straight dash.
       for(let trail=3;trail>0;trail--) {
-        curvePoint(25,startY,320,endY,bend,Math.max(0,progress-trail*.04),3);
-        curvePoint(25,startY,320,endY,bend,Math.max(0,progress-(trail-1)*.04),6);
+        curvePoint(145,startY,320,endY,bend,Math.max(0,progress-trail*.04),3);
+        curvePoint(145,startY,320,endY,bend,Math.max(0,progress-(trail-1)*.04),6);
         c.beginPath();c.moveTo(screen[3],screen[4]);c.lineTo(screen[6],screen[7]);line(Math.sin(progress*Math.PI)*(.85-trail*.16),1.05);
       }
       dot(x,y,3.2,Math.sin(progress*Math.PI));dot(x,y,8,Math.sin(progress*Math.PI)*.26);
@@ -325,8 +325,6 @@ export function mountSearchObservatory(environment) {
     c.globalCompositeOperation='source-over';
     launchFragments();
     c.textAlign='center';c.textBaseline='alphabetic';
-    c.beginPath();c.roundRect(miniature?102:76,miniature?470:457,miniature?436:488,miniature?62:76,8);
-    c.fillStyle='#071626ed';c.fill();line(.5,.7);
     if(miniature) {
       font(18,12);c.fillStyle=color(rgb,1);
       c.fillText(launchPulse>.1?'搜索已提交':`${ENGINES[selected].label}检索`,320,512);
@@ -363,7 +361,7 @@ export function mountSearchObservatory(environment) {
     if(reduced.matches||!visible||document.hidden)return;
     for(let i=0;i<amount;i++) {
       const slot=packetCursor++%40,offset=slot*4;
-      packets[offset]=0;packets[offset+1]=180+(slot*37)%190;
+      packets[offset]=0;packets[offset+1]=214+(slot*17)%80;
       packets[offset+2]=(slot%2?1:-1)*(18+slot%5*7);packets[offset+3]=Math.sin(slot*2.3)*24;
     }
   }

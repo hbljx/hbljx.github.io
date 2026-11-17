@@ -118,9 +118,9 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, sea = nu
   // What is below (x, z) at or under height `top`: the floor to fly over, and
   // whether the player could land on it (outside ground, or the walkable grid).
   function floorBelow(x, z, top) {
-    let best = { y: SEA, island: null, landable: false };
+    let best = { y: top >= SEA ? SEA : -Infinity, island: null, landable: false };
     const bx = Math.floor(x), bz = Math.floor(z);
-    if (!grid || solidAt(bx, -1, bz)) best = { y: 0, island: null, landable: false };
+    if (top >= -.01 && (!grid || solidAt(bx, -1, bz))) best = { y: 0, island: null, landable: false };
     const raised = nav.heightAt(x, z);
     // Stair treads are rendered furniture rather than voxel blocks. Keep their
     // analytic navigation height as a flight floor so descending over the stair
@@ -157,7 +157,7 @@ export function createPlayer({ avatar, nav, grid = null, ground = null, sea = nu
       if (found) { island = null; standing = null; level = nav.heightAt(pos.x, pos.z); path = found; goal = station; return true; }
     }
     if (island) {
-      const top = ground.topAt(x, z), stand = top && ground.nearestStand(x, z, top.y);
+      const top = ground.topAt(x, z, level + .7), stand = top && ground.nearestStand(x, z, top.y);
       if (!stand) return false;
       path = [stand]; goal = station; return true;
     }

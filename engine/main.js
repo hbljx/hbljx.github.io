@@ -504,7 +504,9 @@ async function boot() {
     const block = world.grid.raycast(o, d, 160, (type, group) => type.kind !== 'glass' && !world.hidden.has(group));
     // Outside ground (the shore pier and mountain) is not in
     // the block grid; it answers the ray itself.
-    const isle = world.ground.pick(ray.ray);
+    // Analytic glass/room roofs must follow the same cutaway as visible blocks.
+    const isle = world.ground.pick(ray.ray, hit =>
+      !(world.hidden.has('roof') && ['roof', 'tea-roof'].includes(hit.site) && hit.point.y > player.y + 1.8));
     const island = isle && (!block || isle.t < block.t) ? isle : null;
     let best = null;
     const hit = new THREE.Vector3();
@@ -615,7 +617,10 @@ async function boot() {
     // the player towards wherever the far-away view happened to be touched.
     if (rig.introActive) { rig.skipIntro(); return; }
     if (!wasInteracting && target.spot?.id === 'mailbox') { useTarget('mailbox'); return; }
-    if (!wasInteracting && target.spot) { useTarget(target.spot.id); return; }
+    const floorTap = target.block?.normal[1] === 1 &&
+      Math.abs(target.block.y - nav.heightAt(target.block.x, target.block.z)) < .7 &&
+      nav.canStand(target.block.x, target.block.z);
+    if (!wasInteracting && target.spot && !floorTap && !target.island) { useTarget(target.spot.id); return; }
     // Lying on the pool's floor looking up, a tap only brings them up again.
     if (player.gazing) { player.toggleDive(); return; }
     if (webMode && !wasInteracting) {
@@ -635,6 +640,22 @@ async function boot() {
   // Walk if the place is reachable on foot from here; otherwise fly there.
   function navigate(x, z, targetY = null, useRoofLadder = false) {
     closePage(); minimap.toggleBig(false); input.clear(); rig.skipIntro();
+    if (!player.flying && !player.swimming &&
+        (!player.island || nav.canStand(player.pos.x, player.pos.z, player.y)) &&
+        (targetY === null || Math.abs(targetY - nav.heightAt(x, z)) < .7) &&
+        nav.canStand(x, z)) {
+      const walked = player.goTo(x, z);
+      const route = world.animated?.doors?.walkPath(player, x, z, nav);
+      const length = points => {
+        let distance = 0, previous = player.pos;
+        for (const point of points || []) { distance += Math.hypot(point.x - previous.x, point.z - previous.z); previous = point; }
+        return points?.length ? distance : Infinity;
+      };
+      const useDoor = route?.length && (!walked || length(route) < length(player.path));
+      const accepted = useDoor ? player.follow(route) : walked;
+      marker.show(x, nav.heightAt(x, z), z, accepted ? 0x85c9ff : 0xeab66a);
+      return accepted;
+    }
     const seaSpot = sea && targetY === sea.water && player.seaAt(x, z);
     if ((seaSpot && !player.swimming) || player.oceanSwimming) {
       const accepted = seaSpot ? (player.oceanSwimming ? player.swimTo(x, z) : player.flyIntoSea(x, z))
