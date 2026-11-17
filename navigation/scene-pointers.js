@@ -1,4 +1,5 @@
 import { createAboutPointerEffects } from './about-pointers.js';
+import { createAtlasPointerEffects } from './atlas-pointers.js';
 
 // One viewport canvas, bounded trails, and an animation loop that sleeps when idle.
 export function mountScenePointers() {
@@ -10,12 +11,14 @@ export function mountScenePointers() {
  Object.assign(canvas.style,{position:'fixed',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'90'});document.body.append(canvas);
  const ctx=canvas.getContext('2d');if(!ctx){canvas.remove();return;}
  const aboutEffects=createAboutPointerEffects(ctx);
+ const atlasEffects=createAtlasPointerEffects(ctx),atlasSurface=document.querySelector('.hero-stage');
  const aboutSurface=document.querySelector('.garden-arrival'),projects=document.querySelector('.about-projects'),header=document.querySelector('.site-header');
  let mode='',x=0,y=0,lastX=0,lastY=0,frame=0,lastTime=0,moved=0,spawn=0,target=null,trail=[],particles=[],blocks=Array.from({length:12},()=>({x:0,y:0}));
  function size(){const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(innerWidth*dpr);canvas.height=Math.round(innerHeight*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
- function clear(){cancelAnimationFrame(frame);frame=0;mode='';canvas.dataset.mode='';delete document.documentElement.dataset.aboutPointer;aboutEffects.reset();trail=[];particles=[];ctx.clearRect(0,0,innerWidth,innerHeight);}
+ function clear(){cancelAnimationFrame(frame);frame=0;mode='';canvas.dataset.mode='';delete document.documentElement.dataset.aboutPointer;aboutEffects.reset();atlasEffects.reset();trail=[];particles=[];ctx.clearRect(0,0,innerWidth,innerHeight);}
  function choose(el){
   if(!fine.matches||reduced.matches||document.hidden||!el||el.closest('dialog,.site-header'))return '';
+  if(el.closest('.hero-stage.explore-ready'))return 'atlas';
   if(aboutSurface?.contains(el)&&projects)return y<projects.getBoundingClientRect().top?'journal':'clockwork';
   const scene=el.closest('.scene');return scene?modes[scene.dataset.room]||'':'';
  }
@@ -30,7 +33,11 @@ export function mountScenePointers() {
   trail=trail.filter(p=>now-p.t<750);particles=particles.filter(p=>now-p.t<p.life);
   if(mode==='comet'||mode==='stardust')particles.forEach(p=>{const t=(now-p.t)/p.life;ctx.globalAlpha=(1-t)*.85;const px=p.x+p.vx*t,py=p.y+p.vy*t;ctx.fillStyle=p.color;if(mode==='stardust')star(px,py,p.size*(1-t));else ctx.fillRect(px,py,p.size*(1-t),p.size*(1-t));});
   ctx.fillStyle=color;ctx.globalAlpha=fade;
-  if(mode==='journal'||mode==='clockwork'){
+  if(mode==='atlas'){
+   const bounds=atlasSurface.getBoundingClientRect(),top=Math.max(0,bounds.top,header?.getBoundingClientRect().bottom||0);
+   ctx.save();ctx.beginPath();ctx.rect(bounds.left,top,bounds.width,Math.max(0,Math.min(innerHeight,bounds.bottom)-top));ctx.clip();
+   atlasEffects.draw(now);ctx.restore();
+  }else if(mode==='journal'||mode==='clockwork'){
    // Keep marks in their chapter and below the fixed navigation.
    const bounds=aboutSurface.getBoundingClientRect(),split=projects.getBoundingClientRect().top;
    const top=Math.max(0,header?.getBoundingClientRect().bottom||0,mode==='journal'?bounds.top:split);
@@ -86,12 +93,13 @@ export function mountScenePointers() {
    const force=1-Math.exp(-dt/110);blocks.forEach((b,i)=>{const moving=age<120,angle=i*Math.PI/6+now*.0004;const radius=moving?38+i%3*8:23;const tx=x+Math.cos(angle)*radius,ty=y+Math.sin(angle)*radius;b.x+=(tx-b.x)*force;b.y+=(ty-b.y)*force;ctx.globalAlpha=fade*(.35+i%3*.2);ctx.fillRect(b.x-3,b.y-3,6,6);ctx.strokeRect(b.x-4,b.y-4,8,8);});
   }
   ctx.globalAlpha=1;ctx.shadowBlur=0;
-  if(age<(mode==='journal'||mode==='clockwork'?1100:2100)||particles.length)frame=requestAnimationFrame(draw);else ctx.clearRect(0,0,innerWidth,innerHeight);
+  if(age<(mode==='atlas'||mode==='journal'||mode==='clockwork'?1100:2100)||particles.length)frame=requestAnimationFrame(draw);else ctx.clearRect(0,0,innerWidth,innerHeight);
  }
  window.addEventListener('pointermove',e=>{
   if(e.pointerType!=='mouse'){clear();return;}
   lastX=x;lastY=y;x=e.clientX;y=e.clientY;setMode(choose(e.target));if(!mode)return;
   moved=performance.now();target=e.target.closest('.room-card,.solid-link,.scene-enter');
+  if(mode==='atlas'){atlasEffects.move(x,y,moved);wake();return;}
   if(mode==='journal'||mode==='clockwork'){aboutEffects.move(mode,x,y,moved);wake();return;}
   trail.push({x,y,t:moved});if(trail.length>32)trail.shift();
   if(moved-spawn>24){spawn=moved;const speed=Math.min(60,Math.hypot(x-lastX,y-lastY));
@@ -104,8 +112,10 @@ export function mountScenePointers() {
    if(particles.length>100)particles.splice(0,particles.length-100);
   }wake();
  },{passive:true});
- window.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){clear();return;}if(mode==='water'){particles.push({x:e.clientX,y:e.clientY,t:performance.now(),life:1300,size:100});wake();}});
- window.addEventListener('scroll',()=>{aboutEffects.reset();setMode(choose(document.elementFromPoint(x,y)));target=null;wake();},{passive:true});
+ window.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'){clear();return;}if(mode==='atlas'&&e.button===0){moved=performance.now();atlasEffects.click(e.clientX,e.clientY,moved);wake();}if(mode==='water'){particles.push({x:e.clientX,y:e.clientY,t:performance.now(),life:1300,size:100});wake();}});
+ window.addEventListener('scroll',()=>{aboutEffects.reset();atlasEffects.reset();setMode(choose(document.elementFromPoint(x,y)));target=null;wake();},{passive:true});
+ // The scroll reveal updates its class on a frame, after the scroll event.
+ if(atlasSurface)new MutationObserver(()=>setMode(choose(document.elementFromPoint(x,y)))).observe(atlasSurface,{attributes:true,attributeFilter:['class']});
  window.addEventListener('resize',()=>{size();clear();});
  document.addEventListener('pointerleave',clear);window.addEventListener('blur',clear);document.addEventListener('visibilitychange',clear);
  fine.addEventListener('change',clear);reduced.addEventListener('change',clear);size();

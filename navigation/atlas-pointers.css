@@ -1,0 +1,13 @@
+/* Only the island's revealed exploration stage gets the folded-paper cursor. */
+@media (hover:hover) and (pointer:fine) {
+ html:not(.world-mode) #flat-home .hero-stage.explore-ready,
+ html:not(.world-mode) #flat-home .hero-stage.explore-ready * {
+  cursor:url("cursors/atlas-plane.svg") 3 3,auto;
+ }
+ html:not(.world-mode) #flat-home .hero-stage.explore-ready :is(a,button,summary,select,[role=button]),
+ html:not(.world-mode) #flat-home .hero-stage.explore-ready :is(a,button,summary,select,[role=button]) * {
+  cursor:url("cursors/atlas-plane-link.svg") 3 3,pointer;
+ }
+ html:not(.world-mode) #flat-home .hero-stage.explore-ready :is(input,textarea,[contenteditable=true]),
+ html:not(.world-mode) #flat-home .hero-stage.explore-ready [contenteditable=true] * {cursor:text}
+}
