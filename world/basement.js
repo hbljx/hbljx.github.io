@@ -33,8 +33,12 @@ export function buildBasement({ grid, B, planes, obstacles, lighting }) {
   // ceiling here, with an opening matching the complete stairwell.
   for(const [x0,x1,z0,z1] of [[-25,-24,-27,16],[-24,-20,-27,6],[-24,-20,14,16],[-20,29,-27,16]])
     B.box((x0+x1)/2,-2.12,(z0+z1)/2,x1-x0,.12,z1-z0,{tex:'plaster',tint:0xc9d8d5});
-  for(const x of [-24.03,-19.97])B.box(x,-2,10,.06,2,8,stone);
-  B.box(-22,-2,5.97,4,2,.06,stone);
+  // Facing sits inside the opening, clear of the voxel wall plane.
+  // The former outer faces were exactly coplanar with the soil/floor faces.
+  for(const x of [-23.9775,-20.0225])B.box(x,-2.08,10,.04,2.08,7.94,stone);
+  B.box(-22,-2.08,6.0225,3.92,2.08,.04,stone);
+  for(const x of [-23.94,-20.06])B.box(x,-.10,10,.08,.075,7.94,wood);
+  B.box(-22,-.10,6.06,3.80,.075,.08,wood);
   // Thin warm timber inlay and recessed perimeter lights frame the sea view.
   for (const x of [r.x0 + .45, r.x1 - .45]) {
     B.box(x, -7.994, -5.5, .18, .012, 42, wood);
@@ -57,27 +61,74 @@ export function buildBasement({ grid, B, planes, obstacles, lighting }) {
   const material=new THREE.MeshPhongMaterial({color:0xb9e6e5,shininess:90,specular:0xbde8e4,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide});
   material.forceSinglePass=true;
   const glazing=new THREE.Mesh(geometry,material);glazing.name='basement-four-glass-walls';glazing.renderOrder=3;planes.push(glazing);
-  function tread(x0,x1,z0,z1,y) {
-    B.box((x0+x1)/2,y-.12,(z0+z1)/2,x1-x0,.12,z1-z0,wood);
+  const stairStone=new THREE.MeshPhongMaterial({color:0x839b99,shininess:12,specular:0x283b3b});
+  // Each flight is a closed, stepped prism with one continuous sloping soffit.
+  // Timber caps stop short of the stone cheeks; no face is layered on a wall.
+  function flight(x0,x1,startZ,endZ,startY) {
+    const shape=new THREE.Shape(),direction=Math.sign(endZ-startZ);
+    shape.moveTo(-startZ,startY-.045);
+    for(let i=0;i<24;i++) {
+      const za=startZ+direction*i*.25,zb=za+direction*.25,y=startY-(i+1)/6;
+      shape.lineTo(-za,y-.045);shape.lineTo(-zb,y-.045);
+    }
+    shape.lineTo(-endZ,startY-4.32);shape.lineTo(-startZ,startY-.32);shape.closePath();
+    const solid=new THREE.ExtrudeGeometry(shape,{depth:x1-x0-.04,steps:1,bevelEnabled:false});
+    // End caps also need clearance from the original floor's vertical edge.
+    const positions=solid.attributes.position;
+    for(let i=0;i<positions.count;i++)positions.setX(i,THREE.MathUtils.clamp(positions.getX(i),-Math.max(startZ,endZ)+.008,-Math.min(startZ,endZ)-.008));
+    solid.computeVertexNormals();
+    const body=new THREE.Mesh(solid,stairStone);
+    body.rotation.y=Math.PI/2;body.position.x=x0+.02;
+    body.name='basement-solid-stair-flight';body.castShadow=true;body.receiveShadow=true;planes.push(body);
+  }
+  function tread(x0,x1,z0,z1,y,landing=false) {
+    // The last step joins the basement floor at -8: the floor owns that face.
+    if(y>-8+.001)B.box((x0+x1)/2,y-.045,(z0+z1)/2,x1-x0-.12,.045,z1-z0-.006,wood);
+    if(landing)B.box((x0+x1)/2,y-.30,(z0+z1)/2,x1-x0-.04,.255,z1-z0-.008,stone);
     treads.push({x0,x1,z0,z1,y,box:new THREE.Box3(new THREE.Vector3(x0,y-.12,z0),new THREE.Vector3(x1,y,z1))});
   }
-  for(let i=0;i<24;i++) { const z=14-(i+.5)*.25,y=-(i+1)/6; tread(-24,-22,z-.125,z+.125,y); points.push({x:-23,y,z}); }
-  tread(-24,-20,6,8,-4); points.push({x:-23,y:-4,z:7},{x:-21,y:-4,z:7});
-  for(let i=0;i<24;i++) { const z=8+(i+.5)*.25,y=-4-(i+1)/6; tread(-22,-20,z-.125,z+.125,y);points.push({x:-21,y,z}); }
+  flight(-24,-22,14,8,0);flight(-22,-20,8,14,-4);
+  for(let i=0;i<24;i++) {
+    const z=14-(i+.5)*.25,y=-(i+1)/6;tread(-24,-22,z-.125,z+.125,y);points.push({x:-23,y,z});
+    if(i%3===0)B.box(-23,y+.035,z+.129,1.38,.025,.012,glow);
+  }
+  tread(-24,-20,6,8,-4,true);points.push({x:-23,y:-4,z:7},{x:-21,y:-4,z:7});
+  for(let i=0;i<24;i++) {
+    const z=8+(i+.5)*.25,y=-4-(i+1)/6;tread(-22,-20,z-.125,z+.125,y);points.push({x:-21,y,z});
+    if(i%3===0)B.box(-21,y+.035,z-.129,1.38,.025,.012,glow);
+  }
   points.push(exit);
-  // Guard the opening on level one; its south side is the stair entrance.
+  // Proper newel feet, slender balusters and warm timber handrails.
+  const postKeys=new Set();
+  function post(x,y,z) {
+    const key=[x,y,z].map(n=>n.toFixed(3)).join(',');if(postKeys.has(key))return;postKeys.add(key);
+    B.box(x,y,z,.11,.055,.11,metal);
+    B.box(x,y+.055,z,.045,.94,.045,metal);
+    B.box(x,y+.93,z,.085,.08,.085,wood);
+  }
+  function rail(x0,y0,z0,x1,y1,z1) {
+    const dx=x1-x0,dz=z1-z0,dy=y1-y0,length=Math.hypot(dx,dy,dz),run=Math.hypot(dx,dz);
+    const rotation={rx:-Math.atan2(dy,run),ry:Math.atan2(dx,dz),order:'YXZ'};
+    B.box((x0+x1)/2,(y0+y1)/2+.985,(z0+z1)/2,.09,.065,length,wood,rotation);
+    B.box((x0+x1)/2,(y0+y1)/2+.45,(z0+z1)/2,.035,.035,length,metal,rotation);
+    const n=Math.ceil(run/.75);for(let i=0;i<=n;i++)post(x0+dx*i/n,y0+dy*i/n,z0+dz*i/n);
+  }
   for(const x of [-24,-20]) {
-    B.box(x,1,10,.09,.065,8,metal);
-    for(let z=6;z<=14;z++)B.box(x,0,z,.055,1,.055,metal);
+    rail(x,0,6,x,0,14);
     obstacles.push({x0:x-.12,x1:x+.12,z0:6,z1:14,level:0});
   }
-  B.box(-22,1,6,4,.065,.09,metal);
-  for(let x=-24;x<=-20;x++)B.box(x,0,6,.055,1,.055,metal);
+  rail(-24,0,6,-20,0,6);
   obstacles.push({x0:-24,x1:-20,z0:5.9,z1:6.1,level:0});
-  // Narrow posts and sloped rails follow each flight, leaving both mouths open.
-  for(const [x,reverse] of [[-24,false],[-22,false],[-20,true],[-22,true]]) {
-    for(let i=0;i<=12;i++) {const z=8+i*.5,y=reverse?-4-i/3:-4+i/3; B.box(x,y,z,.055,1,.055,metal);}
-    B.box(x,(reverse?-6:-2)+.97,11,.065,.065,Math.hypot(6,4),metal,{rx:reverse?Math.atan2(4,6):-Math.atan2(4,6)});
+  // Offset the two central rails: the old flights duplicated the turn's posts.
+  for(const x of [-23.90,-22.10])rail(x,-4,8,x,0,14);
+  for(const x of [-21.90,-20.10])rail(x,-4,8,x,-8,14);
+  rail(-23.90,-4,8,-23.90,-4,6.12);
+  rail(-23.90,-4,6.12,-20.10,-4,6.12);
+  rail(-20.10,-4,6.12,-20.10,-4,8);
+  // Two slim piers visibly support the turn without narrowing its clear route.
+  for(const x of [-23.78,-20.22]) {
+    B.box(x,-8,6.24,.18,3.7,.18,metal);
+    barriers.push({x0:x-.09,x1:x+.09,z0:6.15,z1:6.33,y0:-8,y1:-4.3});
   }
   // Keep people inside the stairwell while it is above the basement ceiling.
   barriers.push({x0:-24.1,x1:-23.94,z0:6,z1:14,y0:-6,y1:1.05},

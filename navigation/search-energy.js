@@ -7,7 +7,7 @@ export function mountSearchEnergy(form, query) {
   const stage = form.closest('.hero-stage');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const fine = matchMedia('(hover: hover) and (pointer: fine)');
-  const colors = { baidu: '#8dd7c1', bing: '#93cbe1', google: '#c5b5e0', yuanbao: '#eab58a' };
+  const colors = { baidu: '#39f5bc', bing: '#39cfff', google: '#d28aff', yuanbao: '#ffb451' };
   const submit = form.querySelector('button[type=submit]');
   const face = document.createElement('span');
   face.className = 'search-trigger-face'; face.setAttribute('aria-hidden', 'true');
@@ -66,7 +66,7 @@ export function mountSearchEnergy(form, query) {
     for (let i = 0; i < count; i++) {
       const node = create('search-spark', particles, 'i');
       node.classList.add(i % 4 === 0 ? 'search-spark-glint' : i % 3 === 0 ? 'search-spark-chip' : 'search-spark-grain');
-      const angle = i / count * Math.PI * 2, distance = 34 + Math.random() * (fine.matches ? 92 : 45);
+      const angle = i / count * Math.PI * 2, distance = 42 + Math.random() * (fine.matches ? 100 : 48);
       const x = mode === 'gather' ? q.left - r.left + q.width * (.35 + Math.random() * .55) : bx;
       // Input particles skim the field edge so they do not cross typed characters.
       const y = mode === 'gather' ? by + (i % 2 ? -1 : 1) * (q.height / 2 - 3) : by;
@@ -75,8 +75,9 @@ export function mountSearchEnergy(form, query) {
       const dy = mode === 'gather' ? by - y : Math.sin(angle) * distance;
       const curl = (i % 2 ? -1 : 1) * (mode === 'gather' ? 8 : 16);
       const a = animate(node, [{transform:'translate(0,0) rotate(0deg) scale(.45)',opacity:0},
-        {transform:`translate(${dx*.38}px,${dy*.38+curl}px) rotate(35deg) scale(1)`,opacity:.85,offset:.4},
-        {transform:`translate(${dx}px,${dy}px) rotate(100deg) scale(.15)`,opacity:0}], mode === 'gather' ? 520 : 820, i % 4 * 16);
+        {transform:`translate(${dx*.38}px,${dy*.38+curl}px) rotate(35deg) scale(1)`,opacity:1,offset:.3},
+        {transform:`translate(${dx*.7}px,${dy*.7+curl*.5}px) rotate(65deg) scale(.8)`,opacity:.9,offset:.6},
+        {transform:`translate(${dx}px,${dy}px) rotate(100deg) scale(.15)`,opacity:0}], mode === 'gather' ? 640 : 1000, i % 4 * 16);
       if (!a) { node.remove(); continue; }
       particleAnimations.set(node, a);
       const remove = () => { node.remove(); particleAnimations.delete(node); };
@@ -105,18 +106,18 @@ export function mountSearchEnergy(form, query) {
     charge();
   }
   query.addEventListener('compositionstart', () => { composing = true; });
-  query.addEventListener('compositionend', () => { composing = false; charge(); observatory.input(query.value); sparks('gather', 3); });
+  query.addEventListener('compositionend', () => { composing = false; charge(); observatory.input(query.value); sparks('gather', 5); });
   query.addEventListener('input', () => {
     charge();
     observatory.input(query.value, !composing);
     if (composing) return;
-    if (query.value && performance.now() - lastInput > 100) { sparks('gather', 2); lastInput = performance.now(); }
+    if (query.value && performance.now() - lastInput > 100) { sparks('gather', 4); lastInput = performance.now(); }
   });
   query.addEventListener('focus', sweep);
   submit.addEventListener('pointerenter', event => {
     const now = performance.now();
     if (event.pointerType === 'touch' || !fine.matches || now - lastHover < 900) return;
-    lastHover = now; sparks('burst', 6);
+    lastHover = now; sparks('burst', 12);
   }, {passive:true});
   form.addEventListener('focusin', () => { stage.classList.add('search-focused'); observatory.focus(true); });
   form.addEventListener('focusout', event => { if (!form.contains(event.relatedTarget)) { stage.classList.remove('search-focused'); observatory.focus(false); } });
@@ -127,7 +128,7 @@ export function mountSearchEnergy(form, query) {
     const now = performance.now();
     if (now - lastSubmit < 160) return; // Throttle decoration only; preserve every native submission.
     lastSubmit = now;
-    sweep(); sparks('burst', fine.matches ? 20 : 10);
+    sweep(); sparks('burst', fine.matches ? 28 : 16);
     // Keep the native hit area still while its face moves, including rapid repeated searches.
     animate(face, [{translate:'0 0'}, {translate:'0 3px',offset:.25}, {translate:'0 0'}], 230);
     animate(face, [{boxShadow:'inset 0 -4px #234a5044,0 3px #18343e'},
