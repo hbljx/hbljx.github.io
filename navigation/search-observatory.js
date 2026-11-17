@@ -2,12 +2,11 @@
 // A single canvas, cached geometry/gradients, and an on-demand animation loop.
 const TAU = Math.PI * 2;
 const WHITE = [241,255,253];
-const WARM = [255,180,81];
 const ENGINES = [
   {id:'baidu', label:'百度', color:[57,245,188], x:98, y:92},
   {id:'bing', label:'必应', color:[57,207,255], x:542, y:92},
   {id:'google', label:'谷歌', color:[210,138,255], x:90, y:410},
-  {id:'yuanbao', label:'元宝', color:WARM, x:550, y:410},
+  {id:'yuanbao', label:'元宝', color:[255,180,81], x:550, y:410},
 ];
 const TILES = [
   {x:62,y:245,angle:-.14,phase:.2}, {x:578,y:245,angle:.13,phase:1.4},
@@ -104,7 +103,7 @@ export function mountSearchObservatory(environment) {
       if((depth>0)!==front)continue;
       const x=320+Math.cos(a)*radius,y=266+depth*radius*.39-Math.cos(a)*34;
       const shimmer=.66+Math.sin(time*1.3+i*2.1)*.22;
-      const alpha=(front?.56:.3)*(.75+wake*.65)*shimmer,tint=i%11===0?WARM:rgb;
+      const alpha=(front?.56:.3)*(.75+wake*.65)*shimmer,tint=rgb;
       dot(x,y,Math.max(motes[offset+3],1.1*cssUnit),alpha,tint);
       if(i%7===0) {
         const tail=.045+wake*.08;
@@ -222,7 +221,7 @@ export function mountSearchObservatory(environment) {
     c.fillStyle=p.reflection;c.fillRect(220,154,200,200);
     // Two etched facets give the glass depth without covering the network.
     c.beginPath();c.moveTo(247,216);c.lineTo(267,186);c.lineTo(327,167);line(.35,.6,WHITE);
-    c.beginPath();c.moveTo(371,322);c.lineTo(390,294);c.lineTo(399,260);line(.3,.6,WARM);
+    c.beginPath();c.moveTo(371,322);c.lineTo(390,294);c.lineTo(399,260);line(.3,.6);
     c.restore();
     arc(99,0,TAU,1,1.05);
     neonArc(110,-2.9,-1.5,1,2);arc(110,.3,1.4,.8,1.4);
@@ -247,8 +246,8 @@ export function mountSearchObservatory(environment) {
       const a=turn*(i%2?-1.8:1.4)+i*TAU/3,r=169;
       const x=320+Math.cos(a)*r,y=254+Math.sin(a)*r;
       c.save();c.translate(x,y);c.rotate(a+Math.PI/4);
-      c.fillStyle=color(i===1?WARM:rgb,.45+wake*.3);c.fillRect(-4,-4,8,8);
-      c.strokeStyle=color(i===1?WARM:rgb,1);c.lineWidth=Math.max(1.5,cssUnit*1.3);c.strokeRect(-4,-4,8,8);
+      c.fillStyle=color(rgb,.45+wake*.3);c.fillRect(-4,-4,8,8);
+      c.strokeStyle=color(rgb,1);c.lineWidth=Math.max(1.5,cssUnit*1.3);c.strokeRect(-4,-4,8,8);
       c.restore();
     }
     const ticks=miniature?48:120;
@@ -279,7 +278,7 @@ export function mountSearchObservatory(environment) {
       const offset=i*4,p=fragments[offset];if(p<0||p>1)continue;
       const angle=fragments[offset+1],distance=105+(1-Math.pow(1-p,2))*fragments[offset+2];
       const x=320+Math.cos(angle)*distance,y=254+Math.sin(angle)*distance*.8;
-      const alpha=Math.sin(Math.min(1,p*3)*Math.PI*.5)*(1-p),tint=i%5===0?WARM:rgb;
+      const alpha=Math.sin(Math.min(1,p*3)*Math.PI*.5)*(1-p),tint=rgb;
       const tail=12+(1-p)*24;
       c.beginPath();c.moveTo(x-Math.cos(angle)*tail,y-Math.sin(angle)*tail*.8);c.lineTo(x,y);line(alpha*.8,.95,tint);
       dot(x,y,fragments[offset+3]*1.5,alpha,tint);dot(x,y,6,alpha*.2,tint);
