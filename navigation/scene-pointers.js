@@ -17,7 +17,7 @@ export function mountScenePointers() {
  function size(){const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(innerWidth*dpr);canvas.height=Math.round(innerHeight*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
  function clear(){cancelAnimationFrame(frame);frame=0;mode='';canvas.dataset.mode='';delete document.documentElement.dataset.aboutPointer;aboutEffects.reset();atlasEffects.reset();trail=[];particles=[];ctx.clearRect(0,0,innerWidth,innerHeight);}
  function choose(el){
-  if(!fine.matches||reduced.matches||document.hidden||!el||el.closest('dialog,.site-header'))return '';
+  if(document.documentElement.classList.contains('world-mode')||!fine.matches||reduced.matches||document.hidden||!el||el.closest('dialog,.site-header'))return '';
   if(el.closest('.hero-stage.explore-ready'))return 'atlas';
   if(aboutSurface?.contains(el)&&projects)return y<projects.getBoundingClientRect().top?'journal':'clockwork';
   const scene=el.closest('.scene');return scene?modes[scene.dataset.room]||'':'';
@@ -54,7 +54,16 @@ export function mountScenePointers() {
   }else if(mode==='ribbon'){
    ['#e3b7ff','#7ceeff','#ff9fcf'].forEach((c,j)=>{ctx.strokeStyle=c;ctx.lineWidth=3-j*.65;ctx.beginPath();trail.forEach((p,i)=>{const offset=Math.sin(i*.45-now*.003+j)*5;const px=p.x+offset*j,py=p.y+offset*j;if(!i)ctx.moveTo(px,py);else ctx.lineTo(px,py);});ctx.stroke();});
   }else if(mode==='scanner'){
-   ctx.lineWidth=1;ctx.shadowBlur=2;
+   ctx.lineWidth=1.5;ctx.shadowBlur=2;
+   // Circuit traces illuminate in the tool pointer's wake.
+   particles.forEach(p=>{
+    const t=Math.max(0,(now-p.t)/p.life),progress=Math.min(1,t*5);
+    ctx.globalAlpha=(1-t)*.85;ctx.beginPath();ctx.moveTo(p.x-18,p.y+14);
+    ctx.lineTo(p.x-18+20*progress,p.y+14);
+    if(progress===1){ctx.lineTo(p.x+2,p.y+25);ctx.lineTo(p.x+13,p.y+25);}
+    ctx.stroke();ctx.strokeRect(p.x-21,p.y+11,5,5);
+    if(progress===1)ctx.fillRect(p.x+11,p.y+23,4,4);
+   });
    if(target?.isConnected){
     // Two small signals travel outside the slot; no scan beam crosses its label.
     const r=target.getBoundingClientRect(),progress=(now%1800)/1800;
@@ -75,6 +84,16 @@ export function mountScenePointers() {
   }else if(mode==='water'){
    particles.forEach(p=>{const t=(now-p.t)/p.life;ctx.globalAlpha=(1-t)*.6;ctx.beginPath();ctx.ellipse(p.x,p.y,5+t*p.size,(5+t*p.size)*.65,0,0,Math.PI*2);ctx.stroke();});
   }else if(mode==='fairy'){
+   // Shoots unfold behind the hovering fairy.
+   ctx.shadowBlur=0;
+   particles.forEach(p=>{
+    const t=Math.max(0,(now-p.t)/p.life),grow=Math.min(1,t*5);
+    ctx.save();ctx.translate(p.x,p.y+20);ctx.rotate(p.angle);
+    ctx.globalAlpha=(1-t)*.9;ctx.strokeStyle='#a8d985';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,5);ctx.quadraticCurveTo(3,-3,0,-18*grow);ctx.stroke();
+    ctx.fillStyle='#c1ed97';ctx.beginPath();ctx.ellipse(-5*grow,-8*grow,7*grow,3*grow,.6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#79bfa1';ctx.beginPath();ctx.ellipse(5*grow,-13*grow,7*grow,3*grow,-.6,0,Math.PI*2);ctx.fill();ctx.restore();
+   });
    const fx=x+22+Math.cos(now*.004)*12,fy=y-23+Math.sin(now*.005)*9;
    ctx.globalAlpha=fade*.45;ctx.beginPath();ctx.ellipse(fx-7,fy-2,8,3+Math.abs(Math.sin(now*.02))*6,-.6,0,7);ctx.ellipse(fx+7,fy-2,8,3+Math.abs(Math.sin(now*.02))*6,.6,0,7);ctx.fill();
    ctx.globalAlpha=fade;ctx.fillStyle='#fff5ca';ctx.fillRect(fx-3,fy-5,6,10);star(fx-15,fy+14,3);
@@ -105,6 +124,8 @@ export function mountScenePointers() {
   if(moved-spawn>24){spawn=moved;const speed=Math.min(60,Math.hypot(x-lastX,y-lastY));
    if(mode==='comet'||mode==='stardust')for(let i=0;i<3;i++)particles.push({x:x+(Math.random()-.5)*12,y:y+(Math.random()-.5)*12,t:moved,life:mode==='comet'?600:1100,vx:(lastX-x)*.7+(Math.random()-.5)*30,vy:(lastY-y)*.7+(Math.random()-.5)*30,size:mode==='comet'?4+speed*.08:3+Math.random()*4,color:colors[(names.indexOf(mode)+i)%8]});
    if(mode==='water'&&(particles.length===0||moved-particles.at(-1).t>100))particles.push({x,y,t:moved,life:1000,size:45});
+   if((mode==='scanner'||mode==='fairy')&&(!particles.length||Math.hypot(x-particles.at(-1).x,y-particles.at(-1).y)>26))
+    particles.push({x,y,t:moved,life:mode==='scanner'?850:1150,angle:Math.sin(x*.03)*.45});
    if(mode==='builder'){
     const bx=Math.round(x/24)*24,by=Math.round(y/18)*18;
     if(!particles.some(p=>p.x===bx&&p.y===by))particles.push({x:bx,y:by,t:moved,life:950});

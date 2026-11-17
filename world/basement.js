@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { ISLAND } from './layout.js';
-import { canvasTexture } from '@engine/world/textures.js';
 
 export const BASEMENT = { x0: -25, x1: 29, z0: -27, z1: 16, y: -8, ceiling: -2 };
 const hole = { x0: -24, x1: -20, z0: 6, z1: 14 };
@@ -143,8 +142,6 @@ export function buildBasement({ grid, B, planes, obstacles, lighting }) {
   }
   for(const [x,z] of [[-20,-20],[23,-20],[-20,10],[23,10],[2,-6]])
     lighting.push({id:'basement-lamp',position:[x,-2.3,z],power:1.2,radius:12,direction:[0,-1,0]});
-  const texture=canvasTexture(512,128,(ctx,w,h)=>{ctx.fillStyle='#183e44';ctx.fillRect(0,0,w,h);ctx.fillStyle='#d6ece2';ctx.font='bold 38px sans-serif';ctx.textAlign='center';ctx.fillText('海底观景室  ↓',w/2,57);ctx.font='19px sans-serif';ctx.fillText('OCEAN OBSERVATORY · B1',w/2,99);});
-  const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.4,.6),new THREE.MeshBasicMaterial({map:texture}));sign.position.set(-23,1.5,13.95);sign.name='basement-entry-sign';planes.push(sign);
   function levels(x,z,out) {
     if(inside(r,x,z))out.push({y:r.y,site:'basement'});
     for(const s of treads)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1)out.push({y:s.y,site:'basement-stairs',tread:true,route:'basement-stair'});

@@ -1,0 +1,11 @@
+/* Native hit points remain immediate; movement effects use the shared canvas. */
+@media (hover:hover) and (pointer:fine) {
+ html:not(.world-mode) .scene[data-room=court] {--scene-cursor:url("cursors/observatory.svg") 5 4;--scene-action-cursor:url("cursors/observatory-link.svg") 5 4}
+ html:not(.world-mode) .scene[data-room=team] {--scene-cursor:url("cursors/homestead.svg") 15 3;--scene-action-cursor:url("cursors/homestead-link.svg") 15 3}
+ html:not(.world-mode) .scene:is([data-room=court],[data-room=team]),
+ html:not(.world-mode) .scene:is([data-room=court],[data-room=team]) * {cursor:var(--scene-cursor),auto}
+ html:not(.world-mode) .scene:is([data-room=court],[data-room=team]) :is(a,button,summary,select,[role=button]),
+ html:not(.world-mode) .scene:is([data-room=court],[data-room=team]) :is(a,button,summary,select,[role=button]) * {cursor:var(--scene-action-cursor),pointer}
+ html:not(.world-mode) .scene:is([data-room=court],[data-room=team]) :is(input,textarea,[contenteditable=true]),
+ html:not(.world-mode) .scene:is([data-room=court],[data-room=team]) [contenteditable=true] * {cursor:text}
+}

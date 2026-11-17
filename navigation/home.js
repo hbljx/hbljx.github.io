@@ -60,7 +60,7 @@ if (worldMode) {
   mountAboutEffects();
   const { mountGardenArrival } = await import('./garden-arrival.js');
   mountGardenArrival();
-  const { mountScenePointers } = await import('./scene-pointers.js?v=20261117-atlas-pointers');
+  const { mountScenePointers } = await import('./scene-pointers.js?v=20261118-scene-pointers');
   mountScenePointers();
   const { mountHeaderEffects } = await import('./header-effects.js');
   mountHeaderEffects();
