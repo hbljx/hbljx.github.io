@@ -57,6 +57,7 @@ export function mountSearchObservatory(environment) {
   let mix=1,wake=.18,impulse=0,switchPulse=0,launchPulse=0,hoverGlow=0;
   let pointerX=0,pointerY=0,tiltX=0,tiltY=0,yawCos=1,yawSin=0,pitchCos=1,pitchSin=0;
   let ink='',light='',aura,coreGlow,well,glass;
+  let captionText='',captionFont='',captionWidth=0,captionAge=0,captionSheen;
 
   function blendColor(progress) {
     const target=HUES[selected],distance=((target[0]-from[0]+1.5)%1)-.5;
@@ -333,10 +334,33 @@ export function mountSearchObservatory(environment) {
   function caption() {
     // Compact phones reserve the space below the orb for the page headline.
     if(compact&&shortViewport.matches)return;
-    c.textAlign='center';c.textBaseline='alphabetic';
-    c.font='700 '+Math.max(16,13*cssUnit)+'px ui-monospace,Consolas,"Microsoft YaHei",monospace';c.fillStyle=light;
     const message=launchPulse>.1?'探索已启程':count?'灵感汇聚中':focused&&!miniature?'输入关键词，连接世界':'搜索就绪';
-    c.fillText(ENGINES[selected].label+' · '+message,320,miniature?510:488);
+    const text=ENGINES[selected].label+' · '+message;
+    const font='700 '+Math.max(16,13*cssUnit)+'px ui-monospace,Consolas,"Microsoft YaHei",monospace';
+    c.font=font;
+    if(text!==captionText||font!==captionFont) {
+      if(text!==captionText)captionAge=0;
+      captionText=text;captionFont=font;captionWidth=c.measureText(text).width;
+    }
+    if(reduced.matches)captionAge=1.8;
+    const reveal=Math.min(1,captionAge/.55),ease=1-Math.pow(1-reveal,3);
+    const breath=reduced.matches?0:(.5+.5*Math.sin(time*2.1))*Math.max(wake,hoverGlow);
+    const baseline=(miniature?510:488)+(1-ease)*8*cssUnit;
+    c.save();c.textAlign='center';c.textBaseline='alphabetic';
+    c.globalAlpha=.3+.7*ease;c.fillStyle=light;
+    c.shadowColor=ink;c.shadowBlur=reduced.matches?0:(3+breath*4)*scale;
+    c.fillText(captionText,320,baseline);c.shadowBlur=0;
+    // A cached highlight sweeps only across the glyphs, not the background.
+    // Repeat gently while interacting; an idle caption settles after its reveal.
+    if(!reduced.matches) {
+      const sweep=captionAge<1.8?Math.min(1,captionAge/1.8):(time%4.8)/1.8;
+      if(sweep<1) {
+        const x=320-captionWidth/2-48+(captionWidth+96)*sweep;
+        c.translate(x,0);c.fillStyle=captionSheen;c.globalAlpha=ease*.9;
+        c.fillText(captionText,320-x,baseline);
+      }
+    }
+    c.restore();
     if(!miniature) {
       for(let i=0;i<19;i++) {
         const h=2+(1+Math.sin(i*.8+time*1.6))*(2+wake*3+impulse*7);
@@ -357,11 +381,12 @@ export function mountSearchObservatory(environment) {
     c.restore();caption();
   }
   function hasMotion() {
-    return focused||hovered||mix<1||hoverGlow>.005||impulse>.005||switchPulse>.005||launchPulse>.005||Math.abs(wake-.18)>.005||Math.abs(tiltX-pointerX)>.002||Math.abs(tiltY-pointerY)>.002;
+    return focused||hovered||(!(compact&&shortViewport.matches)&&captionAge<1.8)||mix<1||hoverGlow>.005||impulse>.005||switchPulse>.005||launchPulse>.005||Math.abs(wake-.18)>.005||Math.abs(tiltX-pointerX)>.002||Math.abs(tiltY-pointerY)>.002;
   }
   function frame(now) {
     raf=0;if(!visible||document.hidden||reduced.matches){last=0;return;}
     const dt=last?Math.min((now-last)/1000,.05):0;last=now;time+=dt;
+    captionAge+=dt;
     const ease=1-Math.exp(-dt*6);
     wake+=((focused?1:.18)-wake)*ease;hoverGlow+=((hovered?1:0)-hoverGlow)*ease;
     tiltX+=(pointerX-tiltX)*ease;tiltY+=(pointerY-tiltY)*ease;
@@ -404,6 +429,8 @@ export function mountSearchObservatory(environment) {
     canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);scale=canvas.width/640;
     well=c.createRadialGradient(320,246,45,320,246,280);
     well.addColorStop(0,'#04131de0');well.addColorStop(.55,'#061c2799');well.addColorStop(1,'#061c2700');
+    captionSheen=c.createLinearGradient(-40,0,40,0);
+    captionSheen.addColorStop(0,'#ffffff00');captionSheen.addColorStop(.5,'#ffffff');captionSheen.addColorStop(1,'#ffffff00');
     ink='';syncColor();draw();
   }
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(canvas);resize();
