@@ -33,7 +33,8 @@ export function mountSearchObservatory(environment) {
     if(row<6)edges.push(i,i+12);
   }
   packets.fill(-1);fragments.fill(-1);
-  let selected=0,count=0,focused=false,visible=true,raf=0,last=0,time=0;
+  let selected=0,count=0,focused=false,hovered=false,visible=true,raf=0,last=0,time=0;
+  let hoverGlow=0,particlePulse=0;
   let wake=.18,impulse=0,switchPulse=0,launchPulse=0,scale=1,cssUnit=1,minStroke=1,compact=false,miniature=false;
   let palette=[];
 
@@ -95,6 +96,28 @@ export function mountSearchObservatory(environment) {
       if(i%4===0) {
         c.save();c.translate(x,y);c.rotate(a+Math.PI/4);
         c.fillStyle=color(rgb,.65);c.fillRect(-3,-3,6,6);c.restore();
+      }
+    }
+    c.restore();
+  }
+
+  function interactionParticles() {
+    const strength=Math.max(hoverGlow*.8,particlePulse,impulse*.8,switchPulse*.7,launchPulse);
+    if(strength<.005||reduced.matches)return;
+    // Two bounded, evenly spaced streams orbit the lens. Interaction changes
+    // their brightness, not their population, so rapid input cannot pile up.
+    const perLane=compact?8:12;
+    c.save();c.globalCompositeOperation='lighter';
+    for(let lane=0;lane<2;lane++)for(let i=0;i<perLane;i++) {
+      const a=time*.32+i*TAU/perLane+lane*Math.PI/perLane,r=164+lane*10;
+      const x=320+Math.cos(a)*r,y=254+Math.sin(a)*r;
+      const alpha=strength*(.55+.25*Math.sin(time*2-i*TAU/perLane));
+      c.beginPath();c.arc(320,254,r,a-.045,a);line(alpha*.45,.45);
+      dot(x,y,5,alpha*.12);
+      if(i%4===0)glint(x,y,4,alpha,rgb);
+      else {
+        c.save();c.translate(x,y);c.rotate(a+Math.PI/4);
+        c.fillStyle=color(rgb,alpha);c.fillRect(-1.8,-1.8,3.6,3.6);c.restore();
       }
     }
     c.restore();
@@ -264,7 +287,7 @@ export function mountSearchObservatory(environment) {
     // of shrinking four peripheral labels below readable CSS pixel sizes.
     if(miniature){c.translate(320,254);c.scale(1.32,1.32);c.translate(-320,-254);}
     else {c.translate(320,254);c.scale(.82,.82);c.translate(-320,-254);}
-    instrument();lens();orbitalMarkers();c.restore();
+    instrument();lens();orbitalMarkers();interactionParticles();c.restore();
     // Input-triggered packets travel from the search field side into the lens.
     c.globalCompositeOperation='lighter';
     for(let i=0;i<3;i++) {
@@ -296,12 +319,13 @@ export function mountSearchObservatory(environment) {
     dot(320,447,3,1);
   }
 
-  function hasMotion() {return focused||impulse>.005||switchPulse>.005||launchPulse>.005||Math.abs(wake-.18)>.005;}
+  function hasMotion() {return focused||hovered||hoverGlow>.005||particlePulse>.005||impulse>.005||switchPulse>.005||launchPulse>.005||Math.abs(wake-.18)>.005;}
   function frame(now) {
     raf=0;
     if(!visible||document.hidden||reduced.matches){last=0;return;}
     const dt=last?Math.min((now-last)/1000,.05):0;last=now;time+=dt;
     const ease=1-Math.exp(-dt*7),target=focused?1:.18;
+    hoverGlow+=((hovered?1:0)-hoverGlow)*ease;particlePulse=Math.max(0,particlePulse-dt*.9);
     wake+=(target-wake)*ease;impulse=Math.max(0,impulse-dt*.85);switchPulse=Math.max(0,switchPulse-dt*.65);launchPulse=Math.max(0,launchPulse-dt*.7);
     for(let i=0;i<3;i++)rgb[i]+=(ENGINES[selected].color[i]-rgb[i])*ease;
     let flying=false;
@@ -325,6 +349,28 @@ export function mountSearchObservatory(environment) {
       packets[offset+2]=0;packets[offset+3]=lane;
     }
   }
+  // Observe the stage without making the decorative canvas intercept clicks,
+  // native search controls or touch scrolling.
+  const stage=environment.closest('.hero-stage');
+  function inInteractionArea(event) {
+    if(event.target.closest?.('.site-search'))return true;
+    const rect=canvas.getBoundingClientRect();
+    if(!rect.width)return false;
+    const zoom=miniature?1.32:.82;
+    const x=(event.clientX-rect.left)*640/rect.width;
+    const y=(event.clientY-rect.top)*540/rect.height;
+    return Math.hypot(x-320,y-254)<195*zoom;
+  }
+  stage?.addEventListener('pointermove',event=>{
+    if(event.pointerType==='touch'||!visible||reduced.matches)return;
+    const next=inInteractionArea(event);
+    if(next!==hovered){hovered=next;start();}
+  },{passive:true});
+  stage?.addEventListener('pointerleave',()=>{hovered=false;start();},{passive:true});
+  stage?.addEventListener('pointerdown',event=>{
+    if(!visible||reduced.matches||!inInteractionArea(event))return;
+    particlePulse=1;start();
+  },{passive:true});
   function resize() {
     const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
     compact=matchMedia('(max-width: 700px)').matches;
@@ -334,13 +380,13 @@ export function mountSearchObservatory(environment) {
     gradients();draw();
   }
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(canvas);resize();
-  reduced.addEventListener('change',()=>{stop();impulse=switchPulse=launchPulse=0;packets.fill(-1);fragments.fill(-1);start();});
+  reduced.addEventListener('change',()=>{stop();hovered=false;hoverGlow=particlePulse=impulse=switchPulse=launchPulse=0;packets.fill(-1);fragments.fill(-1);start();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else if(hasMotion())start();});
   // BFCache restores the same canvas and listeners; do not duplicate the instrument.
   window.addEventListener('pagehide',stop);
   window.addEventListener('pageshow',()=>{if(hasMotion())start();});
   return {
-    focus(value){focused=value;start();},
+    focus(value){if(value&&!focused)particlePulse=.75;focused=value;start();},
     input(value,burst=true){count=Array.from(value.trim()).length;if(burst){impulse=1;emit();}start();},
     engine(id,animate=true){const index=ENGINES.findIndex(e=>e.id===id);if(index<0)return;selected=index;canvas.dataset.engine=id;if(animate){switchPulse=1;packets.fill(-1);start();}else{rgb.set(ENGINES[selected].color);draw();}},
     launch(){
@@ -352,7 +398,7 @@ export function mountSearchObservatory(environment) {
       }
       start();
     },
-    visibility(value){visible=value;if(!visible)stop();else if(hasMotion())start();},
+    visibility(value){visible=value;if(!visible){hovered=false;stop();}else if(hasMotion())start();},
     stop,
   };
 }
