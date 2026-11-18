@@ -8,6 +8,7 @@ const ENGINES = [
   {id:'yuanbao', label:'元宝', color:[255,162,76]},
 ];
 const SEGMENTS = 96;
+const CUBE_EDGES = [0,1,1,3,3,2,2,0,4,5,5,7,7,6,6,4,0,4,1,5,2,6,3,7];
 function toHSV(color,out) {
   const r=color[0]/255,g=color[1]/255,b=color[2]/255;
   const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
@@ -34,6 +35,7 @@ export function mountSearchObservatory(environment) {
   const rings=new Float32Array(3*(SEGMENTS+1)*3);
   const globe=new Float32Array(9*24*3),projected=new Float32Array(globe.length);
   const stars=new Float32Array(56*5),starScreen=new Float32Array(56*3);
+  const scanScreen=new Float32Array(2*65*3),satellites=new Float32Array(4*8*3),satelliteCenters=new Float32Array(4*3);
   const crystal=new Float32Array([0,-67,0, 43,0,0, 0,0,43, -43,0,0, 0,0,-43, 0,67,0]);
   const crystalScreen=new Float32Array(crystal.length);
   const faces=[[0,1,2],[0,2,3],[0,3,4],[0,4,1],[5,2,1],[5,3,2],[5,4,3],[5,1,4]];
@@ -84,10 +86,10 @@ export function mountSearchObservatory(environment) {
     glass.addColorStop(0,tone(.58));glass.addColorStop(.42,tone(.04));glass.addColorStop(.5,tone(.32));glass.addColorStop(1,tone(.08));
   }
   function stroke(alpha=1,width=1,tint=ink) {
-    c.globalAlpha=alpha;c.strokeStyle=tint;c.lineWidth=Math.max(width,cssUnit*.65);c.stroke();c.globalAlpha=1;
+    c.globalAlpha=alpha;c.strokeStyle=tint;c.lineWidth=Math.max(width*1.2,cssUnit*.9);c.stroke();c.globalAlpha=1;
   }
   function neon(alpha=1,width=1.4) {
-    stroke(alpha*.075,width+9);stroke(alpha*.16,width+4);stroke(alpha,width);stroke(alpha*.7,.65,light);
+    stroke(alpha*.075,width+10);stroke(alpha*.16,width+4);stroke(alpha,width);stroke(alpha*.65,Math.max(.9,width*.3),light);
   }
   function dot(x,y,r,alpha=1,tint=ink) {
     c.beginPath();c.arc(x,y,Math.max(.5,r),0,TAU);c.globalAlpha=alpha;c.fillStyle=tint;c.fill();c.globalAlpha=1;
@@ -119,6 +121,22 @@ export function mountSearchObservatory(environment) {
       project(Math.cos(a)*r,stars[j+2]+Math.sin(a*2+time*.3)*15,Math.sin(a)*r,starScreen,i*3);
     }
     for(let i=0;i<crystal.length;i+=3)project(crystal[i]*cy-crystal[i+2]*sy,crystal[i+1]+Math.sin(time*.8)*4,crystal[i+2]*cy+crystal[i]*sy,crystalScreen,i);
+    // A latitude band scans the globe, with a second, fading rail behind it.
+    for(let band=0;band<2;band++) {
+      const y=Math.sin(time*.45)*74-band*9,r=Math.sqrt(104*104-y*y);
+      for(let i=0;i<=64;i++) {
+        const a=i*TAU/64;project(Math.cos(a)*r,y,Math.sin(a)*r,scanScreen,(band*65+i)*3);
+      }
+    }
+    const spinCos=Math.cos(time*.35+.4),spinSin=Math.sin(time*.35+.4);
+    for(let i=0;i<(compact?2:4);i++) {
+      const a=i*TAU/4+time*.055+.5,x=Math.cos(a)*215,y=Math.sin(a*2)*86,z=Math.sin(a)*175;
+      project(x,y,z,satelliteCenters,i*3);
+      for(let vertex=0;vertex<8;vertex++) {
+        const vx=(vertex&1?1:-1)*7,vy=(vertex&2?1:-1)*9,vz=(vertex&4?1:-1)*7;
+        project(x+vx*spinCos-vz*spinSin,y+vy,z+vz*spinCos+vx*spinSin,satellites,(i*8+vertex)*3);
+      }
+    }
   }
   function orbitalRibbons(front) {
     for(let lane=0;lane<3;lane++) {
@@ -128,25 +146,38 @@ export function mountSearchObservatory(environment) {
         if((rings[p+2]+rings[q+2]<=0)!==front)continue;
         c.moveTo(rings[p],rings[p+1]);c.lineTo(rings[q],rings[q+1]);
       }
-      stroke(front?.57:.15,front?1.5:.8);
-      const head=((time*(lane===1?-.085:.065)+lane*.31)%1+1)%1;
-      // Light trails travel on the three independently tilted orbits.
-      for(let tail=0;tail<20;tail++) {
-        const i=(Math.floor(head*SEGMENTS)-tail+SEGMENTS)%SEGMENTS,p=base+i*3,q=p+3;
-        if((rings[p+2]+rings[q+2]<=0)!==front)continue;
-        const alpha=(1-tail/20)*(front?.95:.3);
-        c.beginPath();c.moveTo(rings[p],rings[p+1]);c.lineTo(rings[q],rings[q+1]);stroke(alpha*.1,7);stroke(alpha,2.1);
+      // A broad luminous contour and a fine inner rail keep the orbit readable.
+      if(front)neon(.78,3.2);else stroke(.24,1.6);
+      c.beginPath();
+      for(let i=0;i<SEGMENTS;i++) {
+        const p=base+i*3,q=p+3;
+        if((rings[p+2]+rings[q+2]<=0)!==front||i%6===5)continue;
+        c.moveTo(320+(rings[p]-320)*.958,240+(rings[p+1]-240)*.958);
+        c.lineTo(320+(rings[q]-320)*.958,240+(rings[q+1]-240)*.958);
+        if(i%8===0){c.lineTo(rings[q],rings[q+1]);}
       }
-      const h=base+Math.floor(head*SEGMENTS)*3;
-      if((rings[h+2]<=0)===front) {
-        dot(rings[h],rings[h+1],7,.1);dot(rings[h],rings[h+1],2.8,front?1:.4,light);
-        if(front)glint(rings[h],rings[h+1],5,.7);
+      stroke(front?.37:.1,1);
+      const head=((time*(lane===1?-.085:.065)+lane*.31)%1+1)%1;
+      // Paired comets travel along each rail with tapered luminous wakes.
+      for(let comet=0;comet<2;comet++)for(let tail=0;tail<16;tail++) {
+        const i=(Math.floor(head*SEGMENTS)+comet*48-tail+SEGMENTS)%SEGMENTS,p=base+i*3,q=p+3;
+        if((rings[p+2]+rings[q+2]<=0)!==front)continue;
+        const alpha=(1-tail/16)*(front?.95:.35);
+        c.beginPath();c.moveTo(rings[p],rings[p+1]);c.lineTo(rings[q],rings[q+1]);stroke(alpha*.12,9);stroke(alpha,3.6-tail*.13);
+      }
+      for(let comet=0;comet<2;comet++) {
+        const h=base+((Math.floor(head*SEGMENTS)+comet*48)%SEGMENTS)*3;
+        if((rings[h+2]<=0)===front) {
+          dot(rings[h],rings[h+1],10,.12);dot(rings[h],rings[h+1],3.4,front?1:.45,light);
+          if(front)glint(rings[h],rings[h+1],7,.85);
+        }
       }
       for(let i=8;i<SEGMENTS;i+=24) {
         const p=base+i*3;
         if((rings[p+2]<=0)!==front)continue;
         c.save();c.translate(rings[p],rings[p+1]);c.rotate(Math.atan2(rings[p+4]-rings[p+1],rings[p+3]-rings[p]));
-        c.fillStyle='#102b36';c.fillRect(-5,-3,10,6);c.beginPath();c.rect(-5,-3,10,6);stroke(front?.8:.25,.9);c.restore();
+        c.fillStyle='#102b36';c.fillRect(-6,-4,12,8);c.beginPath();c.rect(-6,-4,12,8);stroke(front?.9:.3,1.3);
+        c.beginPath();c.moveTo(-2,-2);c.lineTo(2,2);stroke(front?.8:.2,1,light);c.restore();
       }
     }
   }
@@ -155,7 +186,12 @@ export function mountSearchObservatory(environment) {
     for(let i=0;i<total;i++) {
       const p=i*3,j=i*5;if((starScreen[p+2]<=0)!==front)continue;
       const x=starScreen[p],y=starScreen[p+1],depth=680/(680+starScreen[p+2]);
-      const alpha=(front?.52:.16)*(.7+.3*Math.sin(time*.7+i))+.14*hoverGlow,size=stars[j+3]*depth;
+      const alpha=(front?.7:.22)*(.7+.3*Math.sin(time*.7+i))+.14*hoverGlow,size=stars[j+3]*depth;
+      if(stars[j+4]===2) {
+        const direction=i%2?.055:-.04,a=stars[j]+time*direction-direction*2,r=stars[j+1];
+        project(Math.cos(a)*r,stars[j+2]+Math.sin(a*2+time*.3)*15,Math.sin(a)*r,scratch);
+        c.beginPath();c.moveTo(scratch[0],scratch[1]);c.lineTo(x,y);stroke(alpha*.32,1.15);
+      }
       if(stars[j+4]===0) {
         const r=size*3;
         c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r*.6,y);c.lineTo(x,y+r);c.lineTo(x-r*.6,y);c.closePath();
@@ -179,8 +215,36 @@ export function mountSearchObservatory(environment) {
       c.moveTo(projected[p],projected[p+1]);c.lineTo(projected[q],projected[q+1]);
       if(row<8&&col%2===0){c.moveTo(projected[p],projected[p+1]);c.lineTo(projected[p+72],projected[p+73]);}
     }
-    stroke(front?.19+wake*.08:.065,.7);
+    stroke(front?.24+wake*.1:.09,1.1);
     for(let i=0;i<projected.length;i+=12)if((projected[i+2]<=0)===front)dot(projected[i],projected[i+1],front?1.35:.8,front?.55:.14);
+  }
+  function scanningBand(front) {
+    for(let band=1;band>=0;band--) {
+      const base=band*65*3;c.beginPath();
+      for(let i=0;i<64;i++) {
+        const p=base+i*3;
+        if((scanScreen[p+2]+scanScreen[p+5]<=0)!==front)continue;
+        c.moveTo(scanScreen[p],scanScreen[p+1]);c.lineTo(scanScreen[p+3],scanScreen[p+4]);
+      }
+      if(band===0&&front)neon(.45+wake*.2,1.8);else stroke(front?.18:.1,1);
+    }
+    const index=Math.floor(((time*.09)%1)*64)*3;
+    if((scanScreen[index+2]<=0)===front)glint(scanScreen[index],scanScreen[index+1],5,front?.85:.25);
+  }
+  function satelliteCubes(front) {
+    for(let i=0;i<(compact?2:4);i++) {
+      if((satelliteCenters[i*3+2]<=0)!==front)continue;
+      const base=i*24;c.beginPath();
+      for(let edge=0;edge<CUBE_EDGES.length;edge+=2) {
+        const a=base+CUBE_EDGES[edge]*3,b=base+CUBE_EDGES[edge+1]*3;
+        c.moveTo(satellites[a],satellites[a+1]);c.lineTo(satellites[b],satellites[b+1]);
+      }
+      stroke(front?.76:.25,1.3);
+      const x=satelliteCenters[i*3],y=satelliteCenters[i*3+1];
+      dot(x,y,6,front?.12:.04);dot(x,y,2.2,front?.9:.3,light);
+      // Short broken uplinks connect each satellite back to its orbit.
+      c.beginPath();c.moveTo(x*.8+64,y*.8+48);c.lineTo(x*.9+32,y*.9+24);stroke(front?.3:.1,1);
+    }
   }
   function prism() {
     for(let i=0;i<faces.length;i++) {
@@ -190,19 +254,39 @@ export function mountSearchObservatory(environment) {
     for(let i=0;i<8;i++) {
       const f=faces[faceOrder[i]],a=f[0]*3,b=f[1]*3,d=f[2]*3;
       c.beginPath();c.moveTo(crystalScreen[a],crystalScreen[a+1]);c.lineTo(crystalScreen[b],crystalScreen[b+1]);c.lineTo(crystalScreen[d],crystalScreen[d+1]);c.closePath();
-      c.fillStyle='#081f2b';c.globalAlpha=.42;c.fill();c.globalAlpha=1;c.fillStyle=glass;c.fill();stroke(.35+i*.055,1);
+      c.fillStyle='#081f2b';c.globalAlpha=.42;c.fill();c.globalAlpha=1;c.fillStyle=glass;c.fill();stroke(.45+i*.055,1.9);
+      if(faceDepth[faceOrder[i]]<0) {
+        // Inset facet engraving and a slow reflection moving across the glass.
+        const cx=(crystalScreen[a]+crystalScreen[b]+crystalScreen[d])/3,cy=(crystalScreen[a+1]+crystalScreen[b+1]+crystalScreen[d+1])/3;
+        c.beginPath();c.moveTo(cx+(crystalScreen[a]-cx)*.72,cy+(crystalScreen[a+1]-cy)*.72);
+        c.lineTo(cx+(crystalScreen[b]-cx)*.72,cy+(crystalScreen[b+1]-cy)*.72);c.lineTo(cx+(crystalScreen[d]-cx)*.72,cy+(crystalScreen[d+1]-cy)*.72);c.closePath();stroke(.27,1);
+        const sweep=(time*.17+faceOrder[i]*.13)%1;
+        c.beginPath();c.moveTo(crystalScreen[a]+(crystalScreen[b]-crystalScreen[a])*sweep,crystalScreen[a+1]+(crystalScreen[b+1]-crystalScreen[a+1])*sweep);
+        c.lineTo(crystalScreen[a]+(crystalScreen[d]-crystalScreen[a])*sweep,crystalScreen[a+1]+(crystalScreen[d+1]-crystalScreen[a+1])*sweep);stroke(Math.sin(sweep*Math.PI)*.55,1.1,light);
+      }
     }
+    for(let i=0;i<crystalScreen.length;i+=3)dot(crystalScreen[i],crystalScreen[i+1],2.5,.85,light);
     c.fillStyle=coreGlow;c.globalAlpha=.8+wake*.2;c.fillRect(240,160,160,160);c.globalAlpha=1;
-    c.beginPath();c.arc(317,235,10,0,TAU);c.moveTo(324,242);c.lineTo(333,251);stroke(.9,2,light);
+    c.beginPath();c.arc(317,235,10,0,TAU);c.moveTo(324,242);c.lineTo(333,251);stroke(.9,2.6,light);
     glint(crystalScreen[0],crystalScreen[1],6+impulse*4,.95);
   }
   function pedestal() {
     c.save();c.translate(320,408);
-    c.beginPath();c.ellipse(0,8,130,27,0,0,TAU);stroke(.12,1);
-    c.beginPath();c.ellipse(0,0,150,31,0,0,TAU);stroke(.35,1.1);
-    c.beginPath();c.ellipse(0,-5,117,22,0,0,TAU);stroke(.22,.8);
+    c.beginPath();c.ellipse(0,8,130,27,0,0,TAU);stroke(.22,1.6);
+    c.beginPath();c.ellipse(0,0,150,31,0,0,TAU);neon(.55,2.3);
+    c.beginPath();c.ellipse(0,-5,117,22,0,0,TAU);stroke(.35,1.3);
     for(let i=0;i<3;i++) {
-      const a=time*.18+i*TAU/3;c.beginPath();c.ellipse(0,0,150,31,0,a,a+.48);neon(.7,1.6);
+      const a=time*.18+i*TAU/3;c.beginPath();c.ellipse(0,0,150,31,0,a,a+.48);neon(.85,2.8);
+    }
+    c.beginPath();
+    for(let i=0;i<=6;i++) {
+      const a=i*TAU/6+time*.1,x=Math.cos(a)*31,y=Math.sin(a)*8-4;
+      if(i===0)c.moveTo(x,y);else c.lineTo(x,y);
+    }
+    stroke(.45,1.4);dot(0,-4,3,.7,light);
+    for(let i=0;i<8;i++) {
+      const phase=(time*.19+i/8)%1,x=Math.cos(i*TAU/8)*72,y=-phase*82;
+      c.beginPath();c.moveTo(x,y);c.lineTo(x,y-6);stroke(Math.sin(phase*Math.PI)*.28,1.2);
     }
     c.beginPath();c.moveTo(-76,-5);c.lineTo(-38,-104);c.moveTo(76,-5);c.lineTo(38,-104);stroke(.12,.8);
     c.beginPath();c.moveTo(0,0);c.lineTo(0,-73);stroke(.13,.8);
@@ -216,26 +300,34 @@ export function mountSearchObservatory(environment) {
     if(strength<.01||reduced.matches)return;
     const progress=1-strength;
     for(let i=0;i<2;i++) {
-      const r=98+progress*115+i*15;c.beginPath();c.ellipse(320,240,r,r*.69,-.3,0,TAU);stroke(strength*(1-strength)*1.4/(i+1),1.2);
+      const r=98+progress*115+i*15;c.beginPath();c.ellipse(320,240,r,r*.69,-.3,0,TAU);stroke(strength*(1-strength)*1.8/(i+1),2.2);
     }
     // Input converges inward; submit emits a bounded set of outward rays.
     for(let i=0;i<(compact?8:12);i++) {
       const a=i*TAU/(compact?8:12)+.2,r=launchPulse>0?110+progress*105:204-progress*96;
       project(Math.cos(a)*r,Math.sin(a)*r*.7,Math.sin(a)*55,scratch);
       project(Math.cos(a)*(r-13),Math.sin(a)*(r-13)*.7,Math.sin(a)*55,scratch,3);
-      c.beginPath();c.moveTo(scratch[3],scratch[4]);c.lineTo(scratch[0],scratch[1]);stroke(strength*.65,1.2);dot(scratch[0],scratch[1],2,strength,light);
+      c.beginPath();c.moveTo(scratch[3],scratch[4]);c.lineTo(scratch[0],scratch[1]);stroke(strength*.75,2);dot(scratch[0],scratch[1],2.8,strength,light);
     }
   }
   function markings() {
     c.beginPath();c.moveTo(104,130);c.lineTo(104,105);c.lineTo(129,105);c.moveTo(511,105);c.lineTo(536,105);c.lineTo(536,130);
-    c.moveTo(104,340);c.lineTo(104,365);c.lineTo(129,365);c.moveTo(511,365);c.lineTo(536,365);c.lineTo(536,340);stroke(.3,1);
+    c.moveTo(104,340);c.lineTo(104,365);c.lineTo(129,365);c.moveTo(511,365);c.lineTo(536,365);c.lineTo(536,340);stroke(.45,1.7);
+    if(!miniature)for(let side=0;side<2;side++) {
+      const x=side?536:104,dir=side?-1:1;
+      for(let i=0;i<8;i++) {
+        c.beginPath();c.moveTo(x,146+i*5);c.lineTo(x+dir*(i%3===0?10:5),146+i*5);stroke(.25+i*.035,1);
+      }
+      c.beginPath();c.moveTo(x,300);c.lineTo(x+dir*20,300);c.lineTo(x+dir*34,286);stroke(.4,1.2);
+      dot(x+dir*34,286,3,.8);dot(x+dir*34,286,8,.09);
+    }
     for(let i=0;i<5;i++) {
       c.beginPath();c.moveTo(89,212+i*12);c.lineTo(i===2?99:94,212+i*12);
       c.moveTo(546,212+i*12);c.lineTo(i===2?556:551,212+i*12);stroke(i===2?.65:.24,.8);
     }
     if(!miniature) {
       c.textAlign='center';c.font='600 '+Math.max(10,10*cssUnit)+'px ui-monospace,Consolas,monospace';
-      c.fillStyle=ink;c.globalAlpha=.7;c.fillText('S E A R C H   /   N E X U S',320,76);c.globalAlpha=1;
+      c.fillStyle=ink;c.globalAlpha=.7;c.fillText('S E A R C H   /   N E X U S',320,48);c.globalAlpha=1;
     }
   }
   function caption() {
@@ -260,7 +352,8 @@ export function mountSearchObservatory(environment) {
     geometry();c.save();
     if(miniature){c.translate(320,240);c.scale(1.08,1.08);c.translate(-320,-240);}
     markings();if(!compact||!shortViewport.matches)pedestal();
-    starfield(false);orbitalRibbons(false);lattice(false);prism();lattice(true);orbitalRibbons(true);starfield(true);pulses();
+    starfield(false);satelliteCubes(false);orbitalRibbons(false);lattice(false);scanningBand(false);
+    prism();lattice(true);scanningBand(true);orbitalRibbons(true);satelliteCubes(true);starfield(true);pulses();
     c.restore();caption();
   }
   function hasMotion() {
