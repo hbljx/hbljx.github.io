@@ -345,7 +345,12 @@ export function mountSearchObservatory(environment) {
     if(reduced.matches)captionAge=1.8;
     const reveal=Math.min(1,captionAge/.55),ease=1-Math.pow(1-reveal,3);
     const breath=reduced.matches?0:(.5+.5*Math.sin(time*2.1))*Math.max(wake,hoverGlow);
-    const baseline=(miniature?510:488)+(1-ease)*8*cssUnit;
+    // Reserve 12 CSS px below the text, including its descent and full reveal
+    // travel. The tallest audio bar stays inside this fixed envelope.
+    const waveBottom=534;
+    const waveHeight=Math.max(8,Math.min(26,waveBottom-476-24*cssUnit));
+    const captionRest=Math.min(476,waveBottom-waveHeight-24*cssUnit);
+    const baseline=(miniature?510:captionRest)+(1-ease)*8*cssUnit;
     c.save();c.textAlign='center';c.textBaseline='alphabetic';
     c.globalAlpha=.3+.7*ease;c.fillStyle=light;
     c.shadowColor=ink;c.shadowBlur=reduced.matches?0:(3+breath*4)*scale;
@@ -363,8 +368,8 @@ export function mountSearchObservatory(environment) {
     c.restore();
     if(!miniature) {
       for(let i=0;i<19;i++) {
-        const h=2+(1+Math.sin(i*.8+time*1.6))*(2+wake*3+impulse*7);
-        c.globalAlpha=.3+(i%3)*.16;c.fillStyle=ink;c.fillRect(274+i*5,510-h,2,h);
+        const h=(2+(1+Math.sin(i*.8+time*1.6))*(2+wake*3+impulse*7))*waveHeight/26;
+        c.globalAlpha=.3+(i%3)*.16;c.fillStyle=ink;c.fillRect(274+i*5,waveBottom-h,2,h);
       }
       c.globalAlpha=1;
     }
