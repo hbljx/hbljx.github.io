@@ -1,404 +1,336 @@
-// Procedural search instrument. It depicts local interaction, never remote results.
-// A single canvas, cached geometry/gradients, and an on-demand animation loop.
+// Projected 3D search sculpture: one canvas, bounded geometry, no WebGL context.
+// All optical layers and the native form share one interpolated engine color.
 const TAU = Math.PI * 2;
-const WHITE = [241,255,253];
 const ENGINES = [
-  {id:'baidu', label:'百度', color:[57,245,188], x:98, y:92},
-  {id:'bing', label:'必应', color:[57,207,255], x:542, y:92},
-  {id:'google', label:'谷歌', color:[210,138,255], x:98, y:410},
-  {id:'yuanbao', label:'元宝', color:[255,180,81], x:542, y:410},
+  {id:'baidu', label:'百度', color:[70,240,166]},
+  {id:'bing', label:'必应', color:[77,166,255]},
+  {id:'google', label:'谷歌', color:[187,130,255]},
+  {id:'yuanbao', label:'元宝', color:[255,162,76]},
 ];
-const TILES = [
-  {x:76,y:254}, {x:564,y:254},
-];
-const color = (rgb, alpha) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
+const SEGMENTS = 96;
+function toHSV(color,out) {
+  const r=color[0]/255,g=color[1]/255,b=color[2]/255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+  out[0]=delta===0?0:((max===r?(g-b)/delta:max===g?(b-r)/delta+2:(r-g)/delta+4)/6+1)%1;
+  out[1]=max===0?0:delta/max;out[2]=max;
+  return out;
+}
+const HUES=ENGINES.map(e=>toHSV(e.color,new Float32Array(3)));
 
 export function mountSearchObservatory(environment) {
+  const stage=environment.closest('.hero-stage');
   const canvas=document.createElement('canvas');
   canvas.className='search-observatory';canvas.setAttribute('aria-hidden','true');
   environment.append(canvas);
   const c=canvas.getContext('2d');
-  if(!c)return {focus(){},input(){},engine(){},launch(){},visibility(){},stop(){}};
+  if(!c)return {
+    focus(){},input(){},launch(){},visibility(){},stop(){},
+    engine(id){const e=ENGINES.find(e=>e.id===id)||ENGINES[0];stage?.style.setProperty('--search-energy','rgb('+e.color.join(',')+')');},
+  };
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  const rgb=new Float32Array(ENGINES[0].color);
-  const nodeCount=84;
-  const nodes=new Float32Array(nodeCount*3),screen=new Float32Array(nodeCount*3),edges=[];
-  const packets=new Float32Array(3*4),fragments=new Float32Array(8*4);
-  // Latitude/longitude topology gives the lens a legible, ordered globe.
-  for(let row=0;row<7;row++)for(let col=0;col<12;col++) {
-    const i=row*12+col,latitude=(row-3)*Math.PI/8,longitude=col*TAU/12;
-    const r=Math.cos(latitude)*88;
-    nodes.set([Math.cos(longitude)*r,Math.sin(latitude)*88,Math.sin(longitude)*r],i*3);
-    edges.push(i,row*12+(col+1)%12);
-    if(row<6)edges.push(i,i+12);
+  const fine=matchMedia('(hover: hover) and (pointer: fine)');
+  const shortViewport=matchMedia('(max-height: 580px)');
+  const rgb=new Float32Array(ENGINES[0].color),from=new Float32Array(HUES[0]);
+  const rings=new Float32Array(3*(SEGMENTS+1)*3);
+  const globe=new Float32Array(9*24*3),projected=new Float32Array(globe.length);
+  const stars=new Float32Array(56*5),starScreen=new Float32Array(56*3);
+  const crystal=new Float32Array([0,-67,0, 43,0,0, 0,0,43, -43,0,0, 0,0,-43, 0,67,0]);
+  const crystalScreen=new Float32Array(crystal.length);
+  const faces=[[0,1,2],[0,2,3],[0,3,4],[0,4,1],[5,2,1],[5,3,2],[5,4,3],[5,1,4]];
+  const faceOrder=[0,1,2,3,4,5,6,7],faceDepth=new Float32Array(8);
+  const sortFaces=(a,b)=>faceDepth[b]-faceDepth[a];
+  const scratch=new Float32Array(9);
+  // Fixed seeds prevent flicker, random allocation and particle growth.
+  for(let i=0;i<56;i++) {
+    const o=i*5;
+    stars[o]=i*2.399963;stars[o+1]=164+(i*37%83);
+    stars[o+2]=(i*53%150)-75;stars[o+3]=.5+(i%5)*.25;stars[o+4]=i%4;
   }
-  packets.fill(-1);fragments.fill(-1);
-  let selected=0,count=0,focused=false,hovered=false,visible=true,raf=0,last=0,time=0;
-  let hoverGlow=0,particlePulse=0;
-  let wake=.18,impulse=0,switchPulse=0,launchPulse=0,scale=1,cssUnit=1,minStroke=1,compact=false,miniature=false;
-  let palette=[];
+  for(let row=0;row<9;row++)for(let col=0;col<24;col++) {
+    const lat=(row-4)*Math.PI/10,lon=col*TAU/24,o=(row*24+col)*3;
+    globe[o]=Math.cos(lat)*104*Math.cos(lon);globe[o+1]=Math.sin(lat)*104;globe[o+2]=Math.cos(lat)*104*Math.sin(lon);
+  }
+  let selected=0,count=0,focused=false,hovered=false,visible=true;
+  let raf=0,last=0,time=0,scale=1,cssUnit=1,compact=false,miniature=false;
+  let mix=1,wake=.18,impulse=0,switchPulse=0,launchPulse=0,hoverGlow=0;
+  let pointerX=0,pointerY=0,tiltX=0,tiltY=0,yawCos=1,yawSin=0,pitchCos=1,pitchSin=0;
+  let ink='',light='',aura,coreGlow,well,glass;
 
-  // Separate the bold instrument from its fine internal network. Understrokes
-  // isolate major contours; only those contours receive a bounded halo pass.
-  function line(alpha=1,width=1,tint=rgb) {c.strokeStyle=color(tint,alpha);c.lineWidth=Math.max(width*3,minStroke);c.stroke();}
-  function neonStroke(alpha=1,width=1,tint=rgb) {
-    const core=Math.max(width*3,2.6*cssUnit);
-    c.save();c.lineJoin='round';c.lineCap='round';
-    c.strokeStyle='#05111de6';c.lineWidth=core+4*cssUnit;c.stroke();
-    c.strokeStyle=color(tint,alpha*.16);c.lineWidth=core+9*cssUnit;c.stroke();
-    c.strokeStyle=color(tint,alpha);c.lineWidth=core;c.stroke();
-    c.restore();
-  }
-  function dot(x,y,r,alpha=1,tint=rgb) {c.beginPath();c.arc(x,y,r,0,TAU);c.fillStyle=color(tint,alpha);c.fill();}
-  function glint(x,y,size,alpha,tint=WHITE) {
-    c.beginPath();c.moveTo(x-size,y);c.lineTo(x+size,y);c.moveTo(x,y-size);c.lineTo(x,y+size);
-    line(alpha,.55,tint);dot(x,y,1.2,alpha,tint);
-  }
-  function arc(r,start,end,alpha,width=1) {c.beginPath();c.arc(320,254,r,start,end);line(alpha,width);}
-  function neonArc(r,start,end,alpha,width=1) {c.beginPath();c.arc(320,254,r,start,end);neonStroke(alpha,width);}
-  function path(x,y,tx,ty,bend) {c.beginPath();c.moveTo(x,y);c.quadraticCurveTo((x+tx)*.5+bend,(y+ty)*.5-bend,tx,ty);}
-  function curvePoint(x,y,tx,ty,bend,u,offset) {
-    const v=1-u;
-    screen[offset]=v*v*x+2*v*u*((x+tx)*.5+bend)+u*u*tx;
-    screen[offset+1]=v*v*y+2*v*u*((y+ty)*.5-bend)+u*u*ty;
-  }
-  function font(size=16,minCss=14) {
-    const pixels=Math.max(size,minCss*cssUnit);
-    c.font=`800 ${pixels}px ui-monospace, Consolas, "Microsoft YaHei", monospace`;
-    return pixels;
+  function blendColor(progress) {
+    const target=HUES[selected],distance=((target[0]-from[0]+1.5)%1)-.5;
+    const hue=(from[0]+distance*progress+1)%1;
+    const saturation=from[1]+(target[1]-from[1])*progress,value=from[2]+(target[2]-from[2])*progress;
+    // Shortest hue arc preserves neon saturation, including orange/blue changes.
+    for(let i=0;i<3;i++) {
+      const k=((i===0?5:i===1?3:1)+hue*6)%6;
+      rgb[i]=255*value*(1-saturation*Math.max(0,Math.min(k,4-k,1)));
+    }
+    if(progress===1)rgb.set(ENGINES[selected].color);
+    syncColor();
   }
 
-  function gradients() {
-    palette=ENGINES.map(engine=>{
-      const aura=c.createRadialGradient(320,254,20,320,254,245);
-      aura.addColorStop(0,color(engine.color,.2));aura.addColorStop(.55,color(engine.color,.1));aura.addColorStop(1,color(engine.color,0));
-      const well=c.createRadialGradient(320,254,60,320,254,242);
-      well.addColorStop(0,'#051523f5');well.addColorStop(.55,'#071725de');well.addColorStop(.82,'#07172566');well.addColorStop(1,'#07172500');
-      const glass=c.createRadialGradient(290,222,5,320,254,102);
-      glass.addColorStop(0,'#102f41');glass.addColorStop(.8,'#061925');glass.addColorStop(.95,color(engine.color,.25));glass.addColorStop(1,'#0d3440');
-      const glow=c.createRadialGradient(320,254,0,320,254,46);
-      glow.addColorStop(0,'rgba(244,255,249,1)');glow.addColorStop(.1,color(engine.color,1));glow.addColorStop(.3,color(engine.color,.3));glow.addColorStop(1,color(engine.color,0));
-      const metal=c.createLinearGradient(210,140,420,375);
-      metal.addColorStop(0,color(engine.color,.95));metal.addColorStop(.2,'#12394b');metal.addColorStop(.44,color(engine.color,.8));metal.addColorStop(.49,'#e0fff6');metal.addColorStop(.52,'#143a4a');metal.addColorStop(.8,color(engine.color,.65));metal.addColorStop(1,'#0b293b');
-      const reflection=c.createLinearGradient(248,169,391,340);
-      reflection.addColorStop(0,'rgba(238,248,244,0)');reflection.addColorStop(.3,color(engine.color,.08));reflection.addColorStop(.34,'rgba(238,248,244,.28)');reflection.addColorStop(.38,'rgba(238,248,244,0)');reflection.addColorStop(1,'rgba(238,248,244,0)');
-      return {aura,well,glass,glow,metal,reflection};
-    });
+  function syncColor() {
+    const next='rgb('+Math.round(rgb[0])+','+Math.round(rgb[1])+','+Math.round(rgb[2])+')';
+    if(next===ink)return;
+    ink=next;light='rgb('+Math.round(190+rgb[0]*.25)+','+Math.round(190+rgb[1]*.25)+','+Math.round(190+rgb[2]*.25)+')';
+    stage?.style.setProperty('--search-energy',ink);
+    // Rebuild gradients only when the quantized theme color changes.
+    const tone=alpha=>'rgba('+Math.round(rgb[0])+','+Math.round(rgb[1])+','+Math.round(rgb[2])+','+alpha+')';
+    aura=c.createRadialGradient(320,243,25,320,243,252);
+    aura.addColorStop(0,tone(.13));aura.addColorStop(.6,tone(.045));aura.addColorStop(1,tone(0));
+    coreGlow=c.createRadialGradient(320,240,0,320,240,80);
+    coreGlow.addColorStop(0,'#ffffff');coreGlow.addColorStop(.035,light);coreGlow.addColorStop(.09,tone(.8));coreGlow.addColorStop(.35,tone(.12));coreGlow.addColorStop(1,tone(0));
+    glass=c.createLinearGradient(270,170,366,310);
+    glass.addColorStop(0,tone(.58));glass.addColorStop(.42,tone(.04));glass.addColorStop(.5,tone(.32));glass.addColorStop(1,tone(.08));
   }
-
-  function orbitalMarkers() {
-    c.save();c.globalCompositeOperation='lighter';
-    const total=compact?8:12;
+  function stroke(alpha=1,width=1,tint=ink) {
+    c.globalAlpha=alpha;c.strokeStyle=tint;c.lineWidth=Math.max(width,cssUnit*.65);c.stroke();c.globalAlpha=1;
+  }
+  function neon(alpha=1,width=1.4) {
+    stroke(alpha*.075,width+9);stroke(alpha*.16,width+4);stroke(alpha,width);stroke(alpha*.7,.65,light);
+  }
+  function dot(x,y,r,alpha=1,tint=ink) {
+    c.beginPath();c.arc(x,y,Math.max(.5,r),0,TAU);c.globalAlpha=alpha;c.fillStyle=tint;c.fill();c.globalAlpha=1;
+  }
+  function glint(x,y,r,alpha=1) {
+    c.beginPath();c.moveTo(x-r,y);c.lineTo(x+r,y);c.moveTo(x,y-r);c.lineTo(x,y+r);stroke(alpha,.8,light);dot(x,y,1.2,alpha,light);
+  }
+  // Perspective projection retains z for back/front occlusion.
+  function project(x,y,z,out,o=0) {
+    const rx=x*yawCos+z*yawSin,rz=z*yawCos-x*yawSin;
+    const ry=y*pitchCos-rz*pitchSin,depth=y*pitchSin+rz*pitchCos,f=680/(680+depth);
+    out[o]=320+rx*f;out[o+1]=240+ry*f;out[o+2]=depth;
+  }
+  function geometry() {
+    const yaw=tiltX*.2+time*.07,pitch=-.13+tiltY*.13;
+    yawCos=Math.cos(yaw);yawSin=Math.sin(yaw);pitchCos=Math.cos(pitch);pitchSin=Math.sin(pitch);
+    for(let lane=0;lane<3;lane++) {
+      const roll=lane===0?-.32:lane===1?.93:-1.08,tilt=lane===0?.34:lane===1?.57:.65,radius=lane===0?188:lane===1?167:151;
+      const cr=Math.cos(roll),sr=Math.sin(roll),depth=Math.sqrt(1-tilt*tilt);
+      for(let i=0;i<=SEGMENTS;i++) {
+        const a=i/SEGMENTS*TAU,x=Math.cos(a)*radius,y=Math.sin(a)*radius*tilt,z=Math.sin(a)*radius*depth;
+        project(x*cr-y*sr,x*sr+y*cr,z,rings,(lane*(SEGMENTS+1)+i)*3);
+      }
+    }
+    const spin=time*.15,cy=Math.cos(spin),sy=Math.sin(spin);
+    for(let i=0;i<globe.length;i+=3)project(globe[i]*cy+globe[i+2]*sy,globe[i+1],globe[i+2]*cy-globe[i]*sy,projected,i);
+    for(let i=0;i<56;i++) {
+      const j=i*5,a=stars[j]+time*(i%2?.055:-.04),r=stars[j+1];
+      project(Math.cos(a)*r,stars[j+2]+Math.sin(a*2+time*.3)*15,Math.sin(a)*r,starScreen,i*3);
+    }
+    for(let i=0;i<crystal.length;i+=3)project(crystal[i]*cy-crystal[i+2]*sy,crystal[i+1]+Math.sin(time*.8)*4,crystal[i+2]*cy+crystal[i]*sy,crystalScreen,i);
+  }
+  function orbitalRibbons(front) {
+    for(let lane=0;lane<3;lane++) {
+      const base=lane*(SEGMENTS+1)*3;c.beginPath();
+      for(let i=0;i<SEGMENTS;i++) {
+        const p=base+i*3,q=p+3;
+        if((rings[p+2]+rings[q+2]<=0)!==front)continue;
+        c.moveTo(rings[p],rings[p+1]);c.lineTo(rings[q],rings[q+1]);
+      }
+      stroke(front?.57:.15,front?1.5:.8);
+      const head=((time*(lane===1?-.085:.065)+lane*.31)%1+1)%1;
+      // Light trails travel on the three independently tilted orbits.
+      for(let tail=0;tail<20;tail++) {
+        const i=(Math.floor(head*SEGMENTS)-tail+SEGMENTS)%SEGMENTS,p=base+i*3,q=p+3;
+        if((rings[p+2]+rings[q+2]<=0)!==front)continue;
+        const alpha=(1-tail/20)*(front?.95:.3);
+        c.beginPath();c.moveTo(rings[p],rings[p+1]);c.lineTo(rings[q],rings[q+1]);stroke(alpha*.1,7);stroke(alpha,2.1);
+      }
+      const h=base+Math.floor(head*SEGMENTS)*3;
+      if((rings[h+2]<=0)===front) {
+        dot(rings[h],rings[h+1],7,.1);dot(rings[h],rings[h+1],2.8,front?1:.4,light);
+        if(front)glint(rings[h],rings[h+1],5,.7);
+      }
+      for(let i=8;i<SEGMENTS;i+=24) {
+        const p=base+i*3;
+        if((rings[p+2]<=0)!==front)continue;
+        c.save();c.translate(rings[p],rings[p+1]);c.rotate(Math.atan2(rings[p+4]-rings[p+1],rings[p+3]-rings[p]));
+        c.fillStyle='#102b36';c.fillRect(-5,-3,10,6);c.beginPath();c.rect(-5,-3,10,6);stroke(front?.8:.25,.9);c.restore();
+      }
+    }
+  }
+  function starfield(front) {
+    const total=compact?32:56;
     for(let i=0;i<total;i++) {
-      const a=i*TAU/total+time*.08,radius=178;
-      const x=320+Math.cos(a)*radius,y=254+Math.sin(a)*radius;
-      dot(x,y,1.6*cssUnit,.35+wake*.2);
-      if(i%4===0) {
-        c.save();c.translate(x,y);c.rotate(a+Math.PI/4);
-        c.fillStyle=color(rgb,.65);c.fillRect(-3,-3,6,6);c.restore();
+      const p=i*3,j=i*5;if((starScreen[p+2]<=0)!==front)continue;
+      const x=starScreen[p],y=starScreen[p+1],depth=680/(680+starScreen[p+2]);
+      const alpha=(front?.52:.16)*(.7+.3*Math.sin(time*.7+i))+.14*hoverGlow,size=stars[j+3]*depth;
+      if(stars[j+4]===0) {
+        const r=size*3;
+        c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r*.6,y);c.lineTo(x,y+r);c.lineTo(x-r*.6,y);c.closePath();
+        c.fillStyle=ink;c.globalAlpha=alpha*.25;c.fill();c.globalAlpha=1;stroke(alpha,.8);
+        c.beginPath();c.moveTo(x,y-r);c.lineTo(x,y+r);stroke(alpha,.8,light);
+      } else if(stars[j+4]===1)glint(x,y,size*2,alpha);
+      else {dot(x,y,size,alpha);dot(x,y,size*3,alpha*.08);}
+      if(i%7===0) {
+        const q=((i+7)%total)*3;
+        if(Math.hypot(x-starScreen[q],y-starScreen[q+1])<110) {
+          c.beginPath();c.moveTo(x,y);c.lineTo(starScreen[q],starScreen[q+1]);stroke(alpha*.25,.65);
+        }
       }
-    }
-    c.restore();
-  }
-
-  function interactionParticles() {
-    const strength=Math.max(hoverGlow*.8,particlePulse,impulse*.8,switchPulse*.7,launchPulse);
-    if(strength<.005||reduced.matches)return;
-    // Two bounded, evenly spaced streams orbit the lens. Interaction changes
-    // their brightness, not their population, so rapid input cannot pile up.
-    const perLane=compact?8:12;
-    c.save();c.globalCompositeOperation='lighter';
-    for(let lane=0;lane<2;lane++)for(let i=0;i<perLane;i++) {
-      const a=time*.32+i*TAU/perLane+lane*Math.PI/perLane,r=164+lane*10;
-      const x=320+Math.cos(a)*r,y=254+Math.sin(a)*r;
-      const alpha=strength*(.55+.25*Math.sin(time*2-i*TAU/perLane));
-      c.beginPath();c.arc(320,254,r,a-.045,a);line(alpha*.45,.45);
-      dot(x,y,5,alpha*.12);
-      if(i%4===0)glint(x,y,4,alpha,rgb);
-      else {
-        c.save();c.translate(x,y);c.rotate(a+Math.PI/4);
-        c.fillStyle=color(rgb,alpha);c.fillRect(-1.8,-1.8,3.6,3.6);c.restore();
-      }
-    }
-    c.restore();
-  }
-
-  function engineNodes() {
-    for(let i=0;i<ENGINES.length;i++) {
-      const e=ENGINES[i],active=i===selected,dx=e.x-320,dy=e.y-254,d=Math.hypot(dx,dy);
-      const tx=320+dx/d*152,ty=254+dy/d*152,bend=0;
-      if(active) {path(e.x,e.y,tx,ty,bend);line(.4,.65);}
-      if(active&&focused&&switchPulse<=.01) {
-        curvePoint(e.x,e.y,tx,ty,bend,(time*.25)%1,0);
-        dot(screen[0],screen[1],2.5,.8);
-      }
-      if(active&&switchPulse>.01) {
-        curvePoint(tx,ty,e.x,e.y,-bend,1-switchPulse,0);
-        dot(screen[0],screen[1],4,1);dot(screen[0],screen[1],13,.26);
-      }
-      c.save();c.translate(e.x,e.y);
-      const labelSize=font(17),halfWidth=Math.max(48,labelSize+22),halfHeight=Math.max(21,labelSize*.75+4);
-      c.beginPath();c.moveTo(-halfWidth,-halfHeight);c.lineTo(halfWidth-15,-halfHeight);c.lineTo(halfWidth,-halfHeight+15);c.lineTo(halfWidth,halfHeight);c.lineTo(-halfWidth,halfHeight);c.closePath();
-      c.fillStyle='#081a2b';c.fill();
-      if(active)neonStroke(1,1.1);else line(.3,.65,e.color);
-      c.fillStyle=color(active?rgb:e.color,active?1:.65);c.textAlign='center';c.textBaseline='middle';c.fillText(e.label,4,1);
-      dot(-halfWidth+11,0,active?3:2,1,active?rgb:e.color);
-      if(active) {
-        c.beginPath();c.moveTo(-halfWidth-6,-halfHeight+10);c.lineTo(-halfWidth-6,-halfHeight-6);c.lineTo(-halfWidth+12,-halfHeight-6);line(1,1);
-        c.beginPath();c.moveTo(halfWidth+6,halfHeight-10);c.lineTo(halfWidth+6,halfHeight+6);c.lineTo(halfWidth-12,halfHeight+6);line(1,1);
-      }
-      c.restore();
     }
   }
-
-  function documents() {
-    for(let index=0;index<TILES.length;index++) {
-      const tile=TILES[index];
-      const active=count>0;
-      c.save();c.translate(tile.x,tile.y);c.globalAlpha=.5;
-      // Thin folded document leaves, cover edges, text rows, and scanning band.
-      c.fillStyle='#091f30';c.fillRect(-26,-32,53,65);
-      c.beginPath();c.moveTo(-26,-32);c.lineTo(13,-32);c.lineTo(27,-18);c.lineTo(27,33);c.lineTo(-26,33);c.closePath();line(.9,1.05);
-      c.beginPath();c.moveTo(13,-32);c.lineTo(13,-18);c.lineTo(27,-18);line(.8,.9);
-      c.beginPath();c.moveTo(-18,-18);c.lineTo(3,-18);line(1,2);
-      for(let row=0;row<5;row++) {
-        const end=row%3===0?8:18;
-        c.beginPath();c.moveTo(-18,-7+row*6);c.lineTo(end,-7+row*6);line(.5,.65);
-      }
-      c.beginPath();c.moveTo(-17,26);c.lineTo(-3,26);line(active?1:.5,1.4);
-      if(active) {
-        const y=-28+(time*26)%57;
-        c.fillStyle=color(rgb,.15);c.fillRect(-23,y-7,47,8);
-        c.beginPath();c.moveTo(-23,y);c.lineTo(24,y);line(.95,.85);
-      }
-      c.restore();
+  function lattice(front) {
+    c.beginPath();
+    for(let row=0;row<9;row++)for(let col=0;col<24;col++) {
+      const p=(row*24+col)*3,q=(row*24+(col+1)%24)*3;
+      if((projected[p+2]<=0)!==front)continue;
+      c.moveTo(projected[p],projected[p+1]);c.lineTo(projected[q],projected[q+1]);
+      if(row<8&&col%2===0){c.moveTo(projected[p],projected[p+1]);c.lineTo(projected[p+72],projected[p+73]);}
     }
+    stroke(front?.19+wake*.08:.065,.7);
+    for(let i=0;i<projected.length;i+=12)if((projected[i+2]<=0)===front)dot(projected[i],projected[i+1],front?1.35:.8,front?.55:.14);
   }
-
-  function network() {
-    const spin=time*.08,cy=Math.cos(spin),sy=Math.sin(spin);
-    for(let i=0;i<nodeCount;i++) {
-      const x=nodes[i*3]*cy+nodes[i*3+2]*sy,z=-nodes[i*3]*sy+nodes[i*3+2]*cy;
-      const y=nodes[i*3+1]*.96-z*.28,depth=nodes[i*3+1]*.28+z*.96,f=540/(540+depth);
-      screen[i*3]=320+x*f;screen[i*3+1]=254-y*f;screen[i*3+2]=depth;
+  function prism() {
+    for(let i=0;i<faces.length;i++) {
+      const f=faces[i];faceDepth[i]=crystalScreen[f[0]*3+2]+crystalScreen[f[1]*3+2]+crystalScreen[f[2]*3+2];
     }
-    c.save();c.beginPath();c.arc(320,254,98,0,TAU);c.clip();
-    for(let k=0;k<edges.length;k+=2) {
-      const u=edges[k]*3,v=edges[k+1]*3,front=screen[u+2]+screen[v+2]<0;
-      c.beginPath();c.moveTo(screen[u],screen[u+1]);c.lineTo(screen[v],screen[v+1]);
-      c.strokeStyle=color(rgb,front?.27+wake*.1:.07);
-      c.lineWidth=(front?1:.65)*cssUnit;c.stroke();
-    }
-    const scanY=178+(time*24)%152;
-    for(let i=0;i<nodeCount;i+=3) {
-      const x=screen[i*3],y=screen[i*3+1],front=screen[i*3+2]<0,scan=Math.max(0,1-Math.abs(y-scanY)/15)*wake;
-      dot(x,y,front?1.6+scan: .8,front?.6+scan*.4:.2);
-    }
-    if(focused) {
-      c.fillStyle=color(rgb,.09);c.fillRect(218,scanY-15,204,15);
-      c.beginPath();c.moveTo(218,scanY);c.lineTo(422,scanY);line(.85,.9);
-      // A fixed acquisition reticle keeps the optical center stable.
-      const x=320,y=254,size=12+impulse*3;
-      for(let side=0;side<4;side++) {
-        const sx=side%2?1:-1,sy=side<2?-1:1;
-        c.beginPath();c.moveTo(x+sx*size,y+sy*(size-6));c.lineTo(x+sx*size,y+sy*size);c.lineTo(x+sx*(size-6),y+sy*size);line(.85+impulse*.15,1.3,WHITE);
-      }
-    }
-    c.globalCompositeOperation='lighter';c.globalAlpha=.4+wake*.6;
-    c.fillStyle=palette[selected].glow;c.fillRect(272,206,96,96);
-    c.restore();
-  }
-
-  function lens() {
-    const p=palette[selected];
-    // A solid, beveled magnifying-glass handle underneath the optical assembly.
-    c.save();c.translate(320,254);c.rotate(-Math.PI/4);
-    c.beginPath();c.roundRect(-13,88,26,153,8);c.fillStyle=p.metal;c.fill();neonStroke(.95,1.2);
-    c.beginPath();c.moveTo(-6,122);c.lineTo(-6,225);line(.95,1,WHITE);
-    for(let i=0;i<7;i++){c.beginPath();c.moveTo(-10,155+i*10);c.lineTo(10,155+i*10);line(.55,.8);}
-    c.restore();
-    c.beginPath();c.arc(320,254,114,0,TAU);c.fillStyle=p.metal;c.fill();neonStroke(1,1.6);
-    c.beginPath();c.arc(320,254,105,0,TAU);c.fillStyle='#082234';c.fill();line(.9,1.3);
-    c.beginPath();c.arc(320,254,98,0,TAU);c.fillStyle=p.glass;c.fill();
-    network();
-    c.save();c.beginPath();c.arc(320,254,97,0,TAU);c.clip();
-    c.fillStyle=p.reflection;c.fillRect(220,154,200,200);
-    // Two etched facets give the glass depth without covering the network.
-    c.beginPath();c.moveTo(247,216);c.lineTo(267,186);c.lineTo(327,167);line(.35,.6,WHITE);
-    c.beginPath();c.moveTo(371,322);c.lineTo(390,294);c.lineTo(399,260);line(.3,.6);
-    c.restore();
-    arc(99,0,TAU,1,1.05);
-    neonArc(110,-2.9,-1.5,1,2);arc(110,.3,1.4,.8,1.4);
-    // A narrow glass reflection follows the upper edge, without hiding the globe.
-    arc(89,-2.5,-1.1,.5,1.5);
+    faceOrder.sort(sortFaces);
     for(let i=0;i<8;i++) {
-      const angle=i/8*TAU+.15;
-      const x=320+Math.cos(angle)*109,y=254+Math.sin(angle)*109;
-      dot(x,y,2.6,1);dot(x,y,1,1,WHITE);
+      const f=faces[faceOrder[i]],a=f[0]*3,b=f[1]*3,d=f[2]*3;
+      c.beginPath();c.moveTo(crystalScreen[a],crystalScreen[a+1]);c.lineTo(crystalScreen[b],crystalScreen[b+1]);c.lineTo(crystalScreen[d],crystalScreen[d+1]);c.closePath();
+      c.fillStyle='#081f2b';c.globalAlpha=.42;c.fill();c.globalAlpha=1;c.fillStyle=glass;c.fill();stroke(.35+i*.055,1);
     }
-    const glintAngle=-2.5+Math.sin(time*.3)*.25;
-    glint(320+Math.cos(glintAngle)*109,254+Math.sin(glintAngle)*109,7+impulse*3,.85+wake*.15);
+    c.fillStyle=coreGlow;c.globalAlpha=.8+wake*.2;c.fillRect(240,160,160,160);c.globalAlpha=1;
+    c.beginPath();c.arc(317,235,10,0,TAU);c.moveTo(324,242);c.lineTo(333,251);stroke(.9,2,light);
+    glint(crystalScreen[0],crystalScreen[1],6+impulse*4,.95);
   }
-
-  function instrument() {
-    const turn=time*.08;
-    // A stationary dial and one rotor: shared radius, speed and equal spacing.
-    arc(178,0,TAU,.16,.45);
-    const ticks=miniature?24:48;
-    for(let i=0;i<ticks;i++) {
-      const a=i/ticks*TAU,outer=158,inner=i%4===0?148:154;
-      c.beginPath();c.moveTo(320+Math.cos(a)*inner,254+Math.sin(a)*inner);
-      c.lineTo(320+Math.cos(a)*outer,254+Math.sin(a)*outer);line(i%4===0?.55:.22,.55);
-    }
+  function pedestal() {
+    c.save();c.translate(320,408);
+    c.beginPath();c.ellipse(0,8,130,27,0,0,TAU);stroke(.12,1);
+    c.beginPath();c.ellipse(0,0,150,31,0,0,TAU);stroke(.35,1.1);
+    c.beginPath();c.ellipse(0,-5,117,22,0,0,TAU);stroke(.22,.8);
     for(let i=0;i<3;i++) {
-      const a=turn+i*TAU/3;
-      neonArc(136,a,a+.85,.7,1);
+      const a=time*.18+i*TAU/3;c.beginPath();c.ellipse(0,0,150,31,0,a,a+.48);neon(.7,1.6);
     }
-  }
-
-  function launchFragments() {
-    c.save();c.globalCompositeOperation='lighter';
-    for(let i=0;i<8;i++) {
-      const offset=i*4,p=fragments[offset];if(p<0||p>1)continue;
-      // All heads, tails and glints stay inside x=115..525, y=88..420.
-      // Fade out in this interior region instead of expanding to the canvas edge.
-      const angle=fragments[offset+1],distance=105+(1-Math.pow(1-p,2))*fragments[offset+2];
-      const x=320+Math.cos(angle)*distance,y=254+Math.sin(angle)*distance*.8;
-      const alpha=Math.sin(Math.min(1,p*3)*Math.PI*.5)*(1-p)*(1-p),tint=rgb;
-      const tail=12+(1-p)*24;
-      c.beginPath();c.moveTo(x-Math.cos(angle)*tail,y-Math.sin(angle)*tail*.8);c.lineTo(x,y);
-      line(alpha*.12,3,tint);line(alpha*.8,.8,tint);
-      c.save();c.translate(x,y);c.rotate(angle+Math.PI/4);
-      c.fillStyle=color(tint,alpha);c.fillRect(-2.5,-2.5,5,5);c.restore();
-      glint(x,y,4,alpha*.7,tint);
+    c.beginPath();c.moveTo(-76,-5);c.lineTo(-38,-104);c.moveTo(76,-5);c.lineTo(38,-104);stroke(.12,.8);
+    c.beginPath();c.moveTo(0,0);c.lineTo(0,-73);stroke(.13,.8);
+    for(let i=0;i<16;i++) {
+      const a=i*TAU/16;c.beginPath();c.moveTo(Math.cos(a)*156,Math.sin(a)*33);c.lineTo(Math.cos(a)*161,Math.sin(a)*35);stroke(.35,.8);
     }
     c.restore();
   }
-
-  function draw() {
-    if(!canvas.width)return;
-    c.setTransform(scale,0,0,scale,0,0);c.clearRect(0,0,640,540);
-    c.fillStyle=palette[selected].well;c.fillRect(0,0,640,540);
-    c.fillStyle=palette[selected].aura;c.fillRect(0,0,640,540);
-    c.beginPath();c.moveTo(320,67);c.lineTo(320,87);c.moveTo(320,423);c.lineTo(320,442);c.moveTo(131,254);c.lineTo(144,254);c.moveTo(496,254);c.lineTo(510,254);line(.65,.85);
-    if(!miniature){engineNodes();documents();}
-    c.save();
-    // Short phone viewports keep a larger core and one legible label, instead
-    // of shrinking four peripheral labels below readable CSS pixel sizes.
-    if(miniature){c.translate(320,254);c.scale(1.32,1.32);c.translate(-320,-254);}
-    else {c.translate(320,254);c.scale(.82,.82);c.translate(-320,-254);}
-    instrument();lens();orbitalMarkers();interactionParticles();c.restore();
-    // Input-triggered packets travel from the search field side into the lens.
-    c.globalCompositeOperation='lighter';
-    for(let i=0;i<3;i++) {
-      const progress=packets[i*4];if(progress<0||progress>1)continue;
-      const startY=packets[i*4+1],bend=packets[i*4+2],endY=254+packets[i*4+3];
-      curvePoint(145,startY,290,endY,bend,progress,0);
-      const x=screen[0],y=screen[1];
-      // Short graded trails keep each parallel lane distinct.
-      for(let trail=3;trail>0;trail--) {
-        curvePoint(145,startY,290,endY,bend,Math.max(0,progress-trail*.04),3);
-        curvePoint(145,startY,290,endY,bend,Math.max(0,progress-(trail-1)*.04),6);
-        c.beginPath();c.moveTo(screen[3],screen[4]);c.lineTo(screen[6],screen[7]);line(Math.sin(progress*Math.PI)*(.85-trail*.16),1.05);
-      }
-      c.beginPath();c.moveTo(x-5,y-4);c.lineTo(x,y);c.lineTo(x-5,y+4);
-      line(Math.sin(progress*Math.PI),.65);
+  function pulses() {
+    const strength=Math.max(switchPulse,launchPulse,impulse*.6);
+    if(strength<.01||reduced.matches)return;
+    const progress=1-strength;
+    for(let i=0;i<2;i++) {
+      const r=98+progress*115+i*15;c.beginPath();c.ellipse(320,240,r,r*.69,-.3,0,TAU);stroke(strength*(1-strength)*1.4/(i+1),1.2);
     }
-    c.globalCompositeOperation='source-over';
-    launchFragments();
+    // Input converges inward; submit emits a bounded set of outward rays.
+    for(let i=0;i<(compact?8:12);i++) {
+      const a=i*TAU/(compact?8:12)+.2,r=launchPulse>0?110+progress*105:204-progress*96;
+      project(Math.cos(a)*r,Math.sin(a)*r*.7,Math.sin(a)*55,scratch);
+      project(Math.cos(a)*(r-13),Math.sin(a)*(r-13)*.7,Math.sin(a)*55,scratch,3);
+      c.beginPath();c.moveTo(scratch[3],scratch[4]);c.lineTo(scratch[0],scratch[1]);stroke(strength*.65,1.2);dot(scratch[0],scratch[1],2,strength,light);
+    }
+  }
+  function markings() {
+    c.beginPath();c.moveTo(104,130);c.lineTo(104,105);c.lineTo(129,105);c.moveTo(511,105);c.lineTo(536,105);c.lineTo(536,130);
+    c.moveTo(104,340);c.lineTo(104,365);c.lineTo(129,365);c.moveTo(511,365);c.lineTo(536,365);c.lineTo(536,340);stroke(.3,1);
+    for(let i=0;i<5;i++) {
+      c.beginPath();c.moveTo(89,212+i*12);c.lineTo(i===2?99:94,212+i*12);
+      c.moveTo(546,212+i*12);c.lineTo(i===2?556:551,212+i*12);stroke(i===2?.65:.24,.8);
+    }
+    if(!miniature) {
+      c.textAlign='center';c.font='600 '+Math.max(10,10*cssUnit)+'px ui-monospace,Consolas,monospace';
+      c.fillStyle=ink;c.globalAlpha=.7;c.fillText('S E A R C H   /   N E X U S',320,76);c.globalAlpha=1;
+    }
+  }
+  function caption() {
+    // Compact phones reserve the space below the orb for the page headline.
+    if(compact&&shortViewport.matches)return;
     c.textAlign='center';c.textBaseline='alphabetic';
-    if(miniature) {
-      font(18,12);c.fillStyle=color(rgb,1);
-      c.fillText(launchPulse>.1?'搜索已提交':`${ENGINES[selected].label}检索`,320,512);
-    } else {
-      font(13,12);c.letterSpacing='2px';c.fillStyle=color(rgb,1);c.fillText('SEARCH / OBSERVATORY',320,483);c.letterSpacing='0px';
-      font(17,14);c.fillStyle='#f1fffd';
-      c.fillText(launchPulse>.1?'搜索已提交':switchPulse>.15?`${ENGINES[selected].label} · 引擎已切换`:count?`输入联动 · ${count} 字符`:focused?'检索透镜已唤醒':'点击搜索框 · 唤醒透镜',320,516);
+    c.font='700 '+Math.max(16,13*cssUnit)+'px ui-monospace,Consolas,"Microsoft YaHei",monospace';c.fillStyle=light;
+    const message=launchPulse>.1?'探索已启程':count?'灵感汇聚中':focused&&!miniature?'输入关键词，连接世界':'搜索就绪';
+    c.fillText(ENGINES[selected].label+' · '+message,320,miniature?510:488);
+    if(!miniature) {
+      for(let i=0;i<19;i++) {
+        const h=2+(1+Math.sin(i*.8+time*1.6))*(2+wake*3+impulse*7);
+        c.globalAlpha=.3+(i%3)*.16;c.fillStyle=ink;c.fillRect(274+i*5,510-h,2,h);
+      }
+      c.globalAlpha=1;
     }
-    c.beginPath();c.moveTo(249,447);c.lineTo(391,447);line(.75,1);
-    dot(320,447,3,1);
   }
-
-  function hasMotion() {return focused||hovered||hoverGlow>.005||particlePulse>.005||impulse>.005||switchPulse>.005||launchPulse>.005||Math.abs(wake-.18)>.005;}
+  function draw() {
+    if(!canvas.width||!well)return;
+    c.setTransform(scale,0,0,scale,0,0);c.clearRect(0,0,640,540);c.lineJoin='round';c.lineCap='round';
+    c.fillStyle=well;c.fillRect(0,0,640,540);c.fillStyle=aura;c.fillRect(0,0,640,540);
+    geometry();c.save();
+    if(miniature){c.translate(320,240);c.scale(1.08,1.08);c.translate(-320,-240);}
+    markings();if(!compact||!shortViewport.matches)pedestal();
+    starfield(false);orbitalRibbons(false);lattice(false);prism();lattice(true);orbitalRibbons(true);starfield(true);pulses();
+    c.restore();caption();
+  }
+  function hasMotion() {
+    return focused||hovered||mix<1||hoverGlow>.005||impulse>.005||switchPulse>.005||launchPulse>.005||Math.abs(wake-.18)>.005||Math.abs(tiltX-pointerX)>.002||Math.abs(tiltY-pointerY)>.002;
+  }
   function frame(now) {
-    raf=0;
-    if(!visible||document.hidden||reduced.matches){last=0;return;}
+    raf=0;if(!visible||document.hidden||reduced.matches){last=0;return;}
     const dt=last?Math.min((now-last)/1000,.05):0;last=now;time+=dt;
-    const ease=1-Math.exp(-dt*7),target=focused?1:.18;
-    hoverGlow+=((hovered?1:0)-hoverGlow)*ease;particlePulse=Math.max(0,particlePulse-dt*.9);
-    wake+=(target-wake)*ease;impulse=Math.max(0,impulse-dt*.85);switchPulse=Math.max(0,switchPulse-dt*.65);launchPulse=Math.max(0,launchPulse-dt*.7);
-    for(let i=0;i<3;i++)rgb[i]+=(ENGINES[selected].color[i]-rgb[i])*ease;
-    let flying=false;
-    for(let i=0;i<3;i++)if(packets[i*4]>=0){packets[i*4]+=dt*.75;if(packets[i*4]>1)packets[i*4]=-1;else flying=true;}
-    for(let i=0;i<8;i++)if(fragments[i*4]>=0){fragments[i*4]+=dt*.8;if(fragments[i*4]>1)fragments[i*4]=-1;else flying=true;}
-    draw();
-    if(hasMotion()||flying)raf=requestAnimationFrame(frame);
-    else last=0;
+    const ease=1-Math.exp(-dt*6);
+    wake+=((focused?1:.18)-wake)*ease;hoverGlow+=((hovered?1:0)-hoverGlow)*ease;
+    tiltX+=(pointerX-tiltX)*ease;tiltY+=(pointerY-tiltY)*ease;
+    impulse=Math.max(0,impulse-dt*.8);switchPulse=Math.max(0,switchPulse-dt*.75);launchPulse=Math.max(0,launchPulse-dt*.75);
+    if(mix<1) {
+      mix=Math.min(1,mix+dt/1.05);
+      blendColor(mix*mix*(3-2*mix));
+    }
+    draw();if(hasMotion())raf=requestAnimationFrame(frame);else last=0;
   }
   function start() {
-    if(reduced.matches){rgb.set(ENGINES[selected].color);wake=focused?1:.18;draw();return;}
-    if(!raf&&visible&&!document.hidden)raf=requestAnimationFrame(frame);
+    if(!visible||document.hidden)return;
+    if(reduced.matches){rgb.set(ENGINES[selected].color);mix=1;wake=focused?1:.18;syncColor();draw();return;}
+    if(!raf)raf=requestAnimationFrame(frame);
   }
-  function stop() {cancelAnimationFrame(raf);raf=0;last=0;}
-  function emit() {
-    if(reduced.matches||!visible||document.hidden)return;
-    // Three parallel lanes; repeated typing refreshes instead of stacking.
-    for(let i=0;i<3;i++) {
-      const offset=i*4,lane=(i-1)*14;
-      packets[offset]=0;packets[offset+1]=254+lane;
-      packets[offset+2]=0;packets[offset+3]=lane;
-    }
-  }
-  // Observe the stage without making the decorative canvas intercept clicks,
-  // native search controls or touch scrolling.
-  const stage=environment.closest('.hero-stage');
+  function stop(){cancelAnimationFrame(raf);raf=0;last=0;}
   function inInteractionArea(event) {
     if(event.target.closest?.('.site-search'))return true;
-    const rect=canvas.getBoundingClientRect();
-    if(!rect.width)return false;
-    const zoom=miniature?1.32:.82;
-    const x=(event.clientX-rect.left)*640/rect.width;
-    const y=(event.clientY-rect.top)*540/rect.height;
-    return Math.hypot(x-320,y-254)<195*zoom;
+    const rect=canvas.getBoundingClientRect();if(!rect.width)return false;
+    const x=(event.clientX-rect.left)*640/rect.width,y=(event.clientY-rect.top)*540/rect.height;
+    return Math.hypot(x-320,(y-240)*1.1)<250;
   }
   stage?.addEventListener('pointermove',event=>{
-    if(event.pointerType==='touch'||!visible||reduced.matches)return;
+    if(event.pointerType==='touch'||!fine.matches||!visible||reduced.matches)return;
     const next=inInteractionArea(event);
-    if(next!==hovered){hovered=next;start();}
+    if(next) {
+      const rect=canvas.getBoundingClientRect();
+      pointerX=Math.max(-1,Math.min(1,(event.clientX-rect.left)/rect.width*2-1));
+      pointerY=Math.max(-1,Math.min(1,(event.clientY-rect.top)/rect.height*2-1));
+    } else pointerX=pointerY=0;
+    if(next||next!==hovered){hovered=next;start();}
   },{passive:true});
-  stage?.addEventListener('pointerleave',()=>{hovered=false;start();},{passive:true});
-  stage?.addEventListener('pointerdown',event=>{
-    if(!visible||reduced.matches||!inInteractionArea(event))return;
-    particlePulse=1;start();
-  },{passive:true});
+  function resetPointer(){hovered=false;pointerX=pointerY=0;start();}
+  stage?.addEventListener('pointerleave',resetPointer,{passive:true});
+  stage?.addEventListener('pointerdown',event=>{if(visible&&!reduced.matches&&inInteractionArea(event)){impulse=1;start();}},{passive:true});
+  fine.addEventListener('change',resetPointer);
   function resize() {
     const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
-    compact=matchMedia('(max-width: 700px)').matches;
-    miniature=rect.width<280;cssUnit=640/Math.max(rect.width,1);
+    compact=matchMedia('(max-width: 700px)').matches;miniature=rect.width<280;cssUnit=640/Math.max(rect.width,1);
     canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);scale=canvas.width/640;
-    minStroke=1.8*cssUnit;
-    gradients();draw();
+    well=c.createRadialGradient(320,246,45,320,246,280);
+    well.addColorStop(0,'#04131de0');well.addColorStop(.55,'#061c2799');well.addColorStop(1,'#061c2700');
+    ink='';syncColor();draw();
   }
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(canvas);resize();
-  reduced.addEventListener('change',()=>{stop();hovered=false;hoverGlow=particlePulse=impulse=switchPulse=launchPulse=0;packets.fill(-1);fragments.fill(-1);start();});
+  shortViewport.addEventListener('change',resize);
+  reduced.addEventListener('change',()=>{
+    stop();hovered=false;hoverGlow=impulse=switchPulse=launchPulse=0;pointerX=pointerY=tiltX=tiltY=0;start();
+  });
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else if(hasMotion())start();});
-  // BFCache restores the same canvas and listeners; do not duplicate the instrument.
-  window.addEventListener('pagehide',stop);
-  window.addEventListener('pageshow',()=>{if(hasMotion())start();});
+  window.addEventListener('pagehide',stop);window.addEventListener('pageshow',()=>{if(hasMotion())start();});
   return {
-    focus(value){if(value&&!focused)particlePulse=.75;focused=value;start();},
-    input(value,burst=true){count=Array.from(value.trim()).length;if(burst){impulse=1;emit();}start();},
-    engine(id,animate=true){const index=ENGINES.findIndex(e=>e.id===id);if(index<0)return;selected=index;canvas.dataset.engine=id;if(animate){switchPulse=1;packets.fill(-1);start();}else{rgb.set(ENGINES[selected].color);draw();}},
-    launch(){
-      launchPulse=1;impulse=0;packets.fill(-1);fragments.fill(-1);
-      if(!reduced.matches&&visible&&!document.hidden)for(let i=0;i<8;i++) {
-        const offset=i*4;
-        fragments[offset]=0;fragments[offset+1]=i*TAU/8+Math.PI/8;
-        fragments[offset+2]=64;fragments[offset+3]=1;
-      }
-      start();
+    focus(value){if(value&&!focused)impulse=.65;focused=value;start();},
+    input(value,burst=true){count=Array.from(value.trim()).length;if(burst)impulse=1;start();},
+    engine(id,animate=true) {
+      const index=ENGINES.findIndex(e=>e.id===id);if(index<0)return;
+      toHSV(rgb,from);selected=index;canvas.dataset.engine=id;
+      if(animate&&!reduced.matches){mix=0;switchPulse=1;start();}
+      else {mix=1;rgb.set(ENGINES[selected].color);syncColor();draw();}
     },
-    visibility(value){visible=value;if(!visible){hovered=false;stop();}else if(hasMotion())start();},
+    launch(){launchPulse=1;impulse=0;start();},
+    visibility(value){visible=value;if(!value){hovered=false;pointerX=pointerY=0;stop();}else start();},
     stop,
   };
 }

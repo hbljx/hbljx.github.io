@@ -7,7 +7,6 @@ export function mountSearchEnergy(form, query) {
   const stage = form.closest('.hero-stage');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const fine = matchMedia('(hover: hover) and (pointer: fine)');
-  const colors = { baidu: '#39f5bc', bing: '#39cfff', google: '#d28aff', yuanbao: '#ffb451' };
   const submit = form.querySelector('button[type=submit]');
   const face = document.createElement('span');
   face.className = 'search-trigger-face'; face.setAttribute('aria-hidden', 'true');
@@ -93,7 +92,7 @@ export function mountSearchEnergy(form, query) {
   function selectEngine(flash = true) {
     const choice = form.querySelector('[name=engine]:checked');
     const next = choice.value;
-    stage.style.setProperty('--search-energy', colors[next] || colors.baidu);
+    // The observatory interpolates the shared color for CSS and canvas together.
     form.dataset.energy = next;
     if (flash && next !== engine) {
       animate(choice.parentElement.querySelector('.search-gem'), [{transform:'rotateY(0deg) translateY(0)'},
