@@ -5,12 +5,11 @@ const WHITE = [241,255,253];
 const ENGINES = [
   {id:'baidu', label:'百度', color:[57,245,188], x:98, y:92},
   {id:'bing', label:'必应', color:[57,207,255], x:542, y:92},
-  {id:'google', label:'谷歌', color:[210,138,255], x:90, y:410},
-  {id:'yuanbao', label:'元宝', color:[255,180,81], x:550, y:410},
+  {id:'google', label:'谷歌', color:[210,138,255], x:98, y:410},
+  {id:'yuanbao', label:'元宝', color:[255,180,81], x:542, y:410},
 ];
 const TILES = [
-  {x:62,y:245,angle:-.14,phase:.2}, {x:578,y:245,angle:.13,phase:1.4},
-  {x:263,y:46,angle:-.06,phase:2.7}, {x:377,y:46,angle:.08,phase:4},
+  {x:76,y:254}, {x:564,y:254},
 ];
 const color = (rgb, alpha) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
 
@@ -22,28 +21,20 @@ export function mountSearchObservatory(environment) {
   if(!c)return {focus(){},input(){},engine(){},launch(){},visibility(){},stop(){}};
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const rgb=new Float32Array(ENGINES[0].color);
-  const nodes=new Float32Array(126*3),screen=new Float32Array(126*3),edges=[];
-  const packets=new Float32Array(40*4);
-  // Stable seeds and bounded pools: typing never creates another animation loop.
-  const motes=new Float32Array(84*4),fragments=new Float32Array(32*4);
-  for(let i=0;i<84;i++) {
-    const offset=i*4;
-    motes[offset]=i*2.399963;
-    motes[offset+1]=176+(i*29)%85;
-    motes[offset+2]=.18+(i%7)*.035;
-    motes[offset+3]=i%9===0?2.8:1.1+(i%3)*.4;
+  const nodeCount=84;
+  const nodes=new Float32Array(nodeCount*3),screen=new Float32Array(nodeCount*3),edges=[];
+  const packets=new Float32Array(3*4),fragments=new Float32Array(8*4);
+  // Latitude/longitude topology gives the lens a legible, ordered globe.
+  for(let row=0;row<7;row++)for(let col=0;col<12;col++) {
+    const i=row*12+col,latitude=(row-3)*Math.PI/8,longitude=col*TAU/12;
+    const r=Math.cos(latitude)*88;
+    nodes.set([Math.cos(longitude)*r,Math.sin(latitude)*88,Math.sin(longitude)*r],i*3);
+    edges.push(i,row*12+(col+1)%12);
+    if(row<6)edges.push(i,i+12);
   }
-  for(let i=0;i<126;i++) {
-    const y=1-2*(i+.5)/126,r=Math.sqrt(1-y*y),a=i*2.399963;
-    nodes.set([Math.cos(a)*r*91,y*91,Math.sin(a)*r*91],i*3);
-  }
-  for(let i=0;i<126;i++)for(let j=i+1;j<126;j++) {
-    if(Math.hypot(nodes[i*3]-nodes[j*3],nodes[i*3+1]-nodes[j*3+1],nodes[i*3+2]-nodes[j*3+2])<31)edges.push(i,j);
-  }
-  for(let i=0;i<40;i++)packets[i*4]=-1;
-  for(let i=0;i<32;i++)fragments[i*4]=-1;
+  packets.fill(-1);fragments.fill(-1);
   let selected=0,count=0,focused=false,visible=true,raf=0,last=0,time=0;
-  let wake=.18,impulse=0,switchPulse=0,launchPulse=0,packetCursor=0,scale=1,cssUnit=1,minStroke=1,compact=false,miniature=false;
+  let wake=.18,impulse=0,switchPulse=0,launchPulse=0,scale=1,cssUnit=1,minStroke=1,compact=false,miniature=false;
   let palette=[];
 
   // Separate the bold instrument from its fine internal network. Understrokes
@@ -94,23 +85,17 @@ export function mountSearchObservatory(environment) {
     });
   }
 
-  function orbitalDust(front) {
+  function orbitalMarkers() {
     c.save();c.globalCompositeOperation='lighter';
-    const total=compact?48:84;
+    const total=compact?8:12;
     for(let i=0;i<total;i++) {
-      const offset=i*4,a=motes[offset]+time*motes[offset+2]*(.2+wake*.35);
-      const depth=Math.sin(a),radius=motes[offset+1];
-      if((depth>0)!==front)continue;
-      const x=320+Math.cos(a)*radius,y=266+depth*radius*.39-Math.cos(a)*34;
-      const shimmer=.66+Math.sin(time*1.3+i*2.1)*.22;
-      const alpha=(front?.56:.3)*(.75+wake*.65)*shimmer,tint=rgb;
-      dot(x,y,Math.max(motes[offset+3],1.1*cssUnit),alpha,tint);
-      if(i%7===0) {
-        const tail=.045+wake*.08;
-        c.beginPath();c.moveTo(320+Math.cos(a-tail)*radius,266+Math.sin(a-tail)*radius*.39-Math.cos(a-tail)*34);c.lineTo(x,y);
-        line(alpha*.9,.65,tint);dot(x,y,6,alpha*.18,tint);
+      const a=i*TAU/total+time*.08,radius=178;
+      const x=320+Math.cos(a)*radius,y=254+Math.sin(a)*radius;
+      dot(x,y,1.6*cssUnit,.35+wake*.2);
+      if(i%4===0) {
+        c.save();c.translate(x,y);c.rotate(a+Math.PI/4);
+        c.fillStyle=color(rgb,.65);c.fillRect(-3,-3,6,6);c.restore();
       }
-      if(i%14===0)glint(x,y,4.5+impulse*3,alpha,tint);
     }
     c.restore();
   }
@@ -118,12 +103,11 @@ export function mountSearchObservatory(environment) {
   function engineNodes() {
     for(let i=0;i<ENGINES.length;i++) {
       const e=ENGINES[i],active=i===selected,dx=e.x-320,dy=e.y-254,d=Math.hypot(dx,dy);
-      const tx=320+dx/d*143,ty=254+dy/d*143,bend=i%2?26:-26;
-      path(e.x,e.y,tx,ty,bend);
-      if(active)neonStroke(.95,1.15);else line(.35,.7,e.color);
-      if(active&&focused)for(let j=0;j<3;j++) {
-        curvePoint(e.x,e.y,tx,ty,bend,(time*.25+j/3)%1,0);
-        dot(screen[0],screen[1],3.2,1);dot(screen[0],screen[1],7,.25);
+      const tx=320+dx/d*152,ty=254+dy/d*152,bend=0;
+      if(active) {path(e.x,e.y,tx,ty,bend);line(.4,.65);}
+      if(active&&focused&&switchPulse<=.01) {
+        curvePoint(e.x,e.y,tx,ty,bend,(time*.25)%1,0);
+        dot(screen[0],screen[1],2.5,.8);
       }
       if(active&&switchPulse>.01) {
         curvePoint(tx,ty,e.x,e.y,-bend,1-switchPulse,0);
@@ -133,8 +117,8 @@ export function mountSearchObservatory(environment) {
       const labelSize=font(17),halfWidth=Math.max(48,labelSize+22),halfHeight=Math.max(21,labelSize*.75+4);
       c.beginPath();c.moveTo(-halfWidth,-halfHeight);c.lineTo(halfWidth-15,-halfHeight);c.lineTo(halfWidth,-halfHeight+15);c.lineTo(halfWidth,halfHeight);c.lineTo(-halfWidth,halfHeight);c.closePath();
       c.fillStyle='#081a2b';c.fill();
-      if(active)neonStroke(1,1.1);else line(.65,.85,e.color);
-      c.fillStyle=color(active?rgb:e.color,1);c.textAlign='center';c.textBaseline='middle';c.fillText(e.label,4,1);
+      if(active)neonStroke(1,1.1);else line(.3,.65,e.color);
+      c.fillStyle=color(active?rgb:e.color,active?1:.65);c.textAlign='center';c.textBaseline='middle';c.fillText(e.label,4,1);
       dot(-halfWidth+11,0,active?3:2,1,active?rgb:e.color);
       if(active) {
         c.beginPath();c.moveTo(-halfWidth-6,-halfHeight+10);c.lineTo(-halfWidth-6,-halfHeight-6);c.lineTo(-halfWidth+12,-halfHeight-6);line(1,1);
@@ -146,9 +130,9 @@ export function mountSearchObservatory(environment) {
 
   function documents() {
     for(let index=0;index<TILES.length;index++) {
-      const tile=TILES[index],dy=Math.sin(time*.7+tile.phase)*(focused?6:2);
+      const tile=TILES[index];
       const active=count>0;
-      c.save();c.translate(tile.x,tile.y+dy);c.rotate(tile.angle+Math.sin(time*.3+tile.phase)*.02);
+      c.save();c.translate(tile.x,tile.y);c.globalAlpha=.5;
       // Thin folded document leaves, cover edges, text rows, and scanning band.
       c.fillStyle='#091f30';c.fillRect(-26,-32,53,65);
       c.beginPath();c.moveTo(-26,-32);c.lineTo(13,-32);c.lineTo(27,-18);c.lineTo(27,33);c.lineTo(-26,33);c.closePath();line(.9,1.05);
@@ -160,18 +144,17 @@ export function mountSearchObservatory(environment) {
       }
       c.beginPath();c.moveTo(-17,26);c.lineTo(-3,26);line(active?1:.5,1.4);
       if(active) {
-        const y=-28+(time*26+index*17)%57;
+        const y=-28+(time*26)%57;
         c.fillStyle=color(rgb,.15);c.fillRect(-23,y-7,47,8);
         c.beginPath();c.moveTo(-23,y);c.lineTo(24,y);line(.95,.85);
       }
       c.restore();
-      path(tile.x,tile.y+dy,320+(tile.x<320?-112:112),254,index%2?20:-20);line(.27,.65);
     }
   }
 
   function network() {
-    const spin=time*(.045+wake*.07),cy=Math.cos(spin),sy=Math.sin(spin);
-    for(let i=0;i<126;i++) {
+    const spin=time*.08,cy=Math.cos(spin),sy=Math.sin(spin);
+    for(let i=0;i<nodeCount;i++) {
       const x=nodes[i*3]*cy+nodes[i*3+2]*sy,z=-nodes[i*3]*sy+nodes[i*3+2]*cy;
       const y=nodes[i*3+1]*.96-z*.28,depth=nodes[i*3+1]*.28+z*.96,f=540/(540+depth);
       screen[i*3]=320+x*f;screen[i*3+1]=254-y*f;screen[i*3+2]=depth;
@@ -180,21 +163,19 @@ export function mountSearchObservatory(environment) {
     for(let k=0;k<edges.length;k+=2) {
       const u=edges[k]*3,v=edges[k+1]*3,front=screen[u+2]+screen[v+2]<0;
       c.beginPath();c.moveTo(screen[u],screen[u+1]);c.lineTo(screen[v],screen[v+1]);
-      // A few lit routes stand out; rear mesh stays fine and quiet.
-      const route=front&&k%16===0;
-      c.strokeStyle=color(rgb,route?.7:front?.28+wake*.13:.105);
-      c.lineWidth=(route?1.9:front?1.1:.75)*cssUnit;c.stroke();
+      c.strokeStyle=color(rgb,front?.27+wake*.1:.07);
+      c.lineWidth=(front?1:.65)*cssUnit;c.stroke();
     }
-    const scanY=178+((time*(count?32:18))%152);
-    for(let i=0;i<126;i++) {
+    const scanY=178+(time*24)%152;
+    for(let i=0;i<nodeCount;i+=3) {
       const x=screen[i*3],y=screen[i*3+1],front=screen[i*3+2]<0,scan=Math.max(0,1-Math.abs(y-scanY)/15)*wake;
       dot(x,y,front?1.6+scan: .8,front?.6+scan*.4:.2);
     }
     if(focused) {
       c.fillStyle=color(rgb,.09);c.fillRect(218,scanY-15,204,15);
       c.beginPath();c.moveTo(218,scanY);c.lineTo(422,scanY);line(.85,.9);
-      // Acquisition brackets at the moving focus point.
-      const x=320+Math.sin(time*.5)*29,y=254+Math.cos(time*.7)*24,size=12+impulse*6;
+      // A fixed acquisition reticle keeps the optical center stable.
+      const x=320,y=254,size=12+impulse*3;
       for(let side=0;side<4;side++) {
         const sx=side%2?1:-1,sy=side<2?-1:1;
         c.beginPath();c.moveTo(x+sx*size,y+sy*(size-6));c.lineTo(x+sx*size,y+sy*size);c.lineTo(x+sx*(size-6),y+sy*size);line(.85+impulse*.15,1.3,WHITE);
@@ -237,56 +218,24 @@ export function mountSearchObservatory(environment) {
   }
 
   function instrument() {
-    const turn=time*.065;
-    // An oblique orbital grid anchors the lens in a larger spatial instrument.
-    c.beginPath();c.ellipse(320,271,205,72,-.28,0,TAU);line(.42,1);
-    c.beginPath();c.ellipse(320,271,205,72,-.28,-time*.25,-time*.25+1.05);neonStroke(1,1.45);
-    if(!miniature){c.beginPath();c.ellipse(320,254,178,189,.48,0,TAU);line(.2,.65);}
-    for(let i=0;i<3;i++) {
-      const a=turn*(i%2?-1.8:1.4)+i*TAU/3,r=169;
-      const x=320+Math.cos(a)*r,y=254+Math.sin(a)*r;
-      c.save();c.translate(x,y);c.rotate(a+Math.PI/4);
-      c.fillStyle=color(rgb,.45+wake*.3);c.fillRect(-4,-4,8,8);
-      c.strokeStyle=color(rgb,1);c.lineWidth=Math.max(1.5,cssUnit*1.3);c.strokeRect(-4,-4,8,8);
-      c.restore();
-    }
-    const ticks=miniature?48:120;
+    const turn=time*.08;
+    // A stationary dial and one rotor: shared radius, speed and equal spacing.
+    arc(178,0,TAU,.16,.45);
+    const ticks=miniature?24:48;
     for(let i=0;i<ticks;i++) {
-      const a=i/ticks*TAU+turn,outer=158,inner=i%4===0?146:153;
-      c.beginPath();c.moveTo(320+Math.cos(a)*inner,254+Math.sin(a)*inner);c.lineTo(320+Math.cos(a)*outer,254+Math.sin(a)*outer);line(i%4===0?.9:.38,i%4===0?.9:.6);
+      const a=i/ticks*TAU,outer=158,inner=i%4===0?148:154;
+      c.beginPath();c.moveTo(320+Math.cos(a)*inner,254+Math.sin(a)*inner);
+      c.lineTo(320+Math.cos(a)*outer,254+Math.sin(a)*outer);line(i%4===0?.55:.22,.55);
     }
-    for(let i=0;i<3;i++)neonArc(139+i*5,turn*(i%2?-1:1)+i*2.1,turn*(i%2?-1:1)+i*2.1+1.2,.75+i*.1,1.1);
-    // Twelve iris segments open on focus; each has an etched angular edge.
-    for(let i=0;i<12;i++) {
-      const a=i/12*TAU+turn*.6,r=119+(1-wake)*8;
-      c.beginPath();
-      c.moveTo(320+Math.cos(a)*r,254+Math.sin(a)*r);
-      c.lineTo(320+Math.cos(a+.13)*(r+9),254+Math.sin(a+.13)*(r+9));
-      c.lineTo(320+Math.cos(a+.38)*(r+9),254+Math.sin(a+.38)*(r+9));
-      line(.55+wake*.35,1);
+    for(let i=0;i<3;i++) {
+      const a=turn+i*TAU/3;
+      neonArc(136,a,a+.85,.7,1);
     }
-  }
-
-  function inputFlares() {
-    if(impulse<=.01)return;
-    // Six small arrowheads gather toward the lens, within a fixed safe radius.
-    // Additive engine-colored strokes have no opaque dark underpainting.
-    const progress=1-impulse,alpha=Math.sin(progress*Math.PI),radius=164-progress*38;
-    c.save();c.globalCompositeOperation='lighter';c.lineJoin='round';
-    for(let i=0;i<6;i++) {
-      const angle=i*TAU/6-.25;
-      c.save();c.translate(320+Math.cos(angle)*radius,254+Math.sin(angle)*radius);c.rotate(angle);
-      c.beginPath();c.moveTo(9,-6);c.lineTo(0,0);c.lineTo(9,6);
-      line(alpha*.18,3);line(alpha,.85);
-      c.beginPath();c.moveTo(8,0);c.lineTo(20,0);line(alpha*.5,.6);
-      c.restore();
-    }
-    c.restore();
   }
 
   function launchFragments() {
     c.save();c.globalCompositeOperation='lighter';
-    for(let i=0;i<32;i++) {
+    for(let i=0;i<8;i++) {
       const offset=i*4,p=fragments[offset];if(p<0||p>1)continue;
       // All heads, tails and glints stay inside x=115..525, y=88..420.
       // Fade out in this interior region instead of expanding to the canvas edge.
@@ -298,7 +247,7 @@ export function mountSearchObservatory(environment) {
       line(alpha*.12,3,tint);line(alpha*.8,.8,tint);
       c.save();c.translate(x,y);c.rotate(angle+Math.PI/4);
       c.fillStyle=color(tint,alpha);c.fillRect(-2.5,-2.5,5,5);c.restore();
-      if(i%4===0)glint(x,y,6,alpha,tint);
+      glint(x,y,4,alpha*.7,tint);
     }
     c.restore();
   }
@@ -308,11 +257,6 @@ export function mountSearchObservatory(environment) {
     c.setTransform(scale,0,0,scale,0,0);c.clearRect(0,0,640,540);
     c.fillStyle=palette[selected].well;c.fillRect(0,0,640,540);
     c.fillStyle=palette[selected].aura;c.fillRect(0,0,640,540);
-    // Seeded dust and fine crosshairs, stable across input events.
-    for(let i=0;i<56;i++) {
-      const x=52+(i*83.71)%538,y=43+(i*57.29)%450;
-      dot(x,y+Math.sin(time*.3+i)*3,i%7?.9:1.8,.22+wake*.2);
-    }
     c.beginPath();c.moveTo(320,67);c.lineTo(320,87);c.moveTo(320,423);c.lineTo(320,442);c.moveTo(131,254);c.lineTo(144,254);c.moveTo(496,254);c.lineTo(510,254);line(.65,.85);
     if(!miniature){engineNodes();documents();}
     c.save();
@@ -320,22 +264,22 @@ export function mountSearchObservatory(environment) {
     // of shrinking four peripheral labels below readable CSS pixel sizes.
     if(miniature){c.translate(320,254);c.scale(1.32,1.32);c.translate(-320,-254);}
     else {c.translate(320,254);c.scale(.82,.82);c.translate(-320,-254);}
-    orbitalDust(false);instrument();lens();orbitalDust(true);inputFlares();c.restore();
+    instrument();lens();orbitalMarkers();c.restore();
     // Input-triggered packets travel from the search field side into the lens.
     c.globalCompositeOperation='lighter';
-    for(let i=0;i<40;i++) {
+    for(let i=0;i<3;i++) {
       const progress=packets[i*4];if(progress<0||progress>1)continue;
       const startY=packets[i*4+1],bend=packets[i*4+2],endY=254+packets[i*4+3];
-      curvePoint(145,startY,320,endY,bend,progress,0);
+      curvePoint(145,startY,290,endY,bend,progress,0);
       const x=screen[0],y=screen[1];
-      // Several fading segments follow the curve, rather than a single straight dash.
+      // Short graded trails keep each parallel lane distinct.
       for(let trail=3;trail>0;trail--) {
-        curvePoint(145,startY,320,endY,bend,Math.max(0,progress-trail*.04),3);
-        curvePoint(145,startY,320,endY,bend,Math.max(0,progress-(trail-1)*.04),6);
+        curvePoint(145,startY,290,endY,bend,Math.max(0,progress-trail*.04),3);
+        curvePoint(145,startY,290,endY,bend,Math.max(0,progress-(trail-1)*.04),6);
         c.beginPath();c.moveTo(screen[3],screen[4]);c.lineTo(screen[6],screen[7]);line(Math.sin(progress*Math.PI)*(.85-trail*.16),1.05);
       }
-      dot(x,y,3.2,Math.sin(progress*Math.PI));dot(x,y,8,Math.sin(progress*Math.PI)*.26);
-      if(i%5===0)glint(x,y,5,Math.sin(progress*Math.PI)*.9);
+      c.beginPath();c.moveTo(x-5,y-4);c.lineTo(x,y);c.lineTo(x-5,y+4);
+      line(Math.sin(progress*Math.PI),.65);
     }
     c.globalCompositeOperation='source-over';
     launchFragments();
@@ -361,8 +305,8 @@ export function mountSearchObservatory(environment) {
     wake+=(target-wake)*ease;impulse=Math.max(0,impulse-dt*.85);switchPulse=Math.max(0,switchPulse-dt*.65);launchPulse=Math.max(0,launchPulse-dt*.7);
     for(let i=0;i<3;i++)rgb[i]+=(ENGINES[selected].color[i]-rgb[i])*ease;
     let flying=false;
-    for(let i=0;i<40;i++)if(packets[i*4]>=0){packets[i*4]+=dt*.75;if(packets[i*4]>1)packets[i*4]=-1;else flying=true;}
-    for(let i=0;i<32;i++)if(fragments[i*4]>=0){fragments[i*4]+=dt*.8;if(fragments[i*4]>1)fragments[i*4]=-1;else flying=true;}
+    for(let i=0;i<3;i++)if(packets[i*4]>=0){packets[i*4]+=dt*.75;if(packets[i*4]>1)packets[i*4]=-1;else flying=true;}
+    for(let i=0;i<8;i++)if(fragments[i*4]>=0){fragments[i*4]+=dt*.8;if(fragments[i*4]>1)fragments[i*4]=-1;else flying=true;}
     draw();
     if(hasMotion()||flying)raf=requestAnimationFrame(frame);
     else last=0;
@@ -372,12 +316,13 @@ export function mountSearchObservatory(environment) {
     if(!raf&&visible&&!document.hidden)raf=requestAnimationFrame(frame);
   }
   function stop() {cancelAnimationFrame(raf);raf=0;last=0;}
-  function emit(amount) {
+  function emit() {
     if(reduced.matches||!visible||document.hidden)return;
-    for(let i=0;i<amount;i++) {
-      const slot=packetCursor++%40,offset=slot*4;
-      packets[offset]=0;packets[offset+1]=214+(slot*17)%80;
-      packets[offset+2]=(slot%2?1:-1)*(18+slot%5*7);packets[offset+3]=Math.sin(slot*2.3)*24;
+    // Three parallel lanes; repeated typing refreshes instead of stacking.
+    for(let i=0;i<3;i++) {
+      const offset=i*4,lane=(i-1)*14;
+      packets[offset]=0;packets[offset+1]=254+lane;
+      packets[offset+2]=0;packets[offset+3]=lane;
     }
   }
   function resize() {
@@ -396,14 +341,14 @@ export function mountSearchObservatory(environment) {
   window.addEventListener('pageshow',()=>{if(hasMotion())start();});
   return {
     focus(value){focused=value;start();},
-    input(value,burst=true){count=Array.from(value.trim()).length;if(burst){impulse=1;emit(5);}start();},
-    engine(id,animate=true){const index=ENGINES.findIndex(e=>e.id===id);if(index<0)return;selected=index;canvas.dataset.engine=id;if(animate){switchPulse=1;emit(9);start();}else{rgb.set(ENGINES[selected].color);draw();}},
+    input(value,burst=true){count=Array.from(value.trim()).length;if(burst){impulse=1;emit();}start();},
+    engine(id,animate=true){const index=ENGINES.findIndex(e=>e.id===id);if(index<0)return;selected=index;canvas.dataset.engine=id;if(animate){switchPulse=1;packets.fill(-1);start();}else{rgb.set(ENGINES[selected].color);draw();}},
     launch(){
-      launchPulse=1;emit(compact?10:16);
-      if(!reduced.matches&&visible&&!document.hidden)for(let i=0;i<(compact?18:32);i++) {
+      launchPulse=1;impulse=0;packets.fill(-1);fragments.fill(-1);
+      if(!reduced.matches&&visible&&!document.hidden)for(let i=0;i<8;i++) {
         const offset=i*4;
-        fragments[offset]=0;fragments[offset+1]=i*2.399963;
-        fragments[offset+2]=42+(i*19)%48;fragments[offset+3]=.8+(i%3)*.4;
+        fragments[offset]=0;fragments[offset+1]=i*TAU/8+Math.PI/8;
+        fragments[offset+2]=64;fragments[offset+3]=1;
       }
       start();
     },
