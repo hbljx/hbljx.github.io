@@ -265,24 +265,40 @@ export function mountSearchObservatory(environment) {
       c.lineTo(320+Math.cos(a+.38)*(r+9),254+Math.sin(a+.38)*(r+9));
       line(.55+wake*.35,1);
     }
-    if(impulse>.01)neonArc(119+(1-impulse)*42,0,TAU,impulse*.8,1.4);
-    if(launchPulse>.01)for(let i=0;i<3;i++) {
-      const r=106+(1-launchPulse)*(170+i*35);
-      neonArc(r,0,TAU,launchPulse*(.72-i*.13),2-i*.35);
+  }
+
+  function inputFlares() {
+    if(impulse<=.01)return;
+    // Six small arrowheads gather toward the lens, within a fixed safe radius.
+    // Additive engine-colored strokes have no opaque dark underpainting.
+    const progress=1-impulse,alpha=Math.sin(progress*Math.PI),radius=164-progress*38;
+    c.save();c.globalCompositeOperation='lighter';c.lineJoin='round';
+    for(let i=0;i<6;i++) {
+      const angle=i*TAU/6-.25;
+      c.save();c.translate(320+Math.cos(angle)*radius,254+Math.sin(angle)*radius);c.rotate(angle);
+      c.beginPath();c.moveTo(9,-6);c.lineTo(0,0);c.lineTo(9,6);
+      line(alpha*.18,3);line(alpha,.85);
+      c.beginPath();c.moveTo(8,0);c.lineTo(20,0);line(alpha*.5,.6);
+      c.restore();
     }
+    c.restore();
   }
 
   function launchFragments() {
     c.save();c.globalCompositeOperation='lighter';
     for(let i=0;i<32;i++) {
       const offset=i*4,p=fragments[offset];if(p<0||p>1)continue;
+      // All heads, tails and glints stay inside x=115..525, y=88..420.
+      // Fade out in this interior region instead of expanding to the canvas edge.
       const angle=fragments[offset+1],distance=105+(1-Math.pow(1-p,2))*fragments[offset+2];
       const x=320+Math.cos(angle)*distance,y=254+Math.sin(angle)*distance*.8;
-      const alpha=Math.sin(Math.min(1,p*3)*Math.PI*.5)*(1-p),tint=rgb;
+      const alpha=Math.sin(Math.min(1,p*3)*Math.PI*.5)*(1-p)*(1-p),tint=rgb;
       const tail=12+(1-p)*24;
-      c.beginPath();c.moveTo(x-Math.cos(angle)*tail,y-Math.sin(angle)*tail*.8);c.lineTo(x,y);line(alpha*.8,.95,tint);
-      dot(x,y,fragments[offset+3]*1.5,alpha,tint);dot(x,y,6,alpha*.2,tint);
-      if(i%4===0)glint(x,y,5,alpha,tint);
+      c.beginPath();c.moveTo(x-Math.cos(angle)*tail,y-Math.sin(angle)*tail*.8);c.lineTo(x,y);
+      line(alpha*.12,3,tint);line(alpha*.8,.8,tint);
+      c.save();c.translate(x,y);c.rotate(angle+Math.PI/4);
+      c.fillStyle=color(tint,alpha);c.fillRect(-2.5,-2.5,5,5);c.restore();
+      if(i%4===0)glint(x,y,6,alpha,tint);
     }
     c.restore();
   }
@@ -304,7 +320,7 @@ export function mountSearchObservatory(environment) {
     // of shrinking four peripheral labels below readable CSS pixel sizes.
     if(miniature){c.translate(320,254);c.scale(1.32,1.32);c.translate(-320,-254);}
     else {c.translate(320,254);c.scale(.82,.82);c.translate(-320,-254);}
-    orbitalDust(false);instrument();lens();orbitalDust(true);c.restore();
+    orbitalDust(false);instrument();lens();orbitalDust(true);inputFlares();c.restore();
     // Input-triggered packets travel from the search field side into the lens.
     c.globalCompositeOperation='lighter';
     for(let i=0;i<40;i++) {
@@ -387,7 +403,7 @@ export function mountSearchObservatory(environment) {
       if(!reduced.matches&&visible&&!document.hidden)for(let i=0;i<(compact?18:32);i++) {
         const offset=i*4;
         fragments[offset]=0;fragments[offset+1]=i*2.399963;
-        fragments[offset+2]=65+(i*19)%105;fragments[offset+3]=.8+(i%3)*.4;
+        fragments[offset+2]=42+(i*19)%48;fragments[offset+3]=.8+(i%3)*.4;
       }
       start();
     },
